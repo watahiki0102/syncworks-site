@@ -15,19 +15,33 @@ export default function VendorsPage() {
     const renderStars = (rating: number, size: number = 20) => {
         const stars = [];
         for (let i = 1; i <= 5; i++) {
+            const fillPercentage = Math.min(Math.max(rating - i + 1, 0), 1) * 100;
             stars.push(
-                <Star
-                    key={i}
-                    style={{ width: size, height: size }}
-                    className={`mr-1 ${i <= Math.floor(rating)
-                            ? 'text-yellow-500 fill-yellow-500'
-                            : 'text-gray-300'
-                        }`}
-                />
+                <div key={i} className="relative inline-block">
+                    {/* 背景（空の星） */}
+                    <Star
+                        style={{ width: size, height: size }}
+                        className="text-gray-300"
+                    />
+                    {/* 前景（黄色の星） */}
+                    <Star
+                        style={{
+                            width: size,
+                            height: size,
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`
+                        }}
+                        className="text-yellow-500 fill-yellow-500"
+                    />
+                </div>
             );
         }
         return <div className="flex items-center">{stars}</div>;
     };
+    
+    
 
     return (
         <main className="bg-gray-50 text-gray-800 min-h-screen">

@@ -87,7 +87,6 @@ export default function Home() {
             <h4 className="font-bold mb-2">お問い合わせ</h4>
             <ul className="space-y-1 text-sm">
               <li> syncworks.official@gmail.com</li>
-              <li> 070-8325-9818</li>
             </ul>
           </div>
         </div>
