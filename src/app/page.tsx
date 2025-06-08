@@ -12,6 +12,7 @@ export default function Home() {
           <div className="text-xl font-bold text-gray-800">SyncWorks</div>
           <nav className="space-x-6 text-sm text-gray-700">
             <a href="#service" className="hover:text-blue-600">サービス</a>
+            <a href="/reviews" className="hover:text-blue-600">口コミ</a>
             <a href="#news" className="hover:text-blue-600">お知らせ</a>
           </nav>
         </div>
