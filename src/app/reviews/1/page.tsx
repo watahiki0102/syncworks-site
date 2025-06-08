@@ -166,7 +166,7 @@ export default function VendorReviewsPage() {
                             </h2>
                             <div className="flex items-center space-x-2 mb-4">
                                 <p className="text-sm font-bold text-gray-800">
-                                    総合評価
+                                    総合満足度
                                 </p>
                                 <p className="text-3xl font-bold text-gray-800">
                                     {vendorReview.totalRating.toFixed(1)}

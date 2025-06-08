@@ -11,6 +11,9 @@ const vendors = [
 ];
 
 export default function VendorsPage() {
+    // 評価の高い順（降順）で並べ替え
+    const sortedVendors = vendors.slice().sort((a, b) => b.totalRating - a.totalRating);
+
     // 星を表示するコンポーネント
     const renderStars = (rating: number, size: number = 20) => {
         const stars = [];
@@ -40,8 +43,6 @@ export default function VendorsPage() {
         }
         return <div className="flex items-center">{stars}</div>;
     };
-    
-    
 
     return (
         <main className="bg-gray-50 text-gray-800 min-h-screen">
@@ -59,7 +60,7 @@ export default function VendorsPage() {
             <section className="py-16 max-w-4xl mx-auto">
                 <h2 className="text-2xl font-bold mb-6 text-center">引越し事業者一覧</h2>
                 <div className="space-y-4">
-                    {vendors.map((vendor) => (
+                    {sortedVendors.map((vendor) => (
                         <Link
                             key={vendor.id}
                             href={`/reviews/${vendor.id}`}
