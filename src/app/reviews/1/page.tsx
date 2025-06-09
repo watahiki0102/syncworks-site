@@ -63,6 +63,12 @@ export default function VendorReviewsPage() {
         ]
     };
 
+    // 口コミ（新しい日付順でソート）
+    const sortedReviews = vendorReview.reviews
+        .slice()
+        .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime());
+
+
     // 星を表示するコンポーネント
     const renderStars = (rating: number, size: number = 20) => {
         const stars = [];
@@ -253,54 +259,58 @@ export default function VendorReviewsPage() {
 
                 {activeTab === 'reviews' && (
                     <div className="space-y-6 text-sm">
-                        {vendorReview.reviews.map((review) => (
-                            <div key={review.id} className="bg-white rounded-lg shadow-md p-6 relative">
-                                <p className="text-xs text-gray-400 mb-2">
-                                    作業日: {review.workDate}
-                                </p>
+                        {vendorReview.reviews.slice()
+                            .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime())
+                            .map((review) => (
+                                <div key={review.id} className="bg-white rounded-lg shadow-md p-6 relative">
+                                    <p className="text-xs text-gray-400 mb-2">
+                                        作業日: {review.workDate}
+                                    </p>
 
-                                <div className="mb-4 flex space-x-4">
-                                    <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                        <p className="text-gray-500 text-xs">価格満足</p>
-                                        <div className="text-lg">
-                                            <span className="font-semibold">⭐ {review.priceSatisfaction}</span>
-                                            <span className="font-normal text-xs"> / 5</span>
+                                    <div className="mb-4 flex space-x-4">
+                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
+                                            <p className="text-gray-500 text-xs">価格満足</p>
+                                            <div className="text-lg">
+                                                <span className="font-semibold">⭐ {review.priceSatisfaction}</span>
+                                                <span className="font-normal text-xs"> / 5</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
+                                            <p className="text-gray-500 text-xs">作業品質</p>
+                                            <div className="text-lg">
+                                                <span className="font-semibold">⭐ {review.workQuality}</span>
+                                                <span className="font-normal text-xs"> / 5</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
+                                            <p className="text-gray-500 text-xs">応対品質</p>
+                                            <div className="text-lg">
+                                                <span className="font-semibold">⭐ {review.responseQuality}</span>
+                                                <span className="font-normal text-xs"> / 5</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                        <p className="text-gray-500 text-xs">作業品質</p>
-                                        <div className="text-lg">
-                                            <span className="font-semibold">⭐ {review.workQuality}</span>
-                                            <span className="font-normal text-xs"> / 5</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                        <p className="text-gray-500 text-xs">応対品質</p>
-                                        <div className="text-lg">
-                                            <span className="font-semibold">⭐ {review.responseQuality}</span>
-                                            <span className="font-normal text-xs"> / 5</span>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <blockquote
-                                    ref={(el) => (commentRefs.current[review.id] = el)}
-                                    className={`border-l-4 border-blue-500 pl-4 text-gray-700 italic bg-gray-100 p-2 overflow-hidden ${expandedReviewIds.includes(review.id) ? '' : 'line-clamp-2'
-                                        }`}
-                                >
-                                    {review.comment}
-                                </blockquote>
-
-                                {overflowingReviews[review.id] && (
-                                    <button
-                                        onClick={() => toggleExpand(review.id)}
-                                        className="text-blue-500 text-xs mt-2 hover:underline"
+                                    <blockquote
+                                        ref={(el) => {
+                                            commentRefs.current[review.id] = el
+                                        }}
+                                        className={`border-l-4 border-blue-500 pl-4 text-gray-700 italic bg-gray-100 p-2 overflow-hidden ${expandedReviewIds.includes(review.id) ? '' : 'line-clamp-2'
+                                            }`}
                                     >
-                                        {expandedReviewIds.includes(review.id) ? '閉じる' : '続きを読む'}
-                                    </button>
-                                )}
-                            </div>
-                        ))}
+                                        {review.comment}
+                                    </blockquote>
+
+                                    {overflowingReviews[review.id] && (
+                                        <button
+                                            onClick={() => toggleExpand(review.id)}
+                                            className="text-blue-500 text-xs mt-2 hover:underline"
+                                        >
+                                            {expandedReviewIds.includes(review.id) ? '閉じる' : '続きを読む'}
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                     </div>
                 )}
             </section>
