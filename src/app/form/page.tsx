@@ -3,7 +3,12 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+// @ts-ignore
+import Kuroshiro from 'kuroshiro';
+// @ts-ignore
+import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
 export default function FullFormPage() {
   const {
@@ -22,36 +27,121 @@ export default function FullFormPage() {
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
   const fromOther = watch("fromResidenceType") === "その他";
   const toOther = watch("toResidenceType") === "その他";
+  const { setValue } = useForm();
+  const [kuroshiro, setKuroshiro] = useState<Kuroshiro | null>(null);
+
+  useEffect(() => {
+    const initKuroshiro = async () => {
+      const kuro = new Kuroshiro();
+      await kuro.init(new KuromojiAnalyzer());
+      setKuroshiro(kuro);
+    };
+    initKuroshiro();
+  }, []);
+
+  const autoFillKana = async (field: 'lastName' | 'firstName', value: string) => {
+    if (kuroshiro && value) {
+      const kana = await kuroshiro.convert(value, { to: 'katakana', mode: 'okuri' });
+      if (field === 'lastName') setValue('lastNameKana', kana);
+      if (field === 'firstName') setValue('firstNameKana', kana);
+    }
+  };
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10">
-      <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <div className='text-red-900'>　　　　* 必須項目</div>
         {/* 👤 基本情報 */}
         <section className={sectionStyle}>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">👤 基本情報</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">👤 基本情報（）</h2>
           <div className="space-y-4">
             <div>
               <label className={labelStyle}>🏠 引越タイプ *</label>
-              <div className="space-x-4">
+              <div className="space-x-4 text-gray-800">
                 <label><input type="radio" {...register("moveType", { required: true })} value="単身" className="mr-1" />単身引越し</label>
                 <label><input type="radio" {...register("moveType", { required: true })} value="家族" className="mr-1" />家族引越し</label>
               </div>
             </div>
 
-            <div>
-              <label className={labelStyle}>📛 お名前 *</label>
-              <input type="text" {...register("name", { required: true })} className={inputStyle} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 姓（漢字） */}
+              <div>
+                <label className="block font-semibold mb-1">📛 姓</label>
+                <input
+                  type="text"
+                  {...register('lastName')}
+                  className="w-full border rounded p-2"
+                  onBlur={(e) => autoFillKana('lastName', e.target.value)}
+                  placeholder="漢字で入力してください"
+                />
+              </div>
+
+              {/* 名（漢字） */}
+              <div>
+                <label className="block font-semibold mb-1">📛 名（漢字）*</label>
+                <input
+                  type="text"
+                  {...register('firstName')}
+                  className="w-full border rounded p-2"
+                  onBlur={(e) => autoFillKana('firstName', e.target.value)}
+                />
+              </div>
+
+              {/* セイ（カタカナ） */}
+              <div>
+                <label className="block font-semibold mb-1">📛 セイ（カタカナ）*</label>
+                <input
+                  type="text"
+                  {...register('lastNameKana')}
+                  className="w-full border rounded p-2"
+                  placeholder="カタカナ"
+                />
+              </div>
+
+              {/* メイ（カタカナ） */}
+              <div>
+                <label className="block font-semibold mb-1">📛 メイ（カタカナ）*</label>
+                <input
+                  type="text"
+                  {...register('firstNameKana')}
+                  className="w-full border rounded p-2"
+                  placeholder="カタカナ"
+                />
+              </div>
             </div>
 
             <div>
-              <label className={labelStyle}>📞 電話番号 *</label>
-              <input type="tel" {...register("phone", { required: true })} className={inputStyle} />
+              <label className={labelStyle}>📞 電話番号（ハイフンなし）*</label>
+              <input
+                type="tel"
+                {...register("phone", {
+                  required: true,
+                  pattern: /^[0-9]{10,11}$/,
+                })}
+                className={inputStyle}
+                placeholder="例：08012345678"
+              />
+              <p className="text-sm text-gray-500 mt-1">ハイフンなしで入力してください（例：08012345678）</p>
             </div>
 
             <div>
               <label className={labelStyle}>📧 メールアドレス *</label>
-              <input type="email" {...register("email", { required: true })} className={inputStyle} />
+              <input
+                type="email"
+                {...register("email", {
+                  required: true,
+                  pattern: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
+                })}
+                className={inputStyle}
+                placeholder="例：example@gmail.com"
+                list="email-suggestions"
+              />
+              <datalist id="email-suggestions">
+                <option value="@gmail.com" />
+                <option value="@yahoo.co.jp" />
+                <option value="@icloud.com" />
+              </datalist>
             </div>
           </div>
         </section>
