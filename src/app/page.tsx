@@ -23,7 +23,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold mb-4">引越しを、もっとシンプルに</h1>
         <p className="text-lg">SyncWorksは、引越しのマッチングを通じて、スムーズな住まいの移転をサポートします。</p>
         <a
-          href="/form"
+          href="/form/step1"
           className="inline-block bg-white text-blue-600 font-semibold py-2 px-6 rounded shadow hover:bg-gray-100 transition"
         >
           無料見積もり申し込み

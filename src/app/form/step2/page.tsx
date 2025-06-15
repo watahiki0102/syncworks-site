@@ -1,0 +1,86 @@
+// ✅ Step2: 荷物情報ページ
+
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function Step2FormPage() {
+  const { register, handleSubmit, setValue, watch } = useForm();
+  const router = useRouter();
+
+  const onSubmit = (data: any) => {
+    console.log(data);
+    router.push('/form/step3');
+  };
+
+  const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
+  const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
+  const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
+
+  const items = [
+    { category: "ベッド・寝具", data: ["🛏️ シングルベッド", "🛏️ セミダブルベッド", "🛏️ ダブルベッド", "🛏️‍🛏️ 2段ベッド"] },
+    { category: "ソファ", data: ["🛋️ 1人掛けソファ", "🛋️ 2人掛けソファ", "🛋️ 3人掛けソファ"] },
+    { category: "本棚・家具", data: ["🗄 タンス", "📚 本棚", "🍽 食器棚", "🖥 テレビ台", "🎽 衣装ケース"] },
+    { category: "テーブル・机類", data: ["🍴 ダイニングテーブル", "🛋 リビングテーブル", "🪵 こたつ", "💄 ドレッサー", "👕 衣類ラック"] },
+    { category: "家電", data: ["🧺 洗濯機（縦型）", "🧺 洗濯機（ドラム式）", "🧊 冷蔵庫（小型）", "🧊 冷蔵庫（大型）", "📺 テレビ（40インチ未満）", "📺 テレビ（40インチ以上）", "💻 パソコン", "🍱 電子レンジ", "🍚 炊飯器", "🔥 ストーブ・ヒーター", "❄️ エアコン"] },
+    { category: "段ボール目安", data: [
+    "🏠 10箱未満（荷物が少ない / ほぼ家具なし）",
+    "🏠 10〜15箱（1R / 1K の目安）",
+    "🏠 20〜30箱（1LDK / 2K の目安）",
+    "🏠 30〜50箱（2LDK / 3K の目安）",
+    "🏠 50箱以上（3LDK / 4K以上の目安）"
+  ] },
+    { category: "その他", data: ["🚲 自転車", "🏍 バイク", "🎹 ピアノ", "🪴 観葉植物", "🧳 金庫", "🐠 水槽"] }
+  ];
+
+  return (
+    <main className="bg-gray-50 min-h-screen py-10 px-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
+        <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
+        <p className="text-center text-sm text-gray-500">必要なものをすべて入力してください（0でもOK）</p>
+
+        {items.map(({ category, data }) => (
+          <section key={category} className={sectionStyle}>
+            <h2 className="text-lg font-semibold mb-4">🗂 {category}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.map((item) => (
+                <div key={item} className="flex items-center justify-between">
+                  <label className="flex-1 mr-4">{item}</label>
+                  <div className="flex items-center space-x-2">
+                    <button type="button" onClick={() => {
+                      const current = watch(`items.${item}`) || 0;
+                      setValue(`items.${item}`, Math.max(0, current - 1));
+                    }} className="px-2 py-1 bg-gray-200 rounded">−</button>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register(`items.${item}`)}
+                      className="w-16 text-center border border-gray-300 rounded"
+                      defaultValue={0}
+                    />
+                    <button type="button" onClick={() => {
+                      const current = watch(`items.${item}`) || 0;
+                      setValue(`items.${item}`, current + 1);
+                    }} className="px-2 py-1 bg-green-500 text-white rounded">＋</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+
+        <section className={sectionStyle}>
+          <label className={labelStyle}>📝 その他の荷物・補足があれば記入</label>
+          <textarea rows={3} {...register("itemsRemarks")} className={inputStyle} placeholder="例：分解が必要なベッドあり、大型スピーカー×2など" />
+        </section>
+
+        <div className="flex justify-between">
+          <button type="button" onClick={() => router.back()} className="bg-gray-400 text-white font-semibold py-2 px-6 rounded hover:bg-gray-500">戻る</button>
+          <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700">次へ（最終ページへ）</button>
+        </div>
+      </form>
+    </main>
+  );
+}
