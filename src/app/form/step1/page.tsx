@@ -35,7 +35,7 @@ export default function Step1FormPage() {
         setValue(key, value);
       });
     }
-  }, [setValue]);  
+  }, [setValue]);
 
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
@@ -129,20 +129,30 @@ export default function Step1FormPage() {
               </div>
             </div>
 
-            {/* 電話番号 */}
+            {/* 携帯番号 */}
             <div>
-              <label className={labelStyle}>📞 電話番号（ハイフンなし）<span className="text-red-600">＊</span></label>
+              <label className={labelStyle}>📞 携帯番号（ハイフンなし）<span className="text-red-600">＊</span></label>
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onInput={(e) => {
+                  const input = e.target as HTMLInputElement;
+                  input.value = input.value.replace(/[^0-9]/g, '');
+                }}
                 {...register("phone", {
                   required: true,
-                  pattern: /^[0-9]{10,11}$/
+                  pattern: /^[0-9]{11}$/
                 })}
                 className={`${inputStyle} border ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：08012345678"
               />
-              {errors.phone?.type === "required" && <p className="text-red-500 text-sm mt-1">※ 電話番号は必須です</p>}
-              {errors.phone?.type === "pattern" && <p className="text-red-500 text-sm mt-1">※ 電話番号は10〜11桁の数字で入力してください</p>}
+              {errors.phone?.type === "required" && (
+                <p className="text-red-500 text-sm mt-1">※ 電話番号は必須です</p>
+              )}
+              {errors.phone?.type === "pattern" && (
+                <p className="text-red-500 text-sm mt-1">※ 電話番号は11桁の数字で入力してください</p>
+              )}
             </div>
 
             {/* メール */}
@@ -247,10 +257,9 @@ export default function Step1FormPage() {
                   <label className={labelStyle}>住宅タイプ <span className="text-red-600">＊</span></label>
                   <div className={`space-y-1 p-2 rounded ${residenceTypeError ? 'border border-red-500' : ''}`}>
                     {[
-                      "アパート・マンション（エレベーターあり）",
-                      "アパート・マンション（エレベーターなし）",
-                      "一軒家",
-                      "その他"
+                      "アパート・マンション（エレベーター利用可）",
+                      "アパート・マンション（エレベーター利用不可）",
+                      "一軒家"
                     ].map((type) => (
                       <label key={type} className="block">
                         <input
@@ -283,7 +292,7 @@ export default function Step1FormPage() {
                     className={`${inputStyle} border ${floorError ? 'border-red-500' : 'border-gray-300'}`}
                   >
                     <option value="">選択してください</option>
-                    {[...Array(30)].map((_, i) => (
+                    {[...Array(50)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}階</option>
                     ))}
                   </select>
