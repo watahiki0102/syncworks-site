@@ -22,6 +22,12 @@ export default function Home() {
       <section className="bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white py-24 text-center">
         <h1 className="text-4xl font-bold mb-4">引越しを、もっとシンプルに</h1>
         <p className="text-lg">SyncWorksは、引越しのマッチングを通じて、スムーズな住まいの移転をサポートします。</p>
+        <a
+          href="/form"
+          className="inline-block bg-white text-blue-600 font-semibold py-2 px-6 rounded shadow hover:bg-gray-100 transition"
+        >
+          無料見積もり申し込み
+        </a>
       </section>
 
       {/* SyncMoving概要セクション */}
