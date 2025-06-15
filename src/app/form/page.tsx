@@ -49,12 +49,12 @@ export default function FullFormPage() {
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto  text-gray-800 space-y-10">
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
         <div className='text-red-900'>　　　　* 必須項目</div>
         {/* 👤 基本情報 */}
         <section className={sectionStyle}>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">👤 基本情報（）</h2>
+          <h2 className="text-xl font-semibold mb-4">👤 基本情報（）</h2>
           <div className="space-y-4">
             <div>
               <label className={labelStyle}>🏠 引越タイプ *</label>
