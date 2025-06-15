@@ -5,10 +5,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-// @ts-ignore
-import Kuroshiro from 'kuroshiro';
-// @ts-ignore
-import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
 export default function Step1FormPage() {
   const {
@@ -22,8 +18,12 @@ export default function Step1FormPage() {
   const router = useRouter();
 
   const onSubmit = (data: any) => {
-    console.log(data);
-    router.push('/form/step2');
+    try {
+      console.log("✅ フォーム送信データ:", data);
+      router.push('/form/step2');
+    } catch (e) {
+      console.error("送信エラー:", e);
+    }
   };
 
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
@@ -31,28 +31,6 @@ export default function Step1FormPage() {
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
   const fromOther = watch("fromResidenceType") === "その他";
   const toOther = watch("toResidenceType") === "その他";
-
-  const [kuroshiro, setKuroshiro] = useState<any>(null);
-
-  useEffect(() => {
-    const initKuroshiro = async () => {
-      const kuro = new Kuroshiro();
-      await kuro.init(new KuromojiAnalyzer());
-      setKuroshiro(kuro);
-    };
-    initKuroshiro();
-  }, []);
-
-  const autoFillKana = async (field: 'lastName' | 'firstName', value: string) => {
-    if (!kuroshiro || typeof value !== 'string') return;
-    try {
-      const kana = await kuroshiro.convert(value, { to: 'katakana', mode: 'okuri' });
-      if (field === 'lastName') setValue('lastNameKana', kana);
-      if (field === 'firstName') setValue('firstNameKana', kana);
-    } catch (error) {
-      console.error('Kana conversion error:', error);
-    }
-  };
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
@@ -75,11 +53,11 @@ export default function Step1FormPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelStyle}>📛 姓</label>
-                <input type="text" {...register('lastName')} className={inputStyle} onBlur={(e) => autoFillKana('lastName', e.target.value)} placeholder="漢字で入力してください" />
+                <input type="text" {...register('lastName')} className={inputStyle}  />
               </div>
               <div>
                 <label className={labelStyle}>📛 名（漢字）<span className="text-red-600">＊</span></label>
-                <input type="text" {...register('firstName')} className={inputStyle} onBlur={(e) => autoFillKana('firstName', e.target.value)} />
+                <input type="text" {...register('firstName')} className={inputStyle} />
               </div>
               <div>
                 <label className={labelStyle}>📛 セイ（カタカナ）<span className="text-red-600">＊</span></label>
