@@ -11,9 +11,23 @@ export default function Step2FormPage() {
   const router = useRouter();
 
   const onSubmit = (data: any) => {
-    console.log(data);
-    router.push('/form/step3');
+    try {
+      localStorage.setItem('formStep2', JSON.stringify(data));
+      router.push('/form/step3');
+    } catch (e) {
+      console.error("Step2送信エラー:", e);
+    }
   };
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('formStep2');
+    if (saved) {
+      const values = JSON.parse(saved);
+      Object.entries(values).forEach(([key, value]) => {
+        setValue(key, value);
+      });
+    }
+  }, [setValue]);  
 
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
@@ -25,13 +39,15 @@ export default function Step2FormPage() {
     { category: "本棚・家具", data: ["🗄 タンス", "📚 本棚", "🍽 食器棚", "🖥 テレビ台", "🎽 衣装ケース"] },
     { category: "テーブル・机類", data: ["🍴 ダイニングテーブル", "🛋 リビングテーブル", "🪵 こたつ", "💄 ドレッサー", "👕 衣類ラック"] },
     { category: "家電", data: ["🧺 洗濯機（縦型）", "🧺 洗濯機（ドラム式）", "🧊 冷蔵庫（小型）", "🧊 冷蔵庫（大型）", "📺 テレビ（40インチ未満）", "📺 テレビ（40インチ以上）", "💻 パソコン", "🍱 電子レンジ", "🍚 炊飯器", "🔥 ストーブ・ヒーター", "❄️ エアコン"] },
-    { category: "段ボール目安", data: [
-    "🏠 10箱未満（荷物が少ない / ほぼ家具なし）",
-    "🏠 10〜15箱（1R / 1K の目安）",
-    "🏠 20〜30箱（1LDK / 2K の目安）",
-    "🏠 30〜50箱（2LDK / 3K の目安）",
-    "🏠 50箱以上（3LDK / 4K以上の目安）"
-  ] },
+    {
+      category: "段ボール目安", data: [
+        "🏠 10箱未満（荷物が少ない / ほぼ家具なし）",
+        "🏠 10〜15箱（1R / 1K の目安）",
+        "🏠 20〜30箱（1LDK / 2K の目安）",
+        "🏠 30〜50箱（2LDK / 3K の目安）",
+        "🏠 50箱以上（3LDK / 4K以上の目安）"
+      ]
+    },
     { category: "その他", data: ["🚲 自転車", "🏍 バイク", "🎹 ピアノ", "🪴 観葉植物", "🧳 金庫", "🐠 水槽"] }
   ];
 
@@ -49,10 +65,18 @@ export default function Step2FormPage() {
                 <div key={item} className="flex items-center justify-between">
                   <label className="flex-1 mr-4">{item}</label>
                   <div className="flex items-center space-x-2">
-                    <button type="button" onClick={() => {
-                      const current = watch(`items.${item}`) || 0;
-                      setValue(`items.${item}`, Math.max(0, current - 1));
-                    }} className="px-2 py-1 bg-gray-200 rounded">−</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentRaw = watch(`items.${item}`);
+                        const current = Number(currentRaw) || 0;
+                        setValue(`items.${item}`, Math.max(0, current - 1));
+                      }}
+                      className="px-2 py-1 bg-gray-200 rounded"
+                    >
+                      −
+                    </button>
+
                     <input
                       type="number"
                       min="0"
@@ -60,10 +84,18 @@ export default function Step2FormPage() {
                       className="w-16 text-center border border-gray-300 rounded"
                       defaultValue={0}
                     />
-                    <button type="button" onClick={() => {
-                      const current = watch(`items.${item}`) || 0;
-                      setValue(`items.${item}`, current + 1);
-                    }} className="px-2 py-1 bg-green-500 text-white rounded">＋</button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentRaw = watch(`items.${item}`);
+                        const current = Number(currentRaw) || 0;
+                        setValue(`items.${item}`, current + 1);
+                      }}
+                      className="px-2 py-1 bg-green-500 text-white rounded"
+                    >
+                      ＋
+                    </button>
                   </div>
                 </div>
               ))}

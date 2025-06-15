@@ -4,15 +4,32 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Step3FormPage() {
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit,setValue } = useForm();
   const router = useRouter();
 
   const onSubmit = (data: any) => {
-    console.log(data);
-    alert('送信されました（仮処理）');
+    try {
+      localStorage.setItem('formStep3', JSON.stringify(data));
+      console.log(data);
+      alert('送信されました（仮処理）');
+    } catch (e) {
+      console.error("Step3送信エラー:", e);
+      alert('送信時にエラーが発生しました');
+    }
   };
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('formStep3');
+    if (saved) {
+      const values = JSON.parse(saved);
+      Object.entries(values).forEach(([key, value]) => {
+        setValue(key, value);
+      });
+    }
+  }, [setValue]);  
 
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
