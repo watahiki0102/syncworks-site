@@ -42,6 +42,30 @@ export default function Step1FormPage() {
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
   const fromOther = watch("fromResidenceType") === "その他";
   const toOther = watch("toResidenceType") === "その他";
+  const fromPostalCode = watch("fromPostalCode");
+  const toPostalCode = watch("toPostalCode");
+
+  useEffect(() => {
+    const fetchAddress = async (zipcode: string, prefix: string) => {
+      try {
+        const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          const { address1, address2, address3 } = data.results[0];
+          setValue(`${prefix}Address`, `${address1}${address2}${address3}`);
+        }
+      } catch (e) {
+        console.error('郵便番号から住所の取得に失敗しました', e);
+      }
+    };
+
+    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode)) {
+      fetchAddress(fromPostalCode, 'from');
+    }
+    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode)) {
+      fetchAddress(toPostalCode, 'to');
+    }
+  }, [fromPostalCode, toPostalCode, setValue]);
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
@@ -233,23 +257,49 @@ export default function Step1FormPage() {
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📍 引越し元・引越し先の情報</h2>
           {[{ label: "引越し元", prefix: "from" }, { label: "引越し先", prefix: "to" }].map(({ label, prefix }) => {
+            const postalError = errors[`${prefix}PostalCode`];
             const addressError = errors[`${prefix}Address`];
             const residenceTypeError = errors[`${prefix}ResidenceType`];
             const floorError = errors[`${prefix}Floor`];
             return (
               <div key={prefix} className="mb-6">
                 <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
+                {/* 郵便番号（任意） */}
+                <div className="mb-4">
+                  <label className={labelStyle}>郵便番号（任意）</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    onInput={(e) => {
+                      const input = e.target as HTMLInputElement;
+                      input.value = input.value.replace(/[^0-9]/g, '');
+                    }}
+                    {...register(`${prefix}PostalCode`, { pattern: /^[0-9]{7}$/ })}
+                    className={`${inputStyle} border ${postalError ? 'border-red-500' : 'border-gray-300'}`}
+                    placeholder="例：1234567"
+                  />
+                  {postalError?.type === 'pattern' && (
+                    <p className="text-red-500 text-sm mt-1">※ 郵便番号は7桁の数字で入力してください</p>
+                  )}
+                </div>
                 {/* 住所 */}
                 <div className="mb-4">
                   <label className={labelStyle}>住所 <span className="text-red-600">＊</span></label>
                   <p className="text-sm text-gray-500 mb-1">都道府県、市区町村まででも可</p>
                   <input
                     type="text"
-                    {...register(`${prefix}Address`, { required: true })}
+                    {...register(`${prefix}Address`, {
+                      required: true,
+                      validate: (v) => /[市区町村郡]/.test(v)
+                    })}
                     className={`${inputStyle} border ${addressError ? 'border-red-500' : 'border-gray-300'}`}
                   />
-                  {addressError && (
+                  {addressError?.type === 'required' && (
                     <p className="text-red-500 text-sm mt-1">※ 住所は必須です</p>
+                  )}
+                  {addressError?.type === 'validate' && (
+                    <p className="text-red-500 text-sm mt-1">※ 市区町村名を含めて入力してください</p>
                   )}
                 </div>
                 {/* 住宅タイプ */}
