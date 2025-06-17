@@ -204,7 +204,6 @@ export default function Step2FormPage() {
           <p className="text-sm text-gray-500 mb-2">※おおまかな荷物量の目安として1つ選択してください</p>
           <div className="space-y-3">
             {[
-              "📦 荷物なし（家具・家電なし）",
               "🏠 10箱未満（荷物が少ない）",
               "🏠 10〜15箱（1R / 1K の目安）",
               "🏠 20〜30箱（1LDK / 2K の目安）",
@@ -221,6 +220,32 @@ export default function Step2FormPage() {
                 <span>{item}</span>
               </label>
             ))}
+          </div>
+        </section>
+
+        <section className={sectionStyle}>
+          <h2 className="text-lg font-semibold mb-4">📦 段ボール・ガムテープ準備</h2>
+          <p className="text-sm text-gray-500 mb-2">※どちらかを選択してください</p>
+          <div className="space-y-3">
+            <label className="flex items-center space-x-3">
+              <input
+                type="radio"
+                value="引越し業者に手配してほしい"
+                {...register("items.boxSupply")}
+                className="form-radio text-blue-600"
+                defaultChecked
+              />
+              <span>📦 引越し業者に手配してほしい</span>
+            </label>
+            <label className="flex items-center space-x-3">
+              <input
+                type="radio"
+                value="自分で準備する"
+                {...register("items.boxSupply")}
+                className="form-radio text-blue-600"
+              />
+              <span>🙋 自分で準備する</span>
+            </label>
           </div>
         </section>
 
