@@ -1,4 +1,5 @@
 // ✅ Step3: 作業オプション＋備考＋確認送信ページ
+// セクションは：作業オプション / 備考入力 / 最終確認
 
 'use client';
 
@@ -21,6 +22,7 @@ export default function Step3FormPage() {
     }
   };
   
+  // ローカルストレージから入力内容を復元
   useEffect(() => {
     const saved = localStorage.getItem('formStep3');
     if (saved) {
@@ -35,6 +37,7 @@ export default function Step3FormPage() {
   const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
 
+  // 選択できる作業オプション
   const options = [
     "❄️ エアコン（本体＋室外機）取り外し",
     "🧺 洗濯機取り外し",

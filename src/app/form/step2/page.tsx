@@ -1,4 +1,5 @@
 // ✅ Step2: 荷物情報ページ
+// セクションは：家具・家電入力 / 段ボール目安 / 段ボール・ガムテープ準備 / その他備考
 
 'use client';
 
@@ -19,6 +20,7 @@ export default function Step2FormPage() {
     }
   };
 
+  // ローカルストレージに保存された入力内容を復元
   useEffect(() => {
     const saved = localStorage.getItem('formStep2');
     if (saved) {
@@ -32,6 +34,7 @@ export default function Step2FormPage() {
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
 
+  // 荷物カテゴリと選択肢
   const items = [
     {
       category: "ベッド",
@@ -153,6 +156,7 @@ export default function Step2FormPage() {
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
         <p className="text-center text-sm text-gray-500">必要なものをすべて入力してください（0でもOK）</p>
 
+        {/* 家具・家電の数量入力 */}
         {items.map(({ category, data }) => (
           <section key={category} className={sectionStyle}>
             <h2 className="text-lg font-semibold mb-4">🗂 {category}</h2>
@@ -199,6 +203,7 @@ export default function Step2FormPage() {
           </section>
         ))}
 
+        {/* 段ボールの数の目安 */}
         <section className={sectionStyle}>
           <h2 className="text-lg font-semibold mb-4">📦 段ボール目安</h2>
           <p className="text-sm text-gray-500 mb-2">※おおまかな荷物量の目安として1つ選択してください</p>
@@ -223,6 +228,7 @@ export default function Step2FormPage() {
           </div>
         </section>
 
+        {/* 段ボールやガムテープの準備方法 */}
         <section className={sectionStyle}>
           <h2 className="text-lg font-semibold mb-4">📦 段ボール・ガムテープ準備</h2>
           <p className="text-sm text-gray-500 mb-2">※どちらかを選択してください</p>
@@ -249,6 +255,7 @@ export default function Step2FormPage() {
           </div>
         </section>
 
+        {/* その他の荷物に関する備考 */}
         <section className={sectionStyle}>
           <label className="flex-1 mr-4">📝 その他の荷物・補足があれば記入</label>
           <textarea rows={3} {...register("itemsRemarks")} className={inputStyle} placeholder="例：分解が必要なベッドあり、大型スピーカー×2など" />

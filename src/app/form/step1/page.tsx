@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 
@@ -27,6 +27,7 @@ export default function Step1FormPage() {
     }
   };
 
+  // ローカルストレージから入力内容を復元
   useEffect(() => {
     const saved = localStorage.getItem('formStep1');
     if (saved) {
@@ -45,6 +46,7 @@ export default function Step1FormPage() {
   const fromPostalCode = watch("fromPostalCode");
   const toPostalCode = watch("toPostalCode");
 
+  // 郵便番号入力時に住所を自動取得
   useEffect(() => {
     const fetchAddress = async (zipcode: string, prefix: string) => {
       try {
