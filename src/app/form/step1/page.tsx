@@ -135,21 +135,29 @@ export default function Step1FormPage() {
                 <label className={labelStyle}>📛 セイ（カタカナ）<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
-                  {...register('lastNameKana', { required: true })}
+                  {...register('lastNameKana', {
+                    required: true,
+                    pattern: /^[ァ-ヶー　]+$/u
+                  })}
                   className={`${inputStyle} border ${errors.lastNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
                 />
-                {errors.lastNameKana && <p className="text-red-500 text-sm mt-1">※ セイは必須です</p>}
+                {errors.lastNameKana?.type === 'required' && <p className="text-red-500 text-sm mt-1">※ セイは必須です</p>}
+                {errors.lastNameKana?.type === 'pattern' && <p className="text-red-500 text-sm mt-1">※ カタカナで入力してください</p>}
               </div>
               <div>
                 <label className={labelStyle}>📛 メイ（カタカナ）<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
-                  {...register('firstNameKana', { required: true })}
+                  {...register('firstNameKana', {
+                    required: true,
+                    pattern: /^[ァ-ヶー　]+$/u
+                  })}
                   className={`${inputStyle} border ${errors.firstNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
                 />
-                {errors.firstNameKana && <p className="text-red-500 text-sm mt-1">※ メイは必須です</p>}
+                {errors.firstNameKana?.type === 'required' && <p className="text-red-500 text-sm mt-1">※ メイは必須です</p>}
+                {errors.firstNameKana?.type === 'pattern' && <p className="text-red-500 text-sm mt-1">※ カタカナで入力してください</p>}
               </div>
             </div>
 
@@ -210,7 +218,7 @@ export default function Step1FormPage() {
               const timeSelectClass = `${inputStyle} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`;
 
               return (
-                <div key={n} className="grid grid-cols-2 gap-4"> {/* ← 常時2列に変更 */}
+                <div key={n} className="grid grid-cols-2 gap-4"> {/* 常時2列 */}
                   {/* 日付 */}
                   <div>
                     <label className={labelStyle}>
@@ -225,11 +233,10 @@ export default function Step1FormPage() {
                       <p className="text-red-500 text-sm mt-1">※ 第{n}希望日は必須です</p>
                     )}
                   </div>
-
                   {/* 時間帯 */}
                   <div>
                     <label className={labelStyle}>
-                      ⏰ 希望時間帯{isRequired && <span className="text-red-600">＊</span>}
+                      ⏰ 時間帯{isRequired && <span className="text-red-600">＊</span>}
                     </label>
                     <select
                       {...register(`timeSlot${n}`, { required: isRequired })}
@@ -237,14 +244,14 @@ export default function Step1FormPage() {
                     >
                       <option value="">選択してください</option>
                       <option value="指定なし">指定なし</option>
-                      <option value="指定なし">早朝以外</option>
-                      <option value="指定なし">夜間以外</option>
-                      <option value="指定なし">早朝・夜間以外</option>
                       <option value="早朝">早朝（6〜9時）</option>
                       <option value="午前">午前（9〜12時）</option>
                       <option value="午後">午後（12〜15時）</option>
                       <option value="夕方">夕方（15〜18時）</option>
                       <option value="夜間">夜間（18〜21時）</option>
+                      <option value="指定なし">早朝以外</option>
+                      <option value="指定なし">夜間以外</option>
+                      <option value="指定なし">早朝・夜間以外</option>
                     </select>
                     {timeSlotError && (
                       <p className="text-red-500 text-sm mt-1">※ 第{n}希望時間帯は必須です</p>
