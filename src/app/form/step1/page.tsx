@@ -208,7 +208,7 @@ export default function Step1FormPage() {
               {errors.email?.type === "required" && (
                 <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>
               )}
-              {errors.email?.type === "pattern" && (
+              {typeof errors.email?.message === "string" && (
                 <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
               )}
             </div>
