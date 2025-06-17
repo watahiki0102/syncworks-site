@@ -286,7 +286,7 @@ export default function Step1FormPage() {
                 <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
                 {/* 郵便番号 */}
                 <div className="mb-4">
-                  <label className={labelStyle}>郵便番号 <span className="text-red-600">＊</span></label>
+                  <label className={labelStyle}>郵便番号 {prefix === "to" && <span className="text-red-600">＊</span>}</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -295,7 +295,13 @@ export default function Step1FormPage() {
                       const input = e.target as HTMLInputElement;
                       input.value = input.value.replace(/[^0-9]/g, '');
                     }}
-                    {...register(`${prefix}PostalCode`, { pattern: /^[0-9]{7}$/ })}
+                    {...register(`${prefix}PostalCode`, {
+                      required: prefix === "to" ? "※ 郵便番号は必須です" : false,
+                      pattern: {
+                        value: /^[0-9]{7}$/,
+                        message: "※ 郵便番号は7桁の数字で入力してください"
+                      }
+                    })}
                     className={`${inputStyle} border ${postalError ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="例：1234567"
                   />
