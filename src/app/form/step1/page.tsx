@@ -229,7 +229,7 @@ export default function Step1FormPage() {
                   {/* 時間帯 */}
                   <div>
                     <label className={labelStyle}>
-                      ⏰ 第{n}希望時間帯{isRequired && <span className="text-red-600">＊</span>}
+                      ⏰ 希望時間帯{isRequired && <span className="text-red-600">＊</span>}
                     </label>
                     <select
                       {...register(`timeSlot${n}`, { required: isRequired })}
@@ -237,6 +237,9 @@ export default function Step1FormPage() {
                     >
                       <option value="">選択してください</option>
                       <option value="指定なし">指定なし</option>
+                      <option value="指定なし">早朝以外</option>
+                      <option value="指定なし">夜間以外</option>
+                      <option value="指定なし">早朝・夜間以外</option>
                       <option value="早朝">早朝（6〜9時）</option>
                       <option value="午前">午前（9〜12時）</option>
                       <option value="午後">午後（12〜15時）</option>
@@ -264,9 +267,9 @@ export default function Step1FormPage() {
             return (
               <div key={prefix} className="mb-6">
                 <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
-                {/* 郵便番号（任意） */}
+                {/* 郵便番号 */}
                 <div className="mb-4">
-                  <label className={labelStyle}>郵便番号（任意）</label>
+                  <label className={labelStyle}>郵便番号 <span className="text-red-600">＊</span></label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -279,6 +282,9 @@ export default function Step1FormPage() {
                     className={`${inputStyle} border ${postalError ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="例：1234567"
                   />
+                  {addressError?.type === 'required' && (
+                    <p className="text-red-500 text-sm mt-1">※ 郵便番号は必須です</p>
+                  )}
                   {postalError?.type === 'pattern' && (
                     <p className="text-red-500 text-sm mt-1">※ 郵便番号は7桁の数字で入力してください</p>
                   )}
