@@ -189,18 +189,28 @@ export default function Step1FormPage() {
 
             {/* メール */}
             <div>
-              <label className={labelStyle}>📧 メールアドレス <span className="text-red-600">＊</span></label>
+              <label className={labelStyle}>
+                📧 メールアドレス <span className="text-red-600">＊</span>
+              </label>
               <input
-                type="email"
+                type="text"
+                autoComplete="email"
                 {...register("email", {
                   required: true,
-                  pattern: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/
+                  pattern: {
+                    value: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
+                    message: "※ 正しいメールアドレス形式で入力してください"
+                  }
                 })}
                 className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：example@gmail.com"
               />
-              {errors.email?.type === "required" && <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>}
-              {errors.email?.type === "pattern" && <p className="text-red-500 text-sm mt-1">※ 正しいメールアドレス形式で入力してください</p>}
+              {errors.email?.type === "required" && (
+                <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>
+              )}
+              {errors.email?.type === "pattern" && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+              )}
             </div>
           </div>
         </section>

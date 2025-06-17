@@ -36,7 +36,7 @@ export default function Step3FormPage() {
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
 
   const options = [
-    "❄️ エアコン取り外し",
+    "❄️ エアコン（本体＋室外機）取り外し",
     "🧺 洗濯機取り外し",
     "💡 照明・テレビ配線取り外し",
     "🪑 家具・家電の分解・組み立て",
