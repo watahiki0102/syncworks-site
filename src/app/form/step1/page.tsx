@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 
@@ -16,6 +16,32 @@ export default function Step1FormPage() {
   } = useForm();
 
   const router = useRouter();
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const commonDomains = [
+    'gmail.com',
+    'yahoo.co.jp',
+    'icloud.com',
+    'outlook.com',
+    'hotmail.com'
+  ];
+
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) {
+      setEmailSuggestions([]);
+      return;
+    }
+    if (value.includes('@')) {
+      const [local, partial] = value.split('@');
+      const filtered = commonDomains
+        .filter((d) => d.startsWith(partial))
+        .map((d) => `${local}@${d}`);
+      setEmailSuggestions(filtered);
+    } else {
+      const suggestions = commonDomains.map((d) => `${value}@${d}`);
+      setEmailSuggestions(suggestions);
+    }
+  };
 
   const onSubmit = (data: any) => {
     try {
@@ -197,6 +223,7 @@ export default function Step1FormPage() {
               <input
                 type="text"
                 autoComplete="email"
+                list="email-suggest-list"
                 {...register("email", {
                   required: true,
                   pattern: {
@@ -204,9 +231,17 @@ export default function Step1FormPage() {
                     message: "※ 正しいメールアドレス形式で入力してください"
                   }
                 })}
+                onInput={(e) => {
+                  handleEmailInput(e as React.ChangeEvent<HTMLInputElement>);
+                }}
                 className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：example@gmail.com"
               />
+              <datalist id="email-suggest-list">
+                {emailSuggestions.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
               {errors.email?.type === "required" && (
                 <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>
               )}
