@@ -34,6 +34,19 @@ export default function Step2FormPage() {
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
 
+  // 5秒ごとに現在の入力内容をローカルストレージへ保存
+  useEffect(() => {
+    const id = setInterval(() => {
+      try {
+        const data = watch();
+        localStorage.setItem('formStep2', JSON.stringify(data));
+      } catch (e) {
+        console.error('自動保存エラー:', e);
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [watch]);
+
   // 荷物カテゴリと選択肢
   const items = [
     {
