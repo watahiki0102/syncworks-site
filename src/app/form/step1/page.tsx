@@ -459,6 +459,7 @@ export default function Step1FormPage() {
                     {[...Array(50)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>{i + 1}階</option>
                     ))}
+                    <option value="51以上">51階以上</option>
                   </select>
                   {floorError && (
                     <p className="text-red-500 text-sm mt-1">※ 階数を選択してください</p>
