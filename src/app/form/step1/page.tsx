@@ -89,17 +89,23 @@ export default function Step1FormPage() {
   useEffect(() => {
     const convertNames = async () => {
       if (!kuroshiro) return;
-      if (lastName) {
+  
+      const currentLastKana = watch('lastNameKana');
+      const currentFirstKana = watch('firstNameKana');
+  
+      if (lastName && !currentLastKana) {
         const kana = await kuroshiro.convert(lastName, { to: 'katakana' });
         setValue('lastNameKana', kana.replace(/\s/g, ''));
       }
-      if (firstName) {
+  
+      if (firstName && !currentFirstKana) {
         const kana = await kuroshiro.convert(firstName, { to: 'katakana' });
         setValue('firstNameKana', kana.replace(/\s/g, ''));
       }
     };
+  
     convertNames();
-  }, [lastName, firstName, kuroshiro, setValue]);
+  }, [lastName, firstName, kuroshiro, setValue]);  
 
   // 5秒ごとに現在の入力内容をローカルストレージへ保存
   useEffect(() => {
