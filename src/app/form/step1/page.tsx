@@ -2,18 +2,32 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import Kuroshiro from 'kuroshiro';
+import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
 export default function Step1FormPage() {
-  const {
+  const { 
     register,
     handleSubmit,
     formState: { errors },
     watch,
     setValue
   } = useForm();
+
+  const kuroshiroRef = useRef<Kuroshiro>();
+
+  // Kuroshiro初期化
+  useEffect(() => {
+    const init = async () => {
+      const kuroshiro = new Kuroshiro();
+      await kuroshiro.init(new KuromojiAnalyzer());
+      kuroshiroRef.current = kuroshiro;
+    };
+    init();
+  }, []);
 
   const router = useRouter();
 
@@ -45,6 +59,29 @@ export default function Step1FormPage() {
   const toOther = watch("toResidenceType") === "その他";
   const fromPostalCode = watch("fromPostalCode");
   const toPostalCode = watch("toPostalCode");
+  const lastName = watch("lastName");
+  const firstName = watch("firstName");
+
+  // 漢字氏名をカタカナに自動変換
+  useEffect(() => {
+    const convert = async () => {
+      if (kuroshiroRef.current && lastName) {
+        const kana = await kuroshiroRef.current.convert(lastName, { to: 'katakana' });
+        setValue('lastNameKana', kana.replace(/\s/g, ''));
+      }
+    };
+    convert();
+  }, [lastName, setValue]);
+
+  useEffect(() => {
+    const convert = async () => {
+      if (kuroshiroRef.current && firstName) {
+        const kana = await kuroshiroRef.current.convert(firstName, { to: 'katakana' });
+        setValue('firstNameKana', kana.replace(/\s/g, ''));
+      }
+    };
+    convert();
+  }, [firstName, setValue]);
 
   // 郵便番号入力時に住所を自動取得
   useEffect(() => {
