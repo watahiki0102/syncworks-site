@@ -381,6 +381,11 @@ export default function Step1FormPage() {
             const addressError = errors[`${prefix}Address`];
             const residenceTypeError = errors[`${prefix}ResidenceType`];
             const floorError = errors[`${prefix}Floor`];
+            // 住宅タイプを取得
+            const fromResidenceType = watch('fromResidenceType');
+            const toResidenceType = watch('toResidenceType');
+            // 各ループ内で判定
+            const isHouse = (prefix === "from" ? fromResidenceType : toResidenceType) === "一軒家";
             return (
               <div key={prefix} className="mb-6">
                 <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
@@ -466,6 +471,9 @@ export default function Step1FormPage() {
                 {/* 階数 */}
                 <div>
                   <label className={labelStyle}>階数 <span className="text-red-600">＊</span></label>
+                  {((prefix === "from" ? fromResidenceType : toResidenceType) === "一軒家") && (
+                    <p className="text-sm text-gray-500 mb-1">※ 一軒家の場合は建物全体の階数を入力してください</p>
+                  )}
                   <select
                     {...register(`${prefix}Floor`, { required: true })}
                     className={`${inputStyle} border ${floorError ? 'border-red-500' : 'border-gray-300'}`}
