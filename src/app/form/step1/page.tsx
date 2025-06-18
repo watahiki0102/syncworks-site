@@ -85,27 +85,40 @@ export default function Step1FormPage() {
   const toPostalCode = watch("toPostalCode");
   const lastName = watch('lastName');
   const firstName = watch('firstName');
+  const lastNameKana = watch('lastNameKana');
+  const firstNameKana = watch('firstNameKana');
+  const [lastKanaEdited, setLastKanaEdited] = useState(false);
+  const [firstKanaEdited, setFirstKanaEdited] = useState(false);
+
+  useEffect(() => {
+    if (!lastNameKana) {
+      setLastKanaEdited(false);
+    }
+  }, [lastNameKana]);
+
+  useEffect(() => {
+    if (!firstNameKana) {
+      setFirstKanaEdited(false);
+    }
+  }, [firstNameKana]);
 
   useEffect(() => {
     const convertNames = async () => {
       if (!kuroshiro) return;
-  
-      const currentLastKana = watch('lastNameKana');
-      const currentFirstKana = watch('firstNameKana');
-  
-      if (lastName && !currentLastKana) {
+
+      if (lastName && !lastKanaEdited) {
         const kana = await kuroshiro.convert(lastName, { to: 'katakana' });
         setValue('lastNameKana', kana.replace(/\s/g, ''));
       }
-  
-      if (firstName && !currentFirstKana) {
+
+      if (firstName && !firstKanaEdited) {
         const kana = await kuroshiro.convert(firstName, { to: 'katakana' });
         setValue('firstNameKana', kana.replace(/\s/g, ''));
       }
     };
-  
+
     convertNames();
-  }, [lastName, firstName, kuroshiro, setValue]);  
+  }, [lastName, firstName, lastKanaEdited, firstKanaEdited, kuroshiro, setValue]);
 
   // 5秒ごとに現在の入力内容をローカルストレージへ保存
   useEffect(() => {
@@ -213,7 +226,8 @@ export default function Step1FormPage() {
                   type="text"
                   {...register('lastNameKana', {
                     required: true,
-                    pattern: /^[ァ-ヶー　]+$/u
+                    pattern: /^[ァ-ヶー　]+$/u,
+                    onChange: () => setLastKanaEdited(true)
                   })}
                   className={`${inputStyle} border ${errors.lastNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
@@ -227,7 +241,8 @@ export default function Step1FormPage() {
                   type="text"
                   {...register('firstNameKana', {
                     required: true,
-                    pattern: /^[ァ-ヶー　]+$/u
+                    pattern: /^[ァ-ヶー　]+$/u,
+                    onChange: () => setFirstKanaEdited(true)
                   })}
                   className={`${inputStyle} border ${errors.firstNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
