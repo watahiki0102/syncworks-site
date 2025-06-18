@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Step3FormPage() {
-  const { register, handleSubmit,setValue } = useForm();
+  const { register, handleSubmit,setValue, watch } = useForm();
   const router = useRouter();
 
   const onSubmit = (data: any) => {
@@ -36,6 +36,19 @@ export default function Step3FormPage() {
   const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
   const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
   const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
+
+  // 5秒ごとに現在の入力内容をローカルストレージへ保存
+  useEffect(() => {
+    const id = setInterval(() => {
+      try {
+        const data = watch();
+        localStorage.setItem('formStep3', JSON.stringify(data));
+      } catch (e) {
+        console.error('自動保存エラー:', e);
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [watch]);
 
   // 選択できる作業オプション
   const options = [

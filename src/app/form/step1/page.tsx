@@ -72,6 +72,19 @@ export default function Step1FormPage() {
   const fromPostalCode = watch("fromPostalCode");
   const toPostalCode = watch("toPostalCode");
 
+  // 5秒ごとに現在の入力内容をローカルストレージへ保存
+  useEffect(() => {
+    const id = setInterval(() => {
+      try {
+        const data = watch();
+        localStorage.setItem('formStep1', JSON.stringify(data));
+      } catch (e) {
+        console.error('自動保存エラー:', e);
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [watch]);
+
   // 郵便番号入力時に住所を自動取得
   useEffect(() => {
     const fetchAddress = async (zipcode: string, prefix: string) => {
