@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { Star } from 'lucide-react';
+import StarRating from '@/components/StarRating';
 import { useState, useRef, useEffect } from 'react';
 
 export default function VendorReviewsPage() {
@@ -67,37 +67,6 @@ export default function VendorReviewsPage() {
     const sortedReviews = vendorReview.reviews
         .slice()
         .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime());
-
-
-    // 星を表示するコンポーネント
-    const renderStars = (rating: number, size: number = 20) => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-            const fillPercentage = Math.min(Math.max(rating - i + 1, 0), 1) * 100;
-            stars.push(
-                <div key={i} className="relative inline-block">
-                    {/* 背景（空の星） */}
-                    <Star
-                        style={{ width: size, height: size }}
-                        className="text-gray-300"
-                    />
-                    {/* 前景（黄色の星） */}
-                    <Star
-                        style={{
-                            width: size,
-                            height: size,
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`
-                        }}
-                        className="text-yellow-500 fill-yellow-500"
-                    />
-                </div>
-            );
-        }
-        return <div className="flex items-center">{stars}</div>;
-    };
 
 
     const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);
@@ -178,7 +147,7 @@ export default function VendorReviewsPage() {
                                     {vendorReview.totalRating.toFixed(1)}
                                 </p>
                                 <div className="text-2xl">
-                                    {renderStars(vendorReview.totalRating, 32)}
+                                    <StarRating rating={vendorReview.totalRating} size={32} />
                                 </div>
                             </div>
 
