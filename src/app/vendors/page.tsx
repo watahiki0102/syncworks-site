@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import StarRating from '@/components/StarRating';
 
 // ダミーデータ
 const vendors = [
@@ -14,35 +14,6 @@ export default function VendorsPage() {
     // 評価の高い順（降順）で並べ替え
     const sortedVendors = vendors.slice().sort((a, b) => b.totalRating - a.totalRating);
 
-    // 星を表示するコンポーネント
-    const renderStars = (rating: number, size: number = 20) => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-            const fillPercentage = Math.min(Math.max(rating - i + 1, 0), 1) * 100;
-            stars.push(
-                <div key={i} className="relative inline-block">
-                    {/* 背景（空の星） */}
-                    <Star
-                        style={{ width: size, height: size }}
-                        className="text-gray-300"
-                    />
-                    {/* 前景（黄色の星） */}
-                    <Star
-                        style={{
-                            width: size,
-                            height: size,
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`
-                        }}
-                        className="text-yellow-500 fill-yellow-500"
-                    />
-                </div>
-            );
-        }
-        return <div className="flex items-center">{stars}</div>;
-    };
 
     return (
         <main className="bg-gray-50 text-gray-800 min-h-screen">
@@ -73,7 +44,7 @@ export default function VendorsPage() {
                                         <span className="text-xl font-bold text-gray-800">
                                             {vendor.totalRating.toFixed(1)}
                                         </span>
-                                        {renderStars(vendor.totalRating, 16)}
+                                        <StarRating rating={vendor.totalRating} size={16} />
                                     </div>
                                 </div>
                                 <div className="text-blue-500 text-sm hover:underline">詳細</div>
