@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 export default function Step2FormPage() {
   const { register, handleSubmit, setValue, watch } = useForm();
   const router = useRouter();
+  const danball = watch('items.danball');
 
   const onSubmit = (data: any) => {
     try {
@@ -239,6 +240,21 @@ export default function Step2FormPage() {
                 <span>{item}</span>
               </label>
             ))}
+
+            {danball?.includes('50箱以上') && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  箱数を入力
+                </label>
+                <input
+                  type="number"
+                  min={50}
+                  {...register('items.boxCount')}
+                  className={inputStyle}
+                  placeholder="例：60"
+                />
+              </div>
+            )}
           </div>
         </section>
 
