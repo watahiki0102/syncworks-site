@@ -168,6 +168,7 @@ export default function Step2FormPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
         <p className="text-center text-sm text-gray-500">必要なものをすべて入力してください（0でもOK）</p>
+        <p className="text-sm text-gray-500 mb-2">※段ボールに梱包出来るものは入力不要</p>
 
         {/* 家具・家電の数量入力 */}
         {items.map(({ category, data }) => (

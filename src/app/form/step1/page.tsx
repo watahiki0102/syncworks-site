@@ -135,8 +135,9 @@ export default function Step1FormPage() {
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-        <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
-        <div className="text-center text-sm text-red-600 mt-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
+          <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+          <div className="text-center text-sm text-red-600 mt-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
+          <div className="text-center text-sm text-red-600 mt-2">入力内容は5秒ごとに自動保存されます。途中で閉じても保存されています。</div>
 
         {/* 👤 基本情報 */}
         <section className={sectionStyle}>
@@ -396,7 +397,6 @@ export default function Step1FormPage() {
                 {/* 住所 */}
                 <div className="mb-4">
                   <label className={labelStyle}>住所 <span className="text-red-600">＊</span></label>
-                  <p className="text-sm text-gray-500 mb-1">都道府県、市区町村まででも可</p>
                   <input
                     type="text"
                     {...register(`${prefix}Address`, {
@@ -448,7 +448,7 @@ export default function Step1FormPage() {
                 <div>
                   <label className={labelStyle}>階数 <span className="text-red-600">＊</span></label>
                   {((prefix === "from" ? fromResidenceType : toResidenceType) === "一軒家") && (
-                    <p className="text-sm text-gray-500 mb-1">※ 一軒家の場合は建物全体の階数を入力してください</p>
+                    <p className="text-sm text-gray-500 mb-1">※ 建物全体の階数を入力してください</p>
                   )}
                   <select
                     {...register(`${prefix}Floor`, { required: true })}
