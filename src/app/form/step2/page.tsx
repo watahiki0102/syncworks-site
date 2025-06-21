@@ -244,7 +244,7 @@ export default function Step2FormPage() {
             {danball?.includes('50箱以上') && (
               <div className="mt-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  箱数を入力
+                  必要箱数を入力
                 </label>
                 <input
                   type="number"
