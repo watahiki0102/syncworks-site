@@ -5,8 +5,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import Kuroshiro from 'kuroshiro';
-import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
 export default function Step1FormPage() {
   const {
@@ -19,13 +17,9 @@ export default function Step1FormPage() {
 
   const router = useRouter();
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
-  const [kuroshiro, setKuroshiro] = useState<Kuroshiro | null>(null);
 
   useEffect(() => {
     const init = async () => {
-      const k = new Kuroshiro();
-      await k.init(new KuromojiAnalyzer());
-      setKuroshiro(k);
     };
     init();
   }, []);
@@ -101,24 +95,6 @@ export default function Step1FormPage() {
       setFirstKanaEdited(false);
     }
   }, [firstNameKana]);
-
-  useEffect(() => {
-    const convertNames = async () => {
-      if (!kuroshiro) return;
-
-      if (lastName && !lastKanaEdited) {
-        const kana = await kuroshiro.convert(lastName, { to: 'katakana' });
-        setValue('lastNameKana', kana.replace(/\s/g, ''));
-      }
-
-      if (firstName && !firstKanaEdited) {
-        const kana = await kuroshiro.convert(firstName, { to: 'katakana' });
-        setValue('firstNameKana', kana.replace(/\s/g, ''));
-      }
-    };
-
-    convertNames();
-  }, [lastName, firstName, lastKanaEdited, firstKanaEdited, kuroshiro, setValue]);
 
   // 5秒ごとに現在の入力内容をローカルストレージへ保存
   useEffect(() => {
