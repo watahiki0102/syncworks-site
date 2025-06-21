@@ -137,7 +137,7 @@ export default function Step1FormPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
           <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
           <div className="text-center text-sm text-red-600 mt-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
-          <div className="text-center text-sm text-red-600 mt-2">入力内容は5秒ごとに自動保存されます。途中で閉じても保存されています。</div>
+          <div className="text-center text-sm text-red-600 mt-2">入力内容は5秒ごとに自動保存されます。入力途中で閉じても再開可能です。</div>
 
         {/* 👤 基本情報 */}
         <section className={sectionStyle}>
@@ -295,6 +295,7 @@ export default function Step1FormPage() {
         {/* 🕓 引越し希望日時 */}
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">🕓 引越し希望日時</h2>
+          <p className="text-sm text-gray-500 mb-2">※ お申し込みから「2週間後以降」の日程を目安にご入力ください</p>
           <div className="space-y-4">
             {[1, 2, 3].map((n) => {
               const isRequired = n === 1;
