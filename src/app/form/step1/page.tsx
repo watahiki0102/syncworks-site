@@ -35,6 +35,7 @@ export default function Step1FormPage() {
 
   const router = useRouter();
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -53,6 +54,7 @@ export default function Step1FormPage() {
     const value = e.target.value;
     if (!value) {
       setEmailSuggestions([]);
+      setShowEmailSuggestions(false);
       return;
     }
     if (value.includes('@')) {
@@ -65,6 +67,7 @@ export default function Step1FormPage() {
       const suggestions = commonDomains.map((d) => `${value}@${d}`);
       setEmailSuggestions(suggestions);
     }
+    setShowEmailSuggestions(true);
   };
 
   const onSubmit = (data: any) => {
@@ -294,7 +297,7 @@ export default function Step1FormPage() {
             </div>
 
             {/* メール */}
-            <div>
+            <div className="relative">
               <label className={labelStyle}>
                 📧 メールアドレス <span className="text-red-600">＊</span>
               </label>
@@ -312,6 +315,8 @@ export default function Step1FormPage() {
                 onInput={(e) => {
                   handleEmailInput(e as React.ChangeEvent<HTMLInputElement>);
                 }}
+                onFocus={() => setShowEmailSuggestions(emailSuggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 100)}
                 className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：example@gmail.com"
               />
@@ -320,6 +325,22 @@ export default function Step1FormPage() {
                   <option key={s} value={s} />
                 ))}
               </datalist>
+              {showEmailSuggestions && emailSuggestions.length > 0 && (
+                <ul className="absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded shadow">
+                  {emailSuggestions.map((s) => (
+                    <li
+                      key={s}
+                      className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
+                      onMouseDown={() => {
+                        setValue('email', s);
+                        setShowEmailSuggestions(false);
+                      }}
+                    >
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {errors.email?.type === "required" && (
                 <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>
               )}
