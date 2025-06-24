@@ -2,9 +2,11 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
 export default function Step1FormPage() {
   const {
@@ -14,6 +16,22 @@ export default function Step1FormPage() {
     watch,
     setValue
   } = useForm();
+
+  const kuroshiroRef = useRef<Kuroshiro | null>(null);
+  const isInitializedRef = useRef(false);
+  
+  const convertToKatakana = async (text: string): Promise<string> => {
+    if (!isInitializedRef.current) {
+      const instance = new Kuroshiro();
+      await instance.init(new KuromojiAnalyzer({
+        dictPath: "/kuromoji/",
+        useCompression: false
+      }));
+      kuroshiroRef.current = instance;
+      isInitializedRef.current = true;
+    }
+    return kuroshiroRef.current!.convert(text, { to: "katakana", mode: "normal" });
+  };  
 
   const router = useRouter();
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
@@ -132,12 +150,32 @@ export default function Step1FormPage() {
     }
   }, [fromPostalCode, toPostalCode, setValue]);
 
+  useEffect(() => {
+    const convert = async () => {
+      if (lastName && !lastKanaEdited) {
+        const kana = await convertToKatakana(lastName);
+        setValue("lastNameKana", kana);
+      }
+    };
+    convert();
+  }, [lastName, lastKanaEdited]);
+  
+  useEffect(() => {
+    const convert = async () => {
+      if (firstName && !firstKanaEdited) {
+        const kana = await convertToKatakana(firstName);
+        setValue("firstNameKana", kana);
+      }
+    };
+    convert();
+  }, [firstName, firstKanaEdited]);  
+
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-          <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
-          <div className="text-center text-sm text-red-600 mt-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
-          <div className="text-center text-sm text-red-600 mt-2">入力内容は5秒ごとに自動保存されます。入力途中で閉じても再開可能です。</div>
+        <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <div className="text-center text-sm text-red-600 mt-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
+        <div className="text-center text-sm text-red-600 mt-2">入力内容は5秒ごとに自動保存されます。入力途中で閉じても再開可能です。</div>
 
         {/* 👤 基本情報 */}
         <section className={sectionStyle}>
