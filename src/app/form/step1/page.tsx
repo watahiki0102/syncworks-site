@@ -2,11 +2,9 @@
 
 'use client';
 
-import { useEffect, useState,useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import Kuroshiro from "kuroshiro";
-import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
 export default function Step1FormPage() {
   const {
@@ -17,21 +15,6 @@ export default function Step1FormPage() {
     setValue
   } = useForm();
 
-  const kuroshiroRef = useRef<Kuroshiro | null>(null);
-  const isInitializedRef = useRef(false);
-  
-  const convertToKatakana = async (text: string): Promise<string> => {
-    if (!isInitializedRef.current) {
-      const instance = new Kuroshiro();
-      await instance.init(new KuromojiAnalyzer({
-        dictPath: "/kuromoji/",
-        useCompression: false
-      }));
-      kuroshiroRef.current = instance;
-      isInitializedRef.current = true;
-    }
-    return kuroshiroRef.current!.convert(text, { to: "katakana", mode: "normal" });
-  };  
 
   const router = useRouter();
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
@@ -98,24 +81,6 @@ export default function Step1FormPage() {
   const toOther = watch("toResidenceType") === "その他";
   const fromPostalCode = watch("fromPostalCode");
   const toPostalCode = watch("toPostalCode");
-  const lastName = watch('lastName');
-  const firstName = watch('firstName');
-  const lastNameKana = watch('lastNameKana');
-  const firstNameKana = watch('firstNameKana');
-  const [lastKanaEdited, setLastKanaEdited] = useState(false);
-  const [firstKanaEdited, setFirstKanaEdited] = useState(false);
-
-  useEffect(() => {
-    if (!lastNameKana) {
-      setLastKanaEdited(false);
-    }
-  }, [lastNameKana]);
-
-  useEffect(() => {
-    if (!firstNameKana) {
-      setFirstKanaEdited(false);
-    }
-  }, [firstNameKana]);
 
   // 5秒ごとに現在の入力内容をローカルストレージへ保存
   useEffect(() => {
@@ -153,25 +118,6 @@ export default function Step1FormPage() {
     }
   }, [fromPostalCode, toPostalCode, setValue]);
 
-  useEffect(() => {
-    const convert = async () => {
-      if (lastName && !lastKanaEdited) {
-        const kana = await convertToKatakana(lastName);
-        setValue("lastNameKana", kana);
-      }
-    };
-    convert();
-  }, [lastName, lastKanaEdited]);
-  
-  useEffect(() => {
-    const convert = async () => {
-      if (firstName && !firstKanaEdited) {
-        const kana = await convertToKatakana(firstName);
-        setValue("firstNameKana", kana);
-      }
-    };
-    convert();
-  }, [firstName, firstKanaEdited]);  
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
@@ -244,8 +190,7 @@ export default function Step1FormPage() {
                   type="text"
                   {...register('lastNameKana', {
                     required: true,
-                    pattern: /^[ァ-ヶー　]+$/u,
-                    onChange: () => setLastKanaEdited(true)
+                    pattern: /^[ァ-ヶー　]+$/u
                   })}
                   className={`${inputStyle} border ${errors.lastNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
@@ -259,8 +204,7 @@ export default function Step1FormPage() {
                   type="text"
                   {...register('firstNameKana', {
                     required: true,
-                    pattern: /^[ァ-ヶー　]+$/u,
-                    onChange: () => setFirstKanaEdited(true)
+                    pattern: /^[ァ-ヶー　]+$/u
                   })}
                   className={`${inputStyle} border ${errors.firstNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
