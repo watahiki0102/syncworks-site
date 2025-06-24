@@ -81,6 +81,8 @@ export default function Step1FormPage() {
   const toOther = watch("toResidenceType") === "その他";
   const fromPostalCode = watch("fromPostalCode");
   const toPostalCode = watch("toPostalCode");
+  const fromAddress = watch("fromAddress");
+  const toAddress = watch("toAddress");
 
   // 5秒ごとに現在の入力内容をローカルストレージへ保存
   useEffect(() => {
@@ -110,13 +112,13 @@ export default function Step1FormPage() {
       }
     };
 
-    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode)) {
+    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode) && !fromAddress) {
       fetchAddress(fromPostalCode, 'from');
     }
-    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode)) {
+    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode) && !toAddress) {
       fetchAddress(toPostalCode, 'to');
     }
-  }, [fromPostalCode, toPostalCode, setValue]);
+  }, [fromPostalCode, toPostalCode, fromAddress, toAddress, setValue]);
 
 
   return (
