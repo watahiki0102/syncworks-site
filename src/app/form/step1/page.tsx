@@ -252,8 +252,7 @@ export default function Step1FormPage() {
               </label>
               <input
                 type="text"
-                autoComplete="email"
-                list="email-suggest-list"
+                autoComplete="off"
                 {...register("email", {
                   required: true,
                   pattern: {
@@ -269,13 +268,8 @@ export default function Step1FormPage() {
                 className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：example@gmail.com"
               />
-              <datalist id="email-suggest-list">
-                {emailSuggestions.map((s) => (
-                  <option key={s} value={s} />
-                ))}
-              </datalist>
               {showEmailSuggestions && emailSuggestions.length > 0 && (
-                <ul className="absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded shadow">
+                <ul className="absolute left-0 top-full mt-1 z-10 bg-white border border-gray-300 w-full rounded shadow max-h-48 overflow-y-auto">
                   {emailSuggestions.map((s) => (
                     <li
                       key={s}
