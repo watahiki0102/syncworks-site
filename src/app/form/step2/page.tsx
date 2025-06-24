@@ -85,6 +85,14 @@ export default function Step2FormPage() {
       ]
     },
     {
+      category: "衣類収納",
+      data: [
+        "👕 ハンガーラック",
+        "🎽 衣装ケース",
+        "🚪 洋服タンス"        
+      ]
+    },
+    {
       category: "棚・収納",
       data: [
         "🗄 タンス（小型）",
@@ -92,8 +100,6 @@ export default function Step2FormPage() {
         "📚 本棚",
         "🍽 食器棚",
         "🖥 テレビ台",
-        "🎽 衣装ケース",
-        "🚪 クローゼット収納"
       ]
     },
     {
@@ -106,7 +112,6 @@ export default function Step2FormPage() {
         "🛋 ローテーブル",
         "🪵 こたつ",
         "💄 ドレッサー",
-        "👕 衣類ラック",
         "💻 パソコンデスク",
         "🪑 チェア・イス"
       ]
