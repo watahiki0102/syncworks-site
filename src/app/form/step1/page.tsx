@@ -351,14 +351,14 @@ export default function Step1FormPage() {
                     >
                       <option value=""></option>
                       <option value="none">指定なし</option>
-                      <option value="early_morning">早朝(6-9時)</option>
-                      <option value="morning">午前(9-12時)</option>
-                      <option value="afternoon">午後(12-15時)</option>
-                      <option value="evening">夕方(15-18時)</option>
-                      <option value="night">夜間(18-21時)</option>
-                      <option value="not_early">早朝以外(9-21時)</option>
-                      <option value="not_night">夜間以外(6-18時)</option>
-                      <option value="daytime_only">早朝・夜間以外(9-18時)</option>
+                      <option value="early_morning">早朝（6～9時）</option>
+                      <option value="morning">午前（9～12時）</option>
+                      <option value="afternoon">午後（12～15時）</option>
+                      <option value="evening">夕方（15～18時）</option>
+                      <option value="night">夜間（18～21時）</option>
+                      <option value="not_early">早朝以外（9～21時）</option>
+                      <option value="not_night">夜間以外（6～18時）</option>
+                      <option value="daytime_only">早朝・夜間以外（9～18時）</option>
                     </select>
                     {timeSlotError && (
                       <p className="text-red-500 text-sm mt-1">※ 第{n}希望時間帯は必須です</p>
