@@ -297,7 +297,7 @@ export default function Step1FormPage() {
         {/* 🕓 引越し希望日時 */}
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">🕓 引越し希望日時</h2>
-          <p className="text-sm text-gray-500 mb-2">※ お申し込みから「2週間後以降」の日程を目安にご入力ください</p>
+          <p className="text-sm text-gray-500 mb-2">※ お申し込みから「10日後以降」の日程を目安にご入力ください</p>
           <div className="space-y-4">
             {[1, 2, 3].map((n) => {
               const isRequired = n === 1;
@@ -316,7 +316,10 @@ export default function Step1FormPage() {
                     </label>
                     <input
                       type="date"
-                      {...register(`date${n}`, { required: isRequired })}
+                      min={new Date().toISOString().split("T")[0]} 
+                      {...register(`date${n}`, {
+                        required: isRequired
+                      })}
                       className={dateInputClass}
                     />
                     {dateError && (
@@ -332,7 +335,7 @@ export default function Step1FormPage() {
                       {...register(`timeSlot${n}`, { required: isRequired })}
                       className={timeSelectClass}
                     >
-                      <option value="">選択してください</option>
+                      <option value=""></option>
                       <option value="指定なし">指定なし</option>
                       <option value="早朝">早朝（6〜9時）</option>
                       <option value="午前">午前（9〜12時）</option>
