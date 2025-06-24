@@ -168,7 +168,8 @@ export default function Step2FormPage() {
       category: "その他・家電・日用品",
       data: [
         "🖨 プリンター",
-        "📻 スピーカーセット",
+        "🔈 スピーカー",
+        "📻 アンプ",
         "🎮 ゲーム機",
         "🔊 ホームシアターセット",
         "🍳 ホットプレート",
@@ -183,8 +184,10 @@ export default function Step2FormPage() {
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
-        <p className="text-center text-sm text-gray-600">必要なものをすべて入力してください（0でもOK）</p>
-        <p className="text-center text-sm text-gray-500">※ 段ボールに梱包できるものは入力不要です</p>
+        <div>
+          <p className="text-center text-sm text-gray-600">必要なものをすべて入力してください（0でもOK）</p>
+          <p className="text-center text-sm text-gray-500">※ 段ボールに梱包できるものは入力不要です</p>
+        </div>
 
         {/* 家具・家電の数量入力 */}
         {items.map(({ category, data }) => (
