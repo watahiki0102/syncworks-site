@@ -316,7 +316,10 @@ export default function Step1FormPage() {
                     </label>
                     <input
                       type="date"
-                      min={new Date().toISOString().split("T")[0]}
+                      min={(() => {
+                        const today = new Date();
+                        return today.toISOString().split("T")[0];
+                      })()}
                       {...register(`date${n}`, {
                         required: isRequired
                       })}
