@@ -318,7 +318,10 @@ export default function Step1FormPage() {
                       type="date"
                       min={(() => {
                         const today = new Date();
-                        return today.toISOString().split("T")[0];
+                        const offsetMs = today.getTimezoneOffset() * 60000;
+                        return new Date(today.getTime() - offsetMs)
+                          .toISOString()
+                          .split("T")[0];
                       })()}
                       {...register(`date${n}`, {
                         required: isRequired
@@ -336,6 +339,14 @@ export default function Step1FormPage() {
                     </label>
                     <select
                       {...register(`timeSlot${n}`, { required: isRequired })}
+                      onChange={(e) => {
+                        const date = watch(`date${n}`);
+                        if (!date && e.target.value) {
+                          alert(`第${n}希望日を先に選択してください`);
+                          e.target.value = '';
+                        }
+                        register(`timeSlot${n}`, { required: isRequired }).onChange(e);
+                      }}
                       className={timeSelectClass}
                     >
                       <option value=""></option>
