@@ -16,7 +16,6 @@ export default function Step1FormPage() {
     }
   });
   const {
-    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -278,7 +277,7 @@ export default function Step1FormPage() {
                     value: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
                     message: "※ 正しいメールアドレス形式で入力してください"
                   },
-                  onChange: (e) => handleEmailInput(e), 
+                  onChange: (e) => handleEmailInput(e),
                 })}
                 onFocus={() => setShowEmailSuggestions(emailSuggestions.length > 0)}
                 onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 100)}
@@ -336,11 +335,25 @@ export default function Step1FormPage() {
                     </label>
                     <input
                       type="date"
-                      {...register(`date${n}`, { required: isRequired })}
+                      {...register(`date${n}`, {
+                        required: isRequired ? `※ 第${n}希望日は必須です` : false,
+                        validate: (value) => {
+                          if (!value) return true;
+                          const selected = new Date(value);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          selected.setHours(0, 0, 0, 0);
+                          return selected > today || `※ 第${n}希望日に過去日が設定されています`;
+                        }
+                      })}
                       className={dateInputClass}
                     />
                     {dateError && (
-                      <p className="text-red-500 text-sm mt-1">※ 第{n}希望日は必須です</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {typeof dateError === "string"
+                          ? dateError
+                          : `※ 第${n}希望日は必須です`}
+                      </p>
                     )}
                   </div>
                   {/* 時間帯 */}
@@ -395,7 +408,7 @@ export default function Step1FormPage() {
         {/* 📍 引越し元・引越し先情報 */}
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📍 引越し元・引越し先の情報</h2>
-          {[{ label: "引越し元（現住所）", prefix: "from" }, { label: "引越し先", prefix: "to" }].map(({ label, prefix }) => {
+          {[{ label: "引越し元（現住所）", prefix: "from" }, { label: "引越し先（新住所）", prefix: "to" }].map(({ label, prefix }) => {
             const postalError = errors[`${prefix}PostalCode`];
             const addressError = errors[`${prefix}Address`];
             const residenceTypeError = errors[`${prefix}ResidenceType`];
