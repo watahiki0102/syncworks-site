@@ -17,7 +17,13 @@ const Tomorrow = () => {
 };
 
 export default function Step1FormPage() {
-  const defaultValues = JSON.parse(localStorage.getItem('formStep1') || '{}');
+  const saved = typeof window !== 'undefined' ? localStorage.getItem('formStep1') : null;
+  const parsed = saved ? JSON.parse(saved) : {};
+  ['date1', 'date2', 'date3'].forEach((k) => {
+    if (parsed[k]) {
+      parsed[k] = new Date(parsed[k]);
+    }
+  });
   const {
     control,
     register,
@@ -25,7 +31,7 @@ export default function Step1FormPage() {
     formState: { errors },
     watch,
     setValue
-  } = useForm(defaultValues);
+  } = useForm({ defaultValues: parsed });
 
 
   const router = useRouter();
@@ -81,7 +87,11 @@ export default function Step1FormPage() {
     if (saved) {
       const values = JSON.parse(saved);
       Object.entries(values).forEach(([key, value]) => {
-        setValue(key, value);
+        if (['date1', 'date2', 'date3'].includes(key) && value) {
+          setValue(key, new Date(value as string));
+        } else {
+          setValue(key, value);
+        }
       });
     }
   }, [setValue]);
@@ -349,36 +359,20 @@ export default function Step1FormPage() {
                           : field.value
                             ? new Date(field.value)
                             : null;
+                        const { onChange, onBlur, name, ref } = field;
                         return (
                           <DatePicker
-                            {...field}
+                            name={name}
+                            ref={ref}
+                            onBlur={onBlur}
                             selected={valueAsDate}
-                            onChange={(date) => field.onChange(date)}
+                            onChange={(date) => onChange(date)}
                             dateFormat="yyyy-MM-dd"
                             minDate={Tomorrow()}
                             className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
                             placeholderText="日付を選択"
                             readOnly
-                            popperPlacement="bottom"
-                            popperModifiers={[
-                              {
-                                name: 'offset',
-                                options: {
-                                  offset: [0, 8],
-                                },
-                              },
-                              {
-                                name: 'preventOverflow',
-                                options: {
-                                  rootBoundary: 'viewport',
-                                  tether: false,
-                                },
-                              },
-                              {
-                                name: 'flip',
-                                enabled: false,
-                              },
-                            ] as any} 
+                            withPortal
                           />
                         );
                       }}
