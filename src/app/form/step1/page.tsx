@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
+import { Modifier } from 'react-popper';
 import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -348,9 +349,8 @@ export default function Step1FormPage() {
                         const valueAsDate = field.value instanceof Date
                           ? field.value
                           : field.value
-                          ? new Date(field.value)
-                          : null;
-                      
+                            ? new Date(field.value)
+                            : null;
                         return (
                           <DatePicker
                             {...field}
@@ -361,6 +361,26 @@ export default function Step1FormPage() {
                             className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
                             placeholderText="日付を選択"
                             readOnly
+                            popperPlacement="bottom"
+                            popperModifiers={[
+                              {
+                                name: 'offset',
+                                options: {
+                                  offset: [0, 8],
+                                },
+                              },
+                              {
+                                name: 'preventOverflow',
+                                options: {
+                                  rootBoundary: 'viewport',
+                                  tether: false,
+                                },
+                              },
+                              {
+                                name: 'flip',
+                                enabled: false,
+                              },
+                            ] as any} 
                           />
                         );
                       }}
