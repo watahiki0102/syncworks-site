@@ -107,33 +107,32 @@ export default function Step1FormPage() {
 
   // 郵便番号入力時に住所を自動取得
   useEffect(() => {
-    const fetchAddress = async (zipcode: string, prefix: string) => {
-      try {
-        const res = await fetch(
-          `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`
-        );
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          const { address1, address2, address3 } = data.results[0];
-          const fetched = `${address1}${address2}${address3}`;
-          const existing = watch(`${prefix}Address`);
-          if (!existing || existing === '' || !existing.includes(address1)) {
-            setValue(`${prefix}Address`, fetched);
-          }
+    const subscription = watch((value, { name }) => {
+      if (name === 'postalCode') {
+        const zipcode = value.postalCode;
+        if (/^\d{7}$/.test(zipcode)) {
+          fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.results && data.results.length > 0) {
+                const { address1, address2, address3 } = data.results[0];
+                const fetchedAddress = `${address1}${address2}${address3}`;
+  
+                const current = value.address || '';
+                const userAppended = current.replace(fetchedAddress, ''); // 追記分
+                const newAddress = fetchedAddress + userAppended;
+  
+                setValue('address', newAddress);
+              }
+            })
+            .catch((e) => {
+              console.error('郵便番号から住所の取得に失敗しました:', e);
+            });
         }
-      } catch (e) {
-        console.error('郵便番号から住所の取得に失敗しました', e);
       }
-    };
-
-    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode)) {
-      fetchAddress(fromPostalCode, 'from');
-    }
-    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode)) {
-      fetchAddress(toPostalCode, 'to');
-    }
-  }, [fromPostalCode, toPostalCode, setValue]);
-
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
