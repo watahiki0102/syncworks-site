@@ -9,6 +9,7 @@ import DatePicker, { registerLocale } from "react-datepicker";
 import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
 import { ja } from 'date-fns/locale';
+import CustomInput from '../../components/customInput';
 
 // カレンダーを日本語化
 registerLocale('ja', ja);
@@ -383,6 +384,7 @@ export default function Step1FormPage() {
                             placeholderText="日付を選択"
                             withPortal
                             locale="ja"
+                            customInput={<CustomInput />}
                           />
                         );
                       }}
