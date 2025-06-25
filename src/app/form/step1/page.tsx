@@ -435,7 +435,7 @@ export default function Step1FormPage() {
         {/* 📍 引越し元・引越し先情報 */}
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📍 引越し元・引越し先の情報</h2>
-          {[{ label: "引越し元", prefix: "from" }, { label: "引越し先", prefix: "to" }].map(({ label, prefix }) => {
+          {[{ label: "引越し元（現住所）", prefix: "from" }, { label: "引越し先", prefix: "to" }].map(({ label, prefix }) => {
             const postalError = errors[`${prefix}PostalCode`];
             const addressError = errors[`${prefix}Address`];
             const residenceTypeError = errors[`${prefix}ResidenceType`];
