@@ -5,21 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import DatePicker, { registerLocale } from "react-datepicker";
-import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
-import { ja } from 'date-fns/locale';
-import CustomInput from '../../components/customInput';
-
-// カレンダーを日本語化
-registerLocale('ja', ja);
-
-const Tomorrow = () => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  return tomorrow;
-};
 
 export default function Step1FormPage() {
   const saved = typeof window !== 'undefined' ? localStorage.getItem('formStep1') : null;
@@ -352,47 +338,13 @@ export default function Step1FormPage() {
                     <label className={labelStyle}>
                       🗓️ 第{n}希望日{isRequired && <span className="text-red-600">＊</span>}
                     </label>
-                    <Controller
-                      control={control}
-                      name={`date${n}`}
-                      rules={{
-                        required: isRequired ? `※ 第${n}希望日は必須です` : false,
-                        validate: (value) => {
-                          if (!value) return true;
-                          const selected = new Date(value);
-                          selected.setHours(0, 0, 0, 0);
-                          return selected >= Tomorrow() || `※ 第${n}希望日は「翌日以降」を選択してください`;
-                        },
-                      }}
-                      render={({ field }) => {
-                        const valueAsDate = field.value instanceof Date
-                          ? field.value
-                          : field.value
-                            ? new Date(field.value)
-                            : null;
-                        const { onChange, onBlur, name, ref } = field;
-                        return (
-                          <DatePicker
-                            name={name}
-                            ref={ref}
-                            onBlur={onBlur}
-                            selected={valueAsDate}
-                            onChange={(date) => onChange(date)}
-                            dateFormat="yyyy-MM-dd"
-                            minDate={Tomorrow()}
-                            className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
-                            placeholderText="日付を選択"
-                            withPortal
-                            locale="ja"
-                            customInput={<CustomInput />}
-                          />
-                        );
-                      }}
+                    <input
+                      type="date"
+                      {...register(`date${n}`, { required: isRequired })}
+                      className={dateInputClass}
                     />
                     {dateError && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {typeof dateError === "string" ? dateError : `※ 第${n}希望日は必須です`}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">※ 第{n}希望日は必須です</p>
                     )}
                   </div>
                   {/* 時間帯 */}
