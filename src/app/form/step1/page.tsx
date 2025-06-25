@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import "react-datepicker/dist/react-datepicker.css";
@@ -107,21 +107,26 @@ export default function Step1FormPage() {
 
   // 郵便番号入力時に住所を自動取得
   useEffect(() => {
+    const prevPostalCode = useRef<string | null>(null);
     const subscription = watch((value, { name }) => {
       if (name === 'postalCode') {
         const zipcode = value.postalCode;
-        if (/^\d{7}$/.test(zipcode)) {
+        const prev = prevPostalCode.current;
+
+        if (zipcode !== prev && /^\d{7}$/.test(zipcode)) {
+          prevPostalCode.current = zipcode; // 更新
+
           fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`)
             .then((res) => res.json())
             .then((data) => {
               if (data.results && data.results.length > 0) {
                 const { address1, address2, address3 } = data.results[0];
                 const fetchedAddress = `${address1}${address2}${address3}`;
-  
+
                 const current = value.address || '';
-                const userAppended = current.replace(fetchedAddress, ''); // 追記分
+                const userAppended = current.replace(fetchedAddress, '');
                 const newAddress = fetchedAddress + userAppended;
-  
+
                 setValue('address', newAddress);
               }
             })
@@ -131,6 +136,7 @@ export default function Step1FormPage() {
         }
       }
     });
+
     return () => subscription.unsubscribe();
   }, [watch, setValue]);
 
@@ -346,12 +352,8 @@ export default function Step1FormPage() {
                       })}
                       className={dateInputClass}
                     />
-                    {dateError && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {typeof dateError === "string"
-                          ? dateError
-                          : `※ 第${n}希望日は必須です`}
-                      </p>
+                    {dateError?.message && (
+                      <p className="text-red-500 text-sm mt-1">{dateError?.message}</p>
                     )}
                   </div>
                   {/* 時間帯 */}
