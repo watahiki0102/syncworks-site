@@ -304,11 +304,14 @@ export default function Step1FormPage() {
               const dateError = errors[`date${n}`];
               const timeSlotError = errors[`timeSlot${n}`];
 
+              const selectedDate = watch(`date${n}`);
+              const selectedTime = watch(`timeSlot${n}`);
+
               const dateInputClass = `${inputStyle} border ${dateError ? 'border-red-500' : 'border-gray-300'}`;
               const timeSelectClass = `${inputStyle} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`;
 
               return (
-                <div key={n} className="grid grid-cols-2 gap-4"> {/* 常時2列 */}
+                <div key={n} className="grid grid-cols-2 gap-4">
                   {/* 日付 */}
                   <div>
                     <label className={labelStyle}>
@@ -318,7 +321,7 @@ export default function Step1FormPage() {
                       type="date"
                       min={(() => {
                         const today = new Date();
-                        today.setDate(today.getDate() + 1); // 翌日から選択可能に
+                        today.setDate(today.getDate() + 1);
                         const offsetMs = today.getTimezoneOffset() * 60000;
                         return new Date(today.getTime() - offsetMs)
                           .toISOString()
@@ -338,9 +341,7 @@ export default function Step1FormPage() {
                     />
                     {dateError && (
                       <p className="text-red-500 text-sm mt-1">
-                        {typeof dateError === "string"
-                          ? dateError
-                          : `※ 第${n}希望日は必須です`}
+                        {typeof dateError === "string" ? dateError : `※ 第${n}希望日は必須です`}
                       </p>
                     )}
                   </div>
@@ -350,15 +351,16 @@ export default function Step1FormPage() {
                       ⏰ 時間帯{isRequired && <span className="text-red-600">＊</span>}
                     </label>
                     <select
-                      {...register(`timeSlot${n}`, { required: isRequired })}
-                      onChange={(e) => {
-                        const date = watch(`date${n}`);
-                        if (!date && e.target.value) {
-                          alert(`第${n}希望日を先に選択してください`);
-                          e.target.value = '';
-                        }
-                        register(`timeSlot${n}`, { required: isRequired }).onChange(e);
-                      }}
+                      {...register(`timeSlot${n}`, {
+                        required: isRequired,
+                        validate: () => {
+                          // 日付が入力されていて、時間帯が空ならエラー
+                          if (selectedDate && !selectedTime) {
+                            return "※ 第" + n + "希望日に対する時間帯を選択してください";
+                          }
+                          return true;
+                        },
+                      })}
                       className={timeSelectClass}
                     >
                       <option value=""></option>
@@ -373,7 +375,11 @@ export default function Step1FormPage() {
                       <option value="daytime_only">早朝・夜間以外（9～18時）</option>
                     </select>
                     {timeSlotError && (
-                      <p className="text-red-500 text-sm mt-1">※ 第{n}希望時間帯は必須です</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {typeof timeSlotError === "string"
+                          ? timeSlotError
+                          : `※ 第${n}希望時間帯は必須です`}
+                      </p>
                     )}
                   </div>
                 </div>
