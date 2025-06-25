@@ -123,7 +123,9 @@ export default function Step1FormPage() {
   useEffect(() => {
     const fetchAddress = async (zipcode: string, prefix: string) => {
       try {
-        const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`);
+        const res = await fetch(
+          `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`
+        );
         const data = await res.json();
         if (data.results && data.results.length > 0) {
           const { address1, address2, address3 } = data.results[0];
@@ -134,13 +136,13 @@ export default function Step1FormPage() {
       }
     };
 
-    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode) && !fromAddress) {
+    if (fromPostalCode && /^[0-9]{7}$/.test(fromPostalCode)) {
       fetchAddress(fromPostalCode, 'from');
     }
-    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode) && !toAddress) {
+    if (toPostalCode && /^[0-9]{7}$/.test(toPostalCode)) {
       fetchAddress(toPostalCode, 'to');
     }
-  }, [fromPostalCode, toPostalCode, fromAddress, toAddress, setValue]);
+  }, [fromPostalCode, toPostalCode, setValue]);
 
 
   return (
@@ -371,7 +373,6 @@ export default function Step1FormPage() {
                             minDate={Tomorrow()}
                             className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
                             placeholderText="日付を選択"
-                            readOnly
                             withPortal
                           />
                         );
