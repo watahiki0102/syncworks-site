@@ -318,18 +318,30 @@ export default function Step1FormPage() {
                       type="date"
                       min={(() => {
                         const today = new Date();
+                        today.setDate(today.getDate() + 1); // 翌日から選択可能に
                         const offsetMs = today.getTimezoneOffset() * 60000;
                         return new Date(today.getTime() - offsetMs)
                           .toISOString()
                           .split("T")[0];
                       })()}
                       {...register(`date${n}`, {
-                        required: isRequired
+                        required: isRequired,
+                        validate: (value) => {
+                          const selected = new Date(value);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          selected.setHours(0, 0, 0, 0);
+                          return selected > today || "※ 過去日または当日は選択できません";
+                        }
                       })}
                       className={dateInputClass}
                     />
                     {dateError && (
-                      <p className="text-red-500 text-sm mt-1">※ 第{n}希望日は必須です</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {typeof dateError === "string"
+                          ? dateError
+                          : `※ 第${n}希望日は必須です`}
+                      </p>
                     )}
                   </div>
                   {/* 時間帯 */}
