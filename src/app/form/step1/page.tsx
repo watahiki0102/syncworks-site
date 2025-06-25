@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
-import {Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
 
 const Tomorrow = () => {
@@ -393,9 +393,15 @@ export default function Step1FormPage() {
                     </select>
                     {timeSlotError && (
                       <p className="text-red-500 text-sm mt-1">
-                        {typeof timeSlotError === "string"
-                          ? timeSlotError
-                          : `※ 第${n}希望時間帯は必須です`}
+                        {typeof timeSlotError === "string" ? (
+                          timeSlotError === "custom_time_required" ? (
+                            `※ 第${n}希望日を入力したら、時間帯も選んでください`
+                          ) : (
+                            timeSlotError
+                          )
+                        ) : (
+                          `※ 第${n}希望時間帯を選択してください`
+                        )}
                       </p>
                     )}
                   </div>
