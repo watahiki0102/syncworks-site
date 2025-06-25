@@ -383,7 +383,6 @@ export default function Step1FormPage() {
                             placeholderText="日付を選択"
                             withPortal
                             locale="ja"
-                            readOnly
                           />
                         );
                       }}
