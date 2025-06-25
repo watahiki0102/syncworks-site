@@ -78,11 +78,7 @@ export default function Step1FormPage() {
     if (saved) {
       const values = JSON.parse(saved);
       Object.entries(values).forEach(([key, value]) => {
-        if (['date1', 'date2', 'date3'].includes(key) && value) {
-          setValue(key, new Date(value as string));
-        } else {
-          setValue(key, value);
-        }
+        setValue(key, value);
       });
     }
   }, [setValue]);
