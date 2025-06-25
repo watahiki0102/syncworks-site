@@ -287,7 +287,7 @@ export default function Step1FormPage() {
                     value: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
                     message: "※ 正しいメールアドレス形式で入力してください"
                   },
-                  onChange: (e) => handleEmailInput(e),
+                  onChange: (e) => handleEmailInput(e), 
                 })}
                 onFocus={() => setShowEmailSuggestions(emailSuggestions.length > 0)}
                 onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 100)}
@@ -337,7 +337,7 @@ export default function Step1FormPage() {
               const timeSelectClass = `${inputStyle} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`;
 
               return (
-                <div key={n} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div key={n} className="grid grid-cols-2 gap-4">
                   {/* 日付 */}
                   <div>
                     <label className={labelStyle}>
@@ -352,40 +352,35 @@ export default function Step1FormPage() {
                           if (!value) return true;
                           const selected = new Date(value);
                           selected.setHours(0, 0, 0, 0);
-                          return (
-                            selected >= Tomorrow() ||
-                            `※ 第${n}希望日は「翌日以降」を選択してください`
-                          );
+                          return selected >= Tomorrow() || `※ 第${n}希望日は「翌日以降」を選択してください`;
                         },
                       }}
                       render={({ field }) => {
-                        const valueAsDate =
-                          field.value instanceof Date
-                            ? field.value
-                            : field.value
-                              ? new Date(field.value)
-                              : null;
+                        const valueAsDate = field.value instanceof Date
+                          ? field.value
+                          : field.value
+                            ? new Date(field.value)
+                            : null;
+                        const { onChange, onBlur, name, ref } = field;
                         return (
                           <DatePicker
-                            {...field}
+                            name={name}
+                            ref={ref}
+                            onBlur={onBlur}
                             selected={valueAsDate}
-                            onChange={(date) => field.onChange(date)}
+                            onChange={(date) => onChange(date)}
                             dateFormat="yyyy-MM-dd"
                             minDate={Tomorrow()}
-                            className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"
-                              }`}
+                            className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
                             placeholderText="日付を選択"
                             withPortal
-                            locale="ja"
                           />
                         );
                       }}
                     />
                     {dateError && (
                       <p className="text-red-500 text-sm mt-1">
-                        {typeof dateError === "string"
-                          ? dateError
-                          : `※ 第${n}希望日は必須です`}
+                        {typeof dateError === "string" ? dateError : `※ 第${n}希望日は必須です`}
                       </p>
                     )}
                   </div>
@@ -397,15 +392,15 @@ export default function Step1FormPage() {
                     <select
                       {...register(`timeSlot${n}`, {
                         required: isRequired,
-                        validate: (value) => {
-                          if (selectedDate && !value) {
-                            return `※ 第${n}希望日に対する時間帯を選択してください`;
+                        validate: () => {
+                          // 日付が入力されていて、時間帯が空ならエラー
+                          if (selectedDate && !selectedTime) {
+                            return "※ 第" + n + "希望日に対する時間帯を選択してください";
                           }
                           return true;
                         },
                       })}
-                      className={`${inputStyle} w-full border ${timeSlotError ? "border-red-500" : "border-gray-300"
-                        }`}
+                      className={timeSelectClass}
                     >
                       <option value=""></option>
                       <option value="none">指定なし</option>
@@ -420,9 +415,15 @@ export default function Step1FormPage() {
                     </select>
                     {timeSlotError && (
                       <p className="text-red-500 text-sm mt-1">
-                        {typeof timeSlotError === "string"
-                          ? timeSlotError
-                          : `※ 第${n}希望時間帯を選択してください`}
+                        {typeof timeSlotError === "string" ? (
+                          timeSlotError === "custom_time_required" ? (
+                            `※ 第${n}希望日を入力したら、時間帯も選んでください`
+                          ) : (
+                            timeSlotError
+                          )
+                        ) : (
+                          `※ 第${n}希望時間帯を選択してください`
+                        )}
                       </p>
                     )}
                   </div>
