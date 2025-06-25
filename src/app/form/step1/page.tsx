@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
-import { Modifier } from 'react-popper';
 import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -18,6 +17,7 @@ const Tomorrow = () => {
 };
 
 export default function Step1FormPage() {
+  const defaultValues = JSON.parse(localStorage.getItem('formStep1') || '{}');
   const {
     control,
     register,
@@ -25,7 +25,7 @@ export default function Step1FormPage() {
     formState: { errors },
     watch,
     setValue
-  } = useForm();
+  } = useForm(defaultValues);
 
 
   const router = useRouter();
@@ -274,11 +274,9 @@ export default function Step1FormPage() {
                   pattern: {
                     value: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
                     message: "※ 正しいメールアドレス形式で入力してください"
-                  }
+                  },
+                  onChange: (e) => handleEmailInput(e), 
                 })}
-                onInput={(e) => {
-                  handleEmailInput(e as React.ChangeEvent<HTMLInputElement>);
-                }}
                 onFocus={() => setShowEmailSuggestions(emailSuggestions.length > 0)}
                 onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 100)}
                 className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
