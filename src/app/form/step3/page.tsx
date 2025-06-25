@@ -101,6 +101,7 @@ export default function Step3FormPage() {
           <div className="flex justify-between">
             <button type="button" onClick={() => router.back()} className="bg-gray-400 text-white font-semibold py-2 px-6 rounded hover:bg-gray-500">戻る</button>
             <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700">送信する</button>
+            <div className="text-sm text-gray-600">3 / 3 ページ</div>
           </div>
         </section>
       </form>
