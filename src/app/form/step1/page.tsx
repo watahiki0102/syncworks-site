@@ -326,7 +326,7 @@ export default function Step1FormPage() {
               const timeSelectClass = `${inputStyle} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`;
 
               return (
-                <div key={n} className="grid grid-cols-2 gap-4">
+                <div key={n} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 日付 */}
                   <div>
                     <label className={labelStyle}>
@@ -371,14 +371,13 @@ export default function Step1FormPage() {
                       {...register(`timeSlot${n}`, {
                         required: isRequired,
                         validate: () => {
-                          // 日付が入力されていて、時間帯が空ならエラー
                           if (selectedDate && !selectedTime) {
                             return "※ 第" + n + "希望日に対する時間帯を選択してください";
                           }
                           return true;
                         },
                       })}
-                      className={timeSelectClass}
+                      className={`${inputStyle} w-full border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value=""></option>
                       <option value="none">指定なし</option>
