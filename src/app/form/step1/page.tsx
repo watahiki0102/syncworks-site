@@ -337,7 +337,6 @@ export default function Step1FormPage() {
                       {...register(`date${n}`, {
                         required: isRequired ? `※ 第${n}希望日は必須です` : false,
                         validate: (value) => {
-                          if (!value) return true;
                           const selected = new Date(value);
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
