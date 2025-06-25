@@ -5,9 +5,20 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import DatePicker from "react-datepicker";
+import {Controller } from "react-hook-form";
+import "react-datepicker/dist/react-datepicker.css";
+
+const Tomorrow = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+};
 
 export default function Step1FormPage() {
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -126,7 +137,7 @@ export default function Step1FormPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
         <div className="text-center text-sm text-gray-600 mb-4">
-          <p className="mb-1">📝 入力項目 <span className="font-semibold">全3ページ</span></p>
+          <p className="mb-1">📝 入力項目：<span className="font-semibold">全3ページ</span></p>
           <p className="mb-1">⏳ 所要時間：<span className="font-semibold">約15分</span>（目安）</p>
         </div>
         <div>
@@ -321,37 +332,33 @@ export default function Step1FormPage() {
                     <label className={labelStyle}>
                       🗓️ 第{n}希望日{isRequired && <span className="text-red-600">＊</span>}
                     </label>
-                    <input
-                      type="date"
-                      min={(() => {
-                        const today = new Date();
-                        today.setDate(today.getDate() + 1); // 翌日から選択可能に
-                        const offsetMs = today.getTimezoneOffset() * 60000;
-                        return new Date(today.getTime() - offsetMs)
-                          .toISOString()
-                          .split("T")[0];
-                      })()}
-                      {...register(`date${n}`, {
-                        required: isRequired,
+                    <Controller
+                      control={control}
+                      name={`date${n}`}
+                      rules={{
+                        required: isRequired ? `※ 第${n}希望日は必須です` : false,
                         validate: (value) => {
-                          if (!value) return isRequired ? "※ 日付を選択してください" : true;
+                          if (!value) return true;
                           const selected = new Date(value);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
                           selected.setHours(0, 0, 0, 0);
-                          if (selected <= today) {
-                            return "※ 過去日または当日は選択できません";
-                          }
-                          return true;
+                          return selected >= Tomorrow() || `※ 第${n}希望日は「翌日以降」を選択してください`;
                         },
-                      })}
-                      className={dateInputClass}
+                      }}
+                      render={({ field }) => (
+                        <DatePicker
+                          {...field}
+                          selected={field.value}
+                          onChange={(date) => field.onChange(date)}
+                          dateFormat="yyyy-MM-dd"
+                          minDate={Tomorrow()}
+                          className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
+                          placeholderText="日付を選択"
+                        />
+                      )}
                     />
                     {dateError && (
                       <p className="text-red-500 text-sm mt-1">
-                        {typeof dateError === "string"
-                          ? dateError
-                          : `※ 第${n}希望日は必須です`}
+                        {typeof dateError === "string" ? dateError : `※ 第${n}希望日は必須です`}
                       </p>
                     )}
                   </div>
