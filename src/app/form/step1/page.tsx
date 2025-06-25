@@ -5,9 +5,13 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
 import { Controller } from "react-hook-form";
 import "react-datepicker/dist/react-datepicker.css";
+import { ja } from 'date-fns/locale';
+
+// カレンダーを日本語化
+registerLocale('ja', ja);
 
 const Tomorrow = () => {
   const tomorrow = new Date();
@@ -378,6 +382,8 @@ export default function Step1FormPage() {
                             className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
                             placeholderText="日付を選択"
                             withPortal
+                            locale="ja"
+                            readOnly
                           />
                         );
                       }}
