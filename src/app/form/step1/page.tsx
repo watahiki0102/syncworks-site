@@ -129,7 +129,11 @@ export default function Step1FormPage() {
         const data = await res.json();
         if (data.results && data.results.length > 0) {
           const { address1, address2, address3 } = data.results[0];
-          setValue(`${prefix}Address`, `${address1}${address2}${address3}`);
+          const fetched = `${address1}${address2}${address3}`;
+          const existing = watch(`${prefix}Address`);
+          if (!existing || existing === '' || existing === fetched) {
+            setValue(`${prefix}Address`, fetched);
+          }
         }
       } catch (e) {
         console.error('郵便番号から住所の取得に失敗しました', e);
