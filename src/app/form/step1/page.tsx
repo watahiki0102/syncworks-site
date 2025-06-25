@@ -344,17 +344,26 @@ export default function Step1FormPage() {
                           return selected >= Tomorrow() || `※ 第${n}希望日は「翌日以降」を選択してください`;
                         },
                       }}
-                      render={({ field }) => (
-                        <DatePicker
-                          {...field}
-                          selected={field.value}
-                          onChange={(date) => field.onChange(date)}
-                          dateFormat="yyyy-MM-dd"
-                          minDate={Tomorrow()}
-                          className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
-                          placeholderText="日付を選択"
-                        />
-                      )}
+                      render={({ field }) => {
+                        const valueAsDate = field.value instanceof Date
+                          ? field.value
+                          : field.value
+                          ? new Date(field.value)
+                          : null;
+                      
+                        return (
+                          <DatePicker
+                            {...field}
+                            selected={valueAsDate}
+                            onChange={(date) => field.onChange(date)}
+                            dateFormat="yyyy-MM-dd"
+                            minDate={Tomorrow()}
+                            className={`${inputStyle} w-full border ${dateError ? "border-red-500" : "border-gray-300"}`}
+                            placeholderText="日付を選択"
+                            readOnly
+                          />
+                        );
+                      }}
                     />
                     {dateError && (
                       <p className="text-red-500 text-sm mt-1">
