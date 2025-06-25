@@ -135,7 +135,7 @@ export default function Step1FormPage() {
           const { address1, address2, address3 } = data.results[0];
           const fetched = `${address1}${address2}${address3}`;
           const existing = watch(`${prefix}Address`);
-          if (!existing || existing === '' || existing === fetched) {
+          if (!existing || existing === '' || !existing.includes(address1)) {
             setValue(`${prefix}Address`, fetched);
           }
         }
