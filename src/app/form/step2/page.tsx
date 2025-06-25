@@ -309,11 +309,13 @@ export default function Step2FormPage() {
           <textarea rows={3} {...register("itemsRemarks")} className={inputStyle} placeholder="例：分解が必要なベッドあり、大型スピーカー×2など" />
         </section>
 
-        <div className="flex justify-between">
-          <button type="button" onClick={() => router.back()} className="bg-gray-400 text-white font-semibold py-2 px-6 rounded hover:bg-gray-500">戻る</button>
-          <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700">次へ（最終ページへ）</button>
+        <div>
+          <div className="flex justify-between">
+            <button type="button" onClick={() => router.back()} className="bg-gray-400 text-white font-semibold py-2 px-6 rounded hover:bg-gray-500">戻る</button>
+            <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700">次へ（最終ページへ）</button>
+          </div>
+          <div className="text-center text-sm text-gray-600">2 / 3 ページ</div>
         </div>
-        <div className="text-sm text-gray-600">2 / 3 ページ</div>
       </form>
     </main>
   );
