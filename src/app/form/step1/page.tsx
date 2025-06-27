@@ -175,7 +175,7 @@ const DateTimeSection = ({
           })}
           className={`${STYLES.input} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`}
         >
-          <option value="">選択してください</option>
+          <option value=""></option>
           {TIME_SLOTS.map(slot => (
             <option key={slot.value} value={slot.value}>{slot.label}</option>
           ))}
