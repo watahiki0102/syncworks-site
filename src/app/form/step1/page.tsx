@@ -159,14 +159,17 @@ const DateTimeSection = ({
               // 任意枠の場合
               // 両方空ならOK
               if (!selectedDate && (!value || value === 'none')) return true;
-              // 日付が選択されている場合かつ時間帯が空または指定なしの場合はエラーメッセージを返す
-              if (selectedDate && (!value || value === 'none')) {
-                return `※ 第${index}希望日に対する時間帯を選択してください`;
-              }
+              
               // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
               if (!selectedDate && value && value !== 'none') {
                 return `※ 第${index}希望日の入力が先に必要です`;
               }
+              
+              // 日付が選択されている場合かつ時間帯が空または指定なしの場合はエラーメッセージを返す
+              if (selectedDate && (!value || value === 'none')) {
+                return `※ 第${index}希望日に対する時間帯を選択してください`;
+              }
+              
               return true;
             },
           })}
