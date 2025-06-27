@@ -156,12 +156,12 @@ const DateTimeSection = ({
           })}
           className={`${STYLES.input} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`}
         >
-          <option value="">時間帯を選択してください</option>
+          <option value="">選択してください</option>
           {TIME_SLOTS.map(slot => (
             <option key={slot.value} value={slot.value}>{slot.label}</option>
           ))}
         </select>
-        {timeSlotError && (
+        {timeSlotError && selectedDate && (
           <ErrorMessage message={
             typeof timeSlotError === "string" 
               ? timeSlotError 
