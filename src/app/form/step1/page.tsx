@@ -161,7 +161,8 @@ const DateTimeSection = ({
             <option key={slot.value} value={slot.value}>{slot.label}</option>
           ))}
         </select>
-        {timeSlotError && selectedDate && (
+        {/* 時間帯が選択されていない場合はエラーメッセージを表示 */}
+        {timeSlotError && selectedDate && isRequired && (
           <ErrorMessage message={
             typeof timeSlotError === "string" 
               ? timeSlotError 
