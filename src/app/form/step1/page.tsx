@@ -127,6 +127,8 @@ const DateTimeSection = ({
           {...register(`date${index}`, {
             required: isRequired ? `※ 第${index}希望日は必須です` : false,
             validate: (value: string) => {
+              // 非必須の場合は空の場合はtrueを返す
+              if (!isRequired && !value) return true;
               const selected = new Date(value);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -160,7 +162,7 @@ const DateTimeSection = ({
           })}
           className={`${STYLES.input} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`}
         >
-          <option value=""></option>
+          <option value="">時間帯を選択してください</option>
           {TIME_SLOTS.map(slot => (
             <option key={slot.value} value={slot.value}>{slot.label}</option>
           ))}
