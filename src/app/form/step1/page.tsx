@@ -126,7 +126,17 @@ const DateTimeSection = ({
           type="date"
           {...register(`date${index}`, {
             required: isRequired ? `※ 第${index}希望日は必須です` : false,
-            validate: (value: string) => validateDate(value, index)
+            validate: (value: string) => {
+              const selected = new Date(value);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              selected.setHours(0, 0, 0, 0);
+              
+              if (selected < today) {
+                return `※ 第${index}希望日に過去の日付は選択できません`;
+              }
+              return true;
+            }
           })}
           className={`${STYLES.input} border ${dateError ? 'border-red-500' : 'border-gray-300'}`}
         />
