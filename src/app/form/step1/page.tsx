@@ -182,11 +182,7 @@ const DateTimeSection = ({
         </select>
         {/* 時間帯のエラーメッセージを表示 */}
         {timeSlotError && (
-          <ErrorMessage message={
-            typeof timeSlotError === "string" 
-              ? timeSlotError 
-              : `※ 第${index}希望時間帯を選択してください`
-          } />
+          <ErrorMessage message={timeSlotError.message || `※ 第${index}希望時間帯を選択してください`} />
         )}
       </div>
     </div>
