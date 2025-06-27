@@ -219,20 +219,21 @@ const AddressSection = ({
             input.value = input.value.replace(/[^0-9]/g, '');
           }}
           {...register(`${prefix}PostalCode`, {
-            required: prefix === "to" ? false : "※ 郵便番号は必須です",
+            required: prefix === "from" && "※ 郵便番号は必須です",
             pattern: {
               value: /^[0-9]{7}$/,
               message: "※ 郵便番号は7桁の数字で入力してください"
+            },
+            validate: (value: string) => {
+              if (!value) return true;
+              return value.length === 7 || "※ 郵便番号は7桁ちょうどで入力してください";
             }
           })}
           className={`${STYLES.input} border ${errors[`${prefix}PostalCode`] ? 'border-red-500' : 'border-gray-300'}`}
           placeholder="例：1234567"
         />
-        {errors[`${prefix}PostalCode`]?.type === 'required' && (
-          <ErrorMessage message="※ 郵便番号は必須です" />
-        )}
-        {errors[`${prefix}PostalCode`]?.type === 'pattern' && (
-          <ErrorMessage message="※ 郵便番号は7桁の数字で入力してください" />
+        {errors[`${prefix}PostalCode`] && (
+          <ErrorMessage message={errors[`${prefix}PostalCode`].message || "※ 郵便番号は必須です"} />
         )}
       </div>
 
