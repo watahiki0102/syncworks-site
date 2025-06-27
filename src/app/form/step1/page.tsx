@@ -380,12 +380,7 @@ export default function Step1FormPage() {
             .then((data) => {
               if (data.results && data.results.length > 0) {
                 const { address1, address2, address3 } = data.results[0];
-                const fetchedAddress = `${address1}${address2}${address3}`;
-                const current = value[addressField] || '';
-                const userAppended = current.replace(fetchedAddress, '');
-                const newAddress = fetchedAddress + userAppended;
-
-                setValue(addressField, newAddress);
+                setValue(addressField, `${address1}${address2}${address3}`);
               }
             })
             .catch((e) => {
