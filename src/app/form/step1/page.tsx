@@ -16,9 +16,9 @@ interface FormData {
   firstNameKana: string; // 名（カタカナ）
   phone: string; // 携帯番号
   email: string; // メールアドレス
-  date1: Date | null; // 第1希望日
-  date2: Date | null; // 第2希望日
-  date3: Date | null; // 第3希望日
+  date1: string; // 第1希望日
+  date2: string; // 第2希望日
+  date3: string; // 第3希望日
   timeSlot1: string; // 第1希望時間帯
   timeSlot2: string; // 第2希望時間帯
   timeSlot3: string; // 第3希望時間帯
@@ -76,13 +76,7 @@ const loadSavedData = (): Partial<FormData> => {
   const saved = localStorage.getItem('formStep1');
   if (!saved) return {};
   
-  const parsed = JSON.parse(saved);
-  ['date1', 'date2', 'date3'].forEach((k) => {
-    if (parsed[k]) {
-      parsed[k] = new Date(parsed[k]);
-    }
-  });
-  return parsed;
+  return JSON.parse(saved);
 };
 
 const validateDate = (value: string, index: number): string | true => {
