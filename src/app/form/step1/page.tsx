@@ -148,15 +148,18 @@ const DateTimeSection = ({
           {...register(`timeSlot${index}`, {
             required: isRequired,
             validate: (value: string) => {
-              // 日付が選択されていない場合かつ時間帯が空の場合はtrueを返す
-              if (!selectedDate && !value) {
-                return true;
+              if (!isRequired) {
+                // 任意枠で両方空ならOK
+                if (!selectedDate && !value) return true;
+                // 日付が選択されている場合かつ時間帯が空の場合はエラーメッセージを返す
+                if (selectedDate && !value) {
+                  return `※ 第${index}希望日に対する時間帯を選択してください`;
+                }
+                // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
+                if (!selectedDate && value) {
+                  return `※ 第${index}希望日の入力が先に必要です`;
+                }
               }
-              // 日付が選択されている場合かつ時間帯が空の場合はエラーメッセージを返す
-              if (selectedDate && !selectedTime) {
-                return "※ 第" + index + "希望日に対する時間帯を選択してください";
-              }
-              // 日付が選択されている場合かつ時間帯が選択されている場合はtrueを返す
               return true;
             },
           })}
