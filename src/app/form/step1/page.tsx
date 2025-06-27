@@ -568,9 +568,9 @@ export default function Step1FormPage() {
                 autoComplete="off"
                 {...register("email", {
                   required: true,
-                  pattern: {
-                    value: /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/,
-                    message: "※ 正しいメールアドレス形式で入力してください"
+                  validate: (value) => {
+                    const emailRegex = /^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/;
+                    return emailRegex.test(value) || "※ 正しいメールアドレス形式で入力してください";
                   },
                   onChange: (e) => handleEmailInput(e),
                 })}
