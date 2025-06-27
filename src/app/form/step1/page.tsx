@@ -148,17 +148,24 @@ const DateTimeSection = ({
           {...register(`timeSlot${index}`, {
             required: isRequired,
             validate: (value: string) => {
-              if (!isRequired) {
-                // 任意枠で両方空ならOK
-                if (!selectedDate && !value) return true;
-                // 日付が選択されている場合かつ時間帯が空の場合はエラーメッセージを返す
-                if (selectedDate && !value) {
-                  return `※ 第${index}希望日に対する時間帯を選択してください`;
+              // 必須枠の場合
+              if (isRequired) {
+                if (!value || value === 'none') {
+                  return `※ 第${index}希望時間帯を選択してください`;
                 }
-                // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
-                if (!selectedDate && value) {
-                  return `※ 第${index}希望日の入力が先に必要です`;
-                }
+                return true;
+              }
+              
+              // 任意枠の場合
+              // 両方空ならOK
+              if (!selectedDate && (!value || value === 'none')) return true;
+              // 日付が選択されている場合かつ時間帯が空または指定なしの場合はエラーメッセージを返す
+              if (selectedDate && (!value || value === 'none')) {
+                return `※ 第${index}希望日に対する時間帯を選択してください`;
+              }
+              // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
+              if (!selectedDate && value && value !== 'none') {
+                return `※ 第${index}希望日の入力が先に必要です`;
               }
               return true;
             },
@@ -170,8 +177,8 @@ const DateTimeSection = ({
             <option key={slot.value} value={slot.value}>{slot.label}</option>
           ))}
         </select>
-        {/* 時間帯が選択されていない場合はエラーメッセージを表示 */}
-        {timeSlotError && selectedDate && isRequired && (
+        {/* 時間帯のエラーメッセージを表示 */}
+        {timeSlotError && (
           <ErrorMessage message={
             typeof timeSlotError === "string" 
               ? timeSlotError 
