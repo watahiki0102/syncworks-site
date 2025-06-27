@@ -146,10 +146,10 @@ const DateTimeSection = ({
         </label>
         <select
           {...register(`timeSlot${index}`, {
-            required: isRequired,
+            required: isRequired ? `※ 第${index}希望時間帯を選択してください` : false,
             validate: () => {
               if (selectedDate && !selectedTime) {
-                return "※ 第" + index + "希望日に対する時間帯を選択してください";
+                return `※ 第${index}希望日に対する時間帯を選択してください`;
               }
               return true;
             },
@@ -162,7 +162,7 @@ const DateTimeSection = ({
           ))}
         </select>
         {/* 時間帯が選択されていない場合はエラーメッセージを表示 */}
-        {timeSlotError && selectedDate && isRequired && (
+        {timeSlotError && (
           <ErrorMessage message={
             typeof timeSlotError === "string" 
               ? timeSlotError 
