@@ -7,40 +7,315 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import "react-datepicker/dist/react-datepicker.css";
 
-export default function Step1FormPage() {
-  const saved = typeof window !== 'undefined' ? localStorage.getItem('formStep1') : null;
-  const parsed = saved ? JSON.parse(saved) : {};
+// 型定義
+interface FormData {
+  moveType: string; // 引越しタイプ
+  lastName: string; // 姓
+  firstName: string; // 名
+  lastNameKana: string; // 姓（カタカナ）
+  firstNameKana: string; // 名（カタカナ）
+  phone: string; // 携帯番号
+  email: string; // メールアドレス
+  date1: Date | null; // 第1希望日
+  date2: Date | null; // 第2希望日
+  date3: Date | null; // 第3希望日
+  timeSlot1: string; // 第1希望時間帯
+  timeSlot2: string; // 第2希望時間帯
+  timeSlot3: string; // 第3希望時間帯
+  fromPostalCode: string; // 引越し元郵便番号
+  fromAddress: string; // 引越し元住所
+  fromResidenceType: string; // 引越し元住宅タイプ
+  fromResidenceOther?: string; // 引越し元その他の住宅タイプ
+  fromFloor: string; // 引越し元階数
+  toPostalCode: string; // 引越し先郵便番号
+  toAddress: string; // 引越し先住所
+  toResidenceType: string; // 引越し先住宅タイプ
+  toResidenceOther?: string; // 引越し先その他の住宅タイプ
+  toFloor: string; // 引越し先階数
+}
+
+// 定数
+const COMMON_DOMAINS = [
+  'gmail.com',
+  'yahoo.co.jp',
+  'icloud.com',
+  'outlook.com',
+  'hotmail.com'
+];
+
+const TIME_SLOTS = [
+  { value: 'none', label: '指定なし' },
+  { value: 'early_morning', label: '早朝（6～9時）' },
+  { value: 'morning', label: '午前（9～12時）' },
+  { value: 'afternoon', label: '午後（12～15時）' },
+  { value: 'evening', label: '夕方（15～18時）' },
+  { value: 'night', label: '夜間（18～21時）' },
+  { value: 'not_early', label: '早朝以外（9～21時）' },
+  { value: 'not_night', label: '夜間以外（6～18時）' },
+  { value: 'daytime_only', label: '早朝・夜間以外（9～18時）' }
+];
+
+const RESIDENCE_TYPES = [
+  "アパート・マンション（エレベーター利用可）",
+  "アパート・マンション（エレベーター利用不可）",
+  "一軒家"
+];
+
+// スタイル
+const STYLES = {
+  section: "bg-white shadow-md rounded-lg p-6 border border-gray-200",
+  label: "block text-sm font-medium text-gray-700 mb-1",
+  input: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
+  error: "text-red-500 text-sm mt-1"
+};
+
+// ユーティリティ関数
+const loadSavedData = (): Partial<FormData> => {
+  if (typeof window === 'undefined') return {};
+  
+  const saved = localStorage.getItem('formStep1');
+  if (!saved) return {};
+  
+  const parsed = JSON.parse(saved);
   ['date1', 'date2', 'date3'].forEach((k) => {
     if (parsed[k]) {
       parsed[k] = new Date(parsed[k]);
     }
   });
+  return parsed;
+};
+
+const validateDate = (value: string, index: number): string | true => {
+  const selected = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  selected.setHours(0, 0, 0, 0);
+  return selected > today || `※ 第${index}希望日に過去日が設定されています`;
+};
+
+// コンポーネント
+const ErrorMessage = ({ message }: { message: string }) => (
+  <p className={STYLES.error}>{message}</p>
+);
+
+const DateTimeSection = ({ 
+  index, 
+  register, 
+  watch, 
+  errors, 
+  isRequired 
+}: {
+  index: number;
+  register: any;
+  watch: any;
+  errors: any;
+  isRequired: boolean;
+}) => {
+  const selectedDate = watch(`date${index}`);
+  const selectedTime = watch(`timeSlot${index}`);
+  const dateError = errors[`date${index}`];
+  const timeSlotError = errors[`timeSlot${index}`];
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className={STYLES.label}>
+          🗓️ 第{index}希望日{isRequired && <span className="text-red-600">＊</span>}
+        </label>
+        <input
+          type="date"
+          {...register(`date${index}`, {
+            required: isRequired ? `※ 第${index}希望日は必須です` : false,
+            validate: (value: string) => validateDate(value, index)
+          })}
+          className={`${STYLES.input} border ${dateError ? 'border-red-500' : 'border-gray-300'}`}
+        />
+        {dateError?.message && (
+          <ErrorMessage message={dateError.message} />
+        )}
+      </div>
+      <div>
+        <label className={STYLES.label}>
+          ⏰ 時間帯{isRequired && <span className="text-red-600">＊</span>}
+        </label>
+        <select
+          {...register(`timeSlot${index}`, {
+            required: isRequired,
+            validate: () => {
+              if (selectedDate && !selectedTime) {
+                return "※ 第" + index + "希望日に対する時間帯を選択してください";
+              }
+              return true;
+            },
+          })}
+          className={`${STYLES.input} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`}
+        >
+          <option value=""></option>
+          {TIME_SLOTS.map(slot => (
+            <option key={slot.value} value={slot.value}>{slot.label}</option>
+          ))}
+        </select>
+        {timeSlotError && (
+          <ErrorMessage message={
+            typeof timeSlotError === "string" 
+              ? timeSlotError 
+              : `※ 第${index}希望時間帯を選択してください`
+          } />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AddressSection = ({ 
+  label, 
+  prefix, 
+  register, 
+  watch, 
+  errors, 
+  setValue 
+}: {
+  label: string;
+  prefix: 'from' | 'to';
+  register: any;
+  watch: any;
+  errors: any;
+  setValue: any;
+}) => {
+  const residenceType = watch(`${prefix}ResidenceType`);
+  const isHouse = residenceType === "一軒家";
+  const isOther = residenceType === "その他";
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
+      
+      <div className="mb-4">
+        <label className={STYLES.label}>
+          郵便番号 {prefix === "from" && <span className="text-red-600">＊</span>}
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          onInput={(e) => {
+            const input = e.target as HTMLInputElement;
+            input.value = input.value.replace(/[^0-9]/g, '');
+          }}
+          {...register(`${prefix}PostalCode`, {
+            required: prefix === "to" ? false : "※ 郵便番号は必須です",
+            pattern: {
+              value: /^[0-9]{7}$/,
+              message: "※ 郵便番号は7桁の数字で入力してください"
+            }
+          })}
+          className={`${STYLES.input} border ${errors[`${prefix}PostalCode`] ? 'border-red-500' : 'border-gray-300'}`}
+          placeholder="例：1234567"
+        />
+        {errors[`${prefix}PostalCode`]?.type === 'required' && (
+          <ErrorMessage message="※ 郵便番号は必須です" />
+        )}
+        {errors[`${prefix}PostalCode`]?.type === 'pattern' && (
+          <ErrorMessage message="※ 郵便番号は7桁の数字で入力してください" />
+        )}
+      </div>
+
+      <div className="mb-4">
+        <label className={STYLES.label}>住所 <span className="text-red-600">＊</span></label>
+        <input
+          type="text"
+          {...register(`${prefix}Address`, {
+            required: true,
+            validate: (v: string) => /[市区町村郡]/.test(v)
+          })}
+          className={`${STYLES.input} border ${errors[`${prefix}Address`] ? 'border-red-500' : 'border-gray-300'}`}
+        />
+        {errors[`${prefix}Address`]?.type === 'required' && (
+          <ErrorMessage message="※ 住所は必須です" />
+        )}
+        {errors[`${prefix}Address`]?.type === 'validate' && (
+          <ErrorMessage message="※ 市区町村名を含めて入力してください" />
+        )}
+      </div>
+
+      <div className="mb-4">
+        <label className={STYLES.label}>住宅タイプ <span className="text-red-600">＊</span></label>
+        <div className={`space-y-1 p-2 rounded ${errors[`${prefix}ResidenceType`] ? 'border border-red-500' : ''}`}>
+          {RESIDENCE_TYPES.map((type) => (
+            <label key={type} className="block">
+              <input
+                type="radio"
+                value={type}
+                {...register(`${prefix}ResidenceType`, { required: true })}
+                className="mr-2"
+              />
+              {type}
+            </label>
+          ))}
+          {isOther && (
+            <input
+              type="text"
+              placeholder="住宅タイプを入力"
+              {...register(`${prefix}ResidenceOther`)}
+              className={`${STYLES.input} mt-2`}
+            />
+          )}
+        </div>
+        {errors[`${prefix}ResidenceType`] && (
+          <ErrorMessage message="※ 住宅タイプを選択してください" />
+        )}
+      </div>
+
+      <div>
+        <label className={STYLES.label}>階数 <span className="text-red-600">＊</span></label>
+        {isHouse && (
+          <p className="text-sm text-gray-500 mb-1">※ 建物全体の階数を入力してください</p>
+        )}
+        <select
+          {...register(`${prefix}Floor`, { required: true })}
+          className={`${STYLES.input} border ${errors[`${prefix}Floor`] ? 'border-red-500' : 'border-gray-300'}`}
+        >
+          <option value="">選択してください</option>
+          {[...Array(50)].map((_, i) => (
+            <option key={i + 1} value={i + 1}>{i + 1}階</option>
+          ))}
+          <option value="51以上">51階以上</option>
+        </select>
+        {errors[`${prefix}Floor`] && (
+          <ErrorMessage message="※ 階数を選択してください" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default function Step1FormPage() {
+  const router = useRouter();
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const prevPostalCodeRef = useRef<string | null>(null);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
     setValue
-  } = useForm({ defaultValues: parsed });
+  } = useForm<FormData>();
 
-
-  const router = useRouter();
-  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
-  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
-
+  // クライアントサイドでのみローカルストレージからデータを読み込み
   useEffect(() => {
-    const init = async () => {
-    };
-    init();
-  }, []);
-  const commonDomains = [
-    'gmail.com',
-    'yahoo.co.jp',
-    'icloud.com',
-    'outlook.com',
-    'hotmail.com'
-  ];
+    setIsClient(true);
+    const savedData = loadSavedData();
+    if (Object.keys(savedData).length > 0) {
+      Object.entries(savedData).forEach(([key, value]) => {
+        setValue(key as keyof FormData, value);
+      });
+    }
+  }, [setValue]);
 
+  // メールアドレスのサジェスチョンを処理する関数
   const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (!value) {
@@ -48,22 +323,23 @@ export default function Step1FormPage() {
       setShowEmailSuggestions(false);
       return;
     }
+    
     if (value.includes('@')) {
       const [local, partial] = value.split('@');
-      const filtered = commonDomains
+      const filtered = COMMON_DOMAINS
         .filter((d) => d.startsWith(partial))
         .map((d) => `${local}@${d}`);
       setEmailSuggestions(filtered);
     } else {
-      const suggestions = commonDomains.map((d) => `${value}@${d}`);
+      const suggestions = COMMON_DOMAINS.map((d) => `${value}@${d}`);
       setEmailSuggestions(suggestions);
     }
     setShowEmailSuggestions(true);
   };
 
-  const onSubmit = (data: any) => {
+  // フォーム送信時の処理
+  const onSubmit = (data: FormData) => {
     try {
-      // ローカルストレージに保存
       localStorage.setItem('formStep1', JSON.stringify(data));
       router.push('/form/step2');
     } catch (e) {
@@ -71,29 +347,10 @@ export default function Step1FormPage() {
     }
   };
 
-  // ローカルストレージから入力内容を復元
+  // 5秒ごとに自動保存
   useEffect(() => {
-    const saved = localStorage.getItem('formStep1');
-    if (saved) {
-      const values = JSON.parse(saved);
-      Object.entries(values).forEach(([key, value]) => {
-        setValue(key, value);
-      });
-    }
-  }, [setValue]);
-
-  const sectionStyle = "bg-white shadow-md rounded-lg p-6 border border-gray-200";
-  const labelStyle = "block text-sm font-medium text-gray-700 mb-1";
-  const inputStyle = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
-  const fromOther = watch("fromResidenceType") === "その他";
-  const toOther = watch("toResidenceType") === "その他";
-  const fromPostalCode = watch("fromPostalCode");
-  const toPostalCode = watch("toPostalCode");
-  const fromAddress = watch("fromAddress");
-  const toAddress = watch("toAddress");
-
-  // 5秒ごとに現在の入力内容をローカルストレージへ保存
-  useEffect(() => {
+    if (!isClient) return;
+    
     const id = setInterval(() => {
       try {
         const data = watch();
@@ -103,18 +360,20 @@ export default function Step1FormPage() {
       }
     }, 5000);
     return () => clearInterval(id);
-  }, [watch]);
+  }, [watch, isClient]);
 
-  // 郵便番号入力時に住所を自動取得
+  // 郵便番号から住所を自動補完
   useEffect(() => {
-    const prevPostalCode = useRef<string | null>(null);
+    if (!isClient) return;
+    
     const subscription = watch((value, { name }) => {
-      if (name === 'postalCode') {
-        const zipcode = value.postalCode;
-        const prev = prevPostalCode.current;
+      if (name === 'fromPostalCode' || name === 'toPostalCode') {
+        const zipcode = value[name];
+        const prev = prevPostalCodeRef.current;
 
-        if (zipcode !== prev && /^\d{7}$/.test(zipcode)) {
-          prevPostalCode.current = zipcode; // 更新
+        if (zipcode && zipcode !== prev && /^\d{7}$/.test(zipcode)) {
+          prevPostalCodeRef.current = zipcode;
+          const addressField = name === 'fromPostalCode' ? 'fromAddress' : 'toAddress';
 
           fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`)
             .then((res) => res.json())
@@ -122,12 +381,11 @@ export default function Step1FormPage() {
               if (data.results && data.results.length > 0) {
                 const { address1, address2, address3 } = data.results[0];
                 const fetchedAddress = `${address1}${address2}${address3}`;
-
-                const current = value.address || '';
+                const current = value[addressField] || '';
                 const userAppended = current.replace(fetchedAddress, '');
                 const newAddress = fetchedAddress + userAppended;
 
-                setValue('address', newAddress);
+                setValue(addressField, newAddress);
               }
             })
             .catch((e) => {
@@ -138,7 +396,19 @@ export default function Step1FormPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+  }, [watch, setValue, isClient]);
+
+  // クライアントサイドでない場合はローディング表示
+  if (!isClient) {
+    return (
+      <main className="bg-gray-50 min-h-screen py-10 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">フォームを読み込み中...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
@@ -149,18 +419,20 @@ export default function Step1FormPage() {
           <p className="mb-1">⏳ 所要時間：<span className="font-semibold">約15分</span>（目安）</p>
         </div>
         <div>
-          <div className="text-center text-sm text-red-600 mb-2"><span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です</div>
+          <div className="text-center text-sm text-red-600 mb-2">
+            <span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です
+          </div>
           <div className="text-center text-sm text-red-600">入力内容は5秒ごとに自動保存されます</div>
-          <div className="text-center text-sm text-red-600" >入力途中で閉じても再開可能です</div>
+          <div className="text-center text-sm text-red-600">入力途中で閉じても再開可能です</div>
         </div>
 
         {/* 👤 基本情報 */}
-        <section className={sectionStyle}>
+        <section className={STYLES.section}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">👤 基本情報</h2>
           <div className="space-y-4">
             {/* 引越タイプ */}
             <div>
-              <label className={labelStyle}>
+              <label className={STYLES.label}>
                 🏠 引越タイプ <span className="text-red-600">＊</span>
               </label>
               <div className={`space-x-4 text-gray-800 p-2 rounded ${errors.moveType ? 'border border-red-500' : ''}`}>
@@ -184,67 +456,67 @@ export default function Step1FormPage() {
                 </label>
               </div>
               {errors.moveType && (
-                <p className="text-red-500 text-sm mt-1">※ 引越タイプを選択してください</p>
+                <ErrorMessage message="※ 引越タイプを選択してください" />
               )}
             </div>
 
-            {/* 姓＋名（スマホでも横並び） */}
+            {/* 姓＋名 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelStyle}>📛 姓<span className="text-red-600">＊</span></label>
+                <label className={STYLES.label}>📛 姓<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
                   {...register('lastName', { required: true })}
-                  className={`${inputStyle} border ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`${STYLES.input} border ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {errors.lastName && <p className="text-red-500 text-sm mt-1">※ 姓は必須です</p>}
+                {errors.lastName && <ErrorMessage message="※ 姓は必須です" />}
               </div>
               <div>
-                <label className={labelStyle}>📛 名<span className="text-red-600">＊</span></label>
+                <label className={STYLES.label}>📛 名<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
                   {...register('firstName', { required: true })}
-                  className={`${inputStyle} border ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`${STYLES.input} border ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {errors.firstName && <p className="text-red-500 text-sm mt-1">※ 名は必須です</p>}
+                {errors.firstName && <ErrorMessage message="※ 名は必須です" />}
               </div>
             </div>
 
             {/* セイ＋メイ */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelStyle}>📛 セイ（カタカナ）<span className="text-red-600">＊</span></label>
+                <label className={STYLES.label}>📛 セイ（カタカナ）<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
                   {...register('lastNameKana', {
                     required: true,
                     pattern: /^[ァ-ヶー　]+$/u
                   })}
-                  className={`${inputStyle} border ${errors.lastNameKana ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`${STYLES.input} border ${errors.lastNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
                 />
-                {errors.lastNameKana?.type === 'required' && <p className="text-red-500 text-sm mt-1">※ セイは必須です</p>}
-                {errors.lastNameKana?.type === 'pattern' && <p className="text-red-500 text-sm mt-1">※ カタカナで入力してください</p>}
+                {errors.lastNameKana?.type === 'required' && <ErrorMessage message="※ セイは必須です" />}
+                {errors.lastNameKana?.type === 'pattern' && <ErrorMessage message="※ カタカナで入力してください" />}
               </div>
               <div>
-                <label className={labelStyle}>📛 メイ（カタカナ）<span className="text-red-600">＊</span></label>
+                <label className={STYLES.label}>📛 メイ（カタカナ）<span className="text-red-600">＊</span></label>
                 <input
                   type="text"
                   {...register('firstNameKana', {
                     required: true,
                     pattern: /^[ァ-ヶー　]+$/u
                   })}
-                  className={`${inputStyle} border ${errors.firstNameKana ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`${STYLES.input} border ${errors.firstNameKana ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="カタカナ"
                 />
-                {errors.firstNameKana?.type === 'required' && <p className="text-red-500 text-sm mt-1">※ メイは必須です</p>}
-                {errors.firstNameKana?.type === 'pattern' && <p className="text-red-500 text-sm mt-1">※ カタカナで入力してください</p>}
+                {errors.firstNameKana?.type === 'required' && <ErrorMessage message="※ メイは必須です" />}
+                {errors.firstNameKana?.type === 'pattern' && <ErrorMessage message="※ カタカナで入力してください" />}
               </div>
             </div>
 
             {/* 携帯番号 */}
             <div>
-              <label className={labelStyle}>📞 携帯番号（ハイフンなし）<span className="text-red-600">＊</span></label>
+              <label className={STYLES.label}>📞 携帯番号（ハイフンなし）<span className="text-red-600">＊</span></label>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -257,20 +529,20 @@ export default function Step1FormPage() {
                   required: true,
                   pattern: /^[0-9]{11}$/
                 })}
-                className={`${inputStyle} border ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                className={`${STYLES.input} border ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：08012345678"
               />
               {errors.phone?.type === "required" && (
-                <p className="text-red-500 text-sm mt-1">※ 電話番号は必須です</p>
+                <ErrorMessage message="※ 電話番号は必須です" />
               )}
               {errors.phone?.type === "pattern" && (
-                <p className="text-red-500 text-sm mt-1">※ 電話番号は11桁の数字で入力してください</p>
+                <ErrorMessage message="※ 電話番号は11桁の数字で入力してください" />
               )}
             </div>
 
             {/* メール */}
             <div className="relative">
-              <label className={labelStyle}>
+              <label className={STYLES.label}>
                 📧 メールアドレス <span className="text-red-600">＊</span>
               </label>
               <input
@@ -286,7 +558,7 @@ export default function Step1FormPage() {
                 })}
                 onFocus={() => setShowEmailSuggestions(emailSuggestions.length > 0)}
                 onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 100)}
-                className={`${inputStyle} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                className={`${STYLES.input} border ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="例：example@gmail.com"
               />
               {showEmailSuggestions && emailSuggestions.length > 0 && (
@@ -306,222 +578,52 @@ export default function Step1FormPage() {
                 </ul>
               )}
               {errors.email?.type === "required" && (
-                <p className="text-red-500 text-sm mt-1">※ メールアドレスは必須です</p>
+                <ErrorMessage message="※ メールアドレスは必須です" />
               )}
               {typeof errors.email?.message === "string" && (
-                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                <ErrorMessage message={errors.email.message} />
               )}
             </div>
           </div>
         </section>
 
         {/* 🕓 引越し希望日時 */}
-        <section className={sectionStyle}>
+        <section className={STYLES.section}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">🕓 引越し希望日時</h2>
           <p className="text-sm text-gray-500 mb-2">※ お申し込みから「10日後以降」の日程を目安にご入力ください</p>
           <div className="space-y-4">
-            {[1, 2, 3].map((n) => {
-              const isRequired = n === 1;
-              const dateError = errors[`date${n}`];
-              const timeSlotError = errors[`timeSlot${n}`];
-
-              const selectedDate = watch(`date${n}`);
-              const selectedTime = watch(`timeSlot${n}`);
-
-              const dateInputClass = `${inputStyle} border ${dateError ? 'border-red-500' : 'border-gray-300'}`;
-              const timeSelectClass = `${inputStyle} border ${timeSlotError ? 'border-red-500' : 'border-gray-300'}`;
-
-              return (
-                <div key={n} className="grid grid-cols-2 gap-4">
-                  {/* 日付 */}
-                  <div>
-                    <label className={labelStyle}>
-                      🗓️ 第{n}希望日{isRequired && <span className="text-red-600">＊</span>}
-                    </label>
-                    <input
-                      type="date"
-                      {...register(`date${n}`, {
-                        required: isRequired ? `※ 第${n}希望日は必須です` : false,
-                        validate: (value) => {
-                          const selected = new Date(value);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          selected.setHours(0, 0, 0, 0);
-                          return selected > today || `※ 第${n}希望日に過去日が設定されています`;
-                        }
-                      })}
-                      className={dateInputClass}
-                    />
-                    {dateError?.message && (
-                      <p className="text-red-500 text-sm mt-1">{dateError?.message}</p>
-                    )}
-                  </div>
-                  {/* 時間帯 */}
-                  <div>
-                    <label className={labelStyle}>
-                      ⏰ 時間帯{isRequired && <span className="text-red-600">＊</span>}
-                    </label>
-                    <select
-                      {...register(`timeSlot${n}`, {
-                        required: isRequired,
-                        validate: () => {
-                          // 日付が入力されていて、時間帯が空ならエラー
-                          if (selectedDate && !selectedTime) {
-                            return "※ 第" + n + "希望日に対する時間帯を選択してください";
-                          }
-                          return true;
-                        },
-                      })}
-                      className={timeSelectClass}
-                    >
-                      <option value=""></option>
-                      <option value="none">指定なし</option>
-                      <option value="early_morning">早朝（6～9時）</option>
-                      <option value="morning">午前（9～12時）</option>
-                      <option value="afternoon">午後（12～15時）</option>
-                      <option value="evening">夕方（15～18時）</option>
-                      <option value="night">夜間（18～21時）</option>
-                      <option value="not_early">早朝以外（9～21時）</option>
-                      <option value="not_night">夜間以外（6～18時）</option>
-                      <option value="daytime_only">早朝・夜間以外（9～18時）</option>
-                    </select>
-                    {timeSlotError && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {typeof timeSlotError === "string" ? (
-                          timeSlotError === "custom_time_required" ? (
-                            `※ 第${n}希望日を入力したら、時間帯も選んでください`
-                          ) : (
-                            timeSlotError
-                          )
-                        ) : (
-                          `※ 第${n}希望時間帯を選択してください`
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {[1, 2, 3].map((n) => (
+              <DateTimeSection
+                key={n}
+                index={n}
+                register={register}
+                watch={watch}
+                errors={errors}
+                isRequired={n === 1}
+              />
+            ))}
           </div>
         </section>
 
         {/* 📍 引越し元・引越し先情報 */}
-        <section className={sectionStyle}>
+        <section className={STYLES.section}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📍 引越し元・引越し先の情報</h2>
-          {[{ label: "引越し元（現住所）", prefix: "from" }, { label: "引越し先（新住所）", prefix: "to" }].map(({ label, prefix }) => {
-            const postalError = errors[`${prefix}PostalCode`];
-            const addressError = errors[`${prefix}Address`];
-            const residenceTypeError = errors[`${prefix}ResidenceType`];
-            const floorError = errors[`${prefix}Floor`];
-            // 住宅タイプを取得
-            const fromResidenceType = watch('fromResidenceType');
-            const toResidenceType = watch('toResidenceType');
-            // 各ループ内で判定
-            const isHouse = (prefix === "from" ? fromResidenceType : toResidenceType) === "一軒家";
-            return (
-              <div key={prefix} className="mb-6">
-                <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
-                {/* 郵便番号 */}
-                <div className="mb-4">
-                  <label className={labelStyle}>郵便番号 {prefix === "from" && <span className="text-red-600">＊</span>}</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    onInput={(e) => {
-                      const input = e.target as HTMLInputElement;
-                      input.value = input.value.replace(/[^0-9]/g, '');
-                    }}
-                    {...register(`${prefix}PostalCode`, {
-                      required: prefix === "to" ? false : "※ 郵便番号は必須です",
-                      pattern: {
-                        value: /^[0-9]{7}$/,
-                        message: "※ 郵便番号は7桁の数字で入力してください"
-                      }
-                    })}
-                    className={`${inputStyle} border ${postalError ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="例：1234567"
-                  />
-                  {addressError?.type === 'required' && (
-                    <p className="text-red-500 text-sm mt-1">※ 郵便番号は必須です</p>
-                  )}
-                  {postalError?.type === 'pattern' && (
-                    <p className="text-red-500 text-sm mt-1">※ 郵便番号は7桁の数字で入力してください</p>
-                  )}
-                </div>
-                {/* 住所 */}
-                <div className="mb-4">
-                  <label className={labelStyle}>住所 <span className="text-red-600">＊</span></label>
-                  <input
-                    type="text"
-                    {...register(`${prefix}Address`, {
-                      required: true,
-                      validate: (v) => /[市区町村郡]/.test(v)
-                    })}
-                    className={`${inputStyle} border ${addressError ? 'border-red-500' : 'border-gray-300'}`}
-                  />
-                  {addressError?.type === 'required' && (
-                    <p className="text-red-500 text-sm mt-1">※ 住所は必須です</p>
-                  )}
-                  {addressError?.type === 'validate' && (
-                    <p className="text-red-500 text-sm mt-1">※ 市区町村名を含めて入力してください</p>
-                  )}
-                </div>
-                {/* 住宅タイプ */}
-                <div className="mb-4">
-                  <label className={labelStyle}>住宅タイプ <span className="text-red-600">＊</span></label>
-                  <div className={`space-y-1 p-2 rounded ${residenceTypeError ? 'border border-red-500' : ''}`}>
-                    {[
-                      "アパート・マンション（エレベーター利用可）",
-                      "アパート・マンション（エレベーター利用不可）",
-                      "一軒家"
-                    ].map((type) => (
-                      <label key={type} className="block">
-                        <input
-                          type="radio"
-                          value={type}
-                          {...register(`${prefix}ResidenceType`, { required: true })}
-                          className="mr-2"
-                        />
-                        {type}
-                      </label>
-                    ))}
-                    {(prefix === "from" ? fromOther : toOther) && (
-                      <input
-                        type="text"
-                        placeholder="住宅タイプを入力"
-                        {...register(`${prefix}ResidenceOther`)}
-                        className={`${inputStyle} mt-2`}
-                      />
-                    )}
-                  </div>
-                  {residenceTypeError && (
-                    <p className="text-red-500 text-sm mt-1">※ 住宅タイプを選択してください</p>
-                  )}
-                </div>
-                {/* 階数 */}
-                <div>
-                  <label className={labelStyle}>階数 <span className="text-red-600">＊</span></label>
-                  {((prefix === "from" ? fromResidenceType : toResidenceType) === "一軒家") && (
-                    <p className="text-sm text-gray-500 mb-1">※ 建物全体の階数を入力してください</p>
-                  )}
-                  <select
-                    {...register(`${prefix}Floor`, { required: true })}
-                    className={`${inputStyle} border ${floorError ? 'border-red-500' : 'border-gray-300'}`}
-                  >
-                    <option value="">選択してください</option>
-                    {[...Array(50)].map((_, i) => (
-                      <option key={i + 1} value={i + 1}>{i + 1}階</option>
-                    ))}
-                    <option value="51以上">51階以上</option>
-                  </select>
-                  {floorError && (
-                    <p className="text-red-500 text-sm mt-1">※ 階数を選択してください</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <AddressSection
+            label="引越し元（現住所）"
+            prefix="from"
+            register={register}
+            watch={watch}
+            errors={errors}
+            setValue={setValue}
+          />
+          <AddressSection
+            label="引越し先（新住所）"
+            prefix="to"
+            register={register}
+            watch={watch}
+            errors={errors}
+            setValue={setValue}
+          />
         </section>
 
         <section className="text-center">
