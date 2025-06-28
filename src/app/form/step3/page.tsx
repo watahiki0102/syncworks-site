@@ -84,12 +84,12 @@ export default function Step3FormPage() {
         {/* 備考欄 */}
         <section className={sectionStyle}>
           <h2 className="text-xl font-semibold mb-2">🧾 その他備考・連絡事項</h2>
-          <p className="text-sm text-gray-500 mb-2">自由にご記入ください（特殊荷物、希望時間帯、駐車スペースなど）</p>
+          <p className="text-sm text-gray-500 mb-2">自由にご記入ください（特殊荷物、駐車スペースなど）</p>
           <textarea
             rows={4}
             {...register("remarks")}
             className={inputStyle}
-            placeholder="例：電子ピアノあり／駐車スペースが狭い／18時以降希望など"
+            placeholder="例：搬入経路が狭い／トラックが停められないなど"
           />
         </section>
 
