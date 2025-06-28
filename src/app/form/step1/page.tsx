@@ -443,8 +443,8 @@ export default function Step1FormPage() {
           <div className="text-center text-sm text-red-600 mb-2">
             <span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です
           </div>
-          <div className="text-center text-sm text-blue-800">入力内容は5秒ごとに自動保存されます</div>
-          <div className="text-center text-sm text-blue-800">入力途中で閉じても再開可能です</div>
+          <div className="text-center text-sm text-green-600">入力内容は5秒ごとに自動保存されます</div>
+          <div className="text-center text-sm text-green-600">入力途中で閉じても再開可能です</div>
         </div>
 
         {/* 👤 基本情報 */}
