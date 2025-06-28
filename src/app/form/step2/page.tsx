@@ -328,12 +328,12 @@ export default function Step2FormPage() {
 
         {/* その他の荷物に関する備考 */}
         <section className={styles.section}>
-          <label className="flex-1 mr-4">📝 その他の荷物・補足があれば記入</label>
+          <label className="flex-1 mr-4">📝 その他の荷物・補足があれば記入（ガラス製など取扱注意がある場合は記載）</label>
           <textarea 
             rows={3} 
             {...register("itemsRemarks")} 
             className={styles.input} 
-            placeholder="例：など" 
+            placeholder="例：ガラス製の棚があるため丁寧に扱ってほしいなど" 
           />
         </section>
 
