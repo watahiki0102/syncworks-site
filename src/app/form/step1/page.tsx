@@ -325,7 +325,10 @@ export default function Step1FormPage() {
     formState: { errors },
     watch,
     setValue
-  } = useForm<FormData>();
+  } = useForm<FormData>({
+    mode: 'onChange',
+    reValidateMode: 'onChange'
+  });
 
   // クライアントサイドでのみローカルストレージからデータを読み込み
   useEffect(() => {
