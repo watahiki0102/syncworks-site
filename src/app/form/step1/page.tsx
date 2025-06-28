@@ -586,7 +586,7 @@ export default function Step1FormPage() {
                       key={s}
                       className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
                       onMouseDown={() => {
-                        setValue('email', s);
+                        setValue('email', s, { shouldValidate: true });
                         setShowEmailSuggestions(false);
                       }}
                     >
