@@ -434,7 +434,7 @@ export default function Step1FormPage() {
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-        <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <h1 className="text-3xl font-bold text-center">📦 引越し相見積もりフォーム</h1>
         <div className="text-center text-sm text-gray-600 mb-4">
           <p className="mb-1">📝 入力項目：<span className="font-semibold">全3ページ</span></p>
           <p className="mb-1">⏳ 所要時間：<span className="font-semibold">約15分</span>（目安）</p>
@@ -443,8 +443,8 @@ export default function Step1FormPage() {
           <div className="text-center text-sm text-red-600 mb-2">
             <span className="text-red-600 font-bold">＊</span>が付いている項目は必須入力です
           </div>
-          <div className="text-center text-sm text-green-500">入力内容は5秒ごとに自動保存されます</div>
-          <div className="text-center text-sm text-green-500">入力途中で閉じても再開可能です</div>
+          <div className="text-center text-sm text-blue-800">入力内容は5秒ごとに自動保存されます</div>
+          <div className="text-center text-sm text-blue-800">入力途中で閉じても再開可能です</div>
         </div>
 
         {/* 👤 基本情報 */}
