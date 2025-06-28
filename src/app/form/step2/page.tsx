@@ -220,7 +220,7 @@ export default function Step2FormPage() {
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-        <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
+        <h1 className="text-3xl font-bold text-center">📦 荷物の数量を入力</h1>
         <div>
           <p className="text-center text-sm text-gray-600">必要なものをすべて入力してください（0でもOK）</p>
           <p className="text-center text-sm text-gray-500">※ 段ボールに梱包できるものは入力不要です</p>
