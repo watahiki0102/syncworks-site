@@ -66,7 +66,7 @@ export default function Home() {
             <div className="flex justify-center mb-4 text-blue-600"><Settings size={32} /></div>
             <h4 className="font-semibold mb-2">事業者の皆様へ</h4>
             <p>引越し事業者としての初期設定を行い、サービスを開始しましょう。</p>
-            <a href="/pricing/step1" className="text-blue-500 hover:underline">事業者初期設定ページへ</a>
+            <a href="/pricing/step0" className="text-blue-500 hover:underline">事業者初期設定ページへ</a>
           </div>
         </div>
       </section>
