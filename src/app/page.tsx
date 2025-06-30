@@ -1,7 +1,7 @@
 // Next.js + Tailwind CSS 構成
 // ページ：トップページ（セクション構成済）
 
-import { Handshake, Calculator, HomeIcon } from 'lucide-react';
+import { Handshake, Calculator, HomeIcon, Settings } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -54,6 +54,19 @@ export default function Home() {
             <div className="flex justify-center mb-4 text-blue-600"><HomeIcon size={32} /></div>
             <h4 className="font-semibold text-blue-600 mb-2">不動産連携</h4>
             <p>地域の不動産会社を通じて紹介されることで、質の高い見込み顧客とのマッチングが実現します。</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 事業者初期設定セクション */}
+      <section className="bg-white py-16">
+        <h3 className="text-xl font-bold text-center mb-10">事業者初期設定</h3>
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-gray-100 rounded p-6">
+            <div className="flex justify-center mb-4 text-blue-600"><Settings size={32} /></div>
+            <h4 className="font-semibold mb-2">事業者の皆様へ</h4>
+            <p>引越し事業者としての初期設定を行い、サービスを開始しましょう。</p>
+            <a href="/pricing/step1" className="text-blue-500 hover:underline">事業者初期設定ページへ</a>
           </div>
         </div>
       </section>

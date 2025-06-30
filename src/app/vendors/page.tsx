@@ -29,7 +29,16 @@ export default function VendorsPage() {
             </header>
 
             <section className="py-16 max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-center">引越し事業者一覧</h2>
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold mb-4">引越し事業者一覧</h2>
+                    <Link
+                        href="/pricing/step0"
+                        className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition mb-6"
+                    >
+                        💰 料金設定を開始
+                    </Link>
+                </div>
+                
                 <div className="space-y-4">
                     {sortedVendors.map((vendor) => (
                         <Link
