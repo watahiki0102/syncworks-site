@@ -145,6 +145,7 @@ interface ItemPoint {
   name: string;
   points: number;
   defaultPoints: number;
+  additionalCost: number; // Add additional cost field
 }
 
 export default function PricingStep0Page() {
@@ -167,7 +168,8 @@ export default function PricingStep0Page() {
           category: category.category,
           name: item.name,
           points: item.defaultPoints,
-          defaultPoints: item.defaultPoints
+          defaultPoints: item.defaultPoints,
+          additionalCost: 0 // Initialize additional cost to 0
         }))
       );
       setItemPoints(defaultPoints);
@@ -189,10 +191,17 @@ export default function PricingStep0Page() {
     ));
   };
 
+  // 加算金の更新
+  const updateAdditionalCost = (id: string, cost: number) => {
+    setItemPoints(itemPoints.map(item =>
+      item.id === id ? { ...item, additionalCost: Math.max(0, cost) } : item
+    ));
+  };
+
   // デフォルト値にリセット
   const resetToDefault = (id: string) => {
     setItemPoints(itemPoints.map(item =>
-      item.id === id ? { ...item, points: item.defaultPoints } : item
+      item.id === id ? { ...item, points: item.defaultPoints, additionalCost: 0 } : item
     ));
   };
 
@@ -200,7 +209,8 @@ export default function PricingStep0Page() {
   const resetAllToDefault = () => {
     setItemPoints(itemPoints.map(item => ({
       ...item,
-      points: item.defaultPoints
+      points: item.defaultPoints,
+      additionalCost: 0
     })));
   };
 
@@ -224,9 +234,9 @@ export default function PricingStep0Page() {
     }
 
     // 負の値チェック
-    const negativeItems = itemPoints.filter(item => item.points < 0);
+    const negativeItems = itemPoints.filter(item => item.points < 0 || item.additionalCost < 0);
     if (negativeItems.length > 0) {
-      errors.push("ポイントは0以上にしてください");
+      errors.push("ポイントと加算金は0以上にしてください");
     }
 
     return { isValid: errors.length === 0, errors };
@@ -368,7 +378,7 @@ export default function PricingStep0Page() {
                               🔄
                             </button>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 mb-2">
                             <input
                               type="number"
                               min="0"
@@ -377,6 +387,16 @@ export default function PricingStep0Page() {
                               className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
                             />
                             <span className="text-sm text-gray-600">ポイント</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              min="0"
+                              value={item.additionalCost}
+                              onChange={(e) => updateAdditionalCost(item.id, parseInt(e.target.value) || 0)}
+                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <span className="text-sm text-gray-600">加算金</span>
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
                             デフォルト: {item.defaultPoints}pt
