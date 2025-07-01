@@ -388,16 +388,18 @@ export default function PricingStep0Page() {
                             />
                             <span className="text-sm text-gray-600">ポイント</span>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 mb-1">
                             <input
                               type="number"
                               min="0"
                               value={item.additionalCost}
                               onChange={(e) => updateAdditionalCost(item.id, parseInt(e.target.value) || 0)}
                               className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="0"
                             />
-                            <span className="text-sm text-gray-600">加算金</span>
+                            <span className="text-sm text-gray-600">加算料金（円）</span>
                           </div>
+                          <div className="text-xs text-gray-400 mb-1">※この荷物に追加料金が必要な場合のみ入力してください</div>
                           <div className="text-xs text-gray-500 mt-1">
                             デフォルト: {item.defaultPoints}pt
                           </div>

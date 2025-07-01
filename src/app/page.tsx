@@ -13,6 +13,7 @@ export default function Home() {
           <nav className="space-x-6 text-sm text-gray-700">
             <a href="#service" className="hover:text-blue-600">サービス</a>
             <a href="/vendors" className="hover:text-blue-600">口コミ</a>
+            <a href="/admin/login" className="hover:text-blue-600">事業者はこちら</a>
             <a href="#news" className="hover:text-blue-600">お知らせ</a>
           </nav>
         </div>
@@ -58,15 +59,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 事業者初期設定セクション */}
+      {/* 事業者用セクション */}
       <section className="bg-white py-16">
-        <h3 className="text-xl font-bold text-center mb-10">事業者初期設定</h3>
+        <h3 className="text-xl font-bold text-center mb-10">事業者用設定</h3>
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gray-100 rounded p-6">
             <div className="flex justify-center mb-4 text-blue-600"><Settings size={32} /></div>
             <h4 className="font-semibold mb-2">事業者の皆様へ</h4>
-            <p>引越し事業者としての初期設定を行い、サービスを開始しましょう。</p>
-            <a href="/pricing/step0" className="text-blue-500 hover:underline">事業者初期設定ページへ</a>
+            <p>引越し事業者として、サービスを開始しましょう。</p>
+            <a href="/admin/login/" className="text-blue-500 hover:underline">事業者ログインページへ</a>
           </div>
         </div>
       </section>
