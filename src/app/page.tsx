@@ -11,8 +11,9 @@ export default function Home() {
       <header className="bg-white shadow">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="text-xl font-bold text-gray-800">SyncWorks</div>
-          <div>
-            <a href="/admin/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">事業者はこちら</a>
+          <div className="flex items-center">
+            <a href="/admin/login" className="text-xs text-gray-700 hover:bg-gray-100 mr-4">事業者はこちら</a>
+            <a href="/vendors" className="text-xs text-gray-700 hover:bg-gray-100 mr-4">口コミ</a>
           </div>
           <nav className="space-x-6 text-sm text-gray-700">
             <div className="relative">
@@ -32,8 +33,9 @@ export default function Home() {
               </button>
               <div id="menu" className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 hidden">
                 <a href="#service" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">サービス</a>
+                <a href="/admin/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">事業者はこちら</a>
                 <a href="/vendors" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">口コミ</a>
-                 <a href="#news" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">お知らせ</a>
+                <a href="#news" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">お知らせ</a>
               </div>
             </div>
           </nav>
