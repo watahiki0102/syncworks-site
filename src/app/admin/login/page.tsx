@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
                 <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center mb-6">
                     {/* サービス名 */}
                     <div className="flex space-x-2 mb-4">
-                        <span className="text-xl font-bold text-blue-700">SyncMoving</span>
+                        <span className="text-xl font-bold text-blue-700">事業者管理画面</span>
                     </div>
                     <h2 className="text-lg font-bold text-gray-800 mb-2">事業者アカウントをお持ちの方</h2>
                     <p className="text-sm text-gray-600 mb-6 text-center">アカウントをお持ちの方はログインしてください。</p>
@@ -102,6 +102,14 @@ export default function AdminLoginPage() {
                         onClick={() => router.push('/admin/register')}
                     >
                         新規会員登録
+                    </button>
+                </div>
+                <div className="mt-15 flex justify-center">
+                    <button
+                        className="text-center w-1/2 bg-gray-500 text-white font-semibold py-3 rounded-lg shadow-sm hover:bg-gray-600 transition text-lg"
+                        onClick={() => router.push('/')}
+                    >
+                        戻る
                     </button>
                 </div>
             </div>
