@@ -40,11 +40,11 @@ export default function AdminLoginPage() {
                     <div className="flex space-x-2 mb-4">
                         <span className="text-xl font-bold text-blue-700">事業者管理画面</span>
                     </div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-2">事業者アカウントをお持ちの方</h2>
-                    <p className="text-sm text-gray-600 mb-6 text-center">アカウントをお持ちの方はログインしてください。</p>
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">事業者アカウントをお持ちの方</h2>
+                    <p className="text-sm text-gray-800 mb-6 text-center">アカウントをお持ちの方はログインしてください。</p>
                     <form onSubmit={handleSubmit} className="w-full space-y-4">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">メールアドレス</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-900">メールアドレス</label>
                             <input
                                 id="email"
                                 name="email"
@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
                             />
                         </div>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">パスワード</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-900">パスワード</label>
                             <div className="relative">
                                 <input
                                     id="password"
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
                                     className="absolute inset-y-0 right-2 flex items-center text-xl text-gray-500 focus:outline-none"
                                     aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                                 >
-                                    {showPassword ? '🔓' : '🔒'}
+                                    {showPassword ? '👁️' : ' 🙈'}
                                 </button>
                             </div>
                         </div>
@@ -90,13 +90,13 @@ export default function AdminLoginPage() {
                         >
                             {isLoading ? 'ログイン中...' : 'ログイン'}
                         </button>
-                        <div className="text-xs text-gray-400 text-center mt-2">サンプル: admin@example.com / password123</div>
+                        <div className="text-xs text-gray-700 text-center mt-2">サンプル: admin@example.com / password123</div>
                     </form>
                 </div>
                 {/* 新規登録用 */}
                 <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center">
-                    <h2 className="text-lg font-bold text-gray-800 mb-2">アカウントをお持ちでない方</h2>
-                    <p className="text-sm text-gray-600 mb-6 text-center">ご利用にはアカウント登録が必要です。お持ちでない方は新規登録（無料）をしてください。</p>
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">アカウントをお持ちでない方</h2>
+                    <p className="text-sm text-gray-800 mb-6 text-center">ご利用にはアカウント登録が必要です。お持ちでない方は新規登録（無料）をしてください。</p>
                     <button
                         className="w-full bg-orange-600 text-white font-semibold py-3 rounded-lg shadow-sm hover:bg-orange-700 transition text-lg"
                         onClick={() => router.push('/admin/register')}
