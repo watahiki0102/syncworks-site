@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
                                     className="absolute inset-y-0 right-2 flex items-center text-xl text-gray-500 focus:outline-none"
                                     aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                                 >
-                                    {showPassword ? '🙈' : '👁'}
+                                    {showPassword ? '🔒' : '🔓'}
                                 </button>
                             </div>
                         </div>
