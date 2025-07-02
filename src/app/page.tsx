@@ -1,3 +1,4 @@
+'use client';
 // Next.js + Tailwind CSS 構成
 // ページ：トップページ（セクション構成済）
 
@@ -10,11 +11,31 @@ export default function Home() {
       <header className="bg-white shadow">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="text-xl font-bold text-gray-800">SyncWorks</div>
+          <div>
+            <a href="/admin/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">事業者はこちら</a>
+          </div>
           <nav className="space-x-6 text-sm text-gray-700">
-            <a href="#service" className="hover:text-blue-600">サービス</a>
-            <a href="/vendors" className="hover:text-blue-600">口コミ</a>
-            <a href="/admin/login" className="hover:text-blue-600">事業者はこちら</a>
-            <a href="#news" className="hover:text-blue-600">お知らせ</a>
+            <div className="relative">
+              <button
+                className="text-gray-700 hover:text-blue-600 focus:outline-none"
+                aria-label="Toggle menu"
+                onClick={() => {
+                  const menu = document.getElementById('menu');
+                  if (menu) {
+                    menu.classList.toggle('hidden');
+                  }
+                }}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+              </button>
+              <div id="menu" className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 hidden">
+                <a href="#service" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">サービス</a>
+                <a href="/vendors" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">口コミ</a>
+                 <a href="#news" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">お知らせ</a>
+              </div>
+            </div>
           </nav>
         </div>
       </header>
