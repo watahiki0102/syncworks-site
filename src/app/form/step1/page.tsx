@@ -72,10 +72,10 @@ const STYLES = {
 // ユーティリティ関数
 const loadSavedData = (): Partial<FormData> => {
   if (typeof window === 'undefined') return {};
-  
+
   const saved = localStorage.getItem('formStep1');
   if (!saved) return {};
-  
+
   return JSON.parse(saved);
 };
 
@@ -92,12 +92,12 @@ const ErrorMessage = ({ message }: { message: string }) => (
   <p className={STYLES.error}>{message}</p>
 );
 
-const DateTimeSection = ({ 
-  index, 
-  register, 
-  watch, 
-  errors, 
-  isRequired 
+const DateTimeSection = ({
+  index,
+  register,
+  watch,
+  errors,
+  isRequired
 }: {
   index: number;
   register: any;
@@ -127,7 +127,7 @@ const DateTimeSection = ({
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               selected.setHours(0, 0, 0, 0);
-              
+
               if (selected < today) {
                 return `※ 第${index}希望日に過去の日付は選択できません`;
               }
@@ -155,21 +155,21 @@ const DateTimeSection = ({
                 }
                 return true;
               }
-              
+
               // 任意枠の場合
               // 両方空ならOK
               if (!selectedDate && (!value || value === 'none')) return true;
-              
+
               // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
               if (!selectedDate && value && value !== 'none') {
                 return `※ 第${index}希望日の入力が先に必要です`;
               }
-              
+
               // 日付が選択されている場合かつ時間帯が空または指定なしの場合はエラーメッセージを返す
               if (selectedDate && (!value || value === 'none')) {
                 return `※ 第${index}希望日に対する時間帯を選択してください`;
               }
-              
+
               return true;
             },
           })}
@@ -189,13 +189,13 @@ const DateTimeSection = ({
   );
 };
 
-const AddressSection = ({ 
-  label, 
-  prefix, 
-  register, 
-  watch, 
-  errors, 
-  setValue 
+const AddressSection = ({
+  label,
+  prefix,
+  register,
+  watch,
+  errors,
+  setValue
 }: {
   label: string;
   prefix: 'from' | 'to';
@@ -211,7 +211,7 @@ const AddressSection = ({
   return (
     <div className="mb-6">
       <h3 className="text-md font-semibold mb-2">📍 {label}</h3>
-      
+
       <div className="mb-4">
         <label className={STYLES.label}>
           郵便番号 {prefix === "from" && <span className="text-red-600">＊</span>}
@@ -349,7 +349,7 @@ export default function Step1FormPage() {
       setShowEmailSuggestions(false);
       return;
     }
-    
+
     if (value.includes('@')) {
       const [local, partial] = value.split('@');
       const filtered = COMMON_DOMAINS
@@ -376,7 +376,7 @@ export default function Step1FormPage() {
   // 5秒ごとに自動保存
   useEffect(() => {
     if (!isClient) return;
-    
+
     const id = setInterval(() => {
       try {
         const data = watch();
@@ -391,7 +391,7 @@ export default function Step1FormPage() {
   // 郵便番号から住所を自動補完
   useEffect(() => {
     if (!isClient) return;
-    
+
     const subscription = watch((value, { name }) => {
       if (name === 'fromPostalCode' || name === 'toPostalCode') {
         const zipcode = value[name];
@@ -605,6 +605,7 @@ export default function Step1FormPage() {
                 <ErrorMessage message={errors.email.message} />
               )}
             </div>
+          </div>
         </section>
 
         {/* 🕓 引越し希望日時 */}

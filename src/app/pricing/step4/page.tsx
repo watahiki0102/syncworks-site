@@ -212,26 +212,21 @@ export default function PricingStep4Page() {
         {/* ヘッダー */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-800 mb-4">
-            📅 シーズン料金設定
+            🌸 シーズン料金設定
           </h1>
           <div className="flex justify-center items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">✓</div>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">1</div>
               <span className="ml-2">ポイント設定</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">✓</div>
-              <span className="ml-2">トラック換算</span>
-            </div>
-            <div className="w-8 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">✓</div>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
               <span className="ml-2">料金設定</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">✓</div>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">距離加算</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
@@ -420,9 +415,9 @@ export default function PricingStep4Page() {
           </button>
           <button
             onClick={handleComplete}
-            className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition"
+            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
           >
-            ✅ 設定完了
+            完了
           </button>
         </div>
       </div>

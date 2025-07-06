@@ -112,7 +112,7 @@ export default function AdminDashboard(props: {
                             {/* メニューカード */}
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* 価格設定 */}
-                                <Link href="/pricing/step0" className="block">
+                                <Link href="/pricing/step1" className="block">
                                     <div className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
                                         <div className="p-7 flex items-center gap-4">
                                             <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">💰</div>
