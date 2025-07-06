@@ -173,7 +173,7 @@ export default function AdminQuotes() {
                 onClick={() => router.push('/admin/dashboard')}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
-                ダッシュボードに戻る
+                トップに戻る
               </button>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function AdminQuotes() {
                             {quote.responseDate ? new Date(quote.responseDate).toLocaleDateString('ja-JP') : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ¥{quote.amount.toLocaleString()}
+                            {'¥' + quote.amount.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(quote.status)}

@@ -28,10 +28,13 @@ export default function AdminContracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
   const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummary[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [periodOption, setPeriodOption] = useState<string>('all');
+  const [yearValue, setYearValue] = useState('');
+  const [monthValue, setMonthValue] = useState('');
+  const [yearMonthValue, setYearMonthValue] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('contractDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const router = useRouter();
 
   // デモデータ
@@ -80,9 +83,17 @@ export default function AdminContracts() {
   useEffect(() => {
     let filtered = contracts;
 
-    if (selectedMonth !== 'all') {
+    if (periodOption === 'year' && yearValue) {
       filtered = filtered.filter(contract =>
-        contract.contractDate.startsWith(selectedMonth)
+        contract.contractDate.startsWith(yearValue)
+      );
+    } else if (periodOption === 'month' && monthValue) {
+      filtered = filtered.filter(contract =>
+        contract.contractDate.slice(5, 7) === monthValue.padStart(2, '0')
+      );
+    } else if (periodOption === 'yearMonth' && yearMonthValue) {
+      filtered = filtered.filter(contract =>
+        contract.contractDate.startsWith(yearMonthValue)
       );
     }
 
@@ -121,7 +132,7 @@ export default function AdminContracts() {
     });
 
     setFilteredContracts(filtered);
-  }, [contracts, selectedMonth, searchTerm, sortBy, sortOrder]);
+  }, [contracts, periodOption, yearValue, monthValue, yearMonthValue, searchTerm, sortBy, sortOrder]);
 
   const handleExportCSV = () => {
     const csvContent = [
@@ -140,7 +151,15 @@ export default function AdminContracts() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `contracts_${selectedMonth || 'all'}.csv`);
+    const periodLabel =
+      periodOption === 'year'
+        ? yearValue
+        : periodOption === 'month'
+          ? monthValue
+          : periodOption === 'yearMonth'
+            ? yearMonthValue
+            : 'all';
+    link.setAttribute('download', `contracts_${periodLabel || 'all'}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -148,8 +167,16 @@ export default function AdminContracts() {
   };
 
   const getCurrentMonthSummary = () => {
-    return monthlySummaries.find(summary => summary.month === selectedMonth) ||
-      { totalRevenue: 0, totalContracts: 0, totalAmount: 0 };
+    const totalRevenue = filteredContracts.reduce(
+      (acc, c) => acc + c.revenue,
+      0
+    );
+    const totalAmount = filteredContracts.reduce(
+      (acc, c) => acc + c.contractAmount,
+      0
+    );
+    const totalContracts = filteredContracts.length;
+    return { totalRevenue, totalContracts, totalAmount };
   };
 
   const handleRecalculate = () => {
@@ -209,7 +236,7 @@ export default function AdminContracts() {
                             月別売上
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalRevenue.toLocaleString()}
+                            {'¥' + getCurrentMonthSummary().totalRevenue.toLocaleString()}
                           </dd>
                         </dl>
                       </div>
@@ -253,7 +280,7 @@ export default function AdminContracts() {
                             総成約金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalAmount.toLocaleString()}
+                            {'¥' + getCurrentMonthSummary().totalAmount.toLocaleString()}
                           </dd>
                         </dl>
                       </div>
@@ -275,9 +302,15 @@ export default function AdminContracts() {
                             平均成約金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalContracts > 0
-                              ? Math.round(getCurrentMonthSummary().totalAmount / getCurrentMonthSummary().totalContracts).toLocaleString()
-                              : '0'}
+                            {
+                              '¥' +
+                              (getCurrentMonthSummary().totalContracts > 0
+                                ? Math.round(
+                                    getCurrentMonthSummary().totalAmount /
+                                      getCurrentMonthSummary().totalContracts
+                                  ).toLocaleString()
+                                : '0')
+                            }
                           </dd>
                         </dl>
                       </div>
@@ -286,95 +319,102 @@ export default function AdminContracts() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="bg-white shadow rounded-lg flex-1 min-w-[300px]">
-                  <div className="px-4 py-3">
-                    <h2 className="text-md font-medium text-gray-900 mb-2">絞り込み</h2>
-                    <div className="flex flex-wrap gap-2">
-                      <div className="flex-1 min-w-[150px]">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          期間選択（引っ越し日）
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="date"
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <span className="text-sm font-medium text-gray-700">～</span>
-                          <input
-                            type="date"
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-[150px]">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          成約金額
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            placeholder="最小"
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            onChange={(e) => setSortBy(`min:${e.target.value}`)}
-                          />
-                          <span className="text-sm font-medium text-gray-700">～</span>
-                          <input
-                            type="number"
-                            placeholder="最大"
-                            className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            onChange={(e) => setSortBy(`max:${e.target.value}`)}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-end min-w-[150px]">
-                        <button
-                          onClick={handleRecalculate}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium"
-                        >
-                          再集計
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg flex-1 min-w-[300px]">
-              <div className="px-4 py-3">
-                <h2 className="text-md font-medium text-gray-900 mb-2">並び順</h2>
-                <div className="flex justify-between items-center gap-2">
-                  <div className="flex-1 min-w-[100px]">
-                    <select
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                      className="w-full px-1 py-0.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="desc">新しい順</option>
-                      <option value="asc">古い順</option>
-                      <option value="contractDate">成約日</option>
-                      <option value="customerName">顧客名</option>
-                      <option value="revenue">売上</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center">
-                    <button
-                      onClick={handleExportCSV}
-                      className="w-auto bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md text-sm font-medium"
-                    >
-                      CSV出力
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b flex flex-wrap gap-2 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">集計期間</label>
+                  <select
+                    className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                    value={periodOption}
+                    onChange={(e) => setPeriodOption(e.target.value)}
+                  >
+                    <option value="all">すべて</option>
+                    <option value="year">年</option>
+                    <option value="month">月</option>
+                    <option value="yearMonth">月＋年</option>
+                  </select>
+                </div>
+                {periodOption === 'year' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">年</label>
+                    <input
+                      type="number"
+                      className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                      value={yearValue}
+                      onChange={(e) => setYearValue(e.target.value)}
+                    />
+                  </div>
+                )}
+                {periodOption === 'month' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">月</label>
+                    <select
+                      className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                      value={monthValue}
+                      onChange={(e) => setMonthValue(e.target.value)}
+                    >
+                      <option value="">--</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={(i + 1).toString().padStart(2, '0')}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {periodOption === 'yearMonth' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">年月</label>
+                    <input
+                      type="month"
+                      className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                      value={yearMonthValue}
+                      onChange={(e) => setYearMonthValue(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">検索</label>
+                  <input
+                    type="text"
+                    className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">並び順</label>
+                  <select
+                    className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                  >
+                    <option value="asc">昇順</option>
+                    <option value="desc">降順</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">並び替え項目</label>
+                  <select
+                    className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="contractDate">成約日</option>
+                    <option value="customerName">顧客名</option>
+                    <option value="revenue">売上</option>
+                  </select>
+                </div>
+                <div className="ml-auto">
+                  <button
+                    onClick={handleExportCSV}
+                    className="mt-6 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md text-sm font-medium"
+                  >
+                    CSV出力
+                  </button>
+                </div>
+              </div>
               <div className="px-4 py-5 sm:p-6">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -413,13 +453,13 @@ export default function AdminContracts() {
                             {new Date(contract.moveDate).toLocaleDateString('ja-JP')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ¥{contract.contractAmount.toLocaleString()}
+                            {'¥' + contract.contractAmount.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                            ¥{contract.commission.toLocaleString()}
+                            {'¥' + contract.commission.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                            ¥{contract.revenue.toLocaleString()}
+                            {'¥' + contract.revenue.toLocaleString()}
                           </td>
                         </tr>
                       ))}
@@ -434,6 +474,7 @@ export default function AdminContracts() {
                 )}
               </div>
             </div>
+          </div>
           </div>
         </main>
       </div>
