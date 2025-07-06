@@ -475,6 +475,7 @@ export default function AdminContracts() {
               </div>
             </div>
           </div>
+          </div>
         </main>
       </div>
     </AdminAuthGuard>
