@@ -278,7 +278,7 @@ export default function PricingStep2Page() {
                         />
                       </td>
                       <td className="border border-gray-200 px-4 py-2 font-semibold text-blue-600">
-                        ¥{calculateTotalPrice(rule).toLocaleString()}
+                        {'¥' + calculateTotalPrice(rule).toLocaleString()}
                       </td>
                       <td className="border border-gray-200 px-4 py-2">
                         <button
