@@ -470,6 +470,13 @@ export default function PricingStep1Page() {
     router.push("/pricing/step1");
   };
 
+  // 追加フォーム用のminPoint計算ヘルパー
+  const getNextMinPoint = () => {
+    if (pricingRules.length === 0) return 1;
+    const lastMax = pricingRules[pricingRules.length - 1]?.maxPoint;
+    return typeof lastMax === 'number' && !isNaN(lastMax) ? lastMax + 1 : 1;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -532,66 +539,6 @@ export default function PricingStep1Page() {
             💰 料金設定
           </h2>
 
-          {/* 料金設定追加フォーム */}
-          <div className="flex flex-wrap gap-2 mb-4 items-end bg-blue-50 p-4 rounded">
-            <select
-              value={newTruckType}
-              onChange={(e) => setNewTruckType(e.target.value)}
-              className="border rounded px-2 py-1 min-w-[120px]"
-            >
-              <option value="">トラック種別を選択</option>
-              {TRUCK_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">
-              {pricingRules.length > 0
-                ? pricingRules[pricingRules.length - 1].maxPoint! + 1
-                : 1}
-            </span>
-            <span className="text-gray-500">～</span>
-            <select
-              value={newPricingMaxPoint ?? ""}
-              onChange={(e) =>
-                setNewPricingMaxPoint(
-                  e.target.value ? parseInt(e.target.value) : undefined,
-                )
-              }
-              className="border rounded px-2 py-1 min-w-[80px]"
-            >
-              <option value="">最大値</option>
-              {POINT_RANGE.filter(
-                (point) =>
-                  pricingRules.length === 0 ||
-                  point > pricingRules[pricingRules.length - 1].maxPoint!,
-              ).map((point) => (
-                <option key={point} value={point}>
-                  {point}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min="0"
-              value={newPricingPrice ?? ""}
-              onChange={(e) =>
-                setNewPricingPrice(
-                  e.target.value ? parseInt(e.target.value) : undefined,
-                )
-              }
-              className="border rounded px-2 py-1 min-w-[80px]"
-              placeholder="料金"
-            />
-            <button
-              type="button"
-              onClick={addPricingRule}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
-            >
-              追加
-            </button>
-          </div>
           {pricingErrors.length > 0 && (
             <div className="bg-red-50 border border-red-300 text-red-700 rounded p-2 mb-4">
               <ul className="list-disc pl-5">
@@ -675,26 +622,20 @@ export default function PricingStep1Page() {
                       <td className="border border-gray-200 px-4 py-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">
-                            {rule.minPoint}
+                            {typeof rule.minPoint === 'number' && !isNaN(rule.minPoint) ? rule.minPoint : 1}
                           </span>
                           <span className="text-gray-500">～</span>
                           <select
-                            value={rule.maxPoint ?? ""}
-                            onChange={(e) =>
-                              updateMaxPoint(
-                                rule.id,
-                                e.target.value ? parseInt(e.target.value) : 0,
-                              )
-                            }
+                            value={typeof rule.maxPoint === 'number' && !isNaN(rule.maxPoint) ? rule.maxPoint : ''}
+                            onChange={e => {
+                              const val = e.target.value;
+                              updateMaxPoint(rule.id, val ? parseInt(val) : 0);
+                            }}
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="">最大値</option>
-                            {POINT_RANGE.filter(
-                              (point) => point > rule.minPoint,
-                            ).map((point) => (
-                              <option key={point} value={point}>
-                                {point}
-                              </option>
+                            {POINT_RANGE.filter(point => point > rule.minPoint).map(point => (
+                              <option key={point} value={point}>{point}</option>
                             ))}
                           </select>
                         </div>
@@ -731,6 +672,62 @@ export default function PricingStep1Page() {
               </table>
             </div>
           )}
+
+          {/* 料金設定追加フォーム（テーブル下に移動） */}
+          <div className="flex flex-wrap gap-2 mt-4 items-end">
+            <select
+              value={newTruckType}
+              onChange={(e) => setNewTruckType(e.target.value)}
+              className="border rounded px-2 py-1 min-w-[120px]"
+            >
+              <option value="">トラック種別を選択</option>
+              {TRUCK_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">
+              {getNextMinPoint()}
+            </span>
+            <span className="text-gray-500">～</span>
+            <select
+              value={typeof newPricingMaxPoint === 'number' && !isNaN(newPricingMaxPoint) ? newPricingMaxPoint : ''}
+              onChange={e => {
+                const val = e.target.value;
+                setNewPricingMaxPoint(val ? parseInt(val) : undefined);
+              }}
+              className="border rounded px-2 py-1 min-w-[80px]"
+            >
+              <option value="">最大値</option>
+              {POINT_RANGE.filter(
+                (point) => point >= getNextMinPoint()
+              ).map((point) => (
+                <option key={point} value={point}>
+                  {point}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min="0"
+              value={newPricingPrice ?? ""}
+              onChange={(e) =>
+                setNewPricingPrice(
+                  e.target.value ? parseInt(e.target.value) : undefined,
+                )
+              }
+              className="border rounded px-2 py-1 min-w-[80px]"
+              placeholder="料金"
+            />
+            <button
+              type="button"
+              onClick={addPricingRule}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
+            >
+              追加
+            </button>
+          </div>
         </div>
 
         {/* 料金計算例 */}
