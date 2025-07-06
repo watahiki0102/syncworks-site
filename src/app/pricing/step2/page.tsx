@@ -44,10 +44,44 @@ interface PricingRule {
   workerPrice: number;
 }
 
+// オプション型
+const OPTION_TYPES = [
+  { value: 'free', label: '無料オプション', color: 'text-green-600' },
+  { value: 'paid', label: '有料オプション', color: 'text-blue-600' },
+  { value: 'nonSupported', label: '対応不可', color: 'text-red-600' },
+] as const;
+type OptionType = typeof OPTION_TYPES[number]['value'];
+interface OptionItem {
+  id: string;
+  label: string;
+  type: OptionType;
+  price?: number; // 有料のみ
+  isDefault?: boolean;
+}
+const DEFAULT_OPTIONS: OptionItem[] = [
+  { id: 'opt-1', label: '🏠 建物養生（壁や床の保護）', type: 'free', isDefault: true },
+  { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'free', isDefault: true },
+  { id: 'opt-3', label: '🪑 家具・家電の分解・組み立て', type: 'free', isDefault: true },
+  { id: 'opt-4', label: '🧺 洗濯機取り外し', type: 'free', isDefault: true },
+  { id: 'opt-5', label: '❄️ エアコン（本体＋室外機）取り外し', type: 'free', isDefault: true },
+  { id: 'opt-6', label: '💡 照明・テレビ配線取り外し', type: 'free', isDefault: true },
+  { id: 'opt-7', label: '🚮 不用品の回収・廃棄', type: 'free', isDefault: true },
+  { id: 'opt-8', label: '🐾 ペット運搬', type: 'free', isDefault: true },
+];
+
 export default function PricingStep2Page() {
   const router = useRouter();
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [options, setOptions] = useState<OptionItem[]>(() => {
+    const saved = localStorage.getItem('optionPricingStep2');
+    if (saved) return JSON.parse(saved);
+    return DEFAULT_OPTIONS;
+  });
+  const [newOptionLabel, setNewOptionLabel] = useState('');
+  const [newOptionType, setNewOptionType] = useState<OptionType>('free');
+  const [newOptionPrice, setNewOptionPrice] = useState<number>(0);
+  const [optionErrors, setOptionErrors] = useState<string>('');
 
   // 初期データの読み込み
   useEffect(() => {
@@ -74,6 +108,11 @@ export default function PricingStep2Page() {
       localStorage.setItem('pricingStep2', JSON.stringify(pricingRules));
     }
   }, [pricingRules, isLoading]);
+
+  // オプション自動保存
+  useEffect(() => {
+    localStorage.setItem('optionPricingStep2', JSON.stringify(options));
+  }, [options]);
 
   // 料金ルールの追加
   const addPricingRule = () => {
@@ -135,6 +174,52 @@ export default function PricingStep2Page() {
     }
 
     return { isValid: errors.length === 0, errors };
+  };
+
+  // オプション追加
+  const handleAddOption = () => {
+    if (!newOptionLabel.trim()) {
+      setOptionErrors('オプション名は必須です');
+      return;
+    }
+    if (newOptionType === 'paid' && (!newOptionPrice || newOptionPrice < 0)) {
+      setOptionErrors('有料オプションは金額を0円以上で入力してください');
+      return;
+    }
+    setOptions(prev => [
+      ...prev,
+      {
+        id: `opt-${Date.now()}`,
+        label: newOptionLabel.trim(),
+        type: newOptionType,
+        price: newOptionType === 'paid' ? newOptionPrice : undefined,
+        isDefault: false
+      }
+    ]);
+    setNewOptionLabel('');
+    setNewOptionType('free');
+    setNewOptionPrice(0);
+    setOptionErrors('');
+  };
+
+  // オプション削除
+  const handleDeleteOption = (id: string) => {
+    setOptions(prev => prev.filter(opt => opt.id !== id));
+  };
+
+  // オプション種別変更
+  const handleOptionTypeChange = (id: string, type: OptionType) => {
+    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, type, price: type === 'paid' ? (opt.price || 0) : undefined } : opt));
+  };
+
+  // オプション名変更
+  const handleOptionLabelChange = (id: string, label: string) => {
+    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, label } : opt));
+  };
+
+  // オプション金額変更
+  const handleOptionPriceChange = (id: string, price: number) => {
+    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, price } : opt));
   };
 
   // 次へ進む
@@ -294,6 +379,107 @@ export default function PricingStep2Page() {
               </table>
             </div>
           )}
+        </div>
+
+        {/* オプション料金設定 */}
+        <div className="bg-white shadow-md rounded-lg p-6 mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">🛠️ オプション料金設定</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border border-gray-200 px-4 py-2 text-left">オプション名</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">種別</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">金額（円）</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                {options.map((opt, idx) => (
+                  <tr key={opt.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-2">
+                      <input
+                        type="text"
+                        value={opt.label}
+                        onChange={e => handleOptionLabelChange(opt.id, e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        disabled={opt.isDefault}
+                      />
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <select
+                        value={opt.type}
+                        onChange={e => handleOptionTypeChange(opt.id, e.target.value as OptionType)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        disabled={opt.isDefault}
+                      >
+                        {OPTION_TYPES.map(t => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      {opt.type === 'paid' ? (
+                        <input
+                          type="number"
+                          min="0"
+                          value={opt.price ?? 0}
+                          onChange={e => handleOptionPriceChange(opt.id, parseInt(e.target.value) || 0)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          disabled={opt.isDefault}
+                        />
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      {!opt.isDefault && (
+                        <button
+                          onClick={() => handleDeleteOption(opt.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >🗑️ 削除</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* 追加フォーム */}
+          <div className="flex flex-wrap gap-2 mt-4 items-end">
+            <input
+              type="text"
+              value={newOptionLabel}
+              onChange={e => setNewOptionLabel(e.target.value)}
+              className="border rounded px-3 py-1 flex-1 min-w-[180px]"
+              placeholder="新しいオプション名"
+            />
+            <select
+              value={newOptionType}
+              onChange={e => setNewOptionType(e.target.value as OptionType)}
+              className="border rounded px-2 py-1 min-w-[120px]"
+            >
+              {OPTION_TYPES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            {newOptionType === 'paid' && (
+              <input
+                type="number"
+                min="0"
+                value={newOptionPrice}
+                onChange={e => setNewOptionPrice(parseInt(e.target.value) || 0)}
+                className="border rounded px-2 py-1 min-w-[120px]"
+                placeholder="金額"
+              />
+            )}
+            <button
+              type="button"
+              onClick={handleAddOption}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
+            >追加</button>
+          </div>
+          {optionErrors && <div className="text-red-600 text-sm mt-2">{optionErrors}</div>}
         </div>
 
         {/* 料金計算例 */}

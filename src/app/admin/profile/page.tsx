@@ -4,6 +4,38 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
+// オプション型
+const OPTION_TYPES = [
+  { value: 'free', label: '無料オプション', color: 'text-green-600' },
+  { value: 'paid', label: '有料オプション', color: 'text-blue-600' },
+  { value: 'nonSupported', label: '対応不可', color: 'text-red-600' },
+] as const;
+type OptionType = typeof OPTION_TYPES[number]['value'];
+type OptionItem = { label: string; type: OptionType; isDefault: boolean };
+
+const DEFAULT_OPTIONS: OptionItem[] = [
+  { label: '🏠 建物養生（壁や床の保護）', type: 'free', isDefault: true },
+  { label: '📦 荷造り・荷ほどきの代行', type: 'free', isDefault: true },
+  { label: '🪑 家具・家電の分解・組み立て', type: 'free', isDefault: true },
+  { label: '🧺 洗濯機取り外し', type: 'free', isDefault: true },
+  { label: '❄️ エアコン（本体＋室外機）取り外し', type: 'free', isDefault: true },
+  { label: '💡 照明・テレビ配線取り外し', type: 'free', isDefault: true },
+  { label: '🚮 不用品の回収・廃棄', type: 'free', isDefault: true },
+  { label: '🐾 ペット運搬', type: 'free', isDefault: true },
+];
+
+// --- 地方・都道府県データ ---
+const REGIONS = [
+  { name: '北海道・東北', prefectures: ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
+  { name: '関東', prefectures: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
+  { name: '中部', prefectures: ['新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] },
+  { name: '近畿', prefectures: ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] },
+  { name: '中国', prefectures: ['鳥取県', '島根県', '岡山県', '広島県', '山口県'] },
+  { name: '四国', prefectures: ['徳島県', '香川県', '愛媛県', '高知県'] },
+  { name: '九州', prefectures: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] }
+];
+const ALL_PREFS = REGIONS.flatMap(r => r.prefectures);
+
 export default function AdminProfile() {
   const [formData, setFormData] = useState({
     companyName: '',
@@ -14,10 +46,10 @@ export default function AdminProfile() {
     description: '',
     experienceYears: '',
     staffCount: '',
-    features: [''],
-    freeOptions: [''],
-    paidOptions: [''],
-    nonSupportedItems: [''],
+    features: [] as string[],
+    freeOptions: [] as string[],
+    paidOptions: [] as string[],
+    nonSupportedItems: [] as string[],
     paymentMethods: {
       creditCard: false,
       electronicPayment: false,
@@ -31,6 +63,19 @@ export default function AdminProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
+
+  // オプションリストの状態
+  const [options, setOptions] = useState<OptionItem[]>(DEFAULT_OPTIONS);
+  const [newOptionLabel, setNewOptionLabel] = useState('');
+  const [newOptionType, setNewOptionType] = useState<OptionType>('free');
+
+  const [serviceAreas, setServiceAreas] = useState<string[]>([]);
+  const [newServiceArea, setNewServiceArea] = useState('');
+
+  // New state variables to fix errors
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedPrefectures, setSelectedPrefectures] = useState<string[]>([]);
 
   useEffect(() => {
     // 保存されたデータを読み込み
@@ -46,10 +91,10 @@ export default function AdminProfile() {
         description: data.description || '',
         experienceYears: data.experienceYears || '',
         staffCount: data.staffCount || '',
-        features: data.features || [''],
-        freeOptions: data.freeOptions || [''],
-        paidOptions: data.paidOptions || [''],
-        nonSupportedItems: data.nonSupportedItems || [''],
+        features: data.features || [],
+        freeOptions: data.freeOptions || [],
+        paidOptions: data.paidOptions || ['エアコン（本体＋室外機）取り外し', '不用品の回収・廃棄', 'ペット運搬'],
+        nonSupportedItems: data.nonSupportedItems || ['ピアノ運搬', '美術品・骨董品運搬'],
         paymentMethods: data.paymentMethods || {
           creditCard: false,
           electronicPayment: false,
@@ -57,41 +102,33 @@ export default function AdminProfile() {
           cash: true
         }
       });
+      setOptions(data.options || DEFAULT_OPTIONS);
+      setServiceAreas(data.serviceAreas || []);
     }
   }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = '事業者名は必須です';
-    }
-
-    if (!formData.email) {
-      newErrors.email = 'メールアドレスは必須です';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = '正しいメールアドレス形式で入力してください';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = '電話番号は必須です';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = '住所は必須です';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = '事業コンセプトは必須です';
-    }
-
+    if (!formData.companyName.trim()) newErrors.companyName = '事業者名は必須です';
+    if (!formData.email) newErrors.email = 'メールアドレスは必須です';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = '正しいメールアドレス形式で入力してください';
+    if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
+    if (!formData.address.trim()) newErrors.address = '住所は必須です';
+    if (!formData.description.trim()) newErrors.description = '事業コンセプトは必須です';
+    if (!formData.experienceYears.trim()) newErrors.experienceYears = '経験年数は必須です';
+    if (!formData.staffCount.trim()) newErrors.staffCount = '従業員数は必須です';
+    if (selectedPrefectures.length === 0) newErrors.serviceAreas = '対応エリア（都道府県）を1つ以上選択してください';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setFormData(prev => ({
+      ...prev,
+      options: options,
+    }));
+
     if (!validateForm()) {
       return;
     }
@@ -99,15 +136,16 @@ export default function AdminProfile() {
     setIsLoading(true);
 
     try {
-      // 実際の実装ではAPIエンドポイントに送信
       const adminData = {
         ...formData,
+        options: options,
+        serviceAreas: serviceAreas,
         updatedAt: new Date().toISOString()
       };
-      
+
       localStorage.setItem('adminData', JSON.stringify(adminData));
       setIsSaved(true);
-      
+
       // 3秒後に保存メッセージを消す
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
@@ -123,7 +161,7 @@ export default function AdminProfile() {
       ...prev,
       [name]: value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -167,7 +205,7 @@ export default function AdminProfile() {
     const file = e.target.files?.[0];
     if (file) {
       setLogoFile(file);
-      
+
       // プレビュー表示
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -175,6 +213,70 @@ export default function AdminProfile() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // オプションの種別変更
+  const handleOptionTypeChange = (idx: number, type: OptionType) => {
+    setOptions(prev => prev.map((opt, i) => i === idx ? { ...opt, type } : opt));
+  };
+
+  // オプションの削除
+  const handleOptionDelete = (idx: number) => {
+    setOptions(prev => prev.filter((opt, i) => i !== idx));
+  };
+
+  // オプションの追加
+  const handleOptionAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOptionLabel.trim()) return;
+    setOptions(prev => [...prev, { label: newOptionLabel.trim(), type: newOptionType, isDefault: false }]);
+    setNewOptionLabel('');
+    setNewOptionType('free');
+  };
+
+  const typeLabel = (type: OptionType) => OPTION_TYPES.find(t => t.value === type)?.label || '';
+  const colorClass = (type: OptionType) => OPTION_TYPES.find(t => t.value === type)?.color || '';
+
+  const handleAddServiceArea = () => {
+    if (newServiceArea.trim() && !serviceAreas.includes(newServiceArea.trim())) {
+      setServiceAreas(prev => [...prev, newServiceArea.trim()]);
+      setNewServiceArea('');
+    }
+  };
+
+  const handleRemoveServiceArea = (area: string) => {
+    setServiceAreas(prev => prev.filter(a => a !== area));
+  };
+
+  const handleServiceAreaInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddServiceArea();
+    }
+  };
+
+  // New functions to handle area selection
+  const handleRemoveArea = (area: string) => {
+    setSelectedAreas(prev => prev.filter(a => a !== area));
+  };
+
+  // 地方選択
+  const handleRegionSelect = (region: string) => {
+    setSelectedRegion(region);
+  };
+  // 都道府県チェック
+  const handlePrefectureToggle = (pref: string) => {
+    setSelectedPrefectures(prev =>
+      prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref]
+    );
+  };
+  // タグ削除
+  const handleRemovePrefTag = (pref: string) => {
+    setSelectedPrefectures(prev => prev.filter(p => p !== pref));
+  };
+  // 地図クリック（地方名でregion選択）
+  const handleMapRegionClick = (region: string) => {
+    setSelectedRegion(region);
   };
 
   return (
@@ -196,7 +298,7 @@ export default function AdminProfile() {
                 onClick={() => router.push('/admin/dashboard')}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
-                ダッシュボードに戻る
+                トップに戻る
               </button>
             </div>
           </div>
@@ -232,192 +334,216 @@ export default function AdminProfile() {
                           onChange={handleLogoChange}
                           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
-                        <p className="mt-1 text-sm text-gray-500">
-                          PNG, JPG, GIF up to 2MB
-                        </p>
+                        <span className="block mt-1 max-w-xs whitespace-nowrap overflow-hidden text-ellipsis text-gray-600">
+                          {logoFile ? logoFile.name : '選択されていません'}
+                        </span>
+                        <div className="text-xs text-gray-400 mt-1">
+                          PNG, JPG, GIF <span className="text-red-500">上限：10MB</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* 事業者名 */}
-                  <div>
-                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="companyName" className="block text-base font-medium text-gray-700 mb-1">
                       事業者名 <span className="text-red-500">*</span>
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="companyName"
-                        name="companyName"
-                        type="text"
-                        required
-                        value={formData.companyName}
-                        onChange={handleInputChange}
-                        className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.companyName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="株式会社○○○"
-                      />
-                    </div>
-                    {errors.companyName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
-                    )}
+                    <input
+                      id="companyName"
+                      name="companyName"
+                      type="text"
+                      required
+                      value={formData.companyName}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.companyName ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="株式会社○○○"
+                    />
+                    {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                   </div>
 
                   {/* メールアドレス */}
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-1">
                       メールアドレス <span className="text-red-500">*</span>
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.email ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="admin@example.com"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                    )}
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="admin@example.com"
+                    />
+                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                   </div>
 
                   {/* 電話番号 */}
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="phone" className="block text-base font-medium text-gray-700 mb-1">
                       電話番号 <span className="text-red-500">*</span>
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.phone ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="03-1234-5678"
-                      />
-                    </div>
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                    )}
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.phone ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="03-1234-5678"
+                    />
+                    {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                   </div>
 
                   {/* 郵便番号 */}
-                  <div>
-                    <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="postalCode" className="block text-base font-medium text-gray-700 mb-1">
                       郵便番号
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="postalCode"
-                        name="postalCode"
-                        type="text"
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="150-0001"
-                      />
-                    </div>
+                    <input
+                      id="postalCode"
+                      name="postalCode"
+                      type="text"
+                      value={formData.postalCode}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.postalCode ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="150-0001"
+                    />
+                    {errors.postalCode && <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>}
                   </div>
 
                   {/* 住所 */}
-                  <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="address" className="block text-base font-medium text-gray-700 mb-1">
                       住所 <span className="text-red-500">*</span>
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="address"
-                        name="address"
-                        type="text"
-                        required
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.address ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="東京都渋谷区○○○"
-                      />
+                    <input
+                      id="address"
+                      name="address"
+                      type="text"
+                      required
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.address ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="東京都渋谷区○○○"
+                    />
+                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                  </div>
+
+                  {/* 対応エリア */}
+                  <div className="mb-6">
+                    <label className="block text-base font-medium text-gray-700 mb-1">
+                      対応エリア <span className="text-red-500">*</span>
+                    </label>
+                    <div className="px-4 py-5 sm:p-6 bg-white rounded-lg shadow">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="w-full md:w-1/2">
+                          <div className="mb-2 font-bold text-gray-700">地域を選択</div>
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {REGIONS.map(region => (
+                              <button
+                                key={region.name}
+                                type="button"
+                                className={`px-3 py-1 rounded border ${selectedRegion === region.name ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'}`}
+                                onClick={() => handleRegionSelect(region.name)}
+                              >
+                                {region.name}
+                              </button>
+                            ))}
+                          </div>
+                          {selectedRegion && (
+                            <div>
+                              <div className="mb-1 text-sm text-gray-700">都道府県を選択（複数可）</div>
+                              <div className="flex gap-2 mb-2">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs hover:bg-blue-200 border border-blue-200"
+                                  onClick={() => {
+                                    const prefs = REGIONS.find(r => r.name === selectedRegion)?.prefectures || [];
+                                    setSelectedPrefectures(prev => Array.from(new Set([...prev, ...prefs])));
+                                  }}
+                                >すべて選択</button>
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 border border-gray-200"
+                                  onClick={() => {
+                                    const prefs = REGIONS.find(r => r.name === selectedRegion)?.prefectures || [];
+                                    setSelectedPrefectures(prev => prev.filter(p => !prefs.includes(p)));
+                                  }}
+                                >すべて外す</button>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+                                {REGIONS.find(r => r.name === selectedRegion)?.prefectures.map(pref => (
+                                  <label key={pref} className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedPrefectures.includes(pref)}
+                                      onChange={() => handlePrefectureToggle(pref)}
+                                      className="accent-blue-600"
+                                    />
+                                    <span>{pref}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedPrefectures.map(pref => (
+                              <span key={pref} className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                {pref}
+                                <button type="button" onClick={() => handleRemovePrefTag(pref)} className="ml-1 text-blue-500 hover:text-red-500">×</button>
+                              </span>
+                            ))}
+                          </div>
+                          {errors.serviceAreas && <p className="mt-1 text-sm text-red-600">{errors.serviceAreas}</p>}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">地域ボタンからエリアを選択し、都道府県をチェックしてください。選択済み都道府県は下部に表示されます。</p>
                     </div>
-                    {errors.address && (
-                      <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                    )}
                   </div>
 
                   {/* 事業コンセプト */}
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="description" className="block text-base font-medium text-gray-700 mb-1">
                       事業コンセプト <span className="text-red-500">*</span>
                     </label>
-                    <div className="mt-1">
-                      <textarea
-                        id="description"
-                        name="description"
-                        rows={4}
-                        required
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.description ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        placeholder="私たちは、年間700件以上の引越しを手がけるプロ集団です。お客様の大切なお荷物を、安全・確実にお届けすることを最優先に考え、保険完備で万が一のトラブルにも備えています。"
-                      />
-                    </div>
-                    {errors.description && (
-                      <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                    )}
-                  </div>
-
-                  {/* 経験年数 */}
-                  <div>
-                    <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700">
-                      経験年数
-                    </label>
-                    <div className="mt-1">
-                      <input
-                        id="experienceYears"
-                        name="experienceYears"
-                        type="number"
-                        min="0"
-                        value={formData.experienceYears}
-                        onChange={handleInputChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="6"
-                      />
-                    </div>
+                    <textarea
+                      id="description"
+                      name="description"
+                      rows={4}
+                      required
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.description ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="私たちは、年間700件以上の引越しを手がけるプロ集団です。お客様の大切なお荷物を、安全・確実にお届けすることを最優先に考え、保険完備で万が一のトラブルにも備えています。"
+                    />
+                    {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
                   </div>
 
                   {/* 従業員数 */}
-                  <div>
-                    <label htmlFor="staffCount" className="block text-sm font-medium text-gray-700">
+                  <div className="mb-6">
+                    <label htmlFor="staffCount" className="block text-base font-medium text-gray-700 mb-1">
                       従業員数
                     </label>
-                    <div className="mt-1">
-                      <input
-                        id="staffCount"
-                        name="staffCount"
-                        type="number"
-                        min="1"
-                        value={formData.staffCount}
-                        onChange={handleInputChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="1"
-                      />
-                    </div>
+                    <input
+                      id="staffCount"
+                      name="staffCount"
+                      type="number"
+                      min="1"
+                      value={formData.staffCount}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.staffCount ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="1"
+                    />
+                    {errors.staffCount && <p className="mt-1 text-sm text-red-600">{errors.staffCount}</p>}
                   </div>
 
                   {/* アピールポイント */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="mb-6">
+                    <label className="block text-base font-medium text-gray-700 mb-2">
                       アピールポイント
                     </label>
                     {formData.features.map((feature, index) => (
@@ -426,8 +552,8 @@ export default function AdminProfile() {
                           type="text"
                           value={feature}
                           onChange={(e) => handleArrayChange(index, e.target.value, 'features')}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="年間実績700件超"
+                          className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.features ? 'border-red-300' : 'border-gray-300'}`}
+                          placeholder="例：年間実績700件超"
                         />
                         {formData.features.length > 1 && (
                           <button
@@ -451,117 +577,88 @@ export default function AdminProfile() {
                     </button>
                   </div>
 
-                  {/* 無料オプション */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      無料オプション
-                    </label>
-                    {formData.freeOptions.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2 mb-2">
-                        <input
-                          type="text"
-                          value={option}
-                          onChange={(e) => handleArrayChange(index, e.target.value, 'freeOptions')}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="ハンガーボックス貸出し"
-                        />
-                        {formData.freeOptions.length > 1 && (
+                  {/* オプション設定まとめUI */}
+                  <div className="mb-6">
+                    <label className="block text-base font-medium text-gray-700 mb-2">オプション設定</label>
+                    {/* デフォルト項目 */}
+                    <div className="mb-4">
+                      <div className="font-bold text-gray-700 mb-2">デフォルト項目</div>
+                      {options.filter(o => o.isDefault).map((opt, idx) => (
+                        <div key={idx} className="flex items-center gap-3 mb-2" style={{ minWidth: 220 }}>
+                          <div className="flex items-center w-40">
+                            <select
+                              value={opt.type}
+                              onChange={e => handleOptionTypeChange(options.findIndex(o => o === opt), e.target.value as OptionType)}
+                              className={`${colorClass(opt.type)} font-bold w-40 border rounded px-2 py-1`}
+                            >
+                              {OPTION_TYPES.map(t => (
+                                <option key={t.value} value={t.value}>{typeLabel(t.value)}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <span className="ml-2 text-gray-700">{opt.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* 追加項目 */}
+                    <div className="mb-4">
+                      <div className="font-bold text-gray-700 mb-2">追加項目</div>
+                      {options.filter(o => !o.isDefault).map((opt, idx) => (
+                        <div key={idx} className="flex items-center gap-3 mb-2" style={{ minWidth: 220 }}>
+                          <div className="flex items-center w-40">
+                            <select
+                              value={opt.type}
+                              onChange={e => handleOptionTypeChange(options.findIndex(o => o === opt), e.target.value as OptionType)}
+                              className={`${colorClass(opt.type)} font-bold w-40 border rounded px-2 py-1`}
+                            >
+                              {OPTION_TYPES.map(t => (
+                                <option key={t.value} value={t.value}>{typeLabel(t.value)}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <span className="ml-2 text-gray-700">{opt.label}</span>
                           <button
                             type="button"
-                            onClick={() => removeArrayItem(index, 'freeOptions')}
-                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleOptionDelete(options.findIndex(o => o === opt))}
+                            className="text-red-500 hover:text-red-700 ml-2"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem('freeOptions')}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      + 無料オプションを追加
-                    </button>
-                  </div>
-
-                  {/* 有料オプション */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      有料オプション（税込）
-                    </label>
-                    {formData.paidOptions.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2 mb-2">
-                        <input
-                          type="text"
-                          value={option}
-                          onChange={(e) => handleArrayChange(index, e.target.value, 'paidOptions')}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="ベッドマットカバー貸出し（800円/枚）"
-                        />
-                        {formData.paidOptions.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeArrayItem(index, 'paidOptions')}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem('paidOptions')}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      + 有料オプションを追加
-                    </button>
-                  </div>
-
-                  {/* 対応不可項目 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      対応不可項目
-                    </label>
-                    {formData.nonSupportedItems.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-2 mb-2">
-                        <input
-                          type="text"
-                          value={item}
-                          onChange={(e) => handleArrayChange(index, e.target.value, 'nonSupportedItems')}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="段ボールの事前お届け・初回のみのお引き取り時のみ有料"
-                        />
-                        {formData.nonSupportedItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeArrayItem(index, 'nonSupportedItems')}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem('nonSupportedItems')}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      + 対応不可項目を追加
-                    </button>
+                        </div>
+                      ))}
+                    </div>
+                    {/* 追加項目の追加ボタン */}
+                    <div className="flex gap-2 mt-4">
+                      <select
+                        value={newOptionType}
+                        onChange={e => setNewOptionType(e.target.value as OptionType)}
+                        className="border rounded px-2 py-1 w-40"
+                      >
+                        {OPTION_TYPES.map(t => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={newOptionLabel}
+                        onChange={e => setNewOptionLabel(e.target.value)}
+                        className="border rounded px-3 py-1 flex-1"
+                        placeholder="新しいオプションを入力"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleOptionAdd({ preventDefault: () => { } } as React.FormEvent)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
+                      >
+                        追加
+                      </button>
+                    </div>
                   </div>
 
                   {/* お支払い対応情報 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="mb-6">
+                    <label className="block text-base font-medium text-gray-700 mb-2">
                       お支払い対応情報
                     </label>
                     <div className="space-y-2">

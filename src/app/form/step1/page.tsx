@@ -605,7 +605,6 @@ export default function Step1FormPage() {
                 <ErrorMessage message={errors.email.message} />
               )}
             </div>
-          </div>
         </section>
 
         {/* 🕓 引越し希望日時 */}
