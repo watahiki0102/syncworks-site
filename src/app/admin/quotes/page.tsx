@@ -291,7 +291,7 @@ export default function AdminQuotes() {
                             {quote.responseDate ? new Date(quote.responseDate).toLocaleDateString('ja-JP') : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ¥{quote.amount.toLocaleString()}
+                            {'¥' + quote.amount.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(quote.status)}

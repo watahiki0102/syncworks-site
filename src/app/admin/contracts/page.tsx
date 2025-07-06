@@ -236,7 +236,7 @@ export default function AdminContracts() {
                             月別売上
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalRevenue.toLocaleString()}
+                            {'¥' + getCurrentMonthSummary().totalRevenue.toLocaleString()}
                           </dd>
                         </dl>
                       </div>
@@ -280,7 +280,7 @@ export default function AdminContracts() {
                             総成約金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalAmount.toLocaleString()}
+                            {'¥' + getCurrentMonthSummary().totalAmount.toLocaleString()}
                           </dd>
                         </dl>
                       </div>
@@ -302,9 +302,15 @@ export default function AdminContracts() {
                             平均成約金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
-                            ¥{getCurrentMonthSummary().totalContracts > 0
-                              ? Math.round(getCurrentMonthSummary().totalAmount / getCurrentMonthSummary().totalContracts).toLocaleString()
-                              : '0'}
+                            {
+                              '¥' +
+                              (getCurrentMonthSummary().totalContracts > 0
+                                ? Math.round(
+                                    getCurrentMonthSummary().totalAmount /
+                                      getCurrentMonthSummary().totalContracts
+                                  ).toLocaleString()
+                                : '0')
+                            }
                           </dd>
                         </dl>
                       </div>
@@ -447,13 +453,13 @@ export default function AdminContracts() {
                             {new Date(contract.moveDate).toLocaleDateString('ja-JP')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ¥{contract.contractAmount.toLocaleString()}
+                            {'¥' + contract.contractAmount.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                            ¥{contract.commission.toLocaleString()}
+                            {'¥' + contract.commission.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                            ¥{contract.revenue.toLocaleString()}
+                            {'¥' + contract.revenue.toLocaleString()}
                           </td>
                         </tr>
                       ))}

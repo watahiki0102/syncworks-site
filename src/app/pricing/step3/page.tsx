@@ -280,13 +280,13 @@ export default function PricingStep3Page() {
                   {/* 表示例 */}
                   <div className="mt-2 text-sm text-gray-600">
                     {rule.min !== null && rule.max !== null && (
-                      <span>{rule.min}km〜{rule.max}km → +¥{rule.price.toLocaleString()}</span>
+                      <span>{rule.min}km〜{rule.max}km → {'+¥' + rule.price.toLocaleString()}</span>
                     )}
                     {rule.min !== null && rule.max === null && (
-                      <span>{rule.min}km以上 → +¥{rule.price.toLocaleString()}</span>
+                      <span>{rule.min}km以上 → {'+¥' + rule.price.toLocaleString()}</span>
                     )}
                     {rule.min === null && rule.max !== null && (
-                      <span>{rule.max}km以下 → +¥{rule.price.toLocaleString()}</span>
+                      <span>{rule.max}km以下 → {'+¥' + rule.price.toLocaleString()}</span>
                     )}
                   </div>
                 </div>
