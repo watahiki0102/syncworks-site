@@ -31,12 +31,45 @@ const DEFAULT_PRICING = [
   { truckType: "特別対応", minPoint: 801, maxPoint: 1000, price: 100000 },
 ];
 
+// デフォルト車種係数
+const DEFAULT_TRUCK_COEFFICIENTS = [
+  { truckType: "軽トラ", coefficient: 1.0 },
+  { truckType: "2tショート", coefficient: 1.2 },
+  { truckType: "2tロング", coefficient: 1.4 },
+  { truckType: "3t", coefficient: 1.6 },
+  { truckType: "4t", coefficient: 1.8 },
+  { truckType: "4t複数", coefficient: 2.0 },
+  { truckType: "特別対応", coefficient: 2.5 },
+];
+
+// デフォルト距離料金
+const DEFAULT_DISTANCE_RANGES = [
+  { maxDistance: 10, basePrice: 0 },
+  { maxDistance: 20, basePrice: 2000 },
+  { maxDistance: 30, basePrice: 4000 },
+  { maxDistance: 50, basePrice: 6000 },
+  { maxDistance: 100, basePrice: 10000 },
+  { maxDistance: 999, basePrice: 15000 },
+];
+
 interface PricingRule {
   id: string;
   truckType: string;
   minPoint: number;
   maxPoint: number | undefined;
   price: number | undefined;
+}
+
+interface TruckCoefficient {
+  id: string;
+  truckType: string;
+  coefficient: number;
+}
+
+interface DistanceRange {
+  id: string;
+  maxDistance: number; // 最大距離のみ指定
+  basePrice: number;   // 基本加算額（軽トラ基準）
 }
 
 // オプション型
@@ -94,6 +127,12 @@ export default function PricingStep2Page() {
   const [pricingErrors, setPricingErrors] = useState<string[]>([]);
   const [rowErrorIds, setRowErrorIds] = useState<Set<string>>(new Set());
 
+  // 車種係数設定用state
+  const [truckCoefficients, setTruckCoefficients] = useState<TruckCoefficient[]>([]);
+  const [distanceRanges, setDistanceRanges] = useState<DistanceRange[]>([]);
+  const [coefficientErrors, setCoefficientErrors] = useState<string[]>([]);
+  const [distanceErrors, setDistanceErrors] = useState<string[]>([]);
+
   // 初期データの読み込み
   useEffect(() => {
     const savedPricing = localStorage.getItem('pricingStep2');
@@ -110,6 +149,33 @@ export default function PricingStep2Page() {
       }));
       setPricingRules(defaultPricing);
     }
+
+    // 車種係数の読み込み
+    const savedCoefficients = localStorage.getItem('truckCoefficients');
+    if (savedCoefficients) {
+      setTruckCoefficients(JSON.parse(savedCoefficients));
+    } else {
+      const defaultCoefficients = DEFAULT_TRUCK_COEFFICIENTS.map((coef, index) => ({
+        id: `coef-${index}`,
+        truckType: coef.truckType,
+        coefficient: coef.coefficient
+      }));
+      setTruckCoefficients(defaultCoefficients);
+    }
+
+    // 距離料金の読み込み
+    const savedDistance = localStorage.getItem('distanceRanges');
+    if (savedDistance) {
+      setDistanceRanges(JSON.parse(savedDistance));
+    } else {
+      const defaultDistance = DEFAULT_DISTANCE_RANGES.map((range, index) => ({
+        id: `dist-${index}`,
+        maxDistance: range.maxDistance,
+        basePrice: range.basePrice
+      }));
+      setDistanceRanges(defaultDistance);
+    }
+
     setIsLoading(false);
   }, []);
 
@@ -119,6 +185,20 @@ export default function PricingStep2Page() {
       localStorage.setItem('pricingStep2', JSON.stringify(pricingRules));
     }
   }, [pricingRules, isLoading]);
+
+  // 車種係数自動保存
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('truckCoefficients', JSON.stringify(truckCoefficients));
+    }
+  }, [truckCoefficients, isLoading]);
+
+  // 距離料金自動保存
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('distanceRanges', JSON.stringify(distanceRanges));
+    }
+  }, [distanceRanges, isLoading]);
 
   // オプション自動保存
   useEffect(() => {
@@ -213,6 +293,48 @@ export default function PricingStep2Page() {
   // 料金計算
   const calculateTotalPrice = (rule: PricingRule) => {
     return rule.price ?? 0;
+  };
+
+  // 車種係数更新
+  const updateTruckCoefficient = (id: string, coefficient: number) => {
+    setTruckCoefficients(prev => prev.map(coef =>
+      coef.id === id ? { ...coef, coefficient: Math.max(0.1, coefficient) } : coef
+    ));
+  };
+
+  // 距離料金更新
+  const updateDistanceRange = (id: string, field: keyof DistanceRange, value: any) => {
+    setDistanceRanges(prev => prev.map(range =>
+      range.id === id ? { ...range, [field]: value } : range
+    ));
+  };
+
+  // 距離料金追加
+  const addDistanceRange = () => {
+    const lastRange = distanceRanges[distanceRanges.length - 1];
+    const newMaxDistance = lastRange ? lastRange.maxDistance + 10 : 10;
+    
+    const newRange: DistanceRange = {
+      id: `dist-${Date.now()}`,
+      maxDistance: newMaxDistance,
+      basePrice: 0
+    };
+    setDistanceRanges(prev => [...prev, newRange]);
+  };
+
+  // 距離料金削除
+  const removeDistanceRange = (id: string) => {
+    setDistanceRanges(prev => prev.filter(range => range.id !== id));
+  };
+
+  // 料金計算例（車種係数×距離加算額）
+  const calculateExamplePrice = (truckType: string, distance: number) => {
+    const coefficient = truckCoefficients.find(coef => coef.truckType === truckType)?.coefficient || 1.0;
+    const distancePrice = distanceRanges.find(range => 
+      distance <= range.maxDistance
+    )?.basePrice || 0;
+    
+    return Math.round(coefficient * distancePrice);
   };
 
   // validatePricingのエラーを画面上部に表示、エラー行は赤枠
@@ -423,7 +545,7 @@ export default function PricingStep2Page() {
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">4</div>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">シーズン設定</span>
             </div>
           </div>
@@ -440,53 +562,8 @@ export default function PricingStep2Page() {
 
         {/* 料金設定 */}
         <div className="bg-white shadow-md rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-800">💰 料金設定</h2>
-            <button
-              onClick={addPricingRule}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition"
-            >
-              ＋ 料金設定追加
-            </button>
-          </div>
-
-          {/* 料金設定追加フォーム */}
-          <div className="flex flex-wrap gap-2 mb-4 items-end bg-blue-50 p-4 rounded">
-            <select
-              value={newTruckType}
-              onChange={e => setNewTruckType(e.target.value)}
-              className="border rounded px-2 py-1 min-w-[120px]"
-            >
-              <option value="">トラック種別を選択</option>
-              {TRUCK_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-            <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">{pricingRules.length > 0 ? (pricingRules[pricingRules.length-1].maxPoint!+1) : 1}</span>
-            <span className="text-gray-500">～</span>
-            <select
-              value={newPricingMaxPoint ?? ''}
-              onChange={e => setNewPricingMaxPoint(e.target.value ? parseInt(e.target.value) : undefined)}
-              className="border rounded px-2 py-1 min-w-[80px]"
-            >
-              <option value="">最大値</option>
-              {POINT_RANGE.filter(point => pricingRules.length === 0 || point > pricingRules[pricingRules.length-1].maxPoint!).map(point => (
-                <option key={point} value={point}>{point}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min="0"
-              value={newPricingPrice ?? ''}
-              onChange={e => setNewPricingPrice(e.target.value ? parseInt(e.target.value) : undefined)}
-              className="border rounded px-2 py-1 min-w-[80px]"
-              placeholder="料金"
-            />
-            <button
-              type="button"
-              onClick={addPricingRule}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
-            >追加</button>
           </div>
           {pricingErrors.length > 0 && (
             <div className="bg-red-50 border border-red-300 text-red-700 rounded p-2 mb-4">
@@ -588,6 +665,45 @@ export default function PricingStep2Page() {
               </table>
             </div>
           )}
+          
+          {/* 料金設定追加フォーム */}
+          <div className="flex flex-wrap gap-2 mt-4 items-end bg-blue-50 p-4 rounded">
+            <select
+              value={newTruckType}
+              onChange={e => setNewTruckType(e.target.value)}
+              className="border rounded px-2 py-1 min-w-[120px]"
+            >
+              <option value="">トラック種別を選択</option>
+              {TRUCK_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">{pricingRules.length > 0 ? (pricingRules[pricingRules.length-1].maxPoint!+1) : 1}</span>
+            <span className="text-gray-500">～</span>
+            <select
+              value={newPricingMaxPoint ?? ''}
+              onChange={e => setNewPricingMaxPoint(e.target.value ? parseInt(e.target.value) : undefined)}
+              className="border rounded px-2 py-1 min-w-[80px]"
+            >
+              <option value="">最大値</option>
+              {POINT_RANGE.filter(point => pricingRules.length === 0 || point > pricingRules[pricingRules.length-1].maxPoint!).map(point => (
+                <option key={point} value={point}>{point}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min="0"
+              value={newPricingPrice ?? ''}
+              onChange={e => setNewPricingPrice(e.target.value ? parseInt(e.target.value) : undefined)}
+              className="border rounded px-2 py-1 min-w-[80px]"
+              placeholder="料金"
+            />
+            <button
+              type="button"
+              onClick={addPricingRule}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
+            >追加</button>
+          </div>
         </div>
 
         {/* 料金計算例 */}
@@ -598,6 +714,166 @@ export default function PricingStep2Page() {
             <p>• ポイント最小値は自動設定（前の行の最大値 + 1）</p>
             <p>• 最初の行は最小値1から開始</p>
             <p>• 例：1行目 1-100、2行目 101-250、3行目 251-350...</p>
+          </div>
+        </div>
+
+        {/* 車種係数設定 */}
+        <div className="bg-white shadow-md rounded-lg p-6 mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">🚛 車種係数設定</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            各車種の係数を設定します。この係数は距離加算額に乗算されます。
+          </p>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border border-gray-200 px-4 py-2 text-left">車種</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">係数</th>
+                </tr>
+              </thead>
+              <tbody>
+                {truckCoefficients.map((coef) => (
+                  <tr key={coef.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-2">
+                      <span className="text-gray-800">{coef.truckType}</span>
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={coef.coefficient}
+                        onChange={e => updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 距離加算額設定 */}
+        <div className="bg-white shadow-md rounded-lg p-6 mt-8">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">📍 距離加算額設定</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            距離範囲ごとの基本加算額を設定します。車種係数と乗算して最終料金が算出されます。
+          </p>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border border-gray-200 px-4 py-2 text-left">距離範囲（km）</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">軽トラ</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">2tショート</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">2tロング</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">3t</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">4t</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">4t複数</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">特別対応</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">基本加算額</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {distanceRanges.map((range, index) => {
+                  const prevMaxDistance = index > 0 ? distanceRanges[index - 1].maxDistance : 0;
+                  const distanceRangeText = index === 0 ? `〜${range.maxDistance}km` : `${prevMaxDistance + 1}〜${range.maxDistance}km`;
+                  
+                  return (
+                    <tr key={range.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-200 px-4 py-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-600 text-sm">{distanceRangeText}</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={range.maxDistance}
+                            onChange={e => updateDistanceRange(range.id, 'maxDistance', parseInt(e.target.value) || 0)}
+                            className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-sm"
+                          />
+                          <span className="text-gray-500 text-sm">km</span>
+                        </div>
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "軽トラ")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "2tショート")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "2tロング")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "3t")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "4t")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "4t複数")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "特別対応")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={range.basePrice}
+                          onChange={e => updateDistanceRange(range.id, 'basePrice', parseInt(e.target.value) || 0)}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-sm"
+                          placeholder="基本額"
+                        />
+                      </td>
+                      <td className="border border-gray-200 px-4 py-2">
+                        <button
+                          onClick={() => removeDistanceRange(range.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >🗑️ 削除</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* 距離範囲追加フォーム */}
+          <div className="mt-4">
+            <button
+              onClick={addDistanceRange}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition"
+            >
+              ＋ 距離範囲追加
+            </button>
+          </div>
+        </div>
+
+        {/* 料金計算例（車種係数×距離加算額） */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">🧮 料金計算例（車種係数×距離加算額）</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {truckCoefficients.slice(0, 6).map((coef) => (
+              <div key={coef.id} className="bg-white p-3 rounded border">
+                <h4 className="font-semibold text-gray-800 mb-2">{coef.truckType}</h4>
+                <div className="space-y-1 text-sm">
+                  <div>係数: {coef.coefficient}</div>
+                  <div>10km: ¥{calculateExamplePrice(coef.truckType, 10).toLocaleString()}</div>
+                  <div>30km: ¥{calculateExamplePrice(coef.truckType, 30).toLocaleString()}</div>
+                  <div>50km: ¥{calculateExamplePrice(coef.truckType, 50).toLocaleString()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 text-sm text-gray-600">
+            <p>• 計算式: 車種係数 × 距離加算額 = 最終料金</p>
+            <p>• 例：軽トラ（係数1.0）× 30km（加算額4,000円）= 4,000円</p>
+            <p>• 例：4t（係数1.8）× 50km（加算額6,000円）= 10,800円</p>
           </div>
         </div>
 
@@ -739,14 +1015,6 @@ export default function PricingStep2Page() {
             <input
               type="number"
               min="0"
-              value={newPricingMaxPoint ?? ''}
-              onChange={e => setNewPricingMaxPoint(e.target.value ? parseInt(e.target.value) : undefined)}
-              className="border rounded px-2 py-1 min-w-[60px] max-w-[100px] text-right"
-              placeholder="最大値"
-            />
-            <input
-              type="number"
-              min="0"
               value={newPricingPrice ?? ''}
               onChange={e => setNewPricingPrice(e.target.value ? parseInt(e.target.value) : undefined)}
               className="border rounded px-2 py-1 min-w-[60px] max-w-[100px] text-right"
@@ -758,8 +1026,7 @@ export default function PricingStep2Page() {
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
             >追加</button>
           </div>
-          {isAddOptionMinMaxError && <div className="text-red-600 text-xs mt-1">※ 最小値・最大値は必須かつ最大値は最小値より大きい値を入力してください</div>}
-          {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
+           {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
         </div>
 
         {/* ナビゲーション */}
