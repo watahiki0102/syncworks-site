@@ -3,45 +3,72 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// 初期データ
-const DEFAULT_DISTANCE_RULES = [
-  { min: 0, max: 5, price: 0, description: "基本料金に含まれる" },
-  { min: 5, max: 10, price: 2000, description: "5km〜10km" },
-  { min: 10, max: 20, price: 5000, description: "10km〜20km" },
-  { min: 20, max: 30, price: 8000, description: "20km〜30km" },
-  { min: 30, max: 50, price: 12000, description: "30km〜50km" },
-  { min: 50, max: 100, price: 20000, description: "50km〜100km" },
-  { min: 100, max: null, price: 30000, description: "100km以上" },
+// 料金タイプの定義
+const PRICE_TYPES = [
+  { value: 'percentage', label: 'パーセンテージ（%）' },
+  { value: 'fixed', label: '固定金額（円）' }
 ];
 
-interface DistanceRule {
+// 初期データ
+const DEFAULT_SEASON_RULES = [
+  {
+    name: "年末年始",
+    startDate: "2024-12-25",
+    endDate: "2025-01-05",
+    priceType: "percentage",
+    price: 20,
+    description: "年末年始の繁忙期"
+  },
+  {
+    name: "引越しシーズン",
+    startDate: "2024-03-01",
+    endDate: "2024-04-30",
+    priceType: "percentage",
+    price: 15,
+    description: "春の引越しシーズン"
+  },
+  {
+    name: "夏季料金",
+    startDate: "2024-07-01",
+    endDate: "2024-08-31",
+    priceType: "fixed",
+    price: 5000,
+    description: "夏季の特別料金"
+  }
+];
+
+interface SeasonRule {
   id: string;
-  min: number | null;
-  max: number | null;
+  name: string;
+  startDate: string;
+  endDate: string;
+  priceType: 'percentage' | 'fixed';
   price: number;
   description: string;
 }
 
 export default function PricingStep3Page() {
   const router = useRouter();
-  const [distanceRules, setDistanceRules] = useState<DistanceRule[]>([]);
+  const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // 初期データの読み込み
   useEffect(() => {
     const savedRules = localStorage.getItem('pricingStep3');
     if (savedRules) {
-      setDistanceRules(JSON.parse(savedRules));
+      setSeasonRules(JSON.parse(savedRules));
     } else {
       // デフォルトルールを設定
-      const defaultRules = DEFAULT_DISTANCE_RULES.map((rule, index) => ({
-        id: `distance-${index}`,
-        min: rule.min,
-        max: rule.max,
+      const defaultRules = DEFAULT_SEASON_RULES.map((rule, index) => ({
+        id: `season-${index}`,
+        name: rule.name,
+        startDate: rule.startDate,
+        endDate: rule.endDate,
+        priceType: rule.priceType as 'percentage' | 'fixed',
         price: rule.price,
         description: rule.description
       }));
-      setDistanceRules(defaultRules);
+      setSeasonRules(defaultRules);
     }
     setIsLoading(false);
   }, []);
@@ -49,86 +76,125 @@ export default function PricingStep3Page() {
   // 自動保存
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem('pricingStep3', JSON.stringify(distanceRules));
+      localStorage.setItem('pricingStep3', JSON.stringify(seasonRules));
     }
-  }, [distanceRules, isLoading]);
+  }, [seasonRules, isLoading]);
 
   // ルールの追加
   const addRule = () => {
-    const newRule: DistanceRule = {
-      id: `distance-${Date.now()}`,
-      min: null,
-      max: null,
+    const newRule: SeasonRule = {
+      id: `season-${Date.now()}`,
+      name: "",
+      startDate: "",
+      endDate: "",
+      priceType: "percentage",
       price: 0,
       description: ""
     };
-    setDistanceRules([...distanceRules, newRule]);
+    setSeasonRules([...seasonRules, newRule]);
   };
 
   // ルールの削除
   const removeRule = (id: string) => {
-    setDistanceRules(distanceRules.filter(rule => rule.id !== id));
+    setSeasonRules(seasonRules.filter(rule => rule.id !== id));
   };
 
   // ルールの更新
-  const updateRule = (id: string, field: keyof DistanceRule, value: any) => {
-    setDistanceRules(distanceRules.map(rule => 
+  const updateRule = (id: string, field: keyof SeasonRule, value: any) => {
+    setSeasonRules(seasonRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
+  };
+
+  // 日付の重複チェック
+  const checkDateOverlap = (startDate: string, endDate: string, excludeId?: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return seasonRules.some(rule => {
+      if (excludeId && rule.id === excludeId) return false;
+      
+      const ruleStart = new Date(rule.startDate);
+      const ruleEnd = new Date(rule.endDate);
+      
+      return (start <= ruleEnd && end >= ruleStart);
+    });
   };
 
   // バリデーション
   const validateRules = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
-    if (distanceRules.length === 0) {
-      errors.push("最低1つの距離ルールが必要です");
+    if (seasonRules.length === 0) {
+      errors.push("最低1つのシーズンルールが必要です");
       return { isValid: false, errors };
     }
 
-    // 重複チェック
-    for (let i = 0; i < distanceRules.length; i++) {
-      const rule = distanceRules[i];
+    // 各ルールのチェック
+    for (let i = 0; i < seasonRules.length; i++) {
+      const rule = seasonRules[i];
       
-      if (rule.min === null && rule.max === null) {
-        errors.push(`ルール${i + 1}: 下限または上限のいずれかは必須です`);
+      if (!rule.name.trim()) {
+        errors.push(`ルール${i + 1}: シーズン名を入力してください`);
       }
       
-      if (rule.min !== null && rule.max !== null && rule.min >= rule.max) {
-        errors.push(`ルール${i + 1}: 上限は下限より大きい値にしてください`);
+      if (!rule.startDate) {
+        errors.push(`ルール${i + 1}: 開始日を選択してください`);
+      }
+      
+      if (!rule.endDate) {
+        errors.push(`ルール${i + 1}: 終了日を選択してください`);
+      }
+      
+      if (rule.startDate && rule.endDate && rule.startDate > rule.endDate) {
+        errors.push(`ルール${i + 1}: 終了日は開始日より後にしてください`);
       }
       
       if (rule.price < 0) {
-        errors.push(`ルール${i + 1}: 料金は0円以上にしてください`);
+        errors.push(`ルール${i + 1}: 料金は0以上にしてください`);
+      }
+      
+      if (rule.priceType === 'percentage' && rule.price > 100) {
+        errors.push(`ルール${i + 1}: パーセンテージは100%以下にしてください`);
       }
     }
 
-    // 範囲の重複チェック
-    for (let i = 0; i < distanceRules.length - 1; i++) {
-      const current = distanceRules[i];
-      const next = distanceRules[i + 1];
-      
-      if (current.max !== null && next.min !== null && current.max >= next.min) {
-        errors.push(`ルール${i + 1}と${i + 2}: 範囲が重複しています`);
+    // 日付の重複チェック
+    for (let i = 0; i < seasonRules.length; i++) {
+      const rule = seasonRules[i];
+      if (rule.startDate && rule.endDate) {
+        if (checkDateOverlap(rule.startDate, rule.endDate, rule.id)) {
+          errors.push(`ルール${i + 1}: 他のシーズンと日付が重複しています`);
+        }
       }
     }
 
     return { isValid: errors.length === 0, errors };
   };
 
-  // 次へ進む
-  const handleNext = () => {
+  // 完了処理
+  const handleComplete = () => {
     const validation = validateRules();
     if (!validation.isValid) {
       alert(`エラーがあります:\n${validation.errors.join('\n')}`);
       return;
     }
-    router.push('/pricing/step4');
+    
+    // 全ステップのデータを保存
+    const allPricingData = {
+      step1: JSON.parse(localStorage.getItem('pricingStep1') || '[]'),
+      step2: JSON.parse(localStorage.getItem('pricingStep2') || '[]'),
+      step3: seasonRules
+    };
+    
+    localStorage.setItem('pricingComplete', JSON.stringify(allPricingData));
+    alert('料金設定が完了しました！');
+    router.push('/vendors');
   };
 
   // 前へ戻る
   const handleBack = () => {
-    router.push('/pricing/step1');
+    router.push('/pricing/step2');
   };
 
   if (isLoading) {
@@ -145,7 +211,7 @@ export default function PricingStep3Page() {
         {/* ヘッダー */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-800 mb-4">
-            📏 距離別加算料金設定
+            🌸 シーズン料金設定
           </h1>
           <div className="flex justify-center items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center">
@@ -154,12 +220,12 @@ export default function PricingStep3Page() {
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-              <span className="ml-2">距離加算</span>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
+              <span className="ml-2">料金設定</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
+              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">シーズン設定</span>
             </div>
           </div>
@@ -169,33 +235,33 @@ export default function PricingStep3Page() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h2 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h2>
           <p className="text-gray-700">
-            搬出〜搬入距離に応じた追加料金を設定します。
-            基本料金に加算される距離料金を距離区分ごとに設定できます。
+            繁忙期・閑散期など時期による料金加算を設定します。
+            日付範囲と加算金額（パーセンテージまたは固定金額）を指定できます。
           </p>
         </div>
 
-        {/* 距離料金設定 */}
+        {/* シーズン料金設定 */}
         <div className="bg-white shadow-md rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">📏 距離別加算料金</h2>
+            <h2 className="text-xl font-semibold text-gray-800">📅 シーズン料金設定</h2>
             <button
               onClick={addRule}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
             >
-              ＋ 距離ルール追加
+              ＋ シーズン追加
             </button>
           </div>
 
-          {distanceRules.length === 0 ? (
+          {seasonRules.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              距離ルールが設定されていません。「＋ 距離ルール追加」ボタンで追加してください。
+              シーズンルールが設定されていません。「＋ シーズン追加」ボタンで追加してください。
             </div>
           ) : (
             <div className="space-y-4">
-              {distanceRules.map((rule, index) => (
+              {seasonRules.map((rule, index) => (
                 <div key={rule.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-800">距離ルール {index + 1}</h3>
+                    <h3 className="font-semibold text-gray-800">シーズン {index + 1}</h3>
                     <button
                       onClick={() => removeRule(rule.id)}
                       className="text-red-600 hover:text-red-800 text-sm"
@@ -204,52 +270,83 @@ export default function PricingStep3Page() {
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* 下限 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* シーズン名 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        下限距離（km）
+                        シーズン名
                       </label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={rule.min || ''}
-                        onChange={(e) => updateRule(rule.id, 'min', e.target.value ? parseFloat(e.target.value) : null)}
+                        type="text"
+                        value={rule.name}
+                        onChange={(e) => updateRule(rule.id, 'name', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：0"
+                        placeholder="例：年末年始"
                       />
                     </div>
 
-                    {/* 上限 */}
+                    {/* 料金タイプ */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        上限距離（km）
+                        料金タイプ
+                      </label>
+                      <select
+                        value={rule.priceType}
+                        onChange={(e) => updateRule(rule.id, 'priceType', e.target.value as 'percentage' | 'fixed')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {PRICE_TYPES.map(type => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 開始日 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        開始日
                       </label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={rule.max || ''}
-                        onChange={(e) => updateRule(rule.id, 'max', e.target.value ? parseFloat(e.target.value) : null)}
+                        type="date"
+                        value={rule.startDate}
+                        onChange={(e) => updateRule(rule.id, 'startDate', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：5（空白で上限なし）"
                       />
                     </div>
 
-                    {/* 加算料金 */}
+                    {/* 終了日 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        加算料金（円）
+                        終了日
                       </label>
                       <input
-                        type="number"
-                        min="0"
-                        value={rule.price}
-                        onChange={(e) => updateRule(rule.id, 'price', parseInt(e.target.value) || 0)}
+                        type="date"
+                        value={rule.endDate}
+                        onChange={(e) => updateRule(rule.id, 'endDate', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：2000"
                       />
+                    </div>
+
+                    {/* 料金 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        加算料金
+                      </label>
+                      <div className="flex">
+                        <input
+                          type="number"
+                          min="0"
+                          max={rule.priceType === 'percentage' ? 100 : undefined}
+                          step={rule.priceType === 'percentage' ? 1 : 100}
+                          value={rule.price}
+                          onChange={(e) => updateRule(rule.id, 'price', parseFloat(e.target.value) || 0)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
+                          placeholder={rule.priceType === 'percentage' ? "例：20" : "例：5000"}
+                        />
+                        <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
+                          {rule.priceType === 'percentage' ? '%' : '円'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* 説明 */}
@@ -262,22 +359,17 @@ export default function PricingStep3Page() {
                         value={rule.description}
                         onChange={(e) => updateRule(rule.id, 'description', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：5km〜10km"
+                        placeholder="例：年末年始の繁忙期"
                       />
                     </div>
                   </div>
 
                   {/* 表示例 */}
                   <div className="mt-2 text-sm text-gray-600">
-                    {rule.min !== null && rule.max !== null && (
-                      <span>{rule.min}km〜{rule.max}km → {'+¥' + rule.price.toLocaleString()}</span>
-                    )}
-                    {rule.min !== null && rule.max === null && (
-                      <span>{rule.min}km以上 → {'+¥' + rule.price.toLocaleString()}</span>
-                    )}
-                    {rule.min === null && rule.max !== null && (
-                      <span>{rule.max}km以下 → {'+¥' + rule.price.toLocaleString()}</span>
-                    )}
+                    <span>
+                      {rule.name}：{rule.startDate}〜{rule.endDate} → 
+                      {rule.priceType === 'percentage' ? `+${rule.price}%` : `+¥${rule.price.toLocaleString()}`}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -289,13 +381,10 @@ export default function PricingStep3Page() {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 参考例</h3>
           <div className="text-sm text-gray-600 space-y-1">
-            <p>• 0〜5km：基本料金に含まれる（加算0円）</p>
-            <p>• 5〜10km：+2,000円</p>
-            <p>• 10〜20km：+5,000円</p>
-            <p>• 20〜30km：+8,000円</p>
-            <p>• 30〜50km：+12,000円</p>
-            <p>• 50〜100km：+20,000円</p>
-            <p>• 100km以上：+30,000円</p>
+            <p>• 年末年始（12/25〜1/5）：+20%（繁忙期）</p>
+            <p>• 引越しシーズン（3/1〜4/30）：+15%（春の繁忙期）</p>
+            <p>• 夏季料金（7/1〜8/31）：+5,000円（夏季特別料金）</p>
+            <p>• 閑散期（9/1〜11/30）：-10%（割引期間）</p>
           </div>
         </div>
 
@@ -305,7 +394,8 @@ export default function PricingStep3Page() {
           <div className="text-sm text-gray-700 space-y-1">
             <p>• 基本料金：35,000円（2tショート × 2人）</p>
             <p>• 距離：15km → +5,000円</p>
-            <p>• 合計：40,000円</p>
+            <p>• シーズン：年末年始 → +20%（8,000円）</p>
+            <p>• 合計：48,000円</p>
           </div>
         </div>
 
@@ -318,10 +408,10 @@ export default function PricingStep3Page() {
             ← 戻る
           </button>
           <button
-            onClick={handleNext}
+            onClick={handleComplete}
             className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
           >
-            次へ →
+            完了
           </button>
         </div>
       </div>
