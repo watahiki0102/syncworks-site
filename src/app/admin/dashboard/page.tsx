@@ -51,12 +51,7 @@ function TrendPanel({ applicationCount, sales, contractRate, averageRating }: {
   );
 }
 
-export default function AdminDashboard(props: {
-  applicationCount?: number;
-  sales?: number;
-  contractRate?: number;
-  averageRating?: number;
-}) {
+export default function AdminDashboard() {
     const [adminEmail, setAdminEmail] = useState('');
     const router = useRouter();
 
@@ -75,10 +70,10 @@ export default function AdminDashboard(props: {
     };
 
     // デフォルト値
-    const applicationCount = props.applicationCount ?? 12;
-    const sales = props.sales ?? 450000;
-    const contractRate = props.contractRate ?? 70;
-    const averageRating = props.averageRating ?? 4.8;
+    const applicationCount = 12;
+    const sales = 450000;
+    const contractRate = 70;
+    const averageRating = 4.8;
 
     return (
         <AdminAuthGuard>
