@@ -128,7 +128,7 @@ export default function PricingStep3Page() {
 
   // 前へ戻る
   const handleBack = () => {
-    router.push('/pricing/step2');
+    router.push('/pricing/step1');
   };
 
   if (isLoading) {
@@ -154,17 +154,12 @@ export default function PricingStep3Page() {
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
-              <span className="ml-2">料金設定</span>
-            </div>
-            <div className="w-8 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
               <span className="ml-2">距離加算</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">4</div>
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">シーズン設定</span>
             </div>
           </div>

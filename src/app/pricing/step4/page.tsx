@@ -183,7 +183,6 @@ export default function PricingStep4Page() {
     // 全ステップのデータを保存
     const allPricingData = {
       step1: JSON.parse(localStorage.getItem('pricingStep1') || '[]'),
-      step2: JSON.parse(localStorage.getItem('pricingStep2') || '[]'),
       step3: JSON.parse(localStorage.getItem('pricingStep3') || '[]'),
       step4: seasonRules
     };
@@ -222,16 +221,11 @@ export default function PricingStep4Page() {
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
-              <span className="ml-2">料金設定</span>
-            </div>
-            <div className="w-8 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">距離加算</span>
             </div>
             <div className="w-8 h-1 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">4</div>
+              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
               <span className="ml-2">シーズン設定</span>
             </div>
           </div>
