@@ -226,10 +226,12 @@ export default function AdminProfile() {
   };
 
   // オプションの追加
-  const handleOptionAdd = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOptionAdd = () => {
     if (!newOptionLabel.trim()) return;
-    setOptions(prev => [...prev, { label: newOptionLabel.trim(), type: newOptionType, isDefault: false }]);
+    setOptions(prev => [
+      ...prev,
+      { label: newOptionLabel.trim(), type: newOptionType, isDefault: false }
+    ]);
     setNewOptionLabel('');
     setNewOptionType('free');
   };
@@ -648,7 +650,7 @@ export default function AdminProfile() {
                       />
                       <button
                         type="button"
-                        onClick={() => handleOptionAdd({ preventDefault: () => { } } as React.FormEvent)}
+                        onClick={handleOptionAdd}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
                       >
                         追加
