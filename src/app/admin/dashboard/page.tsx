@@ -166,6 +166,18 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                 </Link>
+                                {/* 配車管理 */}
+                                <Link href="/admin/dispatch" className="block">
+                                    <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
+                                        <div className="p-7 flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-indigo-600">配車管理</h3>
+                                                <p className="text-sm text-gray-900">トラックの稼働スケジュール管理</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
                             </div>
                             {/* トレンドデータ */}
                             <TrendPanel
