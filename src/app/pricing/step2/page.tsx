@@ -72,6 +72,18 @@ interface DistanceRange {
   basePrice: number;   // 基本加算額（軽トラ基準）
 }
 
+// 料金設定で管理するトラック情報
+interface PricingTruck {
+  id: string;
+  name: string;
+  plateNumber: string;
+  truckType: string;
+  capacityKg: number;
+  basePrice: number; // 基本料金
+  status: 'active' | 'inactive';
+  description?: string;
+}
+
 // オプション型
 const OPTION_TYPES = [
   { value: 'free', label: '無料オプション', color: 'text-green-600' },
@@ -133,6 +145,20 @@ export default function PricingStep2Page() {
   const [coefficientErrors, setCoefficientErrors] = useState<string[]>([]);
   const [distanceErrors, setDistanceErrors] = useState<string[]>([]);
 
+  // トラック管理用state
+  const [pricingTrucks, setPricingTrucks] = useState<PricingTruck[]>([]);
+  const [selectedTruck, setSelectedTruck] = useState<PricingTruck | null>(null);
+  const [showTruckModal, setShowTruckModal] = useState(false);
+  const [truckFormData, setTruckFormData] = useState({
+    name: '',
+    plateNumber: '',
+    truckType: '',
+    capacityKg: 1000,
+    basePrice: 0,
+    status: 'active' as 'active' | 'inactive',
+    description: '',
+  });
+
   // 初期データの読み込み
   useEffect(() => {
     const savedPricing = localStorage.getItem('pricingStep2');
@@ -176,6 +202,47 @@ export default function PricingStep2Page() {
       setDistanceRanges(defaultDistance);
     }
 
+    // トラックデータの読み込み
+    const savedTrucks = localStorage.getItem('pricingTrucks');
+    if (savedTrucks) {
+      setPricingTrucks(JSON.parse(savedTrucks));
+    } else {
+      // デフォルトのトラックデータ
+      const defaultTrucks: PricingTruck[] = [
+        {
+          id: 'truck-1',
+          name: '軽トラA',
+          plateNumber: '品川 500 あ 1234',
+          truckType: '軽トラ',
+          capacityKg: 500,
+          basePrice: 15000,
+          status: 'active',
+          description: '小型荷物用',
+        },
+        {
+          id: 'truck-2',
+          name: '2tショートA',
+          plateNumber: '品川 500 い 5678',
+          truckType: '2tショート',
+          capacityKg: 1000,
+          basePrice: 25000,
+          status: 'active',
+          description: '一般家庭用',
+        },
+        {
+          id: 'truck-3',
+          name: '4tロングA',
+          plateNumber: '品川 500 う 9012',
+          truckType: '4t',
+          capacityKg: 2000,
+          basePrice: 60000,
+          status: 'active',
+          description: '大型荷物用',
+        },
+      ];
+      setPricingTrucks(defaultTrucks);
+    }
+
     setIsLoading(false);
   }, []);
 
@@ -199,6 +266,13 @@ export default function PricingStep2Page() {
       localStorage.setItem('distanceRanges', JSON.stringify(distanceRanges));
     }
   }, [distanceRanges, isLoading]);
+
+  // トラックデータ自動保存
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('pricingTrucks', JSON.stringify(pricingTrucks));
+    }
+  }, [pricingTrucks, isLoading]);
 
   // オプション自動保存
   useEffect(() => {
@@ -381,6 +455,72 @@ export default function PricingStep2Page() {
     )?.basePrice || 0;
     
     return Math.round(coefficient * distancePrice);
+  };
+
+  // トラック管理関数
+  const addPricingTruck = () => {
+    if (!truckFormData.name || !truckFormData.plateNumber || !truckFormData.truckType) {
+      alert('車両名、ナンバープレート、トラック種別は必須です');
+      return;
+    }
+
+    const newTruck: PricingTruck = {
+      id: `truck-${Date.now()}`,
+      ...truckFormData,
+    };
+
+    setPricingTrucks(prev => [...prev, newTruck]);
+    setTruckFormData({
+      name: '',
+      plateNumber: '',
+      truckType: '',
+      capacityKg: 1000,
+      basePrice: 0,
+      status: 'active',
+      description: '',
+    });
+    setShowTruckModal(false);
+  };
+
+  const updatePricingTruck = (updatedTruck: PricingTruck) => {
+    setPricingTrucks(prev => prev.map(truck => 
+      truck.id === updatedTruck.id ? updatedTruck : truck
+    ));
+    setSelectedTruck(null);
+    setShowTruckModal(false);
+  };
+
+  const deletePricingTruck = (truckId: string) => {
+    if (window.confirm('このトラックを削除しますか？')) {
+      setPricingTrucks(prev => prev.filter(truck => truck.id !== truckId));
+    }
+  };
+
+  const openTruckModal = (truck?: PricingTruck) => {
+    if (truck) {
+      setSelectedTruck(truck);
+      setTruckFormData({
+        name: truck.name,
+        plateNumber: truck.plateNumber,
+        truckType: truck.truckType,
+        capacityKg: truck.capacityKg,
+        basePrice: truck.basePrice,
+        status: truck.status,
+        description: truck.description || '',
+      });
+    } else {
+      setSelectedTruck(null);
+      setTruckFormData({
+        name: '',
+        plateNumber: '',
+        truckType: '',
+        capacityKg: 1000,
+        basePrice: 0,
+        status: 'active',
+        description: '',
+      });
+    }
+    setShowTruckModal(true);
   };
 
   // validatePricingのエラーを画面上部に表示、エラー行は赤枠
@@ -570,6 +710,157 @@ export default function PricingStep2Page() {
       </div>
     );
   }
+
+  // トラック管理モーダル
+  const TruckManagementModal = () => {
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (selectedTruck) {
+        updatePricingTruck({
+          ...selectedTruck,
+          ...truckFormData,
+        });
+      } else {
+        addPricingTruck();
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">
+              {selectedTruck ? 'トラック編集' : '新規トラック追加'}
+            </h2>
+            <button
+              onClick={() => setShowTruckModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  車両名 *
+                </label>
+                <input
+                  type="text"
+                  value={truckFormData.name}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="例: 軽トラA"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ナンバープレート *
+                </label>
+                <input
+                  type="text"
+                  value={truckFormData.plateNumber}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, plateNumber: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="例: 品川400 あ12-34"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  トラック種別 *
+                </label>
+                <select
+                  value={truckFormData.truckType}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, truckType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">種別を選択</option>
+                  {TRUCK_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  積載量 (kg)
+                </label>
+                <input
+                  type="number"
+                  value={truckFormData.capacityKg}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, capacityKg: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  基本料金 (円)
+                </label>
+                <input
+                  type="number"
+                  value={truckFormData.basePrice}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, basePrice: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ステータス
+                </label>
+                <select
+                  value={truckFormData.status}
+                  onChange={(e) => setTruckFormData({ ...truckFormData, status: e.target.value as 'active' | 'inactive' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">稼働中</option>
+                  <option value="inactive">停止中</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                説明
+              </label>
+              <textarea
+                value={truckFormData.description}
+                onChange={(e) => setTruckFormData({ ...truckFormData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="トラックの詳細説明"
+              />
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowTruckModal(false)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {selectedTruck ? '更新' : '追加'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4">
@@ -1123,6 +1414,94 @@ export default function PricingStep2Page() {
            {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
         </div>
 
+                {/* トラック管理 */}
+        <div className="bg-white shadow-md rounded-lg p-6 mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">🚚 トラック管理</h2>
+            <button
+              onClick={() => openTruckModal()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            >
+              ＋ トラック追加
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border border-gray-200 px-4 py-2 text-left">車両名</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">ナンバープレート</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">トラック種別</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">積載量</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">基本料金</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">ステータス</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">説明</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pricingTrucks.map((truck) => (
+                  <tr key={truck.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-2 font-medium">
+                      {truck.name}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      {truck.plateNumber}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        {truck.truckType}
+                      </span>
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      {truck.capacityKg.toLocaleString()}kg
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      ¥{truck.basePrice.toLocaleString()}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        truck.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {truck.status === 'active' ? '稼働中' : '停止中'}
+                      </span>
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-sm text-gray-600">
+                      {truck.description || '-'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openTruckModal(truck)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => deletePricingTruck(truck.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {pricingTrucks.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>登録済みのトラックがありません</p>
+              <p className="text-sm mt-1">「＋ トラック追加」ボタンからトラックを追加してください</p>
+            </div>
+          )}
+        </div>
+
         {/* ナビゲーション */}
         <div className="flex justify-between mt-8">
           <button
@@ -1139,6 +1518,9 @@ export default function PricingStep2Page() {
           </button>
         </div>
       </div>
+
+      {/* トラック管理モーダル */}
+      {showTruckModal && <TruckManagementModal />}
     </main>
   );
 } 

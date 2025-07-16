@@ -46,6 +46,9 @@ interface FormSubmission {
   status: 'pending' | 'assigned' | 'completed';
   truckAssignments: TruckAssignment[];
   createdAt: string;
+  distance?: number; // 距離（km）
+  estimatedPrice?: number; // 見積もり価格
+  recommendedTruckTypes?: string[]; // 推奨トラック種別
 }
 
 interface TruckAssignment {
@@ -114,6 +117,10 @@ export default function DispatchManagement() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'assignments' | 'registration'>('calendar');
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
+  const [pricingRules, setPricingRules] = useState<any[]>([]);
+  const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
+  const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
+  const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -131,7 +138,7 @@ export default function DispatchManagement() {
           capacityKg: 1000,
           inspectionExpiry: '2024-12-31',
           status: 'available',
-          truckType: '2トン',
+          truckType: '2tショート',
           schedules: [
             {
               id: 'schedule-1',
@@ -168,7 +175,7 @@ export default function DispatchManagement() {
           capacityKg: 2000,
           inspectionExpiry: '2024-11-30',
           status: 'available',
-          truckType: '4トン',
+          truckType: '4t',
           schedules: [
             {
               id: 'schedule-3',
@@ -192,7 +199,7 @@ export default function DispatchManagement() {
           capacityKg: 500,
           inspectionExpiry: '2024-10-31',
           status: 'maintenance',
-          truckType: '1トン',
+          truckType: '軽トラ',
           schedules: [
             {
               id: 'schedule-4',
@@ -216,7 +223,7 @@ export default function DispatchManagement() {
           capacityKg: 1500,
           inspectionExpiry: '2024-09-30',
           status: 'available',
-          truckType: '3トン',
+          truckType: '3t',
           schedules: [],
         },
         {
@@ -226,7 +233,7 @@ export default function DispatchManagement() {
           capacityKg: 3000,
           inspectionExpiry: '2024-08-31',
           status: 'inactive',
-          truckType: '5トン',
+          truckType: '4t複数',
           schedules: [],
         },
       ];
@@ -251,6 +258,7 @@ export default function DispatchManagement() {
           destinationAddress: '東京都渋谷区渋谷2-2-2',
           totalPoints: 100,
           totalCapacity: 800,
+          distance: 5,
           itemList: ['ソファ', 'テーブル', '椅子', 'ベッド'],
           additionalServices: ['梱包', '開梱'],
           status: 'assigned',
@@ -276,6 +284,7 @@ export default function DispatchManagement() {
           destinationAddress: '東京都杉並区阿佐ヶ谷4-4-4',
           totalPoints: 150,
           totalCapacity: 600,
+          distance: 8,
           itemList: ['ワードローブ', '机', '本棚'],
           additionalServices: ['保険'],
           status: 'assigned',
@@ -301,6 +310,7 @@ export default function DispatchManagement() {
           destinationAddress: '東京都世田谷区三軒茶屋6-6-6',
           totalPoints: 200,
           totalCapacity: 1500,
+          distance: 12,
           itemList: ['冷蔵庫', '洗濯機', '乾燥機', '食器棚'],
           additionalServices: ['保管', '組立'],
           status: 'assigned',
@@ -325,19 +335,33 @@ export default function DispatchManagement() {
     const savedPricing = localStorage.getItem('pricingStep2');
     if (savedPricing) {
       const pricingRules = JSON.parse(savedPricing);
+      setPricingRules(pricingRules);
       const truckTypes = [...new Set(pricingRules.map((rule: any) => rule.truckType).filter(Boolean))] as string[];
       setAvailableTruckTypes(truckTypes);
     } else {
       // デフォルトのトラック種別を設定
-      setAvailableTruckTypes(['1トン', '2トン', '3トン', '4トン', '5トン']);
+      setAvailableTruckTypes(['軽トラ', '2tショート', '2tロング', '3t', '4t', '4t複数', '特別対応']);
     }
 
     // 車種係数からもトラック種別を読み込み
     const savedCoefficients = localStorage.getItem('truckCoefficients');
     if (savedCoefficients) {
       const coefficients = JSON.parse(savedCoefficients);
+      setTruckCoefficients(coefficients);
       const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
       setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
+    }
+
+    // 距離料金の読み込み
+    const savedDistance = localStorage.getItem('distanceRanges');
+    if (savedDistance) {
+      setDistanceRanges(JSON.parse(savedDistance));
+    }
+
+    // 料金設定のトラックデータの読み込み
+    const savedPricingTrucks = localStorage.getItem('pricingTrucks');
+    if (savedPricingTrucks) {
+      setPricingTrucks(JSON.parse(savedPricingTrucks));
     }
   }, []);
 
@@ -491,9 +515,58 @@ export default function DispatchManagement() {
     return `${hours}:${minutes}`;
   };
 
+  // 推奨トラックを計算
+  const calculateRecommendedTrucks = (points: number): any[] => {
+    const recommended: any[] = [];
+    
+    pricingRules.forEach(rule => {
+      if (points >= rule.minPoint && (!rule.maxPoint || points <= rule.maxPoint)) {
+        // 料金設定のトラックから該当する種別のトラックを取得
+        const matchingTrucks = pricingTrucks.filter(truck => 
+          truck.truckType === rule.truckType && truck.status === 'active'
+        );
+        recommended.push(...matchingTrucks);
+      }
+    });
+    
+    return recommended;
+  };
+
+  // 見積もり価格を計算
+  const calculateEstimatedPrice = (points: number, distance: number = 0): number => {
+    // 基本料金を計算
+    let basePrice = 0;
+    pricingRules.forEach(rule => {
+      if (points >= rule.minPoint && (!rule.maxPoint || points <= rule.maxPoint)) {
+        basePrice = rule.price || 0;
+      }
+    });
+
+    // 距離料金を計算
+    let distancePrice = 0;
+    if (distance > 0) {
+      for (let i = distanceRanges.length - 1; i >= 0; i--) {
+        if (distance <= distanceRanges[i].maxDistance) {
+          distancePrice = distanceRanges[i].basePrice;
+          break;
+        }
+      }
+    }
+
+    return basePrice + distancePrice;
+  };
+
+  // トラック種別に基づいて利用可能なトラックをフィルタリング
+  const getAvailableTrucksByType = (truckType: string): Truck[] => {
+    return trucks.filter(truck => 
+      truck.truckType === truckType && 
+      truck.status === 'available'
+    );
+  };
+
   // トラック割り当てモーダル
   const TruckAssignmentModal = () => {
-    const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
+    const [selectedTruck, setSelectedTruck] = useState<any>(null);
     const [formData, setFormData] = useState({
       capacity: '',
       startTime: '09:00',
@@ -509,8 +582,17 @@ export default function DispatchManagement() {
           endTime: '17:00',
           workType: 'loading',
         });
+        setSelectedTruck(null);
       }
     }, [selectedSubmission]);
+
+    // 推奨トラックを計算
+    const recommendedTrucks = selectedSubmission ? 
+      calculateRecommendedTrucks(selectedSubmission.totalPoints) : [];
+
+    // 見積もり価格を計算
+    const estimatedPrice = selectedSubmission ? 
+      calculateEstimatedPrice(selectedSubmission.totalPoints, selectedSubmission.distance || 0) : 0;
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -531,18 +613,20 @@ export default function DispatchManagement() {
       setSelectedTruck(null);
     };
 
-    // 利用可能なトラックをフィルタリング
-    const availableTrucks = trucks.filter(truck => {
-      // 指定日時にスケジュールが重複していないかチェック
-      const hasConflict = truck.schedules.some(schedule => 
-        schedule.date === selectedSubmission?.moveDate &&
-        schedule.status === 'booked' &&
-        ((schedule.startTime <= formData.startTime && schedule.endTime > formData.startTime) ||
-         (schedule.startTime < formData.endTime && schedule.endTime >= formData.endTime) ||
-         (schedule.startTime >= formData.startTime && schedule.endTime <= formData.endTime))
+    // 料金設定のトラックから利用可能なトラックをフィルタリング
+    const availablePricingTrucks = pricingTrucks.filter(truck => {
+      // 指定日時にスケジュールが重複していないかチェック（配車管理のトラックスケジュールと照合）
+      const hasConflict = trucks.some(dispatchTruck => 
+        dispatchTruck.schedules.some(schedule => 
+          schedule.date === selectedSubmission?.moveDate &&
+          schedule.status === 'booked' &&
+          ((schedule.startTime <= formData.startTime && schedule.endTime > formData.startTime) ||
+           (schedule.startTime < formData.endTime && schedule.endTime >= formData.endTime) ||
+           (schedule.startTime >= formData.startTime && schedule.endTime <= formData.endTime))
+        )
       );
       
-      return truck.status === 'available' && !hasConflict;
+      return truck.status === 'active' && !hasConflict;
     });
 
     return (
@@ -557,9 +641,48 @@ export default function DispatchManagement() {
               <p className="text-sm text-blue-600">
                 {formatDate(selectedSubmission.moveDate)} {formatTime(formData.startTime)}-{formatTime(formData.endTime)}
               </p>
-              <p className="text-sm text-blue-600">
-                総容量: {selectedSubmission.totalCapacity.toLocaleString()}kg / 総ポイント: {selectedSubmission.totalPoints}pt
-              </p>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <p className="text-sm text-blue-600">
+                    総容量: {selectedSubmission.totalCapacity.toLocaleString()}kg
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    総ポイント: {selectedSubmission.totalPoints}pt
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-600">
+                    見積もり価格: ¥{estimatedPrice.toLocaleString()}
+                  </p>
+                  {selectedSubmission.distance && (
+                    <p className="text-sm text-blue-600">
+                      距離: {selectedSubmission.distance}km
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* 推奨トラック */}
+              {recommendedTrucks.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-blue-900 mb-2">推奨トラック:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {recommendedTrucks.map(truck => (
+                      <span
+                        key={truck.id}
+                        className={`px-2 py-1 text-xs rounded cursor-pointer ${
+                          selectedTruck?.id === truck.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                        onClick={() => setSelectedTruck(truck)}
+                      >
+                        {truck.name} ({truck.truckType})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
@@ -569,16 +692,16 @@ export default function DispatchManagement() {
               <select
                 value={selectedTruck?.id || ''}
                 onChange={e => {
-                  const truck = trucks.find(t => t.id === e.target.value);
+                  const truck = availablePricingTrucks.find(t => t.id === e.target.value);
                   setSelectedTruck(truck || null);
                 }}
                 className="w-full px-3 py-2 border rounded"
                 required
               >
                 <option value="">トラックを選択</option>
-                {availableTrucks.map(truck => (
+                {availablePricingTrucks.map(truck => (
                   <option key={truck.id} value={truck.id}>
-                    {truck.name} ({truck.plateNumber}) - {truck.capacityKg}kg
+                    {truck.name} ({truck.plateNumber}) - {truck.truckType} - {truck.capacityKg}kg - ¥{truck.basePrice.toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -688,12 +811,22 @@ export default function DispatchManagement() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                ログアウト
-              </button>
+              <div className="flex items-center gap-4">
+                <a
+                  href="/pricing/step2"
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  📊 料金設定を確認・編集
+                </a>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  ログアウト
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -790,8 +923,8 @@ export default function DispatchManagement() {
                             <span className="ml-1">{submission.totalCapacity.toLocaleString()}kg</span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">総ポイント:</span>
-                            <span className="ml-1">{submission.totalPoints}pt</span>
+                            <span className="font-medium text-gray-700">荷物ポイント:</span>
+                            <span className="ml-1 font-semibold text-blue-600">{submission.totalPoints}pt</span>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">出発地:</span>
@@ -800,6 +933,23 @@ export default function DispatchManagement() {
                           <div>
                             <span className="font-medium text-gray-700">終了地点:</span>
                             <span className="ml-1">{submission.destinationAddress}</span>
+                          </div>
+                        </div>
+
+                        {/* 推奨トラックと見積もり価格 */}
+                        <div className="mb-4 p-3 bg-gray-50 rounded">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-medium text-gray-900">料金設定に基づく推奨</h4>
+                            <span className="text-sm text-gray-600">
+                              見積もり: ¥{calculateEstimatedPrice(submission.totalPoints, submission.distance || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {calculateRecommendedTrucks(submission.totalPoints).map(truck => (
+                              <span key={truck.id} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {truck.name} ({truck.truckType})
+                              </span>
+                            ))}
                           </div>
                         </div>
 
