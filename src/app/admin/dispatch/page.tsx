@@ -522,8 +522,8 @@ export default function DispatchManagement() {
     pricingRules.forEach(rule => {
       if (points >= rule.minPoint && (!rule.maxPoint || points <= rule.maxPoint)) {
         // 料金設定のトラックから該当する種別のトラックを取得
-        const matchingTrucks = pricingTrucks.filter(truck => 
-          truck.truckType === rule.truckType && truck.status === 'active'
+        const matchingTrucks = pricingTrucks.filter(truck =>
+          truck.truckType === rule.truckType && truck.status === 'available'
         );
         recommended.push(...matchingTrucks);
       }
@@ -566,7 +566,7 @@ export default function DispatchManagement() {
 
   // トラック割り当てモーダル
   const TruckAssignmentModal = () => {
-    const [selectedTruck, setSelectedTruck] = useState<any>(null);
+    const [modalSelectedTruck, setModalSelectedTruck] = useState<any>(null);
     const [formData, setFormData] = useState({
       capacity: '',
       startTime: '09:00',
@@ -582,7 +582,7 @@ export default function DispatchManagement() {
           endTime: '17:00',
           workType: 'loading',
         });
-        setSelectedTruck(null);
+        setModalSelectedTruck(null);
       }
     }, [selectedSubmission]);
 
@@ -597,11 +597,11 @@ export default function DispatchManagement() {
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       
-      if (!selectedTruck || !selectedSubmission) return;
+      if (!modalSelectedTruck || !selectedSubmission) return;
 
       const truckAssignment: TruckAssignment = {
-        truckId: selectedTruck.id,
-        truckName: selectedTruck.name,
+        truckId: modalSelectedTruck.id,
+        truckName: modalSelectedTruck.name,
         capacity: parseInt(formData.capacity),
         startTime: formData.startTime,
         endTime: formData.endTime,
@@ -610,7 +610,7 @@ export default function DispatchManagement() {
 
       assignTruckToSubmission(selectedSubmission.id, truckAssignment);
       setShowTruckModal(false);
-      setSelectedTruck(null);
+      setModalSelectedTruck(null);
     };
 
     // 料金設定のトラックから利用可能なトラックをフィルタリング
@@ -626,7 +626,7 @@ export default function DispatchManagement() {
         )
       );
       
-      return truck.status === 'active' && !hasConflict;
+      return truck.status === 'available' && !hasConflict;
     });
 
     return (
@@ -671,11 +671,11 @@ export default function DispatchManagement() {
                       <span
                         key={truck.id}
                         className={`px-2 py-1 text-xs rounded cursor-pointer ${
-                          selectedTruck?.id === truck.id
+                          modalSelectedTruck?.id === truck.id
                             ? 'bg-blue-600 text-white'
                             : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                         }`}
-                        onClick={() => setSelectedTruck(truck)}
+                        onClick={() => setModalSelectedTruck(truck)}
                       >
                         {truck.name} ({truck.truckType})
                       </span>
@@ -690,10 +690,10 @@ export default function DispatchManagement() {
             <div>
               <label className="block text-sm font-medium mb-1">トラック選択</label>
               <select
-                value={selectedTruck?.id || ''}
+                value={modalSelectedTruck?.id || ''}
                 onChange={e => {
                   const truck = availablePricingTrucks.find(t => t.id === e.target.value);
-                  setSelectedTruck(truck || null);
+                  setModalSelectedTruck(truck || null);
                 }}
                 className="w-full px-3 py-2 border rounded"
                 required
@@ -717,7 +717,7 @@ export default function DispatchManagement() {
                   className="w-full px-3 py-2 border rounded"
                   required
                   min="0"
-                  max={selectedTruck?.capacityKg}
+                  max={modalSelectedTruck?.capacityKg}
                 />
               </div>
               <div>
@@ -768,7 +768,7 @@ export default function DispatchManagement() {
                 type="button"
                 onClick={() => {
                   setShowTruckModal(false);
-                  setSelectedTruck(null);
+                  setModalSelectedTruck(null);
                 }}
                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
               >
