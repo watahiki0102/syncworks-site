@@ -9,6 +9,7 @@ interface Truck {
   capacityKg: number;
   inspectionExpiry: string;
   status: 'available' | 'maintenance' | 'inactive';
+  truckType: string; // 料金設定のトラック種別
   schedules: Schedule[];
 }
 
@@ -27,6 +28,7 @@ interface TruckRegistrationProps {
   onUpdateTruck: (truck: Truck) => void;
   onDeleteTruck: (truckId: string) => void;
   onSelectTruck: (truck: Truck | null) => void;
+  availableTruckTypes: string[]; // 料金設定で利用可能なトラック種別
 }
 
 export default function TruckRegistration({
@@ -35,7 +37,8 @@ export default function TruckRegistration({
   onAddTruck,
   onUpdateTruck,
   onDeleteTruck,
-  onSelectTruck
+  onSelectTruck,
+  availableTruckTypes
 }: TruckRegistrationProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -43,6 +46,7 @@ export default function TruckRegistration({
     capacityKg: 1000,
     inspectionExpiry: '',
     status: 'available' as 'available' | 'maintenance' | 'inactive',
+    truckType: '',
   });
   const [schedules, setSchedules] = useState<Omit<Schedule, 'id'>[]>([]);
   const [newSchedule, setNewSchedule] = useState({
@@ -60,6 +64,7 @@ export default function TruckRegistration({
         capacityKg: selectedTruck.capacityKg,
         inspectionExpiry: selectedTruck.inspectionExpiry,
         status: selectedTruck.status,
+        truckType: selectedTruck.truckType || '',
       });
       setSchedules(selectedTruck.schedules.map(s => ({
         date: s.date,
@@ -79,6 +84,7 @@ export default function TruckRegistration({
       capacityKg: 1000,
       inspectionExpiry: '',
       status: 'available',
+      truckType: '',
     });
     setSchedules([]);
     setNewSchedule({
@@ -176,6 +182,9 @@ export default function TruckRegistration({
               </div>
               <p className="text-sm text-gray-600 mb-1">{truck.plateNumber}</p>
               <p className="text-sm text-gray-600 mb-2">積載量: {truck.capacityKg}kg</p>
+              {truck.truckType && (
+                <p className="text-sm text-gray-600 mb-2">種別: {truck.truckType}</p>
+              )}
               <p className="text-sm text-gray-600 mb-3">車検: {truck.inspectionExpiry}</p>
               <div className="flex gap-2">
                 <button
@@ -239,6 +248,22 @@ export default function TruckRegistration({
                 placeholder="例: 品川400 あ12-34"
                 required
               />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                トラック種別
+              </label>
+              <select
+                value={formData.truckType}
+                onChange={(e) => setFormData({ ...formData, truckType: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">種別を選択</option>
+                {availableTruckTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
             </div>
             
             <div>

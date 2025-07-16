@@ -302,6 +302,52 @@ export default function PricingStep2Page() {
     ));
   };
 
+  // 新しい車種追加用state
+  const [newTruckTypeForCoefficient, setNewTruckTypeForCoefficient] = useState<string>('');
+  const [newTruckCoefficient, setNewTruckCoefficient] = useState<number>(1.0);
+  const [truckTypeError, setTruckTypeError] = useState<string>('');
+
+  // 車種追加
+  const addTruckType = () => {
+    if (!newTruckTypeForCoefficient.trim()) {
+      setTruckTypeError('車種名は必須です');
+      return;
+    }
+    
+    // 重複チェック
+    if (truckCoefficients.some(coef => coef.truckType === newTruckTypeForCoefficient.trim())) {
+      setTruckTypeError('この車種は既に登録されています');
+      return;
+    }
+
+    const newTruck: TruckCoefficient = {
+      id: `coef-${Date.now()}`,
+      truckType: newTruckTypeForCoefficient.trim(),
+      coefficient: newTruckCoefficient
+    };
+
+    setTruckCoefficients(prev => [...prev, newTruck]);
+    setNewTruckTypeForCoefficient('');
+    setNewTruckCoefficient(1.0);
+    setTruckTypeError('');
+  };
+
+  // 車種削除
+  const removeTruckType = (id: string) => {
+    const truckToRemove = truckCoefficients.find(coef => coef.id === id);
+    if (!truckToRemove) return;
+
+    // 料金設定で使用されているかチェック
+    const isUsedInPricing = pricingRules.some(rule => rule.truckType === truckToRemove.truckType);
+    if (isUsedInPricing) {
+      setTruckTypeError(`「${truckToRemove.truckType}」は料金設定で使用されているため削除できません`);
+      return;
+    }
+
+    setTruckCoefficients(prev => prev.filter(coef => coef.id !== id));
+    setTruckTypeError('');
+  };
+
   // 距離料金更新
   const updateDistanceRange = (id: string, field: keyof DistanceRange, value: any) => {
     setDistanceRanges(prev => prev.map(range =>
@@ -625,6 +671,12 @@ export default function PricingStep2Page() {
                           {TRUCK_TYPES.map(type => (
                             <option key={type} value={type}>{type}</option>
                           ))}
+                          {truckCoefficients
+                            .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
+                            .map(coef => (
+                              <option key={coef.truckType} value={coef.truckType}>{coef.truckType}</option>
+                            ))
+                          }
                         </select>
                       </td>
                       <td className="border border-gray-200 px-4 py-2">
@@ -677,6 +729,12 @@ export default function PricingStep2Page() {
               {TRUCK_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
+              {truckCoefficients
+                .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
+                .map(coef => (
+                  <option key={coef.truckType} value={coef.truckType}>{coef.truckType}</option>
+                ))
+              }
             </select>
             <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">{pricingRules.length > 0 ? (pricingRules[pricingRules.length-1].maxPoint!+1) : 1}</span>
             <span className="text-gray-500">～</span>
@@ -724,12 +782,19 @@ export default function PricingStep2Page() {
             各車種の係数を設定します。この係数は距離加算額に乗算されます。
           </p>
           
+          {truckTypeError && (
+            <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4">
+              {truckTypeError}
+            </div>
+          )}
+          
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50">
                   <th className="border border-gray-200 px-4 py-2 text-left">車種</th>
                   <th className="border border-gray-200 px-4 py-2 text-left">係数</th>
+                  <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -748,10 +813,45 @@ export default function PricingStep2Page() {
                         className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
                       />
                     </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <button
+                        onClick={() => removeTruckType(coef.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                        title="この車種を削除"
+                      >
+                        🗑️ 削除
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+          
+          {/* 車種追加フォーム */}
+          <div className="flex flex-wrap gap-2 mt-4 items-end bg-blue-50 p-4 rounded">
+            <input
+              type="text"
+              value={newTruckTypeForCoefficient}
+              onChange={e => setNewTruckTypeForCoefficient(e.target.value)}
+              className="border rounded px-3 py-1 min-w-[150px]"
+              placeholder="新しい車種名"
+            />
+            <input
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={newTruckCoefficient}
+              onChange={e => setNewTruckCoefficient(parseFloat(e.target.value) || 1.0)}
+              className="border rounded px-2 py-1 min-w-[80px]"
+              placeholder="係数"
+            />
+            <button
+              onClick={addTruckType}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
+            >
+              ＋ 車種追加
+            </button>
           </div>
         </div>
 
@@ -769,13 +869,15 @@ export default function PricingStep2Page() {
               <thead>
                 <tr className="bg-gray-50">
                   <th className="border border-gray-200 px-4 py-2 text-left">距離範囲（km）</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">軽トラ</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">2tショート</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">2tロング</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">3t</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">4t</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">4t複数</th>
-                  <th className="border border-gray-200 px-4 py-2 text-left">特別対応</th>
+                  {TRUCK_TYPES.map(type => (
+                    <th key={type} className="border border-gray-200 px-4 py-2 text-left">{type}</th>
+                  ))}
+                  {truckCoefficients
+                    .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
+                    .map(coef => (
+                      <th key={coef.truckType} className="border border-gray-200 px-4 py-2 text-left">{coef.truckType}</th>
+                    ))
+                  }
                   <th className="border border-gray-200 px-4 py-2 text-left">基本加算額</th>
                   <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
                 </tr>
@@ -800,27 +902,19 @@ export default function PricingStep2Page() {
                           <span className="text-gray-500 text-sm">km</span>
                         </div>
                       </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "軽トラ")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "2tショート")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "2tロング")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "3t")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "4t")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "4t複数")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
-                      <td className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
-                        ¥{Math.round((truckCoefficients.find(c => c.truckType === "特別対応")?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                      </td>
+                      {TRUCK_TYPES.map(type => (
+                        <td key={type} className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                          ¥{Math.round((truckCoefficients.find(c => c.truckType === type)?.coefficient || 1.0) * range.basePrice).toLocaleString()}
+                        </td>
+                      ))}
+                      {truckCoefficients
+                        .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
+                        .map(coef => (
+                          <td key={coef.truckType} className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                            ¥{Math.round(coef.coefficient * range.basePrice).toLocaleString()}
+                          </td>
+                        ))
+                      }
                       <td className="border border-gray-200 px-4 py-2">
                         <input
                           type="number"
@@ -858,7 +952,7 @@ export default function PricingStep2Page() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
           <h3 className="text-lg font-semibold text-blue-800 mb-2">🧮 料金計算例（車種係数×距離加算額）</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {truckCoefficients.slice(0, 6).map((coef) => (
+            {truckCoefficients.map((coef) => (
               <div key={coef.id} className="bg-white p-3 rounded border">
                 <h4 className="font-semibold text-gray-800 mb-2">{coef.truckType}</h4>
                 <div className="space-y-1 text-sm">
@@ -1015,8 +1109,8 @@ export default function PricingStep2Page() {
             <input
               type="number"
               min="0"
-              value={newPricingPrice ?? ''}
-              onChange={e => setNewPricingPrice(e.target.value ? parseInt(e.target.value) : undefined)}
+              value={newOptionPrice}
+              onChange={e => setNewOptionPrice(parseInt(e.target.value) || 0)}
               className="border rounded px-2 py-1 min-w-[60px] max-w-[100px] text-right"
               placeholder="料金"
             />

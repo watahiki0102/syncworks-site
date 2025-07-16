@@ -13,6 +13,7 @@ interface Truck {
   capacityKg: number;
   inspectionExpiry: string;
   status: 'available' | 'maintenance' | 'inactive';
+  truckType: string;
   schedules: Schedule[];
 }
 
@@ -22,12 +23,97 @@ interface Schedule {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'maintenance';
+  customerName?: string;
+  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
+  description?: string;
+  capacity?: number;
+  origin?: string;
+  destination?: string;
+}
+
+interface FormSubmission {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  moveDate: string;
+  originAddress: string;
+  destinationAddress: string;
+  totalPoints: number;
+  totalCapacity: number;
+  itemList: string[];
+  additionalServices: string[];
+  status: 'pending' | 'assigned' | 'completed';
+  truckAssignments: TruckAssignment[];
+  createdAt: string;
+}
+
+interface TruckAssignment {
+  truckId: string;
+  truckName: string;
+  capacity: number;
+  startTime: string;
+  endTime: string;
+  workType: 'loading' | 'moving' | 'unloading';
 }
 
 export default function DispatchManagement() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([
+    {
+      id: '1',
+      customerName: '山田 太郎',
+      customerEmail: 'taro@example.com',
+      customerPhone: '090-1234-5678',
+      moveDate: '2023-10-15',
+      originAddress: '東京都新宿区西新宿1-1-1',
+      destinationAddress: '東京都渋谷区渋谷2-2-2',
+      totalPoints: 100,
+      totalCapacity: 500,
+      itemList: ['ソファ', 'テーブル', '椅子'],
+      additionalServices: ['梱包', '開梱'],
+      status: 'pending',
+      truckAssignments: [],
+      createdAt: '2023-10-01T10:00:00Z',
+    },
+    {
+      id: '2',
+      customerName: '鈴木 花子',
+      customerEmail: 'hanako@example.com',
+      customerPhone: '080-9876-5432',
+      moveDate: '2023-10-20',
+      originAddress: '大阪府大阪市北区梅田3-3-3',
+      destinationAddress: '大阪府大阪市中央区難波4-4-4',
+      totalPoints: 150,
+      totalCapacity: 750,
+      itemList: ['ベッド', 'ワードローブ', '机'],
+      additionalServices: ['保険'],
+      status: 'assigned',
+      truckAssignments: [],
+      createdAt: '2023-10-02T11:00:00Z',
+    },
+    {
+      id: '3',
+      customerName: '佐藤 次郎',
+      customerEmail: 'jiro@example.com',
+      customerPhone: '070-5555-6666',
+      moveDate: '2023-10-25',
+      originAddress: '福岡県福岡市博多区博多駅前5-5-5',
+      destinationAddress: '福岡県福岡市中央区天神6-6-6',
+      totalPoints: 200,
+      totalCapacity: 1000,
+      itemList: ['冷蔵庫', '洗濯機', '乾燥機'],
+      additionalServices: ['保管'],
+      status: 'completed',
+      truckAssignments: [],
+      createdAt: '2023-10-03T12:00:00Z',
+    },
+  ]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'registration'>('calendar');
+  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
+  const [activeTab, setActiveTab] = useState<'calendar' | 'assignments' | 'registration'>('calendar');
+  const [showTruckModal, setShowTruckModal] = useState(false);
+  const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,12 +121,234 @@ export default function DispatchManagement() {
     const savedTrucks = localStorage.getItem('trucks');
     if (savedTrucks) {
       setTrucks(JSON.parse(savedTrucks));
+    } else {
+      // テストデータを初期化
+      const testTrucks: Truck[] = [
+        {
+          id: 'truck-1',
+          name: '2トンショート',
+          plateNumber: '品川 500 あ 1234',
+          capacityKg: 1000,
+          inspectionExpiry: '2024-12-31',
+          status: 'available',
+          truckType: '2トン',
+          schedules: [
+            {
+              id: 'schedule-1',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '09:00',
+              endTime: '12:00',
+              status: 'booked',
+              customerName: '田中 一郎',
+              workType: 'loading',
+              description: '引っ越し作業',
+              capacity: 800,
+              origin: '東京都新宿区西新宿1-1-1',
+              destination: '東京都渋谷区渋谷2-2-2',
+            },
+            {
+              id: 'schedule-2',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '14:00',
+              endTime: '17:00',
+              status: 'booked',
+              customerName: '佐藤 花子',
+              workType: 'moving',
+              description: '引っ越し作業',
+              capacity: 600,
+              origin: '東京都中野区中野3-3-3',
+              destination: '東京都杉並区阿佐ヶ谷4-4-4',
+            },
+          ],
+        },
+        {
+          id: 'truck-2',
+          name: '4トンロング',
+          plateNumber: '品川 500 い 5678',
+          capacityKg: 2000,
+          inspectionExpiry: '2024-11-30',
+          status: 'available',
+          truckType: '4トン',
+          schedules: [
+            {
+              id: 'schedule-3',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '10:00',
+              endTime: '15:00',
+              status: 'booked',
+              customerName: '山田 次郎',
+              workType: 'unloading',
+              description: '引っ越し作業',
+              capacity: 1500,
+              origin: '東京都目黒区目黒5-5-5',
+              destination: '東京都世田谷区三軒茶屋6-6-6',
+            },
+          ],
+        },
+        {
+          id: 'truck-3',
+          name: '1トン軽トラ',
+          plateNumber: '品川 500 う 9012',
+          capacityKg: 500,
+          inspectionExpiry: '2024-10-31',
+          status: 'maintenance',
+          truckType: '1トン',
+          schedules: [
+            {
+              id: 'schedule-4',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '08:00',
+              endTime: '10:00',
+              status: 'maintenance',
+              customerName: '',
+              workType: 'maintenance',
+              description: '定期点検',
+              capacity: 0,
+              origin: '',
+              destination: '',
+            },
+          ],
+        },
+        {
+          id: 'truck-4',
+          name: '3トンミドル',
+          plateNumber: '品川 500 え 3456',
+          capacityKg: 1500,
+          inspectionExpiry: '2024-09-30',
+          status: 'available',
+          truckType: '3トン',
+          schedules: [],
+        },
+        {
+          id: 'truck-5',
+          name: '5トン大型',
+          plateNumber: '品川 500 お 7890',
+          capacityKg: 3000,
+          inspectionExpiry: '2024-08-31',
+          status: 'inactive',
+          truckType: '5トン',
+          schedules: [],
+        },
+      ];
+      setTrucks(testTrucks);
+      localStorage.setItem('trucks', JSON.stringify(testTrucks));
+    }
+
+    // ローカルストレージからフォーム送信データを読み込み
+    const savedSubmissions = localStorage.getItem('formSubmissions');
+    if (savedSubmissions) {
+      setFormSubmissions(JSON.parse(savedSubmissions));
+    } else {
+      // テストデータを初期化
+      const testSubmissions: FormSubmission[] = [
+        {
+          id: '1',
+          customerName: '田中 一郎',
+          customerEmail: 'tanaka@example.com',
+          customerPhone: '090-1234-5678',
+          moveDate: new Date().toISOString().split('T')[0],
+          originAddress: '東京都新宿区西新宿1-1-1',
+          destinationAddress: '東京都渋谷区渋谷2-2-2',
+          totalPoints: 100,
+          totalCapacity: 800,
+          itemList: ['ソファ', 'テーブル', '椅子', 'ベッド'],
+          additionalServices: ['梱包', '開梱'],
+          status: 'assigned',
+          truckAssignments: [
+            {
+              truckId: 'truck-1',
+              truckName: '2トンショート',
+              capacity: 800,
+              startTime: '09:00',
+              endTime: '12:00',
+              workType: 'loading',
+            },
+          ],
+          createdAt: '2024-01-01T10:00:00Z',
+        },
+        {
+          id: '2',
+          customerName: '佐藤 花子',
+          customerEmail: 'sato@example.com',
+          customerPhone: '080-9876-5432',
+          moveDate: new Date().toISOString().split('T')[0],
+          originAddress: '東京都中野区中野3-3-3',
+          destinationAddress: '東京都杉並区阿佐ヶ谷4-4-4',
+          totalPoints: 150,
+          totalCapacity: 600,
+          itemList: ['ワードローブ', '机', '本棚'],
+          additionalServices: ['保険'],
+          status: 'assigned',
+          truckAssignments: [
+            {
+              truckId: 'truck-1',
+              truckName: '2トンショート',
+              capacity: 600,
+              startTime: '14:00',
+              endTime: '17:00',
+              workType: 'moving',
+            },
+          ],
+          createdAt: '2024-01-02T11:00:00Z',
+        },
+        {
+          id: '3',
+          customerName: '山田 次郎',
+          customerEmail: 'yamada@example.com',
+          customerPhone: '070-5555-6666',
+          moveDate: new Date().toISOString().split('T')[0],
+          originAddress: '東京都目黒区目黒5-5-5',
+          destinationAddress: '東京都世田谷区三軒茶屋6-6-6',
+          totalPoints: 200,
+          totalCapacity: 1500,
+          itemList: ['冷蔵庫', '洗濯機', '乾燥機', '食器棚'],
+          additionalServices: ['保管', '組立'],
+          status: 'assigned',
+          truckAssignments: [
+            {
+              truckId: 'truck-2',
+              truckName: '4トンロング',
+              capacity: 1500,
+              startTime: '10:00',
+              endTime: '15:00',
+              workType: 'unloading',
+            },
+          ],
+          createdAt: '2024-01-03T12:00:00Z',
+        },
+      ];
+      setFormSubmissions(testSubmissions);
+      localStorage.setItem('formSubmissions', JSON.stringify(testSubmissions));
+    }
+
+    // 料金設定からトラック種別を読み込み
+    const savedPricing = localStorage.getItem('pricingStep2');
+    if (savedPricing) {
+      const pricingRules = JSON.parse(savedPricing);
+      const truckTypes = [...new Set(pricingRules.map((rule: any) => rule.truckType).filter(Boolean))] as string[];
+      setAvailableTruckTypes(truckTypes);
+    } else {
+      // デフォルトのトラック種別を設定
+      setAvailableTruckTypes(['1トン', '2トン', '3トン', '4トン', '5トン']);
+    }
+
+    // 車種係数からもトラック種別を読み込み
+    const savedCoefficients = localStorage.getItem('truckCoefficients');
+    if (savedCoefficients) {
+      const coefficients = JSON.parse(savedCoefficients);
+      const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
+      setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
     }
   }, []);
 
   const saveTrucks = (newTrucks: Truck[]) => {
     setTrucks(newTrucks);
     localStorage.setItem('trucks', JSON.stringify(newTrucks));
+  };
+
+  const saveFormSubmissions = (newSubmissions: FormSubmission[]) => {
+    setFormSubmissions(newSubmissions);
+    localStorage.setItem('formSubmissions', JSON.stringify(newSubmissions));
   };
 
   const addTruck = (truck: Omit<Truck, 'id'>) => {
@@ -68,6 +376,286 @@ export default function DispatchManagement() {
         setSelectedTruck(null);
       }
     }
+  };
+
+  const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
+    const submission = formSubmissions.find(s => s.id === submissionId);
+    if (!submission) return;
+
+    // トラックのスケジュールを更新
+    const truck = trucks.find(t => t.id === truckAssignment.truckId);
+    if (truck) {
+      const newSchedule: Schedule = {
+        id: `schedule-${Date.now()}`,
+        date: submission.moveDate,
+        startTime: truckAssignment.startTime,
+        endTime: truckAssignment.endTime,
+        status: 'booked',
+        customerName: submission.customerName,
+        workType: truckAssignment.workType,
+        description: `引っ越し案件: ${submission.customerName}`,
+        capacity: truckAssignment.capacity,
+        origin: submission.originAddress,
+        destination: submission.destinationAddress,
+      };
+
+      const updatedTruck = {
+        ...truck,
+        schedules: [...truck.schedules, newSchedule],
+      };
+
+      const updatedTrucks = trucks.map(t => 
+        t.id === truck.id ? updatedTruck : t
+      );
+      saveTrucks(updatedTrucks);
+    }
+
+    // 案件にトラック割り当てを追加
+    const updatedSubmission: FormSubmission = {
+      ...submission,
+      truckAssignments: [...submission.truckAssignments, truckAssignment],
+      status: 'assigned',
+    };
+
+    updateFormSubmission(updatedSubmission);
+  };
+
+  const removeTruckFromSubmission = (submissionId: string, truckId: string) => {
+    const submission = formSubmissions.find(s => s.id === submissionId);
+    if (!submission) return;
+
+    // トラックのスケジュールから削除
+    const truck = trucks.find(t => t.id === truckId);
+    if (truck) {
+      const updatedTruck = {
+        ...truck,
+        schedules: truck.schedules.filter(s => 
+          !(s.date === submission.moveDate && 
+            s.customerName === submission.customerName &&
+            s.status === 'booked')
+        ),
+      };
+
+      const updatedTrucks = trucks.map(t => 
+        t.id === truck.id ? updatedTruck : t
+      );
+      saveTrucks(updatedTrucks);
+    }
+
+    // 案件からトラック割り当てを削除
+    const updatedSubmission: FormSubmission = {
+      ...submission,
+      truckAssignments: submission.truckAssignments.filter(ta => ta.truckId !== truckId),
+      status: submission.truckAssignments.length <= 1 ? 'pending' : 'assigned',
+    };
+
+    updateFormSubmission(updatedSubmission);
+  };
+
+  const updateFormSubmission = (updatedSubmission: FormSubmission) => {
+    const updatedSubmissions = formSubmissions.map(submission => 
+      submission.id === updatedSubmission.id ? updatedSubmission : submission
+    );
+    saveFormSubmissions(updatedSubmissions);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'assigned': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return '未割り当て';
+      case 'assigned': return '割り当て済み';
+      case 'completed': return '完了';
+      default: return '不明';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ja-JP', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    return `${hours}:${minutes}`;
+  };
+
+  // トラック割り当てモーダル
+  const TruckAssignmentModal = () => {
+    const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
+    const [formData, setFormData] = useState({
+      capacity: '',
+      startTime: '09:00',
+      endTime: '17:00',
+      workType: 'loading' as 'loading' | 'moving' | 'unloading',
+    });
+
+    useEffect(() => {
+      if (selectedSubmission) {
+        setFormData({
+          capacity: '',
+          startTime: '09:00',
+          endTime: '17:00',
+          workType: 'loading',
+        });
+      }
+    }, [selectedSubmission]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!selectedTruck || !selectedSubmission) return;
+
+      const truckAssignment: TruckAssignment = {
+        truckId: selectedTruck.id,
+        truckName: selectedTruck.name,
+        capacity: parseInt(formData.capacity),
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        workType: formData.workType,
+      };
+
+      assignTruckToSubmission(selectedSubmission.id, truckAssignment);
+      setShowTruckModal(false);
+      setSelectedTruck(null);
+    };
+
+    // 利用可能なトラックをフィルタリング
+    const availableTrucks = trucks.filter(truck => {
+      // 指定日時にスケジュールが重複していないかチェック
+      const hasConflict = truck.schedules.some(schedule => 
+        schedule.date === selectedSubmission?.moveDate &&
+        schedule.status === 'booked' &&
+        ((schedule.startTime <= formData.startTime && schedule.endTime > formData.startTime) ||
+         (schedule.startTime < formData.endTime && schedule.endTime >= formData.endTime) ||
+         (schedule.startTime >= formData.startTime && schedule.endTime <= formData.endTime))
+      );
+      
+      return truck.status === 'available' && !hasConflict;
+    });
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <h3 className="text-lg font-semibold mb-4">トラック割り当て</h3>
+          
+          {selectedSubmission && (
+            <div className="mb-4 p-4 bg-blue-50 rounded">
+              <h4 className="font-medium text-blue-900">{selectedSubmission.customerName}</h4>
+              <p className="text-sm text-blue-700">{selectedSubmission.customerEmail}</p>
+              <p className="text-sm text-blue-600">
+                {formatDate(selectedSubmission.moveDate)} {formatTime(formData.startTime)}-{formatTime(formData.endTime)}
+              </p>
+              <p className="text-sm text-blue-600">
+                総容量: {selectedSubmission.totalCapacity.toLocaleString()}kg / 総ポイント: {selectedSubmission.totalPoints}pt
+              </p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">トラック選択</label>
+              <select
+                value={selectedTruck?.id || ''}
+                onChange={e => {
+                  const truck = trucks.find(t => t.id === e.target.value);
+                  setSelectedTruck(truck || null);
+                }}
+                className="w-full px-3 py-2 border rounded"
+                required
+              >
+                <option value="">トラックを選択</option>
+                {availableTrucks.map(truck => (
+                  <option key={truck.id} value={truck.id}>
+                    {truck.name} ({truck.plateNumber}) - {truck.capacityKg}kg
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">割り当て容量（kg）</label>
+                <input
+                  type="number"
+                  value={formData.capacity}
+                  onChange={e => setFormData({ ...formData, capacity: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                  required
+                  min="0"
+                  max={selectedTruck?.capacityKg}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">作業区分</label>
+                <select
+                  value={formData.workType}
+                  onChange={e => setFormData({ ...formData, workType: e.target.value as any })}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  <option value="loading">積込</option>
+                  <option value="moving">移動</option>
+                  <option value="unloading">積卸</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">開始時間</label>
+                <input
+                  type="time"
+                  value={formData.startTime}
+                  onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">終了時間</label>
+                <input
+                  type="time"
+                  value={formData.endTime}
+                  onChange={e => setFormData({ ...formData, endTime: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+              >
+                割り当て
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTruckModal(false);
+                  setSelectedTruck(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                キャンセル
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
   };
 
   const handleLogout = () => {
@@ -128,6 +716,16 @@ export default function DispatchManagement() {
                     📅 配車カレンダー
                   </button>
                   <button
+                    onClick={() => setActiveTab('assignments')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'assignments'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    📋 案件割り当て
+                  </button>
+                  <button
                     onClick={() => setActiveTab('registration')}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
                       activeTab === 'registration'
@@ -149,6 +747,138 @@ export default function DispatchManagement() {
               />
             )}
             
+            {activeTab === 'assignments' && (
+              <div className="space-y-6">
+                {/* ヘッダーアクション */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">引っ越し案件一覧</h2>
+                  <div className="text-sm text-gray-600">
+                    入力フォームから送信された案件: {formSubmissions.length}件
+                  </div>
+                </div>
+
+                {/* 案件一覧 */}
+                {formSubmissions.length === 0 ? (
+                  <div className="bg-white rounded-lg shadow p-8 text-center">
+                    <p className="text-gray-500 mb-4">入力フォームから送信された案件がありません</p>
+                    <p className="text-sm text-gray-400">
+                      顧客が引っ越し見積もりフォームを送信すると、ここに表示されます
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {formSubmissions.map(submission => (
+                      <div key={submission.id} className="bg-white rounded-lg shadow p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{submission.customerName}</h3>
+                            <p className="text-sm text-gray-600">{submission.customerEmail}</p>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(submission.moveDate)} - {submission.customerPhone}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(submission.status)}`}>
+                              {getStatusText(submission.status)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">総容量:</span>
+                            <span className="ml-1">{submission.totalCapacity.toLocaleString()}kg</span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">総ポイント:</span>
+                            <span className="ml-1">{submission.totalPoints}pt</span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">出発地:</span>
+                            <span className="ml-1">{submission.originAddress}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">終了地点:</span>
+                            <span className="ml-1">{submission.destinationAddress}</span>
+                          </div>
+                        </div>
+
+                        {/* 荷物リスト */}
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-2">荷物リスト</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {submission.itemList.map((item, index) => (
+                              <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 追加サービス */}
+                        {submission.additionalServices.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="font-medium text-gray-900 mb-2">追加サービス</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {submission.additionalServices.map((service, index) => (
+                                <span key={index} className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  {service}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* トラック割り当て一覧 */}
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-medium text-gray-900">割り当てトラック</h4>
+                            {submission.status !== 'completed' && (
+                              <button
+                                onClick={() => {
+                                  setSelectedSubmission(submission);
+                                  setShowTruckModal(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                + トラック追加
+                              </button>
+                            )}
+                          </div>
+                          
+                          {submission.truckAssignments.length === 0 ? (
+                            <p className="text-sm text-gray-500">割り当て済みのトラックがありません</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {submission.truckAssignments.map((truckAssignment, index) => (
+                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                  <div>
+                                    <p className="font-medium text-gray-900">{truckAssignment.truckName}</p>
+                                    <p className="text-sm text-gray-600">
+                                      {formatTime(truckAssignment.startTime)}-{formatTime(truckAssignment.endTime)} 
+                                      ({truckAssignment.capacity.toLocaleString()}kg)
+                                    </p>
+                                  </div>
+                                  {submission.status !== 'completed' && (
+                                    <button
+                                      onClick={() => removeTruckFromSubmission(submission.id, truckAssignment.truckId)}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      削除
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
             {activeTab === 'registration' && (
               <TruckRegistration
                 trucks={trucks}
@@ -157,10 +887,14 @@ export default function DispatchManagement() {
                 onUpdateTruck={updateTruck}
                 onDeleteTruck={deleteTruck}
                 onSelectTruck={setSelectedTruck}
+                availableTruckTypes={availableTruckTypes}
               />
             )}
           </div>
         </main>
+
+        {/* モーダル */}
+        {showTruckModal && <TruckAssignmentModal />}
       </div>
     </AdminAuthGuard>
   );
