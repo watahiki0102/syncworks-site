@@ -739,23 +739,34 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   <div className="text-xs text-gray-600">{truck.plateNumber}</div>
                   <div className="text-xs text-gray-500">{truck.capacityKg}kg</div>
                 </div>
-
                 {/* 時間ブロック */}
                 <div className="grid grid-cols-[repeat(11,1fr)] gap-px">
                   {timeBlocks.map(block => {
+                    // そのトラックのその時間帯の予約済み容量合計
+                    const used = truck.schedules.filter(s =>
+                      s.date === dayView.date &&
+                      s.startTime <= block.time &&
+                      s.endTime > block.time &&
+                      s.status === 'booked' &&
+                      s.capacity
+                    ).reduce((sum, s) => sum + (s.capacity || 0), 0);
+                    const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
+                    // 色
+                    const getBarColor = (p: number) => {
+                      if (p < 30) return 'bg-green-500';
+                      if (p < 70) return 'bg-yellow-500';
+                      return 'bg-red-500';
+                    };
                     const schedules = truck.schedules.filter(s => 
                       s.date === dayView.date && 
                       s.startTime <= block.time && 
                       s.endTime > block.time
                     );
                     const schedule = schedules[0];
-
                     return (
                       <div
                         key={block.time}
-                        className={`h-12 border cursor-pointer hover:opacity-80 transition-opacity ${
-                          schedule ? 'relative' : ''
-                        }`}
+                        className={`h-12 border cursor-pointer hover:opacity-80 transition-opacity ${schedule ? 'relative' : ''}`}
                         style={{
                           backgroundColor: schedule ? 
                             (schedule.status === 'booked' ? '#dbeafe' : 
@@ -768,6 +779,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                           `${dayView.date} ${block.time} - 空き`
                         }
                       >
+                        {/* 積載割合バー */}
+                        <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-200 rounded">
+                          <div
+                            className={`rounded ${getBarColor(percent)}`}
+                            style={{ height: `${Math.min(percent, 100)}%`, width: '100%' }}
+                            title={`使用: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)`}
+                          />
+                        </div>
                         {schedule && (
                           <div
                             className="absolute inset-0 flex flex-col items-center justify-center text-xs cursor-pointer p-1"

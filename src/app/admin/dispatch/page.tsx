@@ -49,6 +49,8 @@ interface FormSubmission {
   distance?: number; // 距離（km）
   estimatedPrice?: number; // 見積もり価格
   recommendedTruckTypes?: string[]; // 推奨トラック種別
+  contractStatus: 'estimate' | 'contracted'; // 見積もり or 契約完了
+  contractDate?: string; // 契約日
 }
 
 interface TruckAssignment {
@@ -78,6 +80,7 @@ export default function DispatchManagement() {
       status: 'pending',
       truckAssignments: [],
       createdAt: '2023-10-01T10:00:00Z',
+      contractStatus: 'estimate',
     },
     {
       id: '2',
@@ -94,6 +97,7 @@ export default function DispatchManagement() {
       status: 'assigned',
       truckAssignments: [],
       createdAt: '2023-10-02T11:00:00Z',
+      contractStatus: 'estimate',
     },
     {
       id: '3',
@@ -110,6 +114,8 @@ export default function DispatchManagement() {
       status: 'completed',
       truckAssignments: [],
       createdAt: '2023-10-03T12:00:00Z',
+      contractStatus: 'contracted',
+      contractDate: '2023-10-10T12:00:00Z',
     },
   ]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
@@ -273,6 +279,7 @@ export default function DispatchManagement() {
             },
           ],
           createdAt: '2024-01-01T10:00:00Z',
+          contractStatus: 'estimate',
         },
         {
           id: '2',
@@ -299,6 +306,7 @@ export default function DispatchManagement() {
             },
           ],
           createdAt: '2024-01-02T11:00:00Z',
+          contractStatus: 'estimate',
         },
         {
           id: '3',
@@ -325,6 +333,8 @@ export default function DispatchManagement() {
             },
           ],
           createdAt: '2024-01-03T12:00:00Z',
+          contractStatus: 'contracted',
+          contractDate: '2024-01-05T12:00:00Z',
         },
       ];
       setFormSubmissions(testSubmissions);
@@ -914,6 +924,13 @@ export default function DispatchManagement() {
                             <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(submission.status)}`}>
                               {getStatusText(submission.status)}
                             </span>
+                            {/* 仮案件/本案件バッジ */}
+                            {submission.contractStatus === 'estimate' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-yellow-200 text-yellow-800">仮案件</span>
+                            )}
+                            {submission.contractStatus === 'contracted' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-green-200 text-green-800">本案件</span>
+                            )}
                           </div>
                         </div>
 
@@ -1038,6 +1055,7 @@ export default function DispatchManagement() {
                 onDeleteTruck={deleteTruck}
                 onSelectTruck={setSelectedTruck}
                 availableTruckTypes={availableTruckTypes}
+                pricingRules={pricingRules}
               />
             )}
           </div>

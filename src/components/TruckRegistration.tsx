@@ -11,6 +11,7 @@ interface Truck {
   status: 'available' | 'maintenance' | 'inactive';
   truckType: string; // 料金設定のトラック種別
   schedules: Schedule[];
+  maxPoints?: number; // 最大荷物ポイント
 }
 
 interface Schedule {
@@ -29,6 +30,7 @@ interface TruckRegistrationProps {
   onDeleteTruck: (truckId: string) => void;
   onSelectTruck: (truck: Truck | null) => void;
   availableTruckTypes: string[]; // 料金設定で利用可能なトラック種別
+  pricingRules?: any; // 料金設定ルール
 }
 
 export default function TruckRegistration({
@@ -38,7 +40,8 @@ export default function TruckRegistration({
   onUpdateTruck,
   onDeleteTruck,
   onSelectTruck,
-  availableTruckTypes
+  availableTruckTypes,
+  pricingRules = []
 }: TruckRegistrationProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +50,7 @@ export default function TruckRegistration({
     inspectionExpiry: '',
     status: 'available' as 'available' | 'maintenance' | 'inactive',
     truckType: '',
+    maxPoints: 0,
   });
   const [schedules, setSchedules] = useState<Omit<Schedule, 'id'>[]>([]);
   const [newSchedule, setNewSchedule] = useState({
@@ -55,6 +59,18 @@ export default function TruckRegistration({
     endTime: '17:00',
     status: 'available' as const,
   });
+
+  // 料金設定からトラック種別の最大ポイントを取得
+  const getMaxPointsForTruckType = (truckType: string): number => {
+    const rule = pricingRules.find((rule: any) => rule.truckType === truckType);
+    return rule?.maxPoint || 0;
+  };
+
+  // トラック種別が変更された時の処理
+  const handleTruckTypeChange = (truckType: string) => {
+    const maxPoints = getMaxPointsForTruckType(truckType);
+    setFormData({ ...formData, truckType, maxPoints });
+  };
 
   useEffect(() => {
     if (selectedTruck) {
@@ -65,7 +81,7 @@ export default function TruckRegistration({
         inspectionExpiry: selectedTruck.inspectionExpiry,
         status: selectedTruck.status,
         truckType: selectedTruck.truckType || '',
-      });
+        maxPoints: selectedTruck.maxPoints || 0     });
       setSchedules(selectedTruck.schedules.map(s => ({
         date: s.date,
         startTime: s.startTime,
@@ -85,6 +101,7 @@ export default function TruckRegistration({
       inspectionExpiry: '',
       status: 'available',
       truckType: '',
+      maxPoints: 0,
     });
     setSchedules([]);
     setNewSchedule({
@@ -185,6 +202,11 @@ export default function TruckRegistration({
               {truck.truckType && (
                 <p className="text-sm text-gray-600 mb-2">種別: {truck.truckType}</p>
               )}
+              {truck.maxPoints && truck.maxPoints > 0 && (
+                <p className="text-sm text-blue-600 font-medium mb-2">
+                  最大荷物ポイント: {truck.maxPoints}pt
+                </p>
+              )}
               <p className="text-sm text-gray-600 mb-3">車検: {truck.inspectionExpiry}</p>
               <div className="flex gap-2">
                 <button
@@ -256,7 +278,7 @@ export default function TruckRegistration({
               </label>
               <select
                 value={formData.truckType}
-                onChange={(e) => setFormData({ ...formData, truckType: e.target.value })}
+                onChange={(e) => handleTruckTypeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">種別を選択</option>
@@ -276,6 +298,20 @@ export default function TruckRegistration({
                 onChange={(e) => setFormData({ ...formData, capacityKg: parseInt(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                最大荷物ポイント (pt)
+              </label>
+              <input
+                type="number"
+                value={formData.maxPoints}
+                onChange={(e) => setFormData({ ...formData, maxPoints: parseInt(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0"
+                placeholder="手動で設定する場合"
               />
             </div>
             
