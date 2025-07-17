@@ -1,15 +1,25 @@
+/**
+ * 料金設定 Step3 ページコンポーネント
+ * - シーズン別料金設定
+ * - 期間限定の料金調整
+ * - パーセンテージ・固定金額の設定
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// 料金タイプの定義
+/**
+ * 料金タイプの定義
+ */
 const PRICE_TYPES = [
   { value: 'percentage', label: 'パーセンテージ（%）' },
   { value: 'fixed', label: '固定金額（円）' }
 ];
 
-// 初期データ
+/**
+ * デフォルトシーズンルール設定
+ */
 const DEFAULT_SEASON_RULES = [
   {
     name: "年末年始",
@@ -37,14 +47,17 @@ const DEFAULT_SEASON_RULES = [
   }
 ];
 
+/**
+ * シーズンルールの型定義
+ */
 interface SeasonRule {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  priceType: 'percentage' | 'fixed';
-  price: number;
-  description: string;
+  id: string;              // ルールID
+  name: string;            // シーズン名
+  startDate: string;       // 開始日
+  endDate: string;         // 終了日
+  priceType: 'percentage' | 'fixed'; // 料金タイプ
+  price: number;           // 料金値
+  description: string;     // 説明
 }
 
 export default function PricingStep3Page() {
@@ -52,7 +65,10 @@ export default function PricingStep3Page() {
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初期データの読み込み
+  /**
+   * 初期データの読み込み
+   * - 保存されたシーズンルールを復元
+   */
   useEffect(() => {
     const savedRules = localStorage.getItem('pricingStep3');
     if (savedRules) {
@@ -73,14 +89,18 @@ export default function PricingStep3Page() {
     setIsLoading(false);
   }, []);
 
-  // 自動保存
+  /**
+   * シーズンルールの自動保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('pricingStep3', JSON.stringify(seasonRules));
     }
   }, [seasonRules, isLoading]);
 
-  // ルールの追加
+  /**
+   * シーズンルールの追加
+   */
   const addRule = () => {
     const newRule: SeasonRule = {
       id: `season-${Date.now()}`,
@@ -94,19 +114,33 @@ export default function PricingStep3Page() {
     setSeasonRules([...seasonRules, newRule]);
   };
 
-  // ルールの削除
+  /**
+   * シーズンルールの削除
+   * @param id 削除するルールのID
+   */
   const removeRule = (id: string) => {
     setSeasonRules(seasonRules.filter(rule => rule.id !== id));
   };
 
-  // ルールの更新
+  /**
+   * シーズンルールの更新
+   * @param id 更新するルールのID
+   * @param field 更新するフィールド
+   * @param value 新しい値
+   */
   const updateRule = (id: string, field: keyof SeasonRule, value: any) => {
     setSeasonRules(seasonRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
   };
 
-  // 日付の重複チェック
+  /**
+   * 日付の重複チェック
+   * @param startDate 開始日
+   * @param endDate 終了日
+   * @param excludeId 除外するルールID
+   * @returns 重複があるかどうか
+   */
   const checkDateOverlap = (startDate: string, endDate: string, excludeId?: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -121,7 +155,10 @@ export default function PricingStep3Page() {
     });
   };
 
-  // バリデーション
+  /**
+   * バリデーション
+   * @returns バリデーション結果
+   */
   const validateRules = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
@@ -172,7 +209,10 @@ export default function PricingStep3Page() {
     return { isValid: errors.length === 0, errors };
   };
 
-  // 完了処理
+  /**
+   * 完了処理
+   * - 全ステップのデータを統合保存
+   */
   const handleComplete = () => {
     const validation = validateRules();
     if (!validation.isValid) {
@@ -192,7 +232,9 @@ export default function PricingStep3Page() {
     router.push('/vendors');
   };
 
-  // 前へ戻る
+  /**
+   * 前のステップに戻る
+   */
   const handleBack = () => {
     router.push('/pricing/step2');
   };

@@ -1,35 +1,50 @@
+/**
+ * トラック管理モーダルコンポーネント
+ * - 新規トラックの追加
+ * - 既存トラックの編集
+ * - トラック情報の入力フォーム
+ */
 'use client';
 import React from 'react';
 
+/**
+ * トラックフォームデータの型定義
+ */
 interface TruckFormData {
-  name: string;
-  plateNumber: string;
-  truckType: string;
-  capacityKg: number;
-  basePrice: number;
-  status: 'active' | 'inactive';
-  description: string;
+  name: string;            // トラック名
+  plateNumber: string;     // ナンバープレート
+  truckType: string;       // トラック種別
+  capacityKg: number;      // 積載量（kg）
+  basePrice: number;       // 基本料金
+  status: 'active' | 'inactive'; // ステータス
+  description: string;     // 説明
 }
 
+/**
+ * 料金設定トラック情報の型定義
+ */
 export interface PricingTruck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  truckType: string;
-  capacityKg: number;
-  basePrice: number;
-  status: 'active' | 'inactive';
-  description?: string;
+  id: string;              // トラックID
+  name: string;            // トラック名
+  plateNumber: string;     // ナンバープレート
+  truckType: string;       // トラック種別
+  capacityKg: number;      // 積載量（kg）
+  basePrice: number;       // 基本料金
+  status: 'active' | 'inactive'; // ステータス
+  description?: string;    // 説明
 }
 
+/**
+ * プロパティの型定義
+ */
 interface Props {
-  selectedTruck: PricingTruck | null;
-  truckFormData: TruckFormData;
-  setTruckFormData: React.Dispatch<React.SetStateAction<TruckFormData>>;
-  setShowTruckModal: React.Dispatch<React.SetStateAction<boolean>>;
-  addPricingTruck: () => void;
-  updatePricingTruck: (truck: PricingTruck) => void;
-  truckTypes: string[];
+  selectedTruck: PricingTruck | null;  // 選択されたトラック
+  truckFormData: TruckFormData;        // フォームデータ
+  setTruckFormData: React.Dispatch<React.SetStateAction<TruckFormData>>; // フォームデータ更新
+  setShowTruckModal: React.Dispatch<React.SetStateAction<boolean>>; // モーダル表示制御
+  addPricingTruck: () => void;         // トラック追加処理
+  updatePricingTruck: (truck: PricingTruck) => void; // トラック更新処理
+  truckTypes: string[];                // トラック種別一覧
 }
 
 export default function TruckManagementModal({
@@ -41,6 +56,10 @@ export default function TruckManagementModal({
   updatePricingTruck,
   truckTypes
 }: Props) {
+  /**
+   * フォーム送信処理
+   * @param e フォームイベント
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedTruck) {

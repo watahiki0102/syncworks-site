@@ -1,7 +1,14 @@
+/**
+ * トラック登録・編集コンポーネント
+ * - トラックの新規登録・編集・削除
+ * - トラック種別と料金設定の連携
+ * - スケジュール管理
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { formatTime } from '@/utils/dateTimeUtils';
+import { TRUCK_STATUS_LABELS, TRUCK_STATUS_COLORS } from '../constants/truckStatus';
 
 interface Truck {
   id: string;
@@ -61,18 +68,28 @@ export default function TruckRegistration({
     status: 'available' as const,
   });
 
-  // 料金設定からトラック種別の最大ポイントを取得
+  /**
+   * 料金設定からトラック種別の最大ポイントを取得
+   * @param truckType - トラック種別
+   * @returns 最大ポイント数
+   */
   const getMaxPointsForTruckType = (truckType: string): number => {
     const rule = pricingRules.find((rule: any) => rule.truckType === truckType);
     return rule?.maxPoint || 0;
   };
 
-  // トラック種別が変更された時の処理
+  /**
+   * トラック種別が変更された時の処理
+   * @param truckType - 選択されたトラック種別
+   */
   const handleTruckTypeChange = (truckType: string) => {
     const maxPoints = getMaxPointsForTruckType(truckType);
     setFormData({ ...formData, truckType, maxPoints });
   };
 
+  /**
+   * 選択されたトラックが変更された時にフォームデータを更新
+   */
   useEffect(() => {
     if (selectedTruck) {
       setFormData({
@@ -82,7 +99,8 @@ export default function TruckRegistration({
         inspectionExpiry: selectedTruck.inspectionExpiry,
         status: selectedTruck.status,
         truckType: selectedTruck.truckType || '',
-        maxPoints: selectedTruck.maxPoints || 0     });
+        maxPoints: selectedTruck.maxPoints || 0
+      });
       setSchedules(selectedTruck.schedules.map(s => ({
         date: s.date,
         startTime: s.startTime,
@@ -94,6 +112,9 @@ export default function TruckRegistration({
     }
   }, [selectedTruck]);
 
+  /**
+   * フォームをリセット
+   */
   const resetForm = () => {
     setFormData({
       name: '',
@@ -113,6 +134,10 @@ export default function TruckRegistration({
     });
   };
 
+  /**
+   * フォーム送信時の処理
+   * @param e - フォームイベント
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -142,6 +167,9 @@ export default function TruckRegistration({
     onSelectTruck(null);
   };
 
+  /**
+   * 新規スケジュールを追加
+   */
   const addSchedule = () => {
     if (!newSchedule.date) {
       alert('日付を選択してください');
@@ -162,6 +190,10 @@ export default function TruckRegistration({
     });
   };
 
+  /**
+   * スケジュールを削除
+   * @param index - 削除するスケジュールのインデックス
+   */
   const removeSchedule = (index: number) => {
     setSchedules(schedules.filter((_, i) => i !== index));
   };

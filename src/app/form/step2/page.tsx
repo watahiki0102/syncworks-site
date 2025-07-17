@@ -1,3 +1,10 @@
+/**
+ * 引越し見積もりフォーム Step2 ページコンポーネント
+ * - 荷物情報の入力（家具・家電の数量）
+ * - 段ボール目安の選択
+ * - 段ボール・ガムテープの準備方法選択
+ * - その他備考の入力
+ */
 // ✅ Step2: 荷物情報ページ
 // セクションは：家具・家電入力 / 段ボール目安 / 段ボール・ガムテープ準備 / その他備考
 
@@ -9,11 +16,19 @@ import { useEffect } from 'react';
 import ProgressBar from '@/components/ProgressBar';
 import { ITEM_CATEGORY_NAMES } from '@/constants/items';
 
-// 定数定義
+/**
+ * 自動保存の間隔（ミリ秒）
+ */
 const AUTOSAVE_INTERVAL = 5000;
+
+/**
+ * ローカルストレージのキー
+ */
 const STORAGE_KEY = 'formStep2';
 
-// スタイル定義
+/**
+ * スタイル定義
+ */
 const styles = {
   section: "bg-white shadow-md rounded-lg p-6 border border-gray-200",
   input: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
@@ -25,7 +40,10 @@ const styles = {
   }
 };
 
-
+/**
+ * 段ボールサイズの選択肢
+ * 荷物量に応じた目安を提供
+ */
 const boxSizeOptions = [
   "🏠 10箱未満（荷物が少ない）",
   "🏠 10〜20箱（1R / 1K の目安）",
@@ -34,9 +52,12 @@ const boxSizeOptions = [
   "🏠 51箱以上（3LDK / 4K以上の目安）"
 ];
 
+/**
+ * Step2フォームデータの型定義
+ */
 interface Step2FormData {
-  items: Record<string, any>;
-  itemsRemarks?: string;
+  items: Record<string, any>;  // 荷物の数量データ
+  itemsRemarks?: string;       // その他備考
 }
 
 export default function Step2FormPage() {
@@ -44,7 +65,10 @@ export default function Step2FormPage() {
   const router = useRouter();
   const danball = watch('items.danball');
 
-  // フォームデータの保存
+  /**
+   * フォームデータをローカルストレージに保存
+   * @param data - 保存するフォームデータ
+   */
   const saveFormData = (data: Step2FormData) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -53,7 +77,10 @@ export default function Step2FormPage() {
     }
   };
 
-  // フォーム送信処理
+  /**
+   * フォーム送信処理
+   * @param data - 送信するフォームデータ
+   */
   const onSubmit = (data: Step2FormData) => {
     try {
       saveFormData(data);
@@ -63,18 +90,24 @@ export default function Step2FormPage() {
     }
   };
 
-  // 保存データの復元
+  /**
+   * 保存されたデータの復元
+   * ページ読み込み時にローカルストレージから復元
+   */
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const values = JSON.parse(saved);
       Object.entries(values).forEach(([key, value]) => {
-        setValue(key, value);
+        setValue(key as keyof Step2FormData, value as any);
       });
     }
   }, [setValue]);
 
-  // 自動保存
+  /**
+   * 自動保存機能
+   * 指定間隔でフォームデータを自動保存
+   */
   useEffect(() => {
     const id = setInterval(() => {
       saveFormData(watch());
@@ -82,7 +115,11 @@ export default function Step2FormPage() {
     return () => clearInterval(id);
   }, [watch]);
 
-  // 数量調整ボタンのハンドラー
+  /**
+   * 数量調整ボタンのハンドラー
+   * @param item - 調整するアイテム名
+   * @param increment - 増加するかどうか（true: 増加, false: 減少）
+   */
   const handleQuantityChange = (item: string, increment: boolean) => {
     const currentRaw = watch(`items.${item}`);
     const current = Number(currentRaw) || 0;

@@ -1,10 +1,19 @@
+/**
+ * 料金設定 Step2 ページコンポーネント
+ * - トラック種別別の料金設定
+ * - 車種係数と距離料金の設定
+ * - オプション料金の管理
+ * - トラック管理機能
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import TruckManagementModal from './components/TruckManagementModal';
 import { useRouter } from 'next/navigation';
 
-// トラック種別の定義
+/**
+ * トラック種別の定義
+ */
 const TRUCK_TYPES = [
   "軽トラ",
   "2tショート",
@@ -15,13 +24,19 @@ const TRUCK_TYPES = [
   "特別対応"
 ];
 
-// 作業人数の定義
+/**
+ * 作業人数の定義
+ */
 const WORKER_COUNTS = [1, 2, 3, 4, 5, 6];
 
-// ポイント範囲の定義（1～9999、1刻みで詳細設定可能）
+/**
+ * ポイント範囲の定義（1～9999、1刻みで詳細設定可能）
+ */
 const POINT_RANGE = Array.from({ length: 9999 }, (_, i) => i + 1);
 
-// 初期データ
+/**
+ * デフォルト料金設定
+ */
 const DEFAULT_PRICING = [
   { truckType: "軽トラ", minPoint: 1, maxPoint: 100, price: 15000 },
   { truckType: "2tショート", minPoint: 101, maxPoint: 250, price: 25000 },
@@ -32,7 +47,9 @@ const DEFAULT_PRICING = [
   { truckType: "特別対応", minPoint: 801, maxPoint: 1000, price: 100000 },
 ];
 
-// デフォルト車種係数
+/**
+ * デフォルト車種係数
+ */
 const DEFAULT_TRUCK_COEFFICIENTS = [
   { truckType: "軽トラ", coefficient: 1.0 },
   { truckType: "2tショート", coefficient: 1.2 },
@@ -43,7 +60,9 @@ const DEFAULT_TRUCK_COEFFICIENTS = [
   { truckType: "特別対応", coefficient: 2.5 },
 ];
 
-// デフォルト距離料金
+/**
+ * デフォルト距離料金
+ */
 const DEFAULT_DISTANCE_RANGES = [
   { maxDistance: 10, basePrice: 0 },
   { maxDistance: 20, basePrice: 2000 },
@@ -53,57 +72,82 @@ const DEFAULT_DISTANCE_RANGES = [
   { maxDistance: 999, basePrice: 15000 },
 ];
 
+/**
+ * 料金ルールの型定義
+ */
 interface PricingRule {
-  id: string;
-  truckType: string;
-  minPoint: number;
-  maxPoint: number | undefined;
-  price: number | undefined;
+  id: string;              // ルールID
+  truckType: string;       // トラック種別
+  minPoint: number;        // 最小ポイント
+  maxPoint: number | undefined; // 最大ポイント
+  price: number | undefined;    // 料金
 }
 
+/**
+ * 車種係数の型定義
+ */
 interface TruckCoefficient {
-  id: string;
-  truckType: string;
-  coefficient: number;
+  id: string;              // 係数ID
+  truckType: string;       // トラック種別
+  coefficient: number;     // 係数値
 }
 
+/**
+ * 距離範囲の型定義
+ */
 interface DistanceRange {
-  id: string;
-  maxDistance: number; // 最大距離のみ指定
-  basePrice: number;   // 基本加算額（軽トラ基準）
+  id: string;              // 範囲ID
+  maxDistance: number;     // 最大距離のみ指定
+  basePrice: number;       // 基本加算額（軽トラ基準）
 }
 
-// 料金設定で管理するトラック情報
+/**
+ * 料金設定で管理するトラック情報の型定義
+ */
 interface PricingTruck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  truckType: string;
-  capacityKg: number;
-  basePrice: number; // 基本料金
-  status: 'active' | 'inactive';
-  description?: string;
+  id: string;              // トラックID
+  name: string;            // トラック名
+  plateNumber: string;     // ナンバープレート
+  truckType: string;       // トラック種別
+  capacityKg: number;      // 積載量（kg）
+  basePrice: number;       // 基本料金
+  status: 'active' | 'inactive'; // ステータス
+  description?: string;    // 説明
 }
 
-// オプション型
+/**
+ * オプションタイプの定義
+ */
 const OPTION_TYPES = [
   { value: 'free', label: '無料オプション', color: 'text-green-600' },
   { value: 'paid', label: '定額オプション', color: 'text-blue-600' },
   { value: 'individual', label: '個別見積もり', color: 'text-blue-600' },
   { value: 'nonSupported', label: '対応不可', color: 'text-red-600' },
 ] as const;
+
+/**
+ * オプションタイプの型定義
+ */
 type OptionType = typeof OPTION_TYPES[number]['value'];
+
+/**
+ * オプションアイテムの型定義
+ */
 interface OptionItem {
-  id: string;
-  label: string;
-  type: OptionType;
-  price?: number; // 有料のみ
-  isDefault?: boolean;
-  unit?: string;
-  remarks?: string; // Added missing property
-  minPoint?: number;
-  maxPoint?: number;
+  id: string;              // オプションID
+  label: string;           // オプション名
+  type: OptionType;        // オプションタイプ
+  price?: number;          // 料金（有料のみ）
+  isDefault?: boolean;     // デフォルト設定かどうか
+  unit?: string;           // 単位
+  remarks?: string;        // 備考
+  minPoint?: number;       // 最小ポイント
+  maxPoint?: number;       // 最大ポイント
 }
+
+/**
+ * デフォルトオプション設定
+ */
 const DEFAULT_OPTIONS: OptionItem[] = [
   { id: 'opt-1', label: '🏠 建物養生（壁や床の保護）', type: 'free', isDefault: true },
   { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'free', isDefault: true },
@@ -131,22 +175,30 @@ export default function PricingStep2Page() {
   const [newPricingMaxPoint, setNewPricingMaxPoint] = useState<number | undefined>(undefined);
   const [newPricingPrice, setNewPricingPrice] = useState<number | undefined>(undefined);
   
-  // ソート用のstate
+  /**
+   * ソート用のstate
+   */
   const [sortField, setSortField] = useState<'truckType' | 'minPoint' | 'maxPoint' | 'price'>('minPoint');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // 料金設定追加用state
+  /**
+   * 料金設定追加用state
+   */
   const [newTruckType, setNewTruckType] = useState<string>('');
   const [pricingErrors, setPricingErrors] = useState<string[]>([]);
   const [rowErrorIds, setRowErrorIds] = useState<Set<string>>(new Set());
 
-  // 車種係数設定用state
+  /**
+   * 車種係数設定用state
+   */
   const [truckCoefficients, setTruckCoefficients] = useState<TruckCoefficient[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<DistanceRange[]>([]);
   const [coefficientErrors, setCoefficientErrors] = useState<string[]>([]);
   const [distanceErrors, setDistanceErrors] = useState<string[]>([]);
 
-  // トラック管理用state
+  /**
+   * トラック管理用state
+   */
   const [pricingTrucks, setPricingTrucks] = useState<PricingTruck[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<PricingTruck | null>(null);
   const [showTruckModal, setShowTruckModal] = useState(false);
@@ -160,7 +212,10 @@ export default function PricingStep2Page() {
     description: '',
   });
 
-  // 初期データの読み込み
+  /**
+   * 初期データの読み込み
+   * - 料金ルール、車種係数、距離料金、オプション設定を復元
+   */
   useEffect(() => {
     const savedPricing = localStorage.getItem('pricingStep2');
     if (savedPricing) {
@@ -247,35 +302,45 @@ export default function PricingStep2Page() {
     setIsLoading(false);
   }, []);
 
-  // 自動保存
+  /**
+   * 料金ルールの自動保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('pricingStep2', JSON.stringify(pricingRules));
     }
   }, [pricingRules, isLoading]);
 
-  // 車種係数自動保存
+  /**
+   * 車種係数の自動保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('truckCoefficients', JSON.stringify(truckCoefficients));
     }
   }, [truckCoefficients, isLoading]);
 
-  // 距離料金自動保存
+  /**
+   * 距離料金の自動保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('distanceRanges', JSON.stringify(distanceRanges));
     }
   }, [distanceRanges, isLoading]);
 
-  // トラックデータ自動保存
+  /**
+   * トラックデータの自動保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('pricingTrucks', JSON.stringify(pricingTrucks));
     }
   }, [pricingTrucks, isLoading]);
 
-  // オプション自動保存
+  /**
+   * オプション設定の自動保存
+   */
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('optionPricingStep2');
@@ -285,7 +350,10 @@ export default function PricingStep2Page() {
     }
   }, []);
 
-  // 料金ルールの追加
+  /**
+   * 料金ルールの追加
+   * - バリデーション後、新しい料金ルールを追加
+   */
   const addPricingRule = () => {
     let errors: string[] = [];
     if (!newTruckType) errors.push('トラック種別を選択してください');
@@ -314,7 +382,10 @@ export default function PricingStep2Page() {
     setPricingErrors([]);
   };
 
-  // 料金ルールの削除
+  /**
+   * 料金ルールの削除
+   * @param id 削除するルールのID
+   */
   const removePricingRule = (id: string) => {
     if (pricingRules.length <= 1) {
       setOptionAddError('最低1行は必要です');
@@ -324,14 +395,23 @@ export default function PricingStep2Page() {
     setOptionAddError('');
   };
 
-  // 料金ルールの更新
+  /**
+   * 料金ルールの更新
+   * @param id 更新するルールのID
+   * @param field 更新するフィールド
+   * @param value 新しい値
+   */
   const updatePricingRule = (id: string, field: keyof PricingRule, value: any) => {
     setPricingRules(pricingRules.map(rule =>
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
   };
 
-  // 最大値更新時の最小値自動調整
+  /**
+   * 最大値更新時の最小値自動調整
+   * @param id 更新するルールのID
+   * @param newMaxPoint 新しい最大ポイント値
+   */
   const updateMaxPoint = (id: string, newMaxPoint: number) => {
     const ruleIndex = pricingRules.findIndex(rule => rule.id === id);
     if (ruleIndex === -1) return;

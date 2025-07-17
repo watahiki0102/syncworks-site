@@ -1,3 +1,9 @@
+/**
+ * 管理者認証ガードコンポーネント
+ * - 管理者ログイン状態の確認
+ * - 未認証時のログインページへのリダイレクト
+ * - 認証確認中のローディング表示
+ */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,6 +18,9 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  /**
+   * ログイン状態をチェックし、認証状態を更新
+   */
   useEffect(() => {
     // ログイン状態をチェック
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
@@ -26,6 +35,7 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     setIsLoading(false);
   }, [router]);
 
+  // 認証確認中のローディング表示
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -37,6 +47,7 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     );
   }
 
+  // 未認証時は何も表示しない
   if (!isAuthenticated) {
     return null;
   }

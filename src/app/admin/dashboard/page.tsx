@@ -1,3 +1,9 @@
+/**
+ * 管理者ダッシュボードページコンポーネント
+ * - 事業者管理画面のメインページ
+ * - 各種管理機能へのナビゲーション
+ * - トレンド情報の表示
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,12 +12,15 @@ import Link from 'next/link';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import React from 'react';
 
-// トレンド情報カードのコンポーネント
+/**
+ * トレンド情報パネルコンポーネント
+ * - 申し込み数、売上、成約率、平均評価を表示
+ */
 function TrendPanel({ applicationCount, sales, contractRate, averageRating }: {
-  applicationCount: number;
-  sales: number;
-  contractRate: number;
-  averageRating: number;
+  applicationCount: number;  // 今月の申し込み件数
+  sales: number;            // 今月の売上
+  contractRate: number;     // 今月の成約率
+  averageRating: number;    // 平均評価
 }) {
   return (
     <div className="w-full lg:w-80 space-y-6 border border-gray-200 rounded-2xl p-6 bg-white shadow-lg flex-shrink-0 relative mt-6 lg:mt-0">
@@ -55,6 +64,9 @@ export default function AdminDashboard() {
     const [adminEmail, setAdminEmail] = useState('');
     const router = useRouter();
 
+    /**
+     * ローカルストレージから管理者メールアドレスを取得
+     */
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
         if (email) {
@@ -62,6 +74,9 @@ export default function AdminDashboard() {
         }
     }, []);
 
+    /**
+     * ログアウト処理
+     */
     const handleLogout = () => {
         if (!window.confirm('本当にログアウトしますか？')) return;
         localStorage.removeItem('adminLoggedIn');
@@ -69,7 +84,7 @@ export default function AdminDashboard() {
         router.push('/admin/login');
     };
 
-    // デフォルト値
+    // デフォルト値（実際のアプリケーションではAPIから取得）
     const applicationCount = 12;
     const sales = 450000;
     const contractRate = 70;

@@ -1,10 +1,24 @@
+/**
+ * トップページコンポーネント
+ * - SyncWorksのメインランディングページ
+ * - サービス紹介と事業者向け案内
+ * - レスポンシブデザイン対応
+ */
 'use client';
-// Next.js + Tailwind CSS 構成
-// ページ：トップページ（セクション構成済）
 
 import { Handshake, Calculator, HomeIcon, Settings } from 'lucide-react';
 
 export default function Home() {
+  /**
+   * ハンバーガーメニューの表示/非表示を切り替え
+   */
+  const toggleMenu = () => {
+    const menu = document.getElementById('menu');
+    if (menu) {
+      menu.classList.toggle('hidden');
+    }
+  };
+
   return (
     <main className="bg-white text-gray-800">
       {/* ヘッダー */}
@@ -20,12 +34,7 @@ export default function Home() {
               <button
                 className="text-gray-700 hover:text-blue-600 focus:outline-none"
                 aria-label="Toggle menu"
-                onClick={() => {
-                  const menu = document.getElementById('menu');
-                  if (menu) {
-                    menu.classList.toggle('hidden');
-                  }
-                }}
+                onClick={toggleMenu}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>

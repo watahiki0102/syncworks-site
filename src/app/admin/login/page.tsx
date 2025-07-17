@@ -1,3 +1,9 @@
+/**
+ * 管理者ログインページコンポーネント
+ * - 事業者アカウントのログイン機能
+ * - デモ用認証（admin@example.com / password123）
+ * - 新規登録ページへの誘導
+ */
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -11,10 +17,15 @@ export default function AdminLoginPage() {
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
+    /**
+     * ログインフォーム送信時の処理
+     * @param e - フォームイベント
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        
         try {
             // デモ用認証
             if (email === 'admin@example.com' && password === 'password123') {
@@ -29,6 +40,13 @@ export default function AdminLoginPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    /**
+     * パスワード表示/非表示を切り替え
+     */
+    const togglePasswordVisibility = () => {
+        setShowPassword(v => !v);
     };
 
     return (
@@ -74,7 +92,7 @@ export default function AdminLoginPage() {
                                 <button
                                     type="button"
                                     tabIndex={-1}
-                                    onClick={() => setShowPassword(v => !v)}
+                                    onClick={togglePasswordVisibility}
                                     className="absolute inset-y-0 right-2 flex items-center text-xl text-gray-500 focus:outline-none"
                                     aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                                 >

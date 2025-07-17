@@ -1,8 +1,40 @@
+/**
+ * 事業者レビューページコンポーネント
+ * - 事業者情報と口コミの表示
+ * - タブ切り替え機能
+ * - 口コミの展開/折りたたみ機能
+ */
 'use client';
 
 import { useParams } from 'next/navigation';
 import StarRating from '@/components/StarRating';
 import { useState, useRef, useEffect } from 'react';
+
+/**
+ * レビューデータの型定義
+ */
+interface Review {
+  id: number;              // レビューID
+  priceSatisfaction: number; // 価格満足度
+  workQuality: number;     // 作業品質
+  responseQuality: number; // 対応品質
+  comment: string;         // コメント
+  workDate: string;        // 作業日
+}
+
+/**
+ * 事業者データの型定義
+ */
+interface VendorReview {
+  vendorName: string;      // 事業者名
+  totalRating: number;     // 総合評価
+  totalReviews: number;    // レビュー総数
+  description: string;     // 事業者説明
+  features: string[];      // アピールポイント
+  experienceYears: number; // 経験年数
+  staffCount: number;      // 従業員数
+  reviews: Review[];       // レビュー一覧
+}
 
 export default function VendorReviewsPage() {
     const params = useParams<{ vendorId: string }>();
@@ -11,8 +43,11 @@ export default function VendorReviewsPage() {
     const [introExpanded, setIntroExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
 
-    // ダミーデータ
-    const vendorReview = {
+    /**
+     * ダミー事業者データ
+     * 実際のアプリケーションではAPIから取得
+     */
+    const vendorReview: VendorReview = {
         vendorName: 'ABC引越し',
         totalRating: 4.3,
         totalReviews: 3,
@@ -63,13 +98,22 @@ export default function VendorReviewsPage() {
         ]
     };
 
-    // 口コミ（新しい日付順でソート）
+    /**
+     * 口コミを新しい日付順でソート
+     */
     const sortedReviews = vendorReview.reviews
         .slice()
         .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime());
 
-
+    /**
+     * 展開されているレビューのID管理
+     */
     const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);
+    
+    /**
+     * レビューの展開/折りたたみを切り替え
+     * @param id - 切り替えるレビューのID
+     */
     const toggleExpand = (id: number) => {
         if (expandedReviewIds.includes(id)) {
             setExpandedReviewIds(expandedReviewIds.filter((item) => item !== id));
@@ -78,9 +122,16 @@ export default function VendorReviewsPage() {
         }
     };
 
+    /**
+     * オーバーフローしているレビューの管理
+     */
     const [overflowingReviews, setOverflowingReviews] = useState<{ [id: number]: boolean }>({});
     const commentRefs = useRef<{ [id: number]: HTMLQuoteElement | null }>({});
 
+    /**
+     * レビューコメントのオーバーフロー状態をチェック
+     * - DOMレンダリング完了後に実行
+     */
     useEffect(() => {
         // setTimeoutでDOMレンダリング完了後に実行
         setTimeout(() => {
@@ -98,6 +149,7 @@ export default function VendorReviewsPage() {
 
     return (
         <main className="bg-gray-50 text-gray-800">
+            {/* ヘッダー */}
             <header className="bg-white shadow">
                 <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="text-xl font-bold text-gray-800">SyncWorks</div>
@@ -109,6 +161,7 @@ export default function VendorReviewsPage() {
                 </div>
             </header>
 
+            {/* メインコンテンツ */}
             <section className="pt-16 max-w-4xl mx-auto">
                 {/* タブメニュー */}
                 <div className="flex border-b mb-6">

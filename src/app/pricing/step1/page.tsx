@@ -1,18 +1,25 @@
+/**
+ * 料金設定 Step1 ページコンポーネント
+ * - 荷物ポイント設定機能
+ * - 各荷物のポイントと加算金の管理
+ * - ローカルストレージでのデータ保存
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ITEM_CATEGORIES } from '@/constants/items';
 
-// 荷物カテゴリとアイテムの定義
-
+/**
+ * 荷物ポイントの型定義
+ */
 interface ItemPoint {
-  id: string;
-  category: string;
-  name: string;
-  points: number;
-  defaultPoints: number;
-  additionalCost: number; // Add additional cost field
+  id: string;           // アイテムID
+  category: string;     // カテゴリ
+  name: string;         // 荷物名
+  points: number;       // 設定ポイント
+  defaultPoints: number; // デフォルトポイント
+  additionalCost: number; // 加算金
 }
 
 export default function PricingStep0Page() {
@@ -22,7 +29,11 @@ export default function PricingStep0Page() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // 初期データの読み込み
+  /**
+   * 初期データの読み込み
+   * - ローカルストレージから保存データを復元
+   * - 保存データがない場合はデフォルト値を設定
+   */
   useEffect(() => {
     const savedPoints = localStorage.getItem('pricingStep0');
     if (savedPoints) {
@@ -36,7 +47,7 @@ export default function PricingStep0Page() {
           name: item.name,
           points: item.defaultPoints,
           defaultPoints: item.defaultPoints,
-          additionalCost: 0 // Initialize additional cost to 0
+          additionalCost: 0 // 加算金を0で初期化
         }))
       );
       setItemPoints(defaultPoints);
@@ -44,35 +55,51 @@ export default function PricingStep0Page() {
     setIsLoading(false);
   }, []);
 
-  // 自動保存
+  /**
+   * データの自動保存
+   * - アイテムポイントが変更されるたびにローカルストレージに保存
+   */
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem('pricingStep0', JSON.stringify(itemPoints));
     }
   }, [itemPoints, isLoading]);
 
-  // ポイントの更新
+  /**
+   * ポイントの更新
+   * @param id - 更新するアイテムのID
+   * @param points - 新しいポイント値（0以上）
+   */
   const updatePoints = (id: string, points: number) => {
     setItemPoints(itemPoints.map(item =>
       item.id === id ? { ...item, points: Math.max(0, points) } : item
     ));
   };
 
-  // 加算金の更新
+  /**
+   * 加算金の更新
+   * @param id - 更新するアイテムのID
+   * @param cost - 新しい加算金（0以上）
+   */
   const updateAdditionalCost = (id: string, cost: number) => {
     setItemPoints(itemPoints.map(item =>
       item.id === id ? { ...item, additionalCost: Math.max(0, cost) } : item
     ));
   };
 
-  // デフォルト値にリセット
+  /**
+   * 指定アイテムをデフォルト値にリセット
+   * @param id - リセットするアイテムのID
+   */
   const resetToDefault = (id: string) => {
     setItemPoints(itemPoints.map(item =>
       item.id === id ? { ...item, points: item.defaultPoints, additionalCost: 0 } : item
     ));
   };
 
-  // 全アイテムをデフォルトにリセット
+  /**
+   * 全アイテムをデフォルト値にリセット
+   */
   const resetAllToDefault = () => {
     setItemPoints(itemPoints.map(item => ({
       ...item,
@@ -81,17 +108,25 @@ export default function PricingStep0Page() {
     })));
   };
 
-  // フィルタリング
+  /**
+   * アイテムのフィルタリング
+   * - 検索語とカテゴリで絞り込み
+   */
   const filteredItems = itemPoints.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // カテゴリ一覧
+  /**
+   * カテゴリ一覧の取得
+   */
   const categories = ['all', ...ITEM_CATEGORIES.map(cat => cat.category)];
 
-  // バリデーション
+  /**
+   * ポイント設定のバリデーション
+   * @returns バリデーション結果
+   */
   const validatePoints = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
@@ -109,7 +144,10 @@ export default function PricingStep0Page() {
     return { isValid: errors.length === 0, errors };
   };
 
-  // 次へ進む
+  /**
+   * 次のステップへ進む
+   * - バリデーション後に次のページへ遷移
+   */
   const handleNext = () => {
     const validation = validatePoints();
     if (!validation.isValid) {
@@ -119,6 +157,7 @@ export default function PricingStep0Page() {
     router.push('/pricing/step2');
   };
 
+  // ローディング表示
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

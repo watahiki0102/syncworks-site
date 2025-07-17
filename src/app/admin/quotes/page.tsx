@@ -1,20 +1,29 @@
+/**
+ * 管理者見積もり回答履歴ページコンポーネント
+ * - お客様への見積もり回答履歴の管理
+ * - 検索・フィルタリング・ソート機能
+ * - 成約状況の追跡
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
+/**
+ * 見積もり履歴の型定義
+ */
 interface QuoteHistory {
-  id: string;
-  customerName: string;
-  requestDate: string;
-  responseDate: string;
-  amount: number;
-  status: 'pending' | 'contracted' | 'expired';
-  items: string[];
-  fromAddress: string;
-  toAddress: string;
-  moveDate: string;
+  id: string;              // 見積もりID
+  customerName: string;    // 顧客名
+  requestDate: string;     // 依頼日
+  responseDate: string;    // 回答日
+  amount: number;          // 見積もり金額
+  status: 'pending' | 'contracted' | 'expired'; // ステータス
+  items: string[];         // 荷物リスト
+  fromAddress: string;     // 引越し元住所
+  toAddress: string;       // 引越し先住所
+  moveDate: string;        // 引越し予定日
 }
 
 export default function AdminQuotes() {
@@ -26,7 +35,10 @@ export default function AdminQuotes() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const router = useRouter();
 
-  // デモデータ
+  /**
+   * デモデータの初期化
+   * 実際のアプリケーションではAPIから取得
+   */
   useEffect(() => {
     const demoQuotes: QuoteHistory[] = [
       {
@@ -82,7 +94,12 @@ export default function AdminQuotes() {
     setFilteredQuotes(demoQuotes);
   }, []);
 
-  // フィルタリングとソート
+  /**
+   * フィルタリングとソートの処理
+   * - 検索語による絞り込み
+   * - ステータスによる絞り込み
+   * - 指定項目でのソート
+   */
   useEffect(() => {
     let filtered = quotes;
 
@@ -131,6 +148,11 @@ export default function AdminQuotes() {
     setFilteredQuotes(filtered);
   }, [quotes, searchTerm, statusFilter, sortBy, sortOrder]);
 
+  /**
+   * ステータスに応じたバッジコンポーネントを生成
+   * @param status - ステータス
+   * @returns ステータスバッジのJSX
+   */
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'contracted':
@@ -144,14 +166,22 @@ export default function AdminQuotes() {
     }
   };
 
+  /**
+   * 見積もり詳細の表示
+   * @param quoteId - 見積もりID
+   */
   const handleViewDetails = (quoteId: string) => {
-    // 詳細画面への遷移（実装予定）
-    console.log('View details for quote:', quoteId);
+    // 詳細画面への遷移
+    router.push(`/admin/quotes/${quoteId}`);
   };
 
+  /**
+   * 再見積もりの実行
+   * @param quoteId - 見積もりID
+   */
   const handleReQuote = (quoteId: string) => {
-    // 再見積もり画面への遷移（実装予定）
-    console.log('Re-quote for:', quoteId);
+    // 再見積もり画面への遷移
+    router.push(`/admin/quotes/${quoteId}/requote`);
   };
 
   return (

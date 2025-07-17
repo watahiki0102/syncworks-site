@@ -1,60 +1,82 @@
+/**
+ * トラック割り当てモーダルコンポーネント
+ * - フォーム提出に対してトラックを割り当てる
+ * - スケジュール競合チェック
+ * - 推奨トラックの表示
+ * - 見積もり価格の計算
+ */
 'use client';
 import React, { useState, useEffect } from 'react';
 import { formatDate, formatTime } from '../../../../utils/dateTimeUtils';
 
+/**
+ * トラック情報の型定義
+ */
 export interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules?: Schedule[];
-  basePrice?: number;
+  id: string;              // トラックID
+  name: string;            // トラック名
+  plateNumber: string;     // ナンバープレート
+  capacityKg: number;      // 積載量（kg）
+  inspectionExpiry: string; // 車検有効期限
+  status: 'available' | 'maintenance' | 'inactive'; // ステータス
+  truckType: string;       // トラック種別
+  schedules?: Schedule[];  // スケジュール一覧
+  basePrice?: number;      // 基本料金
 }
 
+/**
+ * スケジュール情報の型定義
+ */
 export interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'booked' | 'maintenance';
-  customerName?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  origin?: string;
-  destination?: string;
+  id: string;              // スケジュールID
+  date: string;            // 日付
+  startTime: string;       // 開始時刻
+  endTime: string;         // 終了時刻
+  status: 'available' | 'booked' | 'maintenance'; // ステータス
+  customerName?: string;   // 顧客名
+  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance'; // 作業タイプ
+  description?: string;    // 説明
+  capacity?: number;       // 容量
+  origin?: string;         // 出発地
+  destination?: string;    // 目的地
 }
 
+/**
+ * トラック割り当て情報の型定義
+ */
 export interface TruckAssignment {
-  truckId: string;
-  truckName: string;
-  capacity: number;
-  startTime: string;
-  endTime: string;
-  workType: 'loading' | 'moving' | 'unloading';
+  truckId: string;         // トラックID
+  truckName: string;       // トラック名
+  capacity: number;        // 容量
+  startTime: string;       // 開始時刻
+  endTime: string;         // 終了時刻
+  workType: 'loading' | 'moving' | 'unloading'; // 作業タイプ
 }
 
+/**
+ * フォーム提出情報の型定義
+ */
 export interface FormSubmission {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  moveDate: string;
-  totalCapacity: number;
-  totalPoints: number;
-  distance?: number;
+  id: string;              // 提出ID
+  customerName: string;    // 顧客名
+  customerEmail: string;   // 顧客メール
+  moveDate: string;        // 引越し日
+  totalCapacity: number;   // 総容量
+  totalPoints: number;     // 総ポイント
+  distance?: number;       // 距離
 }
 
+/**
+ * プロパティの型定義
+ */
 interface Props {
-  selectedSubmission: FormSubmission | null;
-  trucks: Truck[];
-  pricingTrucks: Truck[];
-  setShowTruckModal: React.Dispatch<React.SetStateAction<boolean>>;
-  assignTruckToSubmission: (id: string, assign: TruckAssignment) => void;
-  calculateRecommendedTrucks: (points: number) => Truck[];
-  calculateEstimatedPrice: (points: number, distance?: number) => number;
+  selectedSubmission: FormSubmission | null;  // 選択された提出
+  trucks: Truck[];                            // トラック一覧
+  pricingTrucks: Truck[];                     // 料金設定トラック一覧
+  setShowTruckModal: React.Dispatch<React.SetStateAction<boolean>>; // モーダル表示制御
+  assignTruckToSubmission: (id: string, assign: TruckAssignment) => void; // 割り当て処理
+  calculateRecommendedTrucks: (points: number) => Truck[]; // 推奨トラック計算
+  calculateEstimatedPrice: (points: number, distance?: number) => number; // 見積もり価格計算
 }
 
 export default function TruckAssignmentModal({
@@ -74,6 +96,9 @@ export default function TruckAssignmentModal({
     workType: 'loading' as 'loading' | 'moving' | 'unloading',
   });
 
+  /**
+   * 選択された提出が変更された時の初期化
+   */
   useEffect(() => {
     if (selectedSubmission) {
       setFormData({
@@ -86,11 +111,18 @@ export default function TruckAssignmentModal({
     }
   }, [selectedSubmission]);
 
+  /**
+   * 推奨トラックと見積もり価格の計算
+   */
   const recommendedTrucks = selectedSubmission ?
     calculateRecommendedTrucks(selectedSubmission.totalPoints) : [];
   const estimatedPrice = selectedSubmission ?
     calculateEstimatedPrice(selectedSubmission.totalPoints, selectedSubmission.distance || 0) : 0;
 
+  /**
+   * フォーム送信処理
+   * @param e フォームイベント
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!modalSelectedTruck || !selectedSubmission) return;
@@ -109,6 +141,11 @@ export default function TruckAssignmentModal({
     setModalSelectedTruck(null);
   };
 
+  /**
+   * 利用可能な料金設定トラックのフィルタリング
+   * - ステータスが利用可能
+   * - スケジュール競合がない
+   */
   const availablePricingTrucks = pricingTrucks.filter(truck => {
     const hasConflict = trucks.some(dispatchTruck =>
       dispatchTruck.schedules?.some(schedule =>

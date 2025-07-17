@@ -1,27 +1,40 @@
+/**
+ * 管理者成約実績管理ページコンポーネント
+ * - 成約実績の一覧表示
+ * - 月次サマリーの表示
+ * - フィルタリング・ソート機能
+ * - CSVエクスポート機能
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
+/**
+ * 成約データの型定義
+ */
 interface Contract {
-  id: string;
-  customerName: string;
-  contractDate: string;
-  moveDate: string;
-  contractAmount: number;
-  commission: number;
-  revenue: number;
-  items: string[];
-  fromAddress: string;
-  toAddress: string;
+  id: string;              // 成約ID
+  customerName: string;    // 顧客名
+  contractDate: string;    // 成約日
+  moveDate: string;        // 引越し日
+  contractAmount: number;  // 成約金額
+  commission: number;      // 手数料
+  revenue: number;         // 売上
+  items: string[];         // 荷物リスト
+  fromAddress: string;     // 引越し元住所
+  toAddress: string;       // 引越し先住所
 }
 
+/**
+ * 月次サマリーの型定義
+ */
 interface MonthlySummary {
-  month: string;
-  totalRevenue: number;
-  totalContracts: number;
-  totalAmount: number;
+  month: string;           // 年月（YYYY-MM形式）
+  totalRevenue: number;    // 月間売上合計
+  totalContracts: number;  // 月間成約件数
+  totalAmount: number;     // 月間成約金額合計
 }
 
 export default function AdminContracts() {
@@ -37,7 +50,10 @@ export default function AdminContracts() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const router = useRouter();
 
-  // デモデータ
+  /**
+   * デモデータの初期化
+   * 実際のアプリケーションではAPIから取得
+   */
   useEffect(() => {
     const demoContracts: Contract[] = [
       {
@@ -79,7 +95,12 @@ export default function AdminContracts() {
     setMonthlySummaries(summaries);
   }, []);
 
-  // フィルタリングとソート
+  /**
+   * フィルタリングとソートの処理
+   * - 期間による絞り込み
+   * - 検索語による絞り込み
+   * - 指定項目でのソート
+   */
   useEffect(() => {
     let filtered = contracts;
 
@@ -134,6 +155,10 @@ export default function AdminContracts() {
     setFilteredContracts(filtered);
   }, [contracts, periodOption, yearValue, monthValue, yearMonthValue, searchTerm, sortBy, sortOrder]);
 
+  /**
+   * CSVエクスポート機能
+   * フィルタリングされた成約データをCSVファイルとしてダウンロード
+   */
   const handleExportCSV = () => {
     const csvContent = [
       ['顧客名', '成約日', '引越し日', '成約金額', '手数料', '売上'],
@@ -166,6 +191,10 @@ export default function AdminContracts() {
     document.body.removeChild(link);
   };
 
+  /**
+   * 現在の月次サマリーを取得
+   * @returns 月次サマリー情報
+   */
   const getCurrentMonthSummary = () => {
     const totalRevenue = filteredContracts.reduce(
       (acc, c) => acc + c.revenue,
@@ -179,6 +208,10 @@ export default function AdminContracts() {
     return { totalRevenue, totalContracts, totalAmount };
   };
 
+  /**
+   * 月次サマリーの再計算
+   * 成約データから月次サマリーを動的に計算
+   */
   const handleRecalculate = () => {
     const newSummaries = contracts.reduce((acc, contract) => {
       const month = contract.contractDate.slice(0, 7);

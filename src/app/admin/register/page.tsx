@@ -1,11 +1,29 @@
+/**
+ * 管理者新規登録ページコンポーネント
+ * - 事業者アカウントの新規登録機能
+ * - フォームバリデーション
+ * - ローカルストレージでのデータ保存
+ */
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+/**
+ * フォームデータの型定義
+ */
+interface FormData {
+  companyName: string;     // 事業者名
+  email: string;          // メールアドレス
+  phone: string;          // 電話番号
+  address: string;        // 住所
+  password: string;       // パスワード
+  confirmPassword: string; // パスワード確認
+}
+
 export default function AdminRegister() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     companyName: '',
     email: '',
     phone: '',
@@ -17,6 +35,10 @@ export default function AdminRegister() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  /**
+   * フォームのバリデーション
+   * @returns バリデーション結果（true: 成功, false: 失敗）
+   */
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -58,6 +80,10 @@ export default function AdminRegister() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * フォーム送信時の処理
+   * @param e - フォームイベント
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -91,6 +117,10 @@ export default function AdminRegister() {
     }
   };
 
+  /**
+   * 入力フィールドの変更処理
+   * @param e - 入力イベント
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({

@@ -1,18 +1,42 @@
+/**
+ * 管理者プロフィール編集ページコンポーネント
+ * - 事業者基本情報の編集
+ * - サービスオプションの管理
+ * - 対応エリアの設定
+ * - 支払い方法の設定
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
-// オプション型
+/**
+ * オプションタイプの定義
+ */
 const OPTION_TYPES = [
   { value: 'free', label: '無料オプション', color: 'text-green-600' },
   { value: 'paid', label: '有料オプション', color: 'text-blue-600' },
   { value: 'nonSupported', label: '対応不可', color: 'text-red-600' },
 ] as const;
-type OptionType = typeof OPTION_TYPES[number]['value'];
-type OptionItem = { label: string; type: OptionType; isDefault: boolean };
 
+/**
+ * オプションタイプの型定義
+ */
+type OptionType = typeof OPTION_TYPES[number]['value'];
+
+/**
+ * オプションアイテムの型定義
+ */
+type OptionItem = { 
+  label: string;      // オプション名
+  type: OptionType;   // オプションタイプ
+  isDefault: boolean; // デフォルト設定かどうか
+};
+
+/**
+ * デフォルトオプション設定
+ */
 const DEFAULT_OPTIONS: OptionItem[] = [
   { label: '🏠 建物養生（壁や床の保護）', type: 'free', isDefault: true },
   { label: '📦 荷造り・荷ほどきの代行', type: 'free', isDefault: true },
@@ -24,7 +48,10 @@ const DEFAULT_OPTIONS: OptionItem[] = [
   { label: '🐾 ペット運搬', type: 'free', isDefault: true },
 ];
 
-// --- 地方・都道府県データ ---
+/**
+ * 地方・都道府県データ
+ * 対応エリア選択用の地域情報
+ */
 const REGIONS = [
   { name: '北海道・東北', prefectures: ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
   { name: '関東', prefectures: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
@@ -34,10 +61,38 @@ const REGIONS = [
   { name: '四国', prefectures: ['徳島県', '香川県', '愛媛県', '高知県'] },
   { name: '九州', prefectures: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] }
 ];
+
+/**
+ * 全都道府県のリスト
+ */
 const ALL_PREFS = REGIONS.flatMap(r => r.prefectures);
 
+/**
+ * フォームデータの型定義
+ */
+interface FormData {
+  companyName: string;           // 事業者名
+  email: string;                // メールアドレス
+  phone: string;                // 電話番号
+  postalCode: string;           // 郵便番号
+  address: string;              // 住所
+  description: string;          // 事業コンセプト
+  experienceYears: string;      // 経験年数
+  staffCount: string;           // 従業員数
+  features: string[];           // アピールポイント
+  freeOptions: string[];        // 無料オプション
+  paidOptions: string[];        // 有料オプション
+  nonSupportedItems: string[];  // 対応不可アイテム
+  paymentMethods: {             // 支払い方法
+    creditCard: boolean;
+    electronicPayment: boolean;
+    bankTransfer: boolean;
+    cash: boolean;
+  };
+}
+
 export default function AdminProfile() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     companyName: '',
     email: '',
     phone: '',
@@ -46,10 +101,10 @@ export default function AdminProfile() {
     description: '',
     experienceYears: '',
     staffCount: '',
-    features: [] as string[],
-    freeOptions: [] as string[],
-    paidOptions: [] as string[],
-    nonSupportedItems: [] as string[],
+    features: [],
+    freeOptions: [],
+    paidOptions: [],
+    nonSupportedItems: [],
     paymentMethods: {
       creditCard: false,
       electronicPayment: false,
@@ -64,19 +119,30 @@ export default function AdminProfile() {
   const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
 
-  // オプションリストの状態
+  /**
+   * オプションリストの状態管理
+   */
   const [options, setOptions] = useState<OptionItem[]>(DEFAULT_OPTIONS);
   const [newOptionLabel, setNewOptionLabel] = useState('');
   const [newOptionType, setNewOptionType] = useState<OptionType>('free');
 
+  /**
+   * サービスエリアの状態管理
+   */
   const [serviceAreas, setServiceAreas] = useState<string[]>([]);
   const [newServiceArea, setNewServiceArea] = useState('');
 
-  // New state variables to fix errors
+  /**
+   * 対応エリア選択の状態管理
+   */
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPrefectures, setSelectedPrefectures] = useState<string[]>([]);
 
+  /**
+   * 保存されたデータの読み込み
+   * ページ初期化時にローカルストレージから復元
+   */
   useEffect(() => {
     // 保存されたデータを読み込み
     const savedData = localStorage.getItem('adminData');
@@ -107,6 +173,10 @@ export default function AdminProfile() {
     }
   }, []);
 
+  /**
+   * フォームのバリデーション
+   * @returns バリデーション結果（true: 成功, false: 失敗）
+   */
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.companyName.trim()) newErrors.companyName = '事業者名は必須です';
@@ -122,6 +192,10 @@ export default function AdminProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * フォーム送信処理
+   * @param e - フォームイベント
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormData(prev => ({
@@ -155,6 +229,10 @@ export default function AdminProfile() {
     }
   };
 
+  /**
+   * 入力フィールドの変更処理
+   * @param e - 入力イベント
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -170,6 +248,12 @@ export default function AdminProfile() {
     }
   };
 
+  /**
+   * 配列フィールドの変更処理
+   * @param index - 変更するアイテムのインデックス
+   * @param value - 新しい値
+   * @param field - 変更するフィールド名
+   */
   const handleArrayChange = (index: number, value: string, field: 'features' | 'freeOptions' | 'paidOptions' | 'nonSupportedItems') => {
     setFormData(prev => ({
       ...prev,
@@ -177,6 +261,10 @@ export default function AdminProfile() {
     }));
   };
 
+  /**
+   * 配列フィールドにアイテムを追加
+   * @param field - 追加するフィールド名
+   */
   const addArrayItem = (field: 'features' | 'freeOptions' | 'paidOptions' | 'nonSupportedItems') => {
     setFormData(prev => ({
       ...prev,
@@ -184,6 +272,11 @@ export default function AdminProfile() {
     }));
   };
 
+  /**
+   * 配列フィールドからアイテムを削除
+   * @param index - 削除するアイテムのインデックス
+   * @param field - 削除するフィールド名
+   */
   const removeArrayItem = (index: number, field: 'features' | 'freeOptions' | 'paidOptions' | 'nonSupportedItems') => {
     setFormData(prev => ({
       ...prev,
@@ -191,6 +284,10 @@ export default function AdminProfile() {
     }));
   };
 
+  /**
+   * 支払い方法の変更処理
+   * @param method - 変更する支払い方法
+   */
   const handlePaymentMethodChange = (method: keyof typeof formData.paymentMethods) => {
     setFormData(prev => ({
       ...prev,

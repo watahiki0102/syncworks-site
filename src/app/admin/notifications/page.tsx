@@ -1,24 +1,34 @@
+/**
+ * 管理者見積もり回答依頼通知ページコンポーネント
+ * - お客様からの見積もり依頼の一覧表示
+ * - 優先度・ステータスによるフィルタリング
+ * - 緊急度の判定と表示
+ * - 回答機能への誘導
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
+/**
+ * 見積もり依頼データの型定義
+ */
 interface QuoteRequest {
-  id: string;
-  customerName: string;
-  requestDate: string;
-  deadline: string;
-  summary: {
-    moveDate: string;
-    moveTime: string;
-    fromAddress: string;
-    toAddress: string;
-    items: string[];
-    totalPoints: number;
+  id: string;                    // 依頼ID
+  customerName: string;          // 顧客名
+  requestDate: string;           // 依頼日
+  deadline: string;              // 回答期限
+  summary: {                     // 依頼概要
+    moveDate: string;            // 引越し日
+    moveTime: string;            // 引越し時間帯
+    fromAddress: string;         // 引越し元住所
+    toAddress: string;           // 引越し先住所
+    items: string[];             // 荷物リスト
+    totalPoints: number;         // 総ポイント
   };
-  status: 'pending' | 'answered' | 'expired';
-  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'answered' | 'expired';  // ステータス
+  priority: 'high' | 'medium' | 'low';         // 優先度
 }
 
 export default function AdminNotifications() {
@@ -29,6 +39,10 @@ export default function AdminNotifications() {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
+  /**
+   * デモデータの初期化
+   * 実際のアプリケーションではAPIから取得
+   */
   useEffect(() => {
     const demoRequests: QuoteRequest[] = [
       {
@@ -68,6 +82,13 @@ export default function AdminNotifications() {
     setFilteredRequests(demoRequests);
   }, []);
 
+  /**
+   * フィルタリングとソートの処理
+   * - ステータスによる絞り込み
+   * - 優先度による絞り込み
+   * - 検索語による絞り込み
+   * - 優先度と期限によるソート
+   */
   useEffect(() => {
     let filtered = requests;
 
@@ -98,6 +119,11 @@ export default function AdminNotifications() {
     setFilteredRequests(filtered);
   }, [requests, statusFilter, priorityFilter, searchTerm]);
 
+  /**
+   * ステータスに応じたバッジコンポーネントを生成
+   * @param status - ステータス
+   * @returns ステータスバッジのJSX
+   */
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -111,6 +137,11 @@ export default function AdminNotifications() {
     }
   };
 
+  /**
+   * 優先度に応じたバッジコンポーネントを生成
+   * @param priority - 優先度
+   * @returns 優先度バッジのJSX
+   */
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -124,6 +155,11 @@ export default function AdminNotifications() {
     }
   };
 
+  /**
+   * 緊急度の判定
+   * @param deadline - 回答期限
+   * @returns 緊急かどうか（1日以内の場合）
+   */
   const isUrgent = (deadline: string) => {
     const deadlineDate = new Date(deadline);
     const now = new Date();
@@ -132,18 +168,34 @@ export default function AdminNotifications() {
     return diffDays <= 1;
   };
 
+  /**
+   * 見積もり回答処理
+   * @param requestId - 依頼ID
+   */
   const handleAnswer = (requestId: string) => {
     console.log('Answer request:', requestId);
   };
 
+  /**
+   * 依頼詳細の表示
+   * @param requestId - 依頼ID
+   */
   const handleViewDetails = (requestId: string) => {
     console.log('View details for request:', requestId);
   };
 
+  /**
+   * 未回答依頼数を取得
+   * @returns 未回答依頼数
+   */
   const getPendingCount = () => {
     return requests.filter(request => request.status === 'pending').length;
   };
 
+  /**
+   * 緊急依頼数を取得
+   * @returns 緊急依頼数（未回答かつ期限1日以内）
+   */
   const getUrgentCount = () => {
     return requests.filter(request => 
       request.status === 'pending' && isUrgent(request.deadline)

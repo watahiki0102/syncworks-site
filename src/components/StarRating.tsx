@@ -1,12 +1,21 @@
+/**
+ * 星評価コンポーネント
+ * - 5段階評価の視覚的表示
+ * - 部分的な星の塗りつぶし対応
+ */
 import { Star } from 'lucide-react';
 
 interface StarRatingProps {
-  rating: number;
-  size?: number;
+  rating: number;  // 評価値（0-5）
+  size?: number;   // 星のサイズ（デフォルト: 20px）
 }
 
 export default function StarRating({ rating, size = 20 }: StarRatingProps) {
   const stars = [];
+  
+  /**
+   * 5つの星を生成し、評価値に応じて塗りつぶし率を計算
+   */
   for (let i = 1; i <= 5; i++) {
     const fillPercentage = Math.min(Math.max(rating - i + 1, 0), 1) * 100;
     stars.push(
@@ -28,5 +37,6 @@ export default function StarRating({ rating, size = 20 }: StarRatingProps) {
       </div>
     );
   }
+  
   return <div className="flex items-center">{stars}</div>;
 }

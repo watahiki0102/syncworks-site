@@ -1,3 +1,9 @@
+/**
+ * 引越し見積もりフォーム Step1 ページコンポーネント
+ * - 基本情報、引越し希望日時、引越し元・引越し先の入力
+ * - フォームバリデーションとデータ保存
+ * - 進捗バーの表示
+ */
 // ✅ セクションは：基本情報 / 引越し希望日時 / 引越し元 / 引越し先
 
 'use client';
@@ -8,7 +14,9 @@ import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import "react-datepicker/dist/react-datepicker.css";
 
-// 型定義
+/**
+ * フォームデータの型定義
+ */
 interface FormData {
   moveType: string; // 引越しタイプ
   lastName: string; // 姓
@@ -35,7 +43,9 @@ interface FormData {
   toFloor: string; // 引越し先階数
 }
 
-// 定数
+/**
+ * よく使用されるメールドメイン
+ */
 const COMMON_DOMAINS = [
   'gmail.com',
   'yahoo.co.jp',
@@ -44,6 +54,9 @@ const COMMON_DOMAINS = [
   'hotmail.com'
 ];
 
+/**
+ * 時間帯選択オプション
+ */
 const TIME_SLOTS = [
   { value: 'none', label: '指定なし' },
   { value: 'early_morning', label: '早朝（6～9時）' },
@@ -56,13 +69,18 @@ const TIME_SLOTS = [
   { value: 'daytime_only', label: '早朝・夜間以外（9～18時）' }
 ];
 
+/**
+ * 住宅タイプ選択オプション
+ */
 const RESIDENCE_TYPES = [
   "アパート・マンション（エレベーター利用可）",
   "アパート・マンション（エレベーター利用不可）",
   "一軒家"
 ];
 
-// スタイル
+/**
+ * スタイル定義
+ */
 const STYLES = {
   section: "bg-white shadow-md rounded-lg p-6 border border-gray-200",
   label: "block text-sm font-medium text-gray-700 mb-1",
@@ -70,7 +88,10 @@ const STYLES = {
   error: "text-red-500 text-sm mt-1"
 };
 
-// ユーティリティ関数
+/**
+ * ローカルストレージから保存されたデータを読み込み
+ * @returns 保存されたフォームデータ
+ */
 const loadSavedData = (): Partial<FormData> => {
   if (typeof window === 'undefined') return {};
 
@@ -80,6 +101,12 @@ const loadSavedData = (): Partial<FormData> => {
   return JSON.parse(saved);
 };
 
+/**
+ * 日付の妥当性を検証
+ * @param value - 検証する日付文字列
+ * @param index - 希望日の番号
+ * @returns 検証結果
+ */
 const validateDate = (value: string, index: number): string | true => {
   const selected = new Date(value);
   const today = new Date();
@@ -88,11 +115,18 @@ const validateDate = (value: string, index: number): string | true => {
   return selected > today || `※ 第${index}希望日に過去日が設定されています`;
 };
 
-// コンポーネント
+/**
+ * エラーメッセージ表示コンポーネント
+ */
 const ErrorMessage = ({ message }: { message: string }) => (
   <p className={STYLES.error}>{message}</p>
 );
 
+/**
+ * 日時選択セクションコンポーネント
+ * - 希望日と時間帯の入力
+ * - バリデーション機能付き
+ */
 const DateTimeSection = ({
   index,
   register,
@@ -100,16 +134,18 @@ const DateTimeSection = ({
   errors,
   isRequired
 }: {
-  index: number;
+  index: number; // 希望日の番号（1, 2, 3）
   register: UseFormRegister<FormData>;
   watch: UseFormWatch<FormData>;
   errors: FieldErrors<FormData>;
-  isRequired: boolean;
+  isRequired: boolean; // 必須項目かどうか
 }) => {
-  const selectedDate = watch(`date${index}`);
-  const selectedTime = watch(`timeSlot${index}`);
-  const dateError = errors[`date${index}`];
-  const timeSlotError = errors[`timeSlot${index}`];
+  const dateField = `date${index}` as keyof FormData;
+  const timeField = `timeSlot${index}` as keyof FormData;
+  const selectedDate = watch(dateField);
+  const selectedTime = watch(timeField);
+  const dateError = errors[dateField];
+  const timeSlotError = errors[timeField];
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -119,11 +155,12 @@ const DateTimeSection = ({
         </label>
         <input
           type="date"
-          {...register(`date${index}`, {
+          {...register(dateField, {
             required: isRequired ? `※ 第${index}希望日は必須です` : false,
-            validate: (value: string) => {
+            validate: (value: string | undefined) => {
               // 非必須の場合は空の場合はtrueを返す
               if (!isRequired && !value) return true;
+              if (!value) return true;
               const selected = new Date(value);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -146,9 +183,9 @@ const DateTimeSection = ({
           ⏰ 時間帯{isRequired && <span className="text-red-600">＊</span>}
         </label>
         <select
-          {...register(`timeSlot${index}`, {
+          {...register(timeField, {
             required: isRequired,
-            validate: (value: string) => {
+            validate: (value: string | undefined) => {
               // 必須枠の場合
               if (isRequired) {
                 if (!value || value === 'none') {
@@ -190,6 +227,11 @@ const DateTimeSection = ({
   );
 };
 
+/**
+ * 住所入力セクションコンポーネント
+ * - 郵便番号、住所、住宅タイプ、階数の入力
+ * - 郵便番号による住所自動補完機能
+ */
 const AddressSection = ({
   label,
   prefix,
@@ -240,7 +282,7 @@ const AddressSection = ({
           placeholder="例：1234567"
         />
         {errors[`${prefix}PostalCode`] && (
-          <ErrorMessage message={errors[`${prefix}PostalCode`].message || "※ 郵便番号は必須です"} />
+          <ErrorMessage message={errors[`${prefix}PostalCode`]?.message || "※ 郵便番号は必須です"} />
         )}
       </div>
 
