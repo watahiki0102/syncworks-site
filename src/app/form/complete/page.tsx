@@ -6,7 +6,7 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -24,7 +24,7 @@ interface CompleteData {
   toAddress: string;
 }
 
-export default function FormCompletePage() {
+function FormCompleteContent() {
   const searchParams = useSearchParams();
   const submissionId = searchParams.get('id');
   const [completeData, setCompleteData] = useState<CompleteData | null>(null);
@@ -207,5 +207,24 @@ export default function FormCompletePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <main className="bg-gray-50 min-h-screen py-10 px-4">
+      <div className="max-w-4xl mx-auto text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">読み込み中...</p>
+      </div>
+    </main>
+  );
+}
+
+export default function FormCompletePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <FormCompleteContent />
+    </Suspense>
   );
 } 
