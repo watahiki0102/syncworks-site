@@ -3,8 +3,9 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import ProgressBar from '@/components/ProgressBar';
 import "react-datepicker/dist/react-datepicker.css";
 
 // 型定義
@@ -100,9 +101,9 @@ const DateTimeSection = ({
   isRequired
 }: {
   index: number;
-  register: any;
-  watch: any;
-  errors: any;
+  register: UseFormRegister<FormData>;
+  watch: UseFormWatch<FormData>;
+  errors: FieldErrors<FormData>;
   isRequired: boolean;
 }) => {
   const selectedDate = watch(`date${index}`);
@@ -199,10 +200,10 @@ const AddressSection = ({
 }: {
   label: string;
   prefix: 'from' | 'to';
-  register: any;
-  watch: any;
-  errors: any;
-  setValue: any;
+  register: UseFormRegister<FormData>;
+  watch: UseFormWatch<FormData>;
+  errors: FieldErrors<FormData>;
+  setValue: UseFormSetValue<FormData>;
 }) => {
   const residenceType = watch(`${prefix}ResidenceType`);
   const isHouse = residenceType === "一軒家";
@@ -375,7 +376,7 @@ export default function Step1FormPage() {
 
   // 5秒ごとに自動保存
   useEffect(() => {
-    if (!isClient) return;
+    if (typeof window === 'undefined' || !isClient) return;
 
     const id = setInterval(() => {
       try {
@@ -435,6 +436,7 @@ export default function Step1FormPage() {
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
         <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <ProgressBar current={1} total={3} />
         <div className="text-center text-sm text-gray-600 mb-4">
           <p className="mb-1">📝 入力項目：<span className="font-semibold">全3ページ</span></p>
           <p className="mb-1">⏳ 所要時間：<span className="font-semibold">約15分</span>（目安）</p>

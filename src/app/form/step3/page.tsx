@@ -6,6 +6,7 @@
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import ProgressBar from '@/components/ProgressBar';
 
 // 定数定義
 const AUTOSAVE_INTERVAL = 5000;
@@ -34,12 +35,17 @@ const workOptions = [
   "📝 その他（下記備考欄に記入）"
 ];
 
+interface Step3FormData {
+  options?: string[];
+  remarks?: string;
+}
+
 export default function Step3FormPage() {
-  const { register, handleSubmit, setValue, watch } = useForm();
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<Step3FormData>();
   const router = useRouter();
 
   // フォームデータの保存
-  const saveFormData = (data: any) => {
+  const saveFormData = (data: Step3FormData) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -48,7 +54,7 @@ export default function Step3FormPage() {
   };
 
   // フォーム送信処理
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: Step3FormData) => {
     try {
       saveFormData(data);
       console.log(data);
@@ -82,6 +88,7 @@ export default function Step3FormPage() {
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
         <h1 className="text-3xl font-bold text-center text-blue-800">🔧 作業オプションと備考入力</h1>
+        <ProgressBar current={3} total={3} />
 
         {/* 作業オプション */}
         <section className={styles.section}>
@@ -89,10 +96,13 @@ export default function Step3FormPage() {
           <div className="space-y-2">
             {workOptions.map((opt) => (
               <label key={opt} className="block">
-                <input type="checkbox" {...register("options")} value={opt} className="mr-2" />
+                <input type="checkbox" {...register("options", { validate: v => (v && v.length > 0) || '※ 1つ以上選択してください' })} value={opt} className="mr-2" />
                 {opt}
               </label>
             ))}
+            {errors.options && (
+              <p className="text-red-600 text-sm mt-1">{errors.options.message}</p>
+            )}
           </div>
         </section>
 
