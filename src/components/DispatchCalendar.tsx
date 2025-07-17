@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatDate, formatTime } from '@/utils/dateTimeUtils';
 
 interface Truck {
   id: string;
@@ -216,18 +217,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', { 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  };
+  // formatDate と formatTime は utils/dateTimeUtils.ts からインポート
 
   const goToPreviousPeriod = () => {
     const newDate = new Date(currentDate);
@@ -762,20 +752,16 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       s.startTime <= block.time && 
                       s.endTime > block.time
                     );
-                    const schedule = schedules[0];
+                    
                     return (
                       <div
                         key={block.time}
-                        className={`h-12 border cursor-pointer hover:opacity-80 transition-opacity ${schedule ? 'relative' : ''}`}
-                        style={{
-                          backgroundColor: schedule ? 
-                            (schedule.status === 'booked' ? '#dbeafe' : 
-                             schedule.status === 'maintenance' ? '#fef3c7' : '#dcfce7') : 
-                            '#f9fafb'
-                        }}
+                        className={`${schedules.length > 1 ? 'h-16' : 'h-12'} border cursor-pointer hover:opacity-80 transition-opacity relative ${
+                          schedules.length > 0 ? '' : 'bg-gray-50'
+                        }`}
                         onClick={() => handleCellClick(truck, block.time)}
-                        title={schedule ? 
-                          `${schedule.customerName || '予約済み'} ${schedule.startTime}-${schedule.endTime}` : 
+                        title={schedules.length > 0 ? 
+                          `${schedules.length}件のスケジュール` : 
                           `${dayView.date} ${block.time} - 空き`
                         }
                       >
@@ -787,32 +773,64 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                             title={`使用: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)`}
                           />
                         </div>
-                        {schedule && (
-                          <div
-                            className="absolute inset-0 flex flex-col items-center justify-center text-xs cursor-pointer p-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleScheduleClick(schedule, truck);
-                            }}
-                          >
-                            {schedule.customerName && (
-                              <div className="text-center w-full">
-                                <div className="flex items-center justify-center gap-1 mb-1">
-                                  <span className="text-lg">{getWorkTypeDisplay(schedule.workType).icon}</span>
-                                  <span className="text-xs font-medium truncate">
-                                    {schedule.customerName}
-                                  </span>
-                                </div>
-                                <div className="text-xs opacity-75">
-                                  {formatTime(schedule.startTime)}-{formatTime(schedule.endTime)}
-                                </div>
-                                {schedule.capacity && (
-                                  <div className="text-xs opacity-75 font-medium">
-                                    {schedule.capacity.toLocaleString()}kg
+                        
+                        {/* 複数スケジュール表示 */}
+                        {schedules.length > 0 && (
+                          <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1">
+                            {schedules.map((schedule, index) => {
+                              // 各スケジュールの背景色を決定
+                              const getScheduleBackgroundColor = (status: string) => {
+                                switch (status) {
+                                  case 'booked':
+                                    return 'bg-blue-100';
+                                  case 'maintenance':
+                                    return 'bg-yellow-100';
+                                  case 'available':
+                                    return 'bg-green-100';
+                                  default:
+                                    return 'bg-gray-100';
+                                }
+                              };
+                              
+                              // 複数スケジュールがある場合の高さ調整
+                              const scheduleHeight = schedules.length > 1 ? 'h-6' : 'h-full';
+                              const maxSchedules = 4; // 最大表示件数
+                              
+                              if (index >= maxSchedules) {
+                                return (
+                                  <div
+                                    key={`more-${index}`}
+                                    className="text-xs text-gray-500 text-center bg-gray-100 rounded px-1 py-0.5"
+                                  >
+                                    +{schedules.length - maxSchedules}件
                                   </div>
-                                )}
-                              </div>
-                            )}
+                                );
+                              }
+                              
+                              return (
+                                <div
+                                  key={schedule.id}
+                                  className={`${scheduleHeight} ${getScheduleBackgroundColor(schedule.status)} rounded border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center px-1`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleScheduleClick(schedule, truck);
+                                  }}
+                                  title={`${schedule.customerName || '予約済み'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''}`}
+                                >
+                                                                   <div className="flex items-center gap-1 w-full min-w-0">
+                                   <span className="text-xs flex-shrink-0">{getWorkTypeDisplay(schedule.workType).icon}</span>
+                                   <span className="text-xs font-medium truncate flex-1 min-w-0">
+                                     {schedule.customerName || '予約済み'}
+                                   </span>
+                                   {schedule.capacity && (
+                                     <span className="text-xs text-gray-600 font-medium flex-shrink-0">
+                                       {schedule.capacity}kg
+                                     </span>
+                                   )}
+                                 </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

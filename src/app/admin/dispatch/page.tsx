@@ -6,6 +6,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
+import { formatDate, formatTime } from '@/utils/dateTimeUtils';
 
 interface Truck {
   id: string;
@@ -512,19 +513,7 @@ export default function DispatchManagement() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  };
+  // formatDate と formatTime は utils/dateTimeUtils.ts からインポート
 
   // 推奨トラックを計算
   const calculateRecommendedTrucks = (points: number): any[] => {
@@ -575,8 +564,7 @@ export default function DispatchManagement() {
     );
   };
 
-  // トラック割り当てモーダル
-  };
+
 
   const handleLogout = () => {
     if (!window.confirm('本当にログアウトしますか？')) return;

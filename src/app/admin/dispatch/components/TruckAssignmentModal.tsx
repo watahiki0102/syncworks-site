@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { formatDate, formatTime } from '../../page';
+import { formatDate, formatTime } from '../../../../utils/dateTimeUtils';
 
 export interface Truck {
   id: string;
@@ -10,6 +10,22 @@ export interface Truck {
   inspectionExpiry: string;
   status: 'available' | 'maintenance' | 'inactive';
   truckType: string;
+  schedules?: Schedule[];
+  basePrice?: number;
+}
+
+export interface Schedule {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'available' | 'booked' | 'maintenance';
+  customerName?: string;
+  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
+  description?: string;
+  capacity?: number;
+  origin?: string;
+  destination?: string;
 }
 
 export interface TruckAssignment {
@@ -95,13 +111,13 @@ export default function TruckAssignmentModal({
 
   const availablePricingTrucks = pricingTrucks.filter(truck => {
     const hasConflict = trucks.some(dispatchTruck =>
-      dispatchTruck.schedules.some(schedule =>
+      dispatchTruck.schedules?.some(schedule =>
         schedule.date === selectedSubmission?.moveDate &&
         schedule.status === 'booked' &&
         ((schedule.startTime <= formData.startTime && schedule.endTime > formData.startTime) ||
          (schedule.startTime < formData.endTime && schedule.endTime >= formData.endTime) ||
          (schedule.startTime >= formData.startTime && schedule.endTime <= formData.endTime))
-      )
+      ) || false
     );
     return truck.status === 'available' && !hasConflict;
   });
@@ -174,7 +190,7 @@ export default function TruckAssignmentModal({
               <option value="">トラックを選択</option>
               {availablePricingTrucks.map(truck => (
                 <option key={truck.id} value={truck.id}>
-                  {truck.name} ({truck.plateNumber}) - {truck.truckType} - {truck.capacityKg}kg - ¥{truck.basePrice.toLocaleString()}
+                  {truck.name} ({truck.plateNumber}) - {truck.truckType} - {truck.capacityKg}kg - ¥{(truck.basePrice || 0).toLocaleString()}
                 </option>
               ))}
             </select>

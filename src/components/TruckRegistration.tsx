@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatTime } from '@/utils/dateTimeUtils';
 
 interface Truck {
   id: string;
@@ -165,10 +166,7 @@ export default function TruckRegistration({
     setSchedules(schedules.filter((_, i) => i !== index));
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  };
+  // formatTime は utils/dateTimeUtils.ts からインポート
 
   return (
     <div className="space-y-6">
