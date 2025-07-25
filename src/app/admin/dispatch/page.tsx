@@ -31,6 +31,7 @@ interface Schedule {
   capacity?: number;
   origin?: string;
   destination?: string;
+  employeeId?: string; // 従業員IDを追加
 }
 
 interface FormSubmission {
@@ -623,6 +624,12 @@ export default function DispatchManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                <a
+                  href="/admin/shifts"
+                  className="text-teal-600 hover:text-teal-800 text-sm"
+                >
+                  👥 シフト管理
+                </a>
                 <a
                   href="/pricing/step2"
                   className="text-blue-600 hover:text-blue-800 text-sm"

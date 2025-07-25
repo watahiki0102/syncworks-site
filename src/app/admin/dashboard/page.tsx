@@ -193,6 +193,18 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                 </Link>
+                                {/* シフト管理 */}
+                                <Link href="/admin/shifts" className="block">
+                                    <div className="bg-gradient-to-br from-teal-50 to-white border-2 border-teal-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
+                                        <div className="p-7 flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center text-3xl">👥</div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-teal-600">シフト管理</h3>
+                                                <p className="text-sm text-gray-900">従業員の稼働スケジュール管理</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
                             </div>
                             {/* トレンドデータ */}
                             <TrendPanel
