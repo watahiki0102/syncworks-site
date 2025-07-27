@@ -924,7 +924,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       className={`min-h-[200px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(300%+8px)] h-[calc(500%+16px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
+                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(40%+8px)] h-[calc(250%+16px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
                       }`}
                       onClick={(e) => {
                         // 展開表示中で、展開された日付以外をクリックした場合
