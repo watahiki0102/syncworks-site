@@ -83,32 +83,27 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [highlightedScheduleId, setHighlightedScheduleId] = useState<string | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [isExpandedView, setIsExpandedView] = useState(false);
+  const [detailPage, setDetailPage] = useState(1);
 
   // 展開状態を管理するためのグローバルクリックイベント
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
-      // 展開表示中で、月ビューの日付セル以外をクリックした場合
-      if (isExpandedView) {
-        const target = e.target as Element;
-        const isDateCell = target.closest('[data-date-cell]');
-        const isExpandedCell = target.closest('[data-expanded-cell="true"]');
-        const isPlusButton = target.closest('button');
-        
-        // 日付セル、展開セル、プラスボタン以外をクリックした場合
-        if (!isDateCell && !isExpandedCell && !isPlusButton) {
-          console.log('Global click detected, closing expanded view');
-          setIsExpandedView(false);
-          setExpandedDate(null);
-        }
+      if (!isExpandedView) return;
+
+      const target = e.target as Element;
+      const isDateCell = target.closest('[data-date-cell]');
+      const isExpandedCell = target.closest('[data-expanded-cell="true"]');
+
+      if (!isDateCell && !isExpandedCell) {
+        setIsExpandedView(false);
+        setExpandedDate(null);
       }
     };
 
-    if (isExpandedView) {
-      document.addEventListener('click', handleGlobalClick);
-      return () => {
-        document.removeEventListener('click', handleGlobalClick);
-      };
-    }
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
   }, [isExpandedView]);
 
   // selectedDateの変更を監視
@@ -711,6 +706,25 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       return 'bg-red-100 text-red-800';
     };
 
+    const allMonthSchedules = trucks
+      .flatMap(truck =>
+        truck.schedules
+          .filter(s => {
+            const scheduleDate = new Date(s.date);
+            const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            return scheduleDate >= currentMonth && scheduleDate <= nextMonth;
+          })
+          .map(schedule => ({
+            ...schedule,
+            truckName: truck.name,
+            truckId: truck.id,
+          }))
+      )
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+
+    const paginatedSchedules = allMonthSchedules.slice((detailPage - 1) * 10, detailPage * 10);
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
         {/* 月ビュー用の前月・翌月ボタン */}
@@ -769,7 +783,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       className={`min-h-[120px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(200%+4px)] h-[calc(400%+8px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
+                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(300%+8px)] h-[calc(500%+16px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
                       }`}
                       onClick={(e) => {
                         // 展開表示中で、展開された日付以外をクリックした場合
@@ -812,7 +826,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                           {/* 展開状態に応じて表示を切り替え */}
                           {expandedDate === day.date ? (
                             /* 展開時: 全案件をスクロール可能なリストで表示 */
-                            <div className="max-h-96 overflow-y-auto space-y-1">
+                            <div className="max-h-[20rem] overflow-y-auto space-y-1">
                               {schedules.map((schedule, index) => (
                                 <div
                                   key={index}
@@ -843,12 +857,17 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                   }}
                                   title={`${schedule.truckName}: ${schedule.customerName || '予約済み'} (${schedule.workType || '作業'})`}
                                 >
-                                  <div className="flex items-center gap-1 mb-1">
+                                  <div className="flex items-start gap-1 mb-1">
                                     <span className="text-sm">{getWorkTypeInfo(schedule.workType).icon}</span>
-                                    <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-1">
-                                    {schedule.startTime} - {schedule.endTime}
+                                    <div className="flex flex-col flex-1">
+                                      <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
+                                      <span className="text-xs text-gray-600">{schedule.startTime} - {schedule.endTime}</span>
+                                    </div>
+                                    {schedule.contractStatus && (
+                                      <span className="ml-1 text-sm">
+                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                                      </span>
+                                    )}
                                   </div>
                                   {(schedule.origin || schedule.destination) && (
                                     <div className="text-xs text-gray-500 flex gap-2">
@@ -887,12 +906,17 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                   }}
                                   title={`${schedule.truckName}: ${schedule.customerName || '予約済み'} (${schedule.workType || '作業'})`}
                                 >
-                                  <div className="flex items-center gap-1 mb-1">
+                                  <div className="flex items-start gap-1 mb-1">
                                     <span className="text-sm">{getWorkTypeInfo(schedule.workType).icon}</span>
-                                    <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
-                                  </div>
-                                  <div className="text-xs text-gray-600">
-                                    {schedule.startTime} - {schedule.endTime}
+                                    <div className="flex flex-col flex-1">
+                                      <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
+                                      <span className="text-xs text-gray-600">{schedule.startTime} - {schedule.endTime}</span>
+                                    </div>
+                                    {schedule.contractStatus && (
+                                      <span className="ml-1 text-sm">
+                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -924,27 +948,34 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         {/* 月ビュー用案件詳細 */}
         <div className="mt-8" data-case-details>
           <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {trucks.flatMap(truck =>
-              truck.schedules
-                .filter(s => {
-                  const scheduleDate = new Date(s.date);
-                  const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                  const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-                  return scheduleDate >= currentMonth && scheduleDate <= nextMonth;
-                })
-                .map(schedule => ({
-                  ...schedule,
-                  truckName: truck.name,
-                  truckId: truck.id,
-                }))
-            ).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
+          <div className="flex justify-between items-center mb-2">
+            <button
+              className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+              onClick={() => setDetailPage(p => Math.max(1, p - 1))}
+              disabled={detailPage === 1}
+            >
+              前へ
+            </button>
+            <span className="text-sm">{detailPage}</span>
+            <button
+              className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+              onClick={() => setDetailPage(p => p + 1)}
+              disabled={(detailPage * 10) >= allMonthSchedules.length}
+            >
+              次へ
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paginatedSchedules.map(schedule => {
               const truckObj = trucks.find(t => t.id === schedule.truckId);
+              const isHighlighted = highlightedScheduleId === schedule.id;
+
               return (
                 <CaseDetail
                   key={schedule.id}
                   schedule={schedule}
                   truck={truckObj}
+                  isHighlighted={isHighlighted}
                   onEdit={() => {
                     if (truckObj) {
                       setSelectedTruck(truckObj);
