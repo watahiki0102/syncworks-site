@@ -226,6 +226,52 @@ export default function DispatchManagement() {
               origin: '東京都江戸川区葛西11-11-11',
               destination: '東京都江東区木場12-12-12',
             },
+            // 7/26のテストデータを追加
+            {
+              id: 'schedule-7-26-1',
+              date: '2025-07-26',
+              startTime: '09:00',
+              endTime: '11:00',
+              status: 'booked',
+              contractStatus: 'confirmed',
+              customerName: '田中 一郎',
+              workType: 'loading',
+              description: '引っ越し作業',
+              capacity: 300,
+              points: 50,
+              origin: '東京都新宿区西新宿1-1',
+              destination: '東京都渋谷区渋谷2-2',
+            },
+            {
+              id: 'schedule-7-26-2',
+              date: '2025-07-26',
+              startTime: '09:00',
+              endTime: '11:00',
+              status: 'booked',
+              contractStatus: 'estimate',
+              customerName: '佐藤 花子',
+              workType: 'loading',
+              description: '引っ越し作業',
+              capacity: 400,
+              points: 75,
+              origin: '東京都中野区中野3-3',
+              destination: '東京都杉並区阿佐ヶ谷4-4',
+            },
+            {
+              id: 'schedule-7-26-3',
+              date: '2025-07-26',
+              startTime: '09:00',
+              endTime: '11:00',
+              status: 'booked',
+              contractStatus: 'confirmed',
+              customerName: '山田 三郎',
+              workType: 'moving',
+              description: '引っ越し作業',
+              capacity: 600,
+              points: 100,
+              origin: '東京都目黒区目黒7-7',
+              destination: '東京都世田谷区三軒茶屋8-8',
+            },
           ],
         },
         {
@@ -765,6 +811,55 @@ export default function DispatchManagement() {
                   <div className="text-sm text-gray-600">
                     入力フォームから送信された案件: {formSubmissions.length}件
                   </div>
+                </div>
+
+                {/* トラック一覧 */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">トラック一覧</h3>
+                  
+                  {trucks.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">登録済みのトラックがありません</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {trucks.map(truck => {
+                        const nextSchedule = truck.schedules
+                          .filter(s => s.date >= new Date().toISOString().split('T')[0])
+                          .sort((a, b) => a.date.localeCompare(b.date))[0];
+
+                        return (
+                          <div key={truck.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-semibold text-gray-900">{truck.name}</h4>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                truck.status === 'available' ? 'bg-green-100 text-green-800' :
+                                truck.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {truck.status === 'available' ? '稼働中' :
+                                 truck.status === 'maintenance' ? '整備中' : '停止中'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">{truck.plateNumber}</p>
+                            <p className="text-sm text-gray-600 mb-2">積載量: {truck.capacityKg}kg</p>
+                            
+                            {nextSchedule ? (
+                              <div className="mt-2 p-2 rounded bg-blue-50">
+                                <p className="text-xs font-medium">次回稼働予定</p>
+                                <p className="text-xs">
+                                  {new Date(nextSchedule.date).toLocaleDateString('ja-JP')} {nextSchedule.startTime}-{nextSchedule.endTime}
+                                </p>
+                                {nextSchedule.customerName && (
+                                  <p className="text-xs">{nextSchedule.customerName}様</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-500 mt-2">稼働予定なし</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* 案件一覧 */}

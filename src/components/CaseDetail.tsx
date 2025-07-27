@@ -116,8 +116,17 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
           <div className="text-sm font-medium text-gray-900 mb-1">
             {formatDate(schedule.date)}
           </div>
-          <div className="text-sm font-medium text-blue-600">
+          <div className="text-sm font-medium text-blue-600 flex items-center gap-2">
             {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                title="編集"
+              >
+                ✏️
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -241,18 +250,7 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
         </div>
       )}
 
-      {/* 編集ボタン */}
-      {onEdit && (
-        <div className="flex justify-end">
-          <button
-            onClick={onEdit}
-            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-            title="編集"
-          >
-            ✏️
-          </button>
-        </div>
-      )}
+
     </div>
   );
 };
