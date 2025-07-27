@@ -7,7 +7,7 @@
  * - 案件の追加・編集・削除
  */
 import { useState, useEffect } from 'react';
-import { formatDate, formatTime } from '@/utils/dateTimeUtils';
+import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA, VIEW_MODE_LABELS } from '../constants/calendar';
 import CaseDetail from './CaseDetail';
 
@@ -129,7 +129,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       const currentDate = new Date(startOfWeek);
       currentDate.setDate(startOfWeek.getDate() + i);
       days.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: toLocalDateString(currentDate),
         day: currentDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[i],
         isToday: currentDate.toDateString() === new Date().toDateString(),
@@ -158,7 +158,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       const prevMonthLastDay = new Date(year, month, 0).getDate();
       const prevDate = new Date(year, month - 1, prevMonthLastDay - i);
       days.push({
-        date: prevDate.toISOString().split('T')[0],
+        date: toLocalDateString(prevDate),
         day: prevDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
         isCurrentMonth: false,
@@ -170,7 +170,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
       days.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: toLocalDateString(currentDate),
         day: day,
         dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
         isCurrentMonth: true,
@@ -183,7 +183,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     for (let day = 1; day <= remainingDays; day++) {
       const nextDate = new Date(year, month + 1, day);
       days.push({
-        date: nextDate.toISOString().split('T')[0],
+        date: toLocalDateString(nextDate),
         day: nextDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
         isCurrentMonth: false,
@@ -202,7 +202,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const getDayView = (date: Date) => {
     const currentDate = new Date(date);
     return {
-      date: currentDate.toISOString().split('T')[0],
+      date: toLocalDateString(currentDate),
       day: currentDate.getDate(),
       dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
       month: currentDate.getMonth() + 1, // 月（1-12）
@@ -349,7 +349,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today.toISOString().split('T')[0]);
+    setSelectedDate(toLocalDateString(today));
   };
 
   /**
@@ -357,7 +357,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    */
   const ScheduleModal = () => {
     const [formData, setFormData] = useState({
-      date: selectedDate || new Date().toISOString().split('T')[0],
+      date: selectedDate || toLocalDateString(new Date()),
       startTime: '09:00',
       endTime: '10:00',
       customerName: '',
@@ -992,7 +992,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               onClick={() => {
                 const prevDate = new Date(currentDayView.date);
                 prevDate.setDate(prevDate.getDate() - 1);
-                setSelectedDate(prevDate.toISOString().split('T')[0]);
+                setSelectedDate(toLocalDateString(prevDate));
               }}
               className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
             >
@@ -1002,7 +1002,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               onClick={() => {
                 const nextDate = new Date(currentDayView.date);
                 nextDate.setDate(nextDate.getDate() + 1);
-                setSelectedDate(nextDate.toISOString().split('T')[0]);
+                setSelectedDate(toLocalDateString(nextDate));
               }}
               className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
             >
@@ -1804,7 +1804,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {trucks.map(truck => {
               const nextSchedule = truck.schedules
-                .filter(s => s.date >= new Date().toISOString().split('T')[0])
+                .filter(s => s.date >= toLocalDateString(new Date()))
                 .sort((a, b) => a.date.localeCompare(b.date))[0];
 
               return (

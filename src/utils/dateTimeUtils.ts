@@ -24,4 +24,16 @@ export const formatDate = (dateString: string): string => {
 export const formatTime = (time: string): string => {
   const [hours, minutes] = time.split(':');
   return `${hours}:${minutes}`;
-}; 
+};
+
+/**
+ * DateオブジェクトをローカルタイムゾーンのYYYY-MM-DD形式に変換する
+ * @param date - Dateオブジェクト
+ * @returns YYYY-MM-DD形式の日付文字列
+ */
+export const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};

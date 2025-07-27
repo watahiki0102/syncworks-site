@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate } from '@/utils/dateTimeUtils';
+import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA, TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
 
 interface Employee {
@@ -93,7 +93,7 @@ export default function ShiftCalendar({
       const currentDate = new Date(startOfWeek);
       currentDate.setDate(startOfWeek.getDate() + i);
       days.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: toLocalDateString(currentDate),
         day: currentDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[i],
         isToday: currentDate.toDateString() === new Date().toDateString(),
@@ -117,7 +117,7 @@ export default function ShiftCalendar({
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const prevDate = new Date(year, month, -i);
       days.push({
-        date: prevDate.toISOString().split('T')[0],
+        date: toLocalDateString(prevDate),
         day: prevDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
         isCurrentMonth: false,
@@ -130,7 +130,7 @@ export default function ShiftCalendar({
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
       days.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: toLocalDateString(currentDate),
         day: day,
         dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
         isCurrentMonth: true,
@@ -144,7 +144,7 @@ export default function ShiftCalendar({
     for (let day = 1; day <= remainingDays; day++) {
       const nextDate = new Date(year, month + 1, day);
       days.push({
-        date: nextDate.toISOString().split('T')[0],
+        date: toLocalDateString(nextDate),
         day: nextDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
         isCurrentMonth: false,
@@ -397,7 +397,7 @@ export default function ShiftCalendar({
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today.toISOString().split('T')[0]);
+    setSelectedDate(toLocalDateString(today));
   };
 
   const copyPreviousWeek = () => {
@@ -421,7 +421,7 @@ export default function ShiftCalendar({
           newDate.setDate(newDate.getDate() + 7);
           const newShift = {
             ...shift,
-            date: newDate.toISOString().split('T')[0],
+            date: toLocalDateString(newDate),
             status: 'provisional' as const,
           };
           onAddShift(employee.id, newShift);
