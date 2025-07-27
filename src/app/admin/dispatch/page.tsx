@@ -25,10 +25,12 @@ interface Schedule {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'maintenance';
+  contractStatus?: 'confirmed' | 'estimate'; // 確定 or 見積もり回答済み
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
   description?: string;
   capacity?: number;
+  points?: number; // ポイント数を追加
   origin?: string;
   destination?: string;
   employeeId?: string; // 従業員IDを追加
@@ -155,12 +157,29 @@ export default function DispatchManagement() {
               startTime: '09:00',
               endTime: '11:00',
               status: 'booked',
+              contractStatus: 'confirmed',
               customerName: '田中 一郎',
               workType: 'loading',
               description: '引っ越し作業',
-              capacity: 800,
+              capacity: 300,
+              points: 50,
               origin: '東京都新宿区西新宿1-1-1',
               destination: '東京都渋谷区渋谷2-2-2',
+            },
+            {
+              id: 'schedule-1-2',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '09:00',
+              endTime: '11:00',
+              status: 'booked',
+              contractStatus: 'estimate',
+              customerName: '佐藤 花子',
+              workType: 'loading',
+              description: '引っ越し作業',
+              capacity: 400,
+              points: 75,
+              origin: '東京都中野区中野3-3-3',
+              destination: '東京都杉並区阿佐ヶ谷4-4-4',
             },
             {
               id: 'schedule-2',
@@ -168,12 +187,14 @@ export default function DispatchManagement() {
               startTime: '11:00',
               endTime: '13:00',
               status: 'booked',
-              customerName: '佐藤 花子',
+              contractStatus: 'confirmed',
+              customerName: '山田 三郎',
               workType: 'moving',
               description: '引っ越し作業',
               capacity: 600,
-              origin: '東京都中野区中野3-3-3',
-              destination: '東京都杉並区阿佐ヶ谷4-4-4',
+              points: 100,
+              origin: '東京都目黒区目黒7-7-7',
+              destination: '東京都世田谷区三軒茶屋8-8-8',
             },
             {
               id: 'schedule-3',
@@ -181,12 +202,14 @@ export default function DispatchManagement() {
               startTime: '14:00',
               endTime: '16:00',
               status: 'booked',
-              customerName: '山田 三郎',
+              contractStatus: 'estimate',
+              customerName: '鈴木 四郎',
               workType: 'unloading',
               description: '引っ越し作業',
-              capacity: 400,
-              origin: '東京都目黒区目黒7-7-7',
-              destination: '東京都世田谷区三軒茶屋8-8-8',
+              capacity: 500,
+              points: 80,
+              origin: '東京都品川区大井9-9-9',
+              destination: '東京都大田区蒲田10-10-10',
             },
             {
               id: 'schedule-4',
@@ -194,12 +217,14 @@ export default function DispatchManagement() {
               startTime: '16:00',
               endTime: '18:00',
               status: 'booked',
-              customerName: '鈴木 四郎',
+              contractStatus: 'confirmed',
+              customerName: '高橋 五郎',
               workType: 'loading',
               description: '引っ越し作業',
-              capacity: 500,
-              origin: '東京都品川区大井9-9-9',
-              destination: '東京都大田区蒲田10-10-10',
+              capacity: 200,
+              points: 30,
+              origin: '東京都江戸川区葛西11-11-11',
+              destination: '東京都江東区木場12-12-12',
             },
           ],
         },
@@ -213,17 +238,49 @@ export default function DispatchManagement() {
           truckType: '4t',
           schedules: [
             {
-              id: 'schedule-3',
+              id: 'schedule-5',
               date: new Date().toISOString().split('T')[0],
               startTime: '10:00',
-              endTime: '15:00',
+              endTime: '12:00',
               status: 'booked',
+              contractStatus: 'confirmed',
               customerName: '山田 次郎',
-              workType: 'unloading',
+              workType: 'loading',
               description: '引っ越し作業',
-              capacity: 1500,
+              capacity: 800,
+              points: 120,
               origin: '東京都目黒区目黒5-5-5',
               destination: '東京都世田谷区三軒茶屋6-6-6',
+            },
+            {
+              id: 'schedule-6',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '10:00',
+              endTime: '12:00',
+              status: 'booked',
+              contractStatus: 'estimate',
+              customerName: '伊藤 六郎',
+              workType: 'loading',
+              description: '引っ越し作業',
+              capacity: 600,
+              points: 90,
+              origin: '東京都杉並区阿佐ヶ谷13-13-13',
+              destination: '東京都中野区中野14-14-14',
+            },
+            {
+              id: 'schedule-7',
+              date: new Date().toISOString().split('T')[0],
+              startTime: '13:00',
+              endTime: '15:00',
+              status: 'booked',
+              contractStatus: 'confirmed',
+              customerName: '渡辺 七郎',
+              workType: 'unloading',
+              description: '引っ越し作業',
+              capacity: 1000,
+              points: 150,
+              origin: '東京都品川区大井15-15-15',
+              destination: '東京都大田区蒲田16-16-16',
             },
           ],
         },
@@ -597,6 +654,8 @@ export default function DispatchManagement() {
     if (!window.confirm('本当にログアウトしますか？')) return;
     localStorage.removeItem('adminLoggedIn');
     localStorage.removeItem('adminEmail');
+    localStorage.removeItem('adminAutoLoginExpiry');
+    localStorage.removeItem('adminRememberMe');
     router.push('/admin/login');
   };
 

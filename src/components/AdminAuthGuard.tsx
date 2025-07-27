@@ -25,14 +25,37 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     // ログイン状態をチェック
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
     const email = localStorage.getItem('adminEmail');
+    const rememberMe = localStorage.getItem('adminRememberMe');
+    const autoLoginExpiry = localStorage.getItem('adminAutoLoginExpiry');
     
-    if (!isLoggedIn || !email) {
-      router.push('/admin/login');
+    // 通常のログイン状態チェック
+    if (isLoggedIn && email) {
+      setIsAuthenticated(true);
+      setIsLoading(false);
       return;
     }
     
-    setIsAuthenticated(true);
-    setIsLoading(false);
+    // 自動ログイン機能のチェック
+    if (rememberMe === 'true' && autoLoginExpiry) {
+      const expiryDate = new Date(autoLoginExpiry);
+      const now = new Date();
+      
+      if (now < expiryDate) {
+        // 有効期限内の場合、自動ログインを有効にする
+        localStorage.setItem('adminLoggedIn', 'true');
+        localStorage.setItem('adminEmail', 'admin@example.com'); // デモ用
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return;
+      } else {
+        // 有効期限切れの場合、自動ログイン情報を削除
+        localStorage.removeItem('adminAutoLoginExpiry');
+        localStorage.removeItem('adminRememberMe');
+      }
+    }
+    
+    // 認証されていない場合、ログインページにリダイレクト
+    router.push('/admin/login');
   }, [router]);
 
   // 認証確認中のローディング表示

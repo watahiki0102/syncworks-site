@@ -504,6 +504,8 @@ export default function ShiftManagement() {
     if (!window.confirm('本当にログアウトしますか？')) return;
     localStorage.removeItem('adminLoggedIn');
     localStorage.removeItem('adminEmail');
+    localStorage.removeItem('adminAutoLoginExpiry');
+    localStorage.removeItem('adminRememberMe');
     router.push('/admin/login');
   };
 

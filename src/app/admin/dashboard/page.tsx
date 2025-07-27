@@ -81,6 +81,8 @@ export default function AdminDashboard() {
         if (!window.confirm('本当にログアウトしますか？')) return;
         localStorage.removeItem('adminLoggedIn');
         localStorage.removeItem('adminEmail');
+        localStorage.removeItem('adminAutoLoginExpiry');
+        localStorage.removeItem('adminRememberMe');
         router.push('/admin/login');
     };
 
@@ -133,14 +135,14 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                 </Link>
-                                {/* 申し込み管理 */}
-                                <Link href="/admin/quotes" className="block">
+                                {/* 案件管理 */}
+                                <Link href="/admin/case-management" className="block">
                                     <div className="bg-gradient-to-br from-green-50 to-white border-2 border-green-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
                                         <div className="p-7 flex items-center gap-4">
                                             <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
                                             <div>
-                                                <h3 className="text-xl font-bold text-green-600">見積もり回答履歴</h3>
-                                                <p className="text-sm text-gray-900">お客様への見積もり回答履歴</p>
+                                                <h3 className="text-xl font-bold text-green-600">案件管理</h3>
+                                                <p className="text-sm text-gray-900">見積もり履歴・通知・成約実績の統合管理</p>
                                             </div>
                                         </div>
                                     </div>
@@ -157,30 +159,7 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                 </Link>
-                                {/* 成約実績管理 */}
-                                <Link href="/admin/contracts" className="block">
-                                    <div className="bg-gradient-to-br from-red-50 to-white border-2 border-red-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
-                                        <div className="p-7 flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center text-3xl">📊</div>
-                                            <div>
-                                                <h3 className="text-xl font-bold text-red-600">成約実績管理</h3>
-                                                <p className="text-sm text-gray-900">成約実績と売上の管理・分析</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                                {/* 見積もり回答依頼通知 */}
-                                <Link href="/admin/notifications" className="block">
-                                    <div className="bg-gradient-to-br from-orange-50 to-white border-2 border-orange-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">
-                                        <div className="p-7 flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center text-3xl">🔔</div>
-                                            <div>
-                                                <h3 className="text-xl font-bold text-orange-600">見積もり回答依頼通知</h3>
-                                                <p className="text-sm text-gray-900">お客様からの見積もり依頼の管理</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
+
                                 {/* 配車管理 */}
                                 <Link href="/admin/dispatch" className="block">
                                     <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102">

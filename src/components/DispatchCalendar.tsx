@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { formatDate, formatTime } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA, VIEW_MODE_LABELS } from '../constants/calendar';
+import CaseDetail from './CaseDetail';
 
 interface Truck {
   id: string;
@@ -27,12 +28,28 @@ interface Schedule {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'maintenance';
+  contractStatus?: 'confirmed' | 'estimate'; // 確定 or 見積もり回答済み
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
   description?: string;
   capacity?: number; // 引っ越し容量（kg）
+  points?: number; // ポイント数
   origin?: string; // 出発地
   destination?: string; // 終了地点
+  // 希望日情報
+  preferredDate1?: string;
+  preferredDate2?: string;
+  preferredDate3?: string;
+  // 支払情報
+  paymentMethod?: 'cash' | 'card' | 'transfer' | 'invoice';
+  paymentStatus?: 'paid' | 'pending' | 'partial';
+  paymentAmount?: number;
+  paymentDueDate?: string;
+  // 選択オプション
+  selectedOptions?: Array<{
+    name: string;
+    price?: number;
+  }>;
 }
 
 interface DispatchCalendarProps {
@@ -55,12 +72,20 @@ interface TimeBlock {
 }
 
 export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 6, 1)); // 2025年7月1日を初期値に設定
+  const [selectedDate, setSelectedDate] = useState<string>('2025-07-27'); // 7月27日を初期値に設定
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [viewMode, setViewMode] = useState<ViewMode>('month'); // 初期表示を月ビューに変更
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showScheduleDetail, setShowScheduleDetail] = useState(false);
+  const [displayTimeRange, setDisplayTimeRange] = useState<{ start: number; end: number }>({ start: 9, end: 19 });
+  const [highlightedScheduleId, setHighlightedScheduleId] = useState<string | null>(null);
+
+  // selectedDateの変更を監視
+  useEffect(() => {
+    console.log('selectedDate changed to:', selectedDate);
+  }, [selectedDate]);
 
   /**
    * 1時間単位の時間ブロック配列を生成
@@ -68,7 +93,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    */
   const generateTimeBlocks = () => {
     const blocks: TimeBlock[] = [];
-    for (let hour = 9; hour <= 19; hour++) {
+    for (let hour = displayTimeRange.start; hour <= displayTimeRange.end; hour++) {
       const time = `${hour.toString().padStart(2, '0')}:00`;
       blocks.push({ time, hour, minute: 0 });
     }
@@ -130,7 +155,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     
     // 前月の日付を追加
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      const prevDate = new Date(year, month, -i);
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+      const prevDate = new Date(year, month - 1, prevMonthLastDay - i);
       days.push({
         date: prevDate.toISOString().split('T')[0],
         day: prevDate.getDate(),
@@ -179,6 +205,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       date: currentDate.toISOString().split('T')[0],
       day: currentDate.getDate(),
       dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
+      month: currentDate.getMonth() + 1, // 月（1-12）
+      year: currentDate.getFullYear(), // 年
       isToday: currentDate.toDateString() === new Date().toDateString(),
     };
   };
@@ -336,7 +364,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       workType: 'loading' as 'loading' | 'moving' | 'unloading' | 'maintenance',
       description: '',
       status: 'booked' as 'available' | 'booked' | 'maintenance',
+      contractStatus: 'estimate' as 'confirmed' | 'estimate',
       capacity: '',
+      points: '',
       origin: '',
       destination: '',
     });
@@ -354,9 +384,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           workType: selectedSchedule.workType || 'loading',
           description: selectedSchedule.description || '',
           status: selectedSchedule.status,
+          contractStatus: selectedSchedule.contractStatus || 'estimate',
           capacity: selectedSchedule.capacity?.toString() || '',
-                      origin: selectedSchedule.origin || '',
-            destination: selectedSchedule.destination || '',
+          points: selectedSchedule.points?.toString() || '',
+          origin: selectedSchedule.origin || '',
+          destination: selectedSchedule.destination || '',
         });
       }
     }, [selectedSchedule]);
@@ -380,7 +412,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         workType: formData.workType,
         description: formData.description,
         status: formData.status,
+        contractStatus: formData.contractStatus,
         capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+        points: formData.points ? parseInt(formData.points) : undefined,
         origin: formData.origin || undefined,
         destination: formData.destination || undefined,
       };
@@ -489,6 +523,18 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </div>
             
             <div>
+              <label className="block text-sm font-medium mb-1">契約ステータス</label>
+              <select
+                value={formData.contractStatus}
+                onChange={e => setFormData({ ...formData, contractStatus: e.target.value as 'confirmed' | 'estimate' })}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="estimate">見積もり回答済み（仮）</option>
+                <option value="confirmed">契約確定済み</option>
+              </select>
+            </div>
+            
+            <div>
               <label className="block text-sm font-medium mb-1">引っ越し容量（kg）</label>
               <input
                 type="number"
@@ -496,6 +542,18 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 onChange={e => setFormData({ ...formData, capacity: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
                 placeholder="容量（任意）"
+                min="0"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">ポイント数</label>
+              <input
+                type="number"
+                value={formData.points}
+                onChange={e => setFormData({ ...formData, points: e.target.value })}
+                className="w-full px-3 py-2 border rounded"
+                placeholder="ポイント数（任意）"
                 min="0"
               />
             </div>
@@ -604,6 +662,36 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
     return (
       <div className="bg-white rounded-lg shadow p-6">
+        {/* 月ビュー用の前月・翌月ボタン */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
+            </h3>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const prevMonth = new Date(currentDate);
+                prevMonth.setMonth(prevMonth.getMonth() - 1);
+                setCurrentDate(prevMonth);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              前月
+            </button>
+            <button
+              onClick={() => {
+                const nextMonth = new Date(currentDate);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                setCurrentDate(nextMonth);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              翌月
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
             {/* 曜日ヘッダー */}
@@ -628,7 +716,21 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       className={`min-h-[100px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
-                      onClick={() => setSelectedDate(day.date)}
+                      onClick={() => {
+                        console.log('Clicked date:', day.date, 'Day number:', day.day);
+                        setSelectedDate(day.date);
+                        setViewMode('day');
+                        // 日ビューのセクションにスクロール
+                        setTimeout(() => {
+                          const dayViewElement = document.querySelector('[data-view="day"]');
+                          if (dayViewElement) {
+                            dayViewElement.scrollIntoView({ 
+                              behavior: 'smooth', 
+                              block: 'start' 
+                            });
+                          }
+                        }, 200);
+                      }}
                     >
                       <div className={`text-sm font-medium mb-1 ${
                         day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
@@ -638,10 +740,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       
                       {hasSchedules && (
                         <div className="space-y-1">
-                          {/* 稼働率表示 */}
-                          <div className={`text-xs px-2 py-1 rounded text-center font-medium ${getUtilizationColor(getUtilizationRate(day.date))}`}>
-                            {getUtilizationRate(day.date).toFixed(0)}%
-                          </div>
                           {/* 予約件数バッジ */}
                           <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded text-center font-medium">
                             {schedules.filter(s => s.status === 'booked').length}件
@@ -684,15 +782,61 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             ))}
           </div>
         </div>
+
+        {/* 月ビュー用案件詳細 */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
+          <div className="space-y-3">
+            {trucks.flatMap(truck =>
+              truck.schedules
+                .filter(s => {
+                  const scheduleDate = new Date(s.date);
+                  const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                  const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                  return scheduleDate >= currentMonth && scheduleDate <= nextMonth;
+                })
+                .map(schedule => ({
+                  ...schedule,
+                  truckName: truck.name,
+                  truckId: truck.id,
+                }))
+            ).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
+              const truckObj = trucks.find(t => t.id === schedule.truckId);
+              return (
+                <CaseDetail
+                  key={schedule.id}
+                  schedule={schedule}
+                  truck={truckObj}
+                  onEdit={() => {
+                    if (truckObj) {
+                      setSelectedTruck(truckObj);
+                      setSelectedSchedule(schedule);
+                      setShowScheduleModal(true);
+                    }
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   };
 
   // 日ビュー
   const DayView = () => {
+    // selectedDateに基づいて日付情報を動的に生成
+    console.log('DayView - selectedDate:', selectedDate);
+    const currentDayView = getDayView(new Date(selectedDate));
+    console.log('DayView - currentDayView:', currentDayView);
+
+    // selectedDateが変更されたときに再レンダリングを強制
+    useEffect(() => {
+      console.log('DayView useEffect - selectedDate:', selectedDate);
+    }, [selectedDate]);
+
     const handleCellClick = (truck: Truck, time: string) => {
       setSelectedTruck(truck);
-      setSelectedDate(dayView.date);
       setSelectedSchedule(null);
       setShowScheduleModal(true);
     };
@@ -700,14 +844,35 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     const handleScheduleClick = (schedule: Schedule, truck: Truck) => {
       setSelectedTruck(truck);
       setSelectedSchedule(schedule);
-      setShowScheduleModal(true);
+      setShowScheduleDetail(true);
+    };
+
+    // 時間帯の案件をクリックした際に当日スケジュール詳細にスクロール
+    const handleTimeBlockScheduleClick = (schedule: Schedule, truck: Truck) => {
+      setHighlightedScheduleId(schedule.id);
+      
+      // 当日スケジュール詳細の該当箇所にスクロール
+      setTimeout(() => {
+        const scheduleElement = document.getElementById(`schedule-${schedule.id}`);
+        if (scheduleElement) {
+          scheduleElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // ハイライト効果を3秒後に解除
+          setTimeout(() => {
+            setHighlightedScheduleId(null);
+          }, 3000);
+        }
+      }, 100);
     };
 
     // 時間ごとの容量を計算
     const getCapacityForTime = (time: string) => {
       const totalCapacity = trucks.reduce((total, truck) => {
         const schedules = truck.schedules.filter(s => 
-          s.date === dayView.date && 
+          s.date === currentDayView.date && 
           s.startTime <= time && 
           s.endTime > time &&
           s.status === 'booked' &&
@@ -728,6 +893,31 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 最大容量を計算（トラックの最大積載量の合計）
     const maxCapacity = trucks.reduce((total, truck) => total + truck.capacityKg, 0);
 
+    // 当日の合計対応件数を計算
+    const getTotalSchedulesForDay = () => {
+      return trucks.reduce((total, truck) => {
+        const daySchedules = truck.schedules.filter(s => 
+          s.date === currentDayView.date && 
+          s.status === 'booked'
+        );
+        return total + daySchedules.length;
+      }, 0);
+    };
+
+    // トラック毎の対応件数を計算
+    const getTruckSchedulesForDay = () => {
+      return trucks.map(truck => {
+        const daySchedules = truck.schedules.filter(s => 
+          s.date === currentDayView.date && 
+          s.status === 'booked'
+        );
+        return {
+          truckName: truck.name,
+          count: daySchedules.length
+        };
+      }).filter(truck => truck.count > 0); // 対応件数が0より大きいトラックのみ
+    };
+
     // 作業区分のアイコンと色を取得
     const getWorkTypeDisplay = (workType?: string) => {
       switch (workType) {
@@ -746,9 +936,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
     // 容量バーの色を取得
     const getBarColor = (percent: number) => {
-      if (percent < 30) return 'bg-green-500';
-      if (percent < 70) return 'bg-yellow-500';
-      return 'bg-red-500';
+      if (percent >= 80) return 'bg-red-500';
+      if (percent >= 50) return 'bg-yellow-500';
+      return 'bg-green-500';
     };
 
     // 顧客ごとの色を生成（案件ごとに色分け）
@@ -775,219 +965,465 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     };
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="overflow-x-auto">
-          <div className="min-w-[1000px]">
-            {/* 時間ヘッダー */}
-            <div className="grid grid-cols-[250px_1fr] gap-1 mb-2">
-              <div className="p-3 font-medium text-gray-600 bg-gray-50 border rounded">トラック</div>
-              <div className="grid grid-cols-[repeat(11,1fr)] gap-px">
-                {timeBlocks.map(block => (
-                  <div key={block.time} className="p-2 text-xs text-center text-gray-500 border bg-gray-50">
-                    {block.time}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* トラック行 */}
-            {trucks.map(truck => {
-              // トラック全体の使用容量を計算
-              const totalUsed = truck.schedules
-                .filter(s => s.date === dayView.date && s.status === 'booked' && s.capacity)
-                .reduce((sum, s) => sum + (s.capacity || 0), 0);
-              const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
-              
-              return (
-                <div key={truck.id} className="grid grid-cols-[250px_1fr] gap-1 mb-1">
-                  {/* トラック情報 */}
-                  <div className="p-3 border bg-gray-50 rounded relative">
-                    {/* トラック情報左側の容量バー */}
-                    <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-300 rounded border border-gray-400">
-                      <div
-                        className={`rounded transition-all duration-200 ${getBarColor(totalPercent)}`}
-                        style={{ 
-                          height: `${Math.min(totalPercent, 100)}%`, 
-                          width: '100%',
-                          minHeight: totalPercent > 0 ? '4px' : '0px'
-                        }}
-                        title={`使用: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)`}
-                      />
-                    </div>
-                    <div className="ml-4">
-                      <div className="font-medium text-gray-900">{truck.name}</div>
-                      <div className="text-xs text-gray-600">{truck.plateNumber}</div>
-                      <div className="text-xs text-gray-500">{truck.capacityKg}kg</div>
-                    </div>
-                  </div>
-                  
-                  {/* 時間ブロック */}
-                  <div className="grid grid-cols-[repeat(11,1fr)] gap-px">
-                    {timeBlocks.map(block => {
-                      // そのトラックのその時間帯の予約済み容量合計
-                      const used = truck.schedules.filter(s =>
-                        s.date === dayView.date &&
-                        s.startTime <= block.time &&
-                        s.endTime > block.time &&
-                        s.status === 'booked' &&
-                        s.capacity
-                      ).reduce((sum, s) => sum + (s.capacity || 0), 0);
-                      const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
-                      
-                      const schedules = truck.schedules.filter(s => 
-                        s.date === dayView.date && 
-                        s.startTime <= block.time && 
-                        s.endTime > block.time
-                      );
-                      
-                      // スケジュール数に応じて高さを調整
-                      const cellHeight = schedules.length > 1 ? 'h-24' : schedules.length === 1 ? 'h-20' : 'h-12';
-                      
-                      return (
-                        <div
-                          key={block.time}
-                          className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${
-                            schedules.length > 0 ? '' : 'bg-gray-50'
-                          }`}
-                          onClick={() => handleCellClick(truck, block.time)}
-                          title={schedules.length > 0 ? 
-                            `${schedules.length}件のスケジュール` : 
-                            `${dayView.date} ${block.time} - 空き`
-                          }
-                        >
-                          {/* トラック毎の縦軸容量バー */}
-                          <div className="absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded z-10 border border-gray-400">
-                            <div
-                              className={`rounded transition-all duration-200 ${getBarColor(percent)}`}
-                              style={{ 
-                                height: `${Math.min(percent, 100)}%`, 
-                                width: '100%',
-                                minHeight: percent > 0 ? '4px' : '0px'
-                              }}
-                              title={`使用: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)`}
-                            />
-                          </div>
-                          
-                          {/* 複数スケジュール表示（顧客ごとに色分け） */}
-                          {schedules.length > 0 && (
-                            <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
-                              {schedules.map((schedule, index) => {
-                                // 顧客ごとの色を取得（一貫性を保つため）
-                                const customerColor = schedule.customerName ? 
-                                  getCustomerColor(schedule.customerName) : 
-                                  'bg-gray-100 text-gray-800 border-gray-200';
-                                
-                                // 複数スケジュールがある場合の高さ調整
-                                const scheduleHeight = schedules.length > 1 ? 'h-10' : 'h-full';
-                                const maxSchedules = 3; // 最大表示件数
-                                
-                                if (index >= maxSchedules) {
-                                  return (
-                                    <div
-                                      key={`more-${index}`}
-                                      className="text-xs text-gray-500 text-center bg-gray-100 rounded px-1 py-0.5"
-                                    >
-                                      +{schedules.length - maxSchedules}件
-                                    </div>
-                                  );
-                                }
-                                
-                                return (
-                                  <div
-                                    key={schedule.id}
-                                    className={`${scheduleHeight} ${customerColor} rounded border cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center px-1`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleScheduleClick(schedule, truck);
-                                    }}
-                                    title={`${schedule.customerName || '予約済み'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''}`}
-                                  >
-                                    <div className="flex items-center gap-1 w-full min-w-0">
-                                      <span className="text-xs flex-shrink-0">{getWorkTypeDisplay(schedule.workType).icon}</span>
-                                      <span className="text-xs font-medium text-center flex-1 min-w-0">
-                                        {schedule.customerName ? `${schedule.customerName}様` : '予約済み'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+      <div className="bg-white rounded-lg shadow p-6" data-view="day">
+        {/* 日付ヘッダー */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {currentDayView.month}月{currentDayView.day}日
+            </h3>
+            <div className="mt-2">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                総計対応件数: {getTotalSchedulesForDay()}件
+              </p>
+              {getTruckSchedulesForDay().length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {getTruckSchedulesForDay().map((truck, index) => (
+                    <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {truck.truckName}: {truck.count}件
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const prevDate = new Date(currentDayView.date);
+                prevDate.setDate(prevDate.getDate() - 1);
+                setSelectedDate(prevDate.toISOString().split('T')[0]);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              前日
+            </button>
+            <button
+              onClick={() => {
+                const nextDate = new Date(currentDayView.date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                setSelectedDate(nextDate.toISOString().split('T')[0]);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              翌日
+            </button>
+          </div>
+        </div>
 
-            {/* スケジュール詳細（ステータスごとに色分け） */}
-            <div className="mt-8">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">当日のスケジュール詳細</h4>
-              <div className="space-y-3">
-                {trucks.flatMap(truck => 
-                  truck.schedules
-                    .filter(s => s.date === dayView.date)
-                    .map(schedule => ({
-                      ...schedule,
-                      truckName: truck.name,
-                      truckId: truck.id,
-                    }))
-                ).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
-                  // 顧客ごとの背景色を取得（一貫性を保つため）
-                  const customerColor = schedule.customerName ? 
-                    (() => {
-                      const color = getCustomerColor(schedule.customerName);
-                      // 色クラスから背景色を抽出
-                      if (color.includes('red')) return 'bg-red-50 border-red-200';
-                      if (color.includes('blue')) return 'bg-blue-50 border-blue-200';
-                      if (color.includes('green')) return 'bg-green-50 border-green-200';
-                      if (color.includes('yellow')) return 'bg-yellow-50 border-yellow-200';
-                      if (color.includes('purple')) return 'bg-purple-50 border-purple-200';
-                      if (color.includes('pink')) return 'bg-pink-50 border-pink-200';
-                      if (color.includes('indigo')) return 'bg-indigo-50 border-indigo-200';
-                      if (color.includes('orange')) return 'bg-orange-50 border-orange-200';
-                      if (color.includes('teal')) return 'bg-teal-50 border-teal-200';
-                      if (color.includes('cyan')) return 'bg-cyan-50 border-cyan-200';
-                      return 'bg-gray-50 border-gray-200';
-                    })() : 
-                    'bg-gray-50 border-gray-200';
+        {/* 表示期間選択（日ビューのみ） */}
+        {viewMode === 'day' && (
+          <div className="flex items-center gap-4 mb-4">
+            <span className="text-sm font-medium text-gray-700">表示期間:</span>
+            <div className="flex items-center gap-2">
+              <select
+                value={displayTimeRange.start}
+                onChange={(e) => {
+                  const newStart = parseInt(e.target.value);
+                  setDisplayTimeRange({ 
+                    start: newStart, 
+                    end: Math.max(newStart + 1, displayTimeRange.end) 
+                  });
+                }}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                {Array.from({ length: 24 }, (_, i) => (
+                  <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                ))}
+              </select>
+              <span className="text-sm text-gray-500">～</span>
+              <select
+                value={displayTimeRange.end}
+                onChange={(e) => setDisplayTimeRange({ ...displayTimeRange, end: parseInt(e.target.value) })}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                {Array.from({ length: 24 }, (_, i) => (
+                  i > displayTimeRange.start && (
+                    <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                  )
+                ))}
+              </select>
+              <button
+                onClick={() => setDisplayTimeRange({ start: 9, end: 19 })}
+                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                リセット
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 時間帯ヘッダー */}
+        <div className="grid grid-cols-[250px_1fr] gap-1 mb-2">
+          <div className="p-2 font-medium text-gray-600">時間帯</div>
+          <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeBlocks.length}, 1fr)` }}>
+            {timeBlocks.map(block => (
+              <div key={block.time} className="p-2 text-center text-sm font-medium text-gray-600 border bg-gray-50">
+                {block.time}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* トラック行 */}
+        {trucks.map(truck => {
+          // トラック全体の使用容量を計算
+          const totalUsed = truck.schedules
+            .filter(s => s.date === currentDayView.date && s.status === 'booked' && s.capacity)
+            .reduce((sum, s) => sum + (s.capacity || 0), 0);
+          const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
+          
+          return (
+            <div key={truck.id} className="grid grid-cols-[250px_1fr] gap-1 mb-1">
+              {/* トラック情報 */}
+              <div className="p-3 border bg-gray-50 rounded relative">
+                {/* トラック情報左側の容量バー */}
+                <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-300 rounded border border-gray-400">
+                  <div
+                    className={`rounded transition-all duration-200 ${getBarColor(totalPercent)}`}
+                    style={{ 
+                      height: `${Math.min(totalPercent, 100)}%`, 
+                      width: '100%',
+                      minHeight: totalPercent > 0 ? '4px' : '0px',
+                      position: 'absolute',
+                      bottom: '0'
+                    }}
+                    title={`重さ合計: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)
+ポイント合計: ${truck.schedules
+  .filter(s => s.date === currentDayView.date && s.status === 'booked')
+  .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
+                  />
+                </div>
+                <div className="ml-4">
+                  <div className="font-medium text-gray-900">{truck.name}</div>
+                  <div className="text-xs text-gray-600">{truck.plateNumber}</div>
+                  <div className="text-xs text-gray-500">{truck.capacityKg}kg</div>
+                </div>
+              </div>
+              
+              {/* 時間ブロック */}
+              <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeBlocks.length}, 1fr)` }}>
+                {timeBlocks.map(block => {
+                  // そのトラックのその時間帯の予約済み容量合計
+                  const used = truck.schedules.filter(s =>
+                    s.date === currentDayView.date &&
+                    s.startTime <= block.time &&
+                    s.endTime > block.time &&
+                    s.status === 'booked' &&
+                    s.capacity
+                  ).reduce((sum, s) => sum + (s.capacity || 0), 0);
+                  const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
+                  
+                  const schedules = truck.schedules.filter(s => 
+                    s.date === currentDayView.date && 
+                    s.startTime <= block.time && 
+                    s.endTime > block.time
+                  );
+                  
+                  // スケジュール数に応じて高さを調整
+                  const cellHeight = schedules.length > 1 ? 'h-24' : schedules.length === 1 ? 'h-20' : 'h-12';
                   
                   return (
-                    <div key={index} className={`border rounded-lg p-4 ${customerColor}`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h5 className="font-semibold text-gray-900">{schedule.customerName ? `${schedule.customerName}様` : '予約済み'}</h5>
-                          <p className="text-sm text-gray-600">{schedule.truckName}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
-                            {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                          </p>
-                          {schedule.capacity && (
-                            <p className="text-sm text-blue-600 font-medium">
-                              {schedule.capacity.toLocaleString()}kg
-                            </p>
-                          )}
-                        </div>
+                    <div
+                      key={block.time}
+                      className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${
+                        schedules.length > 0 ? '' : 'bg-gray-50'
+                      }`}
+                      onClick={() => handleCellClick(truck, block.time)}
+                      title={schedules.length > 0 ? 
+                        `${schedules.length}件のスケジュール
+重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
+ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt` : 
+                        `${currentDayView.date} ${block.time} - 空き`
+                      }
+                    >
+                      {/* トラック毎の縦軸容量バー */}
+                      <div className="absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded z-10 border border-gray-400">
+                        <div
+                          className={`rounded transition-all duration-200 ${getBarColor(percent)}`}
+                          style={{ 
+                            height: `${Math.min(percent, 100)}%`, 
+                            width: '100%',
+                            minHeight: percent > 0 ? '4px' : '0px',
+                            position: 'absolute',
+                            bottom: '0'
+                          }}
+                          title={`重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
+ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
+                        />
                       </div>
-                      {(schedule.origin || schedule.destination) && (
-                        <div className="mt-2 text-sm text-gray-700">
-                          {schedule.origin && (
-                            <p><span className="font-medium">出発地:</span> {schedule.origin}</p>
-                          )}
-                          {schedule.destination && (
-                            <p><span className="font-medium">終了地点:</span> {schedule.destination}</p>
-                          )}
+                      
+                      {/* 複数スケジュール表示（顧客ごとに色分け） */}
+                      {schedules.length > 0 && (
+                        <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
+                          {schedules.map((schedule, index) => {
+                            // 顧客ごとの色を取得（一貫性を保つため）
+                            const customerColor = schedule.customerName ? 
+                              getCustomerColor(schedule.customerName) : 
+                              'bg-gray-100 text-gray-800 border-gray-200';
+                            
+                            // 複数スケジュールがある場合の高さ調整
+                            const scheduleHeight = schedules.length > 1 ? 'h-10' : 'h-full';
+                            const maxSchedules = 3; // 最大表示件数
+                            
+                            if (index >= maxSchedules) {
+                              return (
+                                <div
+                                  key={`more-${index}`}
+                                  className="text-xs text-gray-500 text-center bg-gray-100 rounded px-1 py-0.5"
+                                >
+                                  +{schedules.length - maxSchedules}件
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div
+                                key={schedule.id}
+                                className={`${scheduleHeight} ${customerColor} rounded border cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center justify-center px-1`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTimeBlockScheduleClick(schedule, truck);
+                                }}
+                                title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(契約確定済み)' : '(見積もり回答済み)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
+                              >
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {schedule.origin && (
+                                    <div className="truncate" title={schedule.origin}>
+                                      発 {schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                    </div>
+                                  )}
+                                  {schedule.destination && (
+                                    <div className="truncate" title={schedule.destination}>
+                                      着 {schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
-                      {schedule.description && (
-                        <p className="text-sm text-gray-600 mt-2">{schedule.description}</p>
+
+                      {/* 時間帯の契約ステータス表示 */}
+                      {schedules.length > 0 && (
+                        <div className="absolute top-1 right-1 flex flex-col gap-1">
+                          {schedules.map((schedule, index) => (
+                            <div key={`status-${schedule.id}`} className="flex items-center gap-1">
+                              {schedule.contractStatus === 'confirmed' ? (
+                                <span title={`${schedule.customerName || '予約済み'} - 契約確定済み`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
+                              ) : schedule.contractStatus === 'estimate' ? (
+                                <span title={`${schedule.customerName || '予約済み'} - 見積もり回答済み（仮）`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   );
                 })}
               </div>
+            </div>
+          );
+        })}
+
+        {/* スケジュール詳細（ステータスごとに色分け） */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
+          <div className="space-y-3">
+            {trucks.flatMap(truck => 
+              truck.schedules
+                .filter(s => s.date === currentDayView.date)
+                .map(schedule => ({
+                  ...schedule,
+                  truckName: truck.name,
+                  truckId: truck.id,
+                }))
+            ).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
+              const truckObj = trucks.find(t => t.id === schedule.truckId);
+              const isHighlighted = highlightedScheduleId === schedule.id;
+              
+              return (
+                <CaseDetail
+                  key={schedule.id}
+                  schedule={schedule}
+                  truck={truckObj}
+                  isHighlighted={isHighlighted}
+                  onEdit={() => {
+                    if (truckObj) {
+                      setSelectedTruck(truckObj);
+                      setSelectedSchedule(schedule);
+                      setShowScheduleModal(true);
+                    }
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // スケジュール詳細モーダル
+  const ScheduleDetailModal = () => {
+    if (!selectedSchedule || !selectedTruck) return null;
+
+    const handleEdit = () => {
+      setShowScheduleDetail(false);
+      setShowScheduleModal(true);
+    };
+
+    const handleDelete = () => {
+      if (!selectedSchedule || !selectedTruck) return;
+
+      const updatedTruck = {
+        ...selectedTruck,
+        schedules: selectedTruck.schedules.filter(s => s.id !== selectedSchedule.id)
+      };
+
+      onUpdateTruck(updatedTruck);
+      setShowScheduleDetail(false);
+      setSelectedSchedule(null);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-start mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">スケジュール詳細</h3>
+            <button
+              onClick={() => {
+                setShowScheduleDetail(false);
+                setSelectedSchedule(null);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* 基本情報 */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">基本情報</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">トラック</label>
+                  <p className="text-gray-900">{selectedTruck.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
+                  <p className="text-gray-900">{formatDate(selectedSchedule.date)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">時間</label>
+                  <p className="text-gray-900">{formatTime(selectedSchedule.startTime)} - {formatTime(selectedSchedule.endTime)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">作業区分</label>
+                  <p className="text-gray-900">
+                    {selectedSchedule.workType === 'loading' ? '積込' : 
+                     selectedSchedule.workType === 'moving' ? '移動' : 
+                     selectedSchedule.workType === 'unloading' ? '積卸' : 
+                     selectedSchedule.workType === 'maintenance' ? '整備' : '作業'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 顧客情報 */}
+            {selectedSchedule.customerName && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">顧客情報</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">顧客名</label>
+                    <p className="text-gray-900">{selectedSchedule.customerName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">契約ステータス</label>
+                    <p className="text-gray-900">
+                      {selectedSchedule.contractStatus === 'confirmed' ? '✅ 契約確定済み' : '⏳ 見積もり回答済み（仮）'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 荷物情報 */}
+            {(selectedSchedule.capacity || selectedSchedule.points) && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">荷物情報</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedSchedule.capacity && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">引っ越し容量</label>
+                      <p className="text-gray-900">{selectedSchedule.capacity.toLocaleString()}kg</p>
+                    </div>
+                  )}
+                  {selectedSchedule.points && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">ポイント数</label>
+                      <p className="text-gray-900">{selectedSchedule.points}pt</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 場所情報 */}
+            {(selectedSchedule.origin || selectedSchedule.destination) && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">場所情報</h4>
+                <div className="space-y-3">
+                  {selectedSchedule.origin && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">出発地</label>
+                      <p className="text-gray-900">{selectedSchedule.origin}</p>
+                    </div>
+                  )}
+                  {selectedSchedule.destination && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">終了地点</label>
+                      <p className="text-gray-900">{selectedSchedule.destination}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 備考 */}
+            {selectedSchedule.description && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">備考</h4>
+                <p className="text-gray-900">{selectedSchedule.description}</p>
+              </div>
+            )}
+
+            {/* アクションボタン */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleEdit}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+              >
+                編集
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                削除
+              </button>
+              <button
+                onClick={() => {
+                  setShowScheduleDetail(false);
+                  setSelectedSchedule(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                閉じる
+              </button>
             </div>
           </div>
         </div>
@@ -1053,13 +1489,60 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
     return (
       <div className="bg-white rounded-lg shadow p-6">
+        {/* 週ビュー用の前週・翌週ボタン */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {formatDate(weekDays[0].date)} - {formatDate(weekDays[6].date)}
+            </h3>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const prevWeek = new Date(currentDate);
+                prevWeek.setDate(prevWeek.getDate() - 7);
+                setCurrentDate(prevWeek);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              前週
+            </button>
+            <button
+              onClick={() => {
+                const nextWeek = new Date(currentDate);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                setCurrentDate(nextWeek);
+              }}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              翌週
+            </button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
             {/* ヘッダー行 */}
             <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-2">
               <div className="p-2 font-medium text-gray-600">トラック</div>
               {weekDays.map(day => (
-                <div key={day.date} className="p-2 text-center">
+                <div 
+                  key={day.date} 
+                  className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    setSelectedDate(day.date);
+                    setViewMode('day');
+                    // 日ビューのセクションにスクロール
+                    setTimeout(() => {
+                      const dayViewElement = document.querySelector('[data-view="day"]');
+                      if (dayViewElement) {
+                        dayViewElement.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start' 
+                        });
+                      }
+                    }, 100);
+                  }}
+                >
                   <div className={`font-medium ${day.isToday ? 'text-blue-600' : 'text-gray-600'}`}>
                     {day.dayOfWeek}
                   </div>
@@ -1150,19 +1633,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               {schedule.customerName && (
                                 <div className="text-center w-full">
                                   <div className="flex items-center justify-center gap-1 mb-1">
-                                    <span className="text-lg">{getWorkTypeDisplay(schedule.workType).icon}</span>
-                                    <span className="text-xs font-medium truncate">
-                                      {schedule.customerName}
+                                    <span className="text-lg">
+                                      {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
                                     </span>
                                   </div>
                                   <div className="text-xs opacity-75">
                                     {formatTime(schedule.startTime)}-{formatTime(schedule.endTime)}
                                   </div>
-                                  {schedule.capacity && (
-                                    <div className="text-xs opacity-75 font-medium">
-                                      {schedule.capacity.toLocaleString()}kg
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -1176,6 +1653,43 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             ))}
           </div>
         </div>
+
+        {/* 週ビュー用案件詳細 */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
+          <div className="space-y-3">
+            {trucks.flatMap(truck => 
+              truck.schedules
+                .filter(s => {
+                  const scheduleDate = new Date(s.date);
+                  const weekStart = new Date(weekDays[0].date);
+                  const weekEnd = new Date(weekDays[6].date);
+                  return scheduleDate >= weekStart && scheduleDate <= weekEnd;
+                })
+                .map(schedule => ({
+                  ...schedule,
+                  truckName: truck.name,
+                  truckId: truck.id,
+                }))
+            ).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
+              const truckObj = trucks.find(t => t.id === schedule.truckId);
+              return (
+                <CaseDetail
+                  key={schedule.id}
+                  schedule={schedule}
+                  truck={truckObj}
+                  onEdit={() => {
+                    if (truckObj) {
+                      setSelectedTruck(truckObj);
+                      setSelectedSchedule(schedule);
+                      setShowScheduleModal(true);
+                    }
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   };
@@ -1186,139 +1700,82 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">配車スケジュール</h2>
+        </div>
+
+        {/* ビューモード選択と表示期間選択 */}
+        <div className="flex items-center justify-between mb-6">
+          {/* ビューモード選択 */}
           <div className="flex gap-2">
             <button
-              onClick={goToPreviousPeriod}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              onClick={() => setViewMode('month')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                viewMode === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              ←
+              月
             </button>
             <button
-              onClick={goToToday}
-              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => setViewMode('week')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              今日
+              週
             </button>
             <button
-              onClick={goToNextPeriod}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              onClick={() => setViewMode('day')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              →
+              日
             </button>
           </div>
+
+
         </div>
 
-        {/* ビューモード切り替え */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setViewMode('month')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'month' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            月
-          </button>
-          <button
-            onClick={() => setViewMode('week')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'week' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            週
-          </button>
-          <button
-            onClick={() => setViewMode('day')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'day' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            日
-          </button>
-        </div>
-
-        {/* 期間表示 */}
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {viewMode === 'month' && `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`}
-            {viewMode === 'week' && `${formatDate(weekDays[0].date)} - ${formatDate(weekDays[6].date)}`}
-            {viewMode === 'day' && formatDate(currentDate.toISOString().split('T')[0])}
-          </h3>
-        </div>
 
         {/* 凡例 */}
         <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">凡例</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* ステータス */}
-            <div className="space-y-2">
-              <h5 className="text-xs font-medium text-gray-600">ステータス</h5>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gray-50 border border-gray-300 rounded"></div>
-                  <span className="text-xs">空き</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-200 border border-blue-300 rounded"></div>
-                  <span className="text-xs">予約済み</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-200 border border-green-300 rounded"></div>
-                  <span className="text-xs">稼働中</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
-                  <span className="text-xs">整備中</span>
-                </div>
-              </div>
-            </div>
 
-            {/* 作業区分 */}
+
+
+
+            {/* 契約ステータス */}
             <div className="space-y-2">
-              <h5 className="text-xs font-medium text-gray-600">作業区分</h5>
+              <h5 className="text-xs font-medium text-gray-600">契約ステータス</h5>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">📦</span>
-                  <span className="text-xs">積込</span>
+                  <span className="text-xs">✅</span>
+                  <span className="text-xs">契約確定済み</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🚚</span>
-                  <span className="text-xs">移動</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📥</span>
-                  <span className="text-xs">積卸</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔧</span>
-                  <span className="text-xs">整備</span>
+                  <span className="text-xs">⏳</span>
+                  <span className="text-xs">見積もり回答済み（仮）</span>
                 </div>
               </div>
             </div>
 
 
 
-            {/* 月ビュー凡例 */}
-            {viewMode === 'month' && (
+            {/* 日ビュー凡例 */}
+            {viewMode === 'day' && (
               <div className="space-y-2">
-                <h5 className="text-xs font-medium text-gray-600">稼働率</h5>
+                <h5 className="text-xs font-medium text-gray-600">容量使用率</h5>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 text-green-800 rounded text-xs flex items-center justify-center font-medium">30%</div>
-                    <span className="text-xs">低稼働</span>
+                    <div className="w-4 h-4 bg-green-500 rounded"></div>
+                    <span className="text-xs">50%未満</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-100 text-yellow-800 rounded text-xs flex items-center justify-center font-medium">70%</div>
-                    <span className="text-xs">中稼働</span>
+                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                    <span className="text-xs">50%以上</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-100 text-red-800 rounded text-xs flex items-center justify-center font-medium">100%</div>
-                    <span className="text-xs">高稼働</span>
+                    <div className="w-4 h-4 bg-red-500 rounded"></div>
+                    <span className="text-xs">80%以上</span>
                   </div>
                 </div>
               </div>
@@ -1326,6 +1783,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           </div>
         </div>
       </div>
+
+
 
       {/* ビューモードに応じた表示 */}
       {viewMode === 'month' && <MonthView />}
@@ -1400,6 +1859,25 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           </div>
         )}
       </div>
+      {showScheduleDetail && selectedSchedule && selectedTruck && (
+        <div className="mt-6 p-6 bg-gray-50 rounded-lg shadow border max-w-2xl mx-auto">
+          <h3 className="text-lg font-bold mb-4">スケジュール詳細</h3>
+          <div className="mb-2"><span className="font-semibold">トラック:</span> {selectedTruck.name} ({selectedTruck.plateNumber})</div>
+          <div className="mb-2"><span className="font-semibold">日付:</span> {selectedSchedule.date}</div>
+          <div className="mb-2"><span className="font-semibold">時間:</span> {selectedSchedule.startTime} ～ {selectedSchedule.endTime}</div>
+          <div className="mb-2"><span className="font-semibold">契約ステータス:</span> {selectedSchedule.contractStatus === 'confirmed' ? '✅ 確定' : selectedSchedule.contractStatus === 'estimate' ? '⏳ 仮' : '-'}</div>
+          <div className="mb-2"><span className="font-semibold">依頼者名:</span> {selectedSchedule.customerName || '-'}</div>
+          <div className="mb-2"><span className="font-semibold">重さ:</span> {selectedSchedule.capacity ? `${selectedSchedule.capacity}kg` : '-'}</div>
+          <div className="mb-2"><span className="font-semibold">ポイント:</span> {selectedSchedule.points ? `${selectedSchedule.points}pt` : '-'}</div>
+          <div className="mb-2"><span className="font-semibold">発:</span> {selectedSchedule.origin || '-'}</div>
+          <div className="mb-2"><span className="font-semibold">着:</span> {selectedSchedule.destination || '-'}</div>
+          <div className="mb-2"><span className="font-semibold">備考:</span> {selectedSchedule.description || '-'}</div>
+          <div className="flex gap-3 pt-4">
+            <button onClick={() => { setShowScheduleDetail(false); setShowScheduleModal(true); }} className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">編集</button>
+            <button onClick={() => setShowScheduleDetail(false)} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">閉じる</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

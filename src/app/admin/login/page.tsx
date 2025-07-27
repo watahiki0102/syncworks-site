@@ -7,7 +7,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -16,6 +16,29 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
+
+    // ページ読み込み時に自動ログイン状態をチェック
+    useEffect(() => {
+        const rememberMe = localStorage.getItem('adminRememberMe');
+        const autoLoginExpiry = localStorage.getItem('adminAutoLoginExpiry');
+        
+        if (rememberMe === 'true' && autoLoginExpiry) {
+            const expiryDate = new Date(autoLoginExpiry);
+            const now = new Date();
+            
+            if (now < expiryDate) {
+                // 有効期限内の場合、自動ログインを有効にする
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminEmail', 'admin@example.com'); // デモ用
+                router.push('/admin/dashboard');
+            } else {
+                // 有効期限切れの場合、自動ログイン情報を削除
+                localStorage.removeItem('adminAutoLoginExpiry');
+                localStorage.removeItem('adminRememberMe');
+            }
+        }
+    }, [router]);
 
     /**
      * ログインフォーム送信時の処理
@@ -31,6 +54,19 @@ export default function AdminLoginPage() {
             if (email === 'admin@example.com' && password === 'password123') {
                 localStorage.setItem('adminLoggedIn', 'true');
                 localStorage.setItem('adminEmail', email);
+                
+                // 自動ログイン機能
+                if (rememberMe) {
+                    const oneWeekFromNow = new Date();
+                    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+                    localStorage.setItem('adminAutoLoginExpiry', oneWeekFromNow.toISOString());
+                    localStorage.setItem('adminRememberMe', 'true');
+                } else {
+                    // 自動ログインを無効にする
+                    localStorage.removeItem('adminAutoLoginExpiry');
+                    localStorage.removeItem('adminRememberMe');
+                }
+                
                 router.push('/admin/dashboard');
             } else {
                 setError('メールアドレスまたはパスワードが正しくありません');
@@ -99,6 +135,19 @@ export default function AdminLoginPage() {
                                     {showPassword ? '👁️' : ' 🙈'}
                                 </button>
                             </div>
+                        </div>
+                        <div className="flex items-center">
+                            <input
+                                id="remember-me"
+                                name="remember-me"
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={e => setRememberMe(e.target.checked)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                ログイン情報保持（1週間）
+                            </label>
                         </div>
                         {error && <div className="text-red-600 text-sm">{error}</div>}
                         <button
