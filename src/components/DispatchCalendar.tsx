@@ -899,10 +899,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           </div>
         </div>
         <div className="overflow-x-auto">
-          <div className="min-w-[400px]">
+          <div className="min-w-[800px]">
             {/* 曜日ヘッダー */}
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              {['日', '月', '火'].map(day => (
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['日', '月', '火', '水', '木', '金', '土'].map(day => (
                 <div key={day} className="p-2 text-center font-medium text-gray-600">
                   {day}
                 </div>
@@ -910,9 +910,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </div>
 
             {/* 日付グリッド */}
-            {Array.from({ length: Math.ceil(monthDays.length / 3) }, (_, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-3 gap-1 mb-1 relative">
-                {monthDays.slice(weekIndex * 3, (weekIndex + 1) * 3).map((day) => {
+            {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
+              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1 relative">
+                {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const schedules = getSchedulesForDate(day.date);
                   const hasSchedules = schedules.length > 0;
                   
