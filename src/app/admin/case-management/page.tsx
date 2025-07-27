@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import ManualCaseRegistration from '@/components/ManualCaseRegistration';
 
 /**
  * 見積もり履歴の型定義
@@ -81,6 +82,7 @@ export default function CaseManagement() {
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummary[]>([]);
+  const [showManual, setShowManual] = useState(false);
   
   // フィルタリング状態
   const [searchTerm, setSearchTerm] = useState('');
@@ -437,12 +439,20 @@ export default function CaseManagement() {
                   見積もり回答履歴、通知、成約実績の統合管理
                 </p>
               </div>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                トップに戻る
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowManual(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  ＋手動登録
+                </button>
+                <button
+                  onClick={() => router.push('/admin/dashboard')}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  トップに戻る
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -843,7 +853,8 @@ export default function CaseManagement() {
             </div>
           )}
         </main>
+        <ManualCaseRegistration isOpen={showManual} onClose={() => setShowManual(false)} />
       </div>
     </AdminAuthGuard>
   );
-} 
+}
