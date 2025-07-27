@@ -81,11 +81,62 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [showScheduleDetail, setShowScheduleDetail] = useState(false);
   const [displayTimeRange, setDisplayTimeRange] = useState<{ start: number; end: number }>({ start: 9, end: 19 });
   const [highlightedScheduleId, setHighlightedScheduleId] = useState<string | null>(null);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [isExpandedView, setIsExpandedView] = useState(false);
+
+  // 展開状態を管理するためのグローバルクリックイベント
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // 展開表示中で、月ビューの日付セル以外をクリックした場合
+      if (isExpandedView) {
+        const target = e.target as Element;
+        const isDateCell = target.closest('[data-date-cell]');
+        const isExpandedCell = target.closest('[data-expanded-cell="true"]');
+        const isPlusButton = target.closest('button');
+        
+        // 日付セル、展開セル、プラスボタン以外をクリックした場合
+        if (!isDateCell && !isExpandedCell && !isPlusButton) {
+          console.log('Global click detected, closing expanded view');
+          setIsExpandedView(false);
+          setExpandedDate(null);
+        }
+      }
+    };
+
+    if (isExpandedView) {
+      document.addEventListener('click', handleGlobalClick);
+      return () => {
+        document.removeEventListener('click', handleGlobalClick);
+      };
+    }
+  }, [isExpandedView]);
 
   // selectedDateの変更を監視
   useEffect(() => {
     console.log('selectedDate changed to:', selectedDate);
   }, [selectedDate]);
+
+  // ハイライト効果を一定時間後に自動的に消す
+  useEffect(() => {
+    if (highlightedScheduleId) {
+      // ハイライトされた案件にスクロール
+      setTimeout(() => {
+        const scheduleElement = document.getElementById(`schedule-${highlightedScheduleId}`);
+        if (scheduleElement) {
+          scheduleElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 300);
+
+      const timer = setTimeout(() => {
+        setHighlightedScheduleId(null);
+      }, 3000); // 3秒後にハイライトを消す
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedScheduleId]);
 
   /**
    * 1時間単位の時間ブロック配列を生成
@@ -705,7 +756,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
             {/* 日付グリッド */}
             {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1">
+              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1 relative">
                 {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const schedules = getSchedulesForDate(day.date);
                   const hasSchedules = schedules.length > 0;
@@ -713,13 +764,26 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   return (
                     <div
                       key={day.date}
-                      className={`min-h-[100px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
+                      data-date-cell
+                      data-expanded-cell={isExpandedView && expandedDate === day.date ? 'true' : 'false'}
+                      className={`min-h-[120px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
-                      onClick={() => {
+                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
+                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(200%+4px)] h-[calc(400%+8px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
+                      }`}
+                      onClick={(e) => {
+                        // 展開表示中で、展開された日付以外をクリックした場合
+                        if (isExpandedView && expandedDate !== day.date) {
+                          setIsExpandedView(false);
+                          setExpandedDate(null);
+                          return;
+                        }
+                        
                         console.log('Clicked date:', day.date, 'Day number:', day.day);
                         setSelectedDate(day.date);
                         setViewMode('day');
+                        setExpandedDate(null); // 展開状態をリセット
+                        setIsExpandedView(false); // 展開表示をリセット
                         // 日ビューのセクションにスクロール
                         setTimeout(() => {
                           const dayViewElement = document.querySelector('[data-view="day"]');
@@ -744,34 +808,108 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                           <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded text-center font-medium">
                             {schedules.filter(s => s.status === 'booked').length}件
                           </div>
-                          {/* スケジュール詳細 */}
-                          {schedules.slice(0, 2).map((schedule, index) => (
-                            <div
-                              key={index}
-                              className={`text-xs p-1 rounded truncate cursor-pointer ${
-                                schedule.status === 'booked' ? 'bg-blue-100 text-blue-800' :
-                                schedule.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const truck = trucks.find(t => t.id === schedule.truckId);
-                                if (truck) {
-                                  handleCellClick(truck, day.date);
-                                }
-                              }}
-                              title={`${schedule.truckName}: ${schedule.customerName || '予約済み'} (${schedule.workType || '作業'})`}
-                            >
-                              <div className="flex items-center gap-1">
-                                <span>{getWorkTypeInfo(schedule.workType).icon}</span>
-                                <span className="truncate">{schedule.customerName || schedule.truckName}</span>
-                              </div>
+                          
+                          {/* 展開状態に応じて表示を切り替え */}
+                          {expandedDate === day.date ? (
+                            /* 展開時: 全案件をスクロール可能なリストで表示 */
+                            <div className="max-h-96 overflow-y-auto space-y-1">
+                              {schedules.map((schedule, index) => (
+                                <div
+                                  key={index}
+                                  className={`text-xs p-2 rounded cursor-pointer hover:bg-gray-50 transition-colors border ${
+                                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                                    'bg-green-50 text-green-800 border-green-200'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const truck = trucks.find(t => t.id === schedule.truckId);
+                                    if (truck) {
+                                      // 月ビューの案件詳細セクションにスクロール
+                                      setSelectedDate(day.date);
+                                      setHighlightedScheduleId(schedule.id);
+                                      setExpandedDate(null); // 展開を閉じる
+                                      setIsExpandedView(false); // 展開表示をリセット
+                                      setTimeout(() => {
+                                        const caseDetailElement = document.querySelector('[data-case-details]');
+                                        if (caseDetailElement) {
+                                          caseDetailElement.scrollIntoView({ 
+                                            behavior: 'smooth', 
+                                            block: 'start' 
+                                          });
+                                        }
+                                      }, 200);
+                                    }
+                                  }}
+                                  title={`${schedule.truckName}: ${schedule.customerName || '予約済み'} (${schedule.workType || '作業'})`}
+                                >
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <span className="text-sm">{getWorkTypeInfo(schedule.workType).icon}</span>
+                                    <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mb-1">
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </div>
+                                  {(schedule.origin || schedule.destination) && (
+                                    <div className="text-xs text-gray-500 flex gap-2">
+                                      {schedule.origin && (
+                                        <div className="truncate flex-1">
+                                          <span className="text-blue-600">発:</span> {schedule.origin}
+                                        </div>
+                                      )}
+                                      {schedule.destination && (
+                                        <div className="truncate flex-1">
+                                          <span className="text-red-600">着:</span> {schedule.destination}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                          {schedules.length > 2 && (
-                            <div className="text-xs text-gray-500 text-center">
-                              +{schedules.length - 2}件
-                            </div>
+                          ) : (
+                            /* 通常時: 最初の2件のみ表示 + プラスボタン */
+                            <>
+                              {schedules.slice(0, 2).map((schedule, index) => (
+                                <div
+                                  key={index}
+                                  className={`text-xs p-2 rounded cursor-pointer border ${
+                                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                                    'bg-green-50 text-green-800 border-green-200'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const truck = trucks.find(t => t.id === schedule.truckId);
+                                    if (truck) {
+                                      handleCellClick(truck, day.date);
+                                    }
+                                  }}
+                                  title={`${schedule.truckName}: ${schedule.customerName || '予約済み'} (${schedule.workType || '作業'})`}
+                                >
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <span className="text-sm">{getWorkTypeInfo(schedule.workType).icon}</span>
+                                    <span className="truncate font-medium">{schedule.customerName || schedule.truckName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-600">
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </div>
+                                </div>
+                              ))}
+                              {schedules.length > 2 && (
+                                <button 
+                                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-2 py-1 transition-colors w-full flex items-center justify-center gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedDate(day.date);
+                                    setIsExpandedView(true);
+                                  }}
+                                >
+                                  <span className="text-sm font-medium">+</span>
+                                  <span>{schedules.length - 2}件</span>
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -784,9 +922,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         </div>
 
         {/* 月ビュー用案件詳細 */}
-        <div className="mt-8">
+        <div className="mt-8" data-case-details>
           <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {trucks.flatMap(truck =>
               truck.schedules
                 .filter(s => {
@@ -1531,6 +1669,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   onClick={() => {
                     setSelectedDate(day.date);
                     setViewMode('day');
+                    setExpandedDate(null); // 展開状態をリセット
+                    setIsExpandedView(false); // 展開表示をリセット
                     // 日ビューのセクションにスクロール
                     setTimeout(() => {
                       const dayViewElement = document.querySelector('[data-view="day"]');
@@ -1694,8 +1834,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     );
   };
 
-  return (
-    <div className="space-y-6">
+      return (
+      <div className="space-y-6">
       {/* ビュー切り替えとナビゲーション */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
