@@ -410,14 +410,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    * スケジュール追加・編集モーダルコンポーネント
    */
   const ScheduleModal = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<Schedule>({
+      id: `schedule-${Date.now()}`,
       date: selectedDate,
       startTime: '09:00',
       endTime: '17:00',
-      status: 'booked' as const,
-      contractStatus: 'estimate' as const,
+      status: 'booked',
+      contractStatus: 'estimate',
       customerName: '',
-      workType: 'moving' as const,
+      workType: 'moving',
       description: '',
       capacity: 0,
       points: 0,
@@ -426,16 +427,17 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       preferredDate1: '',
       preferredDate2: '',
       preferredDate3: '',
-      paymentMethod: 'cash' as const,
-      paymentStatus: 'pending' as const,
+      paymentMethod: 'cash',
+      paymentStatus: 'pending',
       paymentAmount: 0,
       paymentDueDate: '',
-      selectedOptions: [] as Array<{ name: string; price?: number }>,
+      selectedOptions: [],
     });
 
     useEffect(() => {
       if (selectedSchedule) {
         setFormData({
+          id: selectedSchedule.id,
           date: selectedSchedule.date,
           startTime: selectedSchedule.startTime,
           endTime: selectedSchedule.endTime,
@@ -466,7 +468,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       if (!selectedTruck) return;
 
       const newSchedule: Schedule = {
-        id: selectedSchedule?.id || `schedule-${Date.now()}`,
         ...formData,
       };
 
@@ -486,14 +487,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     const addOption = () => {
       setFormData(prev => ({
         ...prev,
-        selectedOptions: [...prev.selectedOptions, { name: '', price: 0 }],
+        selectedOptions: [...(prev.selectedOptions || []), { name: '', price: 0 }],
       }));
     };
 
     const updateOption = (index: number, field: 'name' | 'price', value: string | number) => {
       setFormData(prev => ({
         ...prev,
-        selectedOptions: prev.selectedOptions.map((option, i) =>
+        selectedOptions: (prev.selectedOptions || []).map((option, i) =>
           i === index ? { ...option, [field]: value } : option
         ),
       }));
@@ -502,7 +503,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     const removeOption = (index: number) => {
       setFormData(prev => ({
         ...prev,
-        selectedOptions: prev.selectedOptions.filter((_, i) => i !== index),
+        selectedOptions: (prev.selectedOptions || []).filter((_, i) => i !== index),
       }));
     };
 
@@ -765,7 +766,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   追加
                 </button>
               </div>
-              {formData.selectedOptions.map((option, index) => (
+              {(formData.selectedOptions || []).map((option, index) => (
                 <div key={index} className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -998,10 +999,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                     {(schedule.origin || schedule.destination) && (
                                       <div className="text-gray-500">
                                         {schedule.origin && (
-                                          <span className="text-blue-600">発:</span> {schedule.origin}
+                                          <span className="text-blue-600">発: {schedule.origin}</span>
                                         )}
                                         {schedule.destination && (
-                                          <span className="text-red-600 ml-2">着:</span> {schedule.destination}
+                                          <span className="text-red-600 ml-2">着: {schedule.destination}</span>
                                         )}
                                       </div>
                                     )}
@@ -1214,7 +1215,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         <div className="flex justify-between items-start mb-6">
           <div>
             <h3 className="text-xl font-semibold text-gray-900">
-              {currentDayView.month}月{currentDayView.day}日
+              {new Date(selectedDate).getMonth() + 1}月{currentDayView.day}日
             </h3>
             <div className="mt-2">
               <p className="text-sm font-medium text-gray-700 mb-1">
