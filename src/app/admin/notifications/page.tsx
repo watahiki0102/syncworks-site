@@ -173,7 +173,7 @@ export default function AdminNotifications() {
    * @param requestId - 依頼ID
    */
   const handleAnswer = (requestId: string) => {
-    console.log('Answer request:', requestId);
+    // TODO: implement answer logic
   };
 
   /**
@@ -181,7 +181,7 @@ export default function AdminNotifications() {
    * @param requestId - 依頼ID
    */
   const handleViewDetails = (requestId: string) => {
-    console.log('View details for request:', requestId);
+    // TODO: navigate to details view
   };
 
   /**

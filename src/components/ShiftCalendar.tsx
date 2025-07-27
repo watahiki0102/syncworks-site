@@ -59,6 +59,7 @@ export default function ShiftCalendar({
   const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
   const [showLegend, setShowLegend] = useState(false);
   const [colorByEmployee, setColorByEmployee] = useState(false);
+  const [employeeFilter, setEmployeeFilter] = useState('');
   const [editingShift, setEditingShift] = useState<{
     employeeId: string;
     date: string;
@@ -67,6 +68,10 @@ export default function ShiftCalendar({
     customerName: string;
     notes: string;
   } | null>(null);
+  const filteredEmployees = employees.filter(emp =>
+    emp.status === 'active' &&
+    emp.name.toLowerCase().includes(employeeFilter.toLowerCase())
+  );
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     startEmployee: string;
@@ -92,6 +97,7 @@ export default function ShiftCalendar({
         day: currentDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[i],
         isToday: currentDate.toDateString() === new Date().toDateString(),
+        isWeekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
       });
     }
     return days;
@@ -116,6 +122,7 @@ export default function ShiftCalendar({
         dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
         isCurrentMonth: false,
         isToday: prevDate.toDateString() === new Date().toDateString(),
+        isWeekend: prevDate.getDay() === 0 || prevDate.getDay() === 6,
       });
     }
 
@@ -128,6 +135,7 @@ export default function ShiftCalendar({
         dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
         isCurrentMonth: true,
         isToday: currentDate.toDateString() === new Date().toDateString(),
+        isWeekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
       });
     }
 
@@ -141,6 +149,7 @@ export default function ShiftCalendar({
         dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
         isCurrentMonth: false,
         isToday: nextDate.toDateString() === new Date().toDateString(),
+        isWeekend: nextDate.getDay() === 0 || nextDate.getDay() === 6,
       });
     }
 
@@ -428,10 +437,13 @@ export default function ShiftCalendar({
         <div className="overflow-x-auto">
           <div className="min-w-[1600px]">
             {/* ヘッダー行 */}
-            <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200">
-              <div className="p-4 bg-gray-50 font-medium text-gray-900">従業員</div>
+            <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200 sticky top-0 z-20">
+              <div className="p-4 bg-gray-50 font-medium text-gray-900 sticky left-0 z-20">従業員</div>
               {weekDays.map(day => (
-                <div key={day.date} className="p-3 text-center bg-gray-50">
+                <div
+                  key={day.date}
+                  className={`p-3 text-center bg-gray-50 ${day.isWeekend ? 'bg-gray-100' : ''}`}
+                >
                   <div className={`font-medium text-lg ${day.isToday ? 'text-blue-600' : 'text-gray-600'}`}>
                     {day.dayOfWeek}
                   </div>
@@ -443,13 +455,13 @@ export default function ShiftCalendar({
             </div>
 
             {/* 時間帯ヘッダー */}
-            <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200">
-              <div className="p-2 bg-gray-50 font-medium text-gray-600">時間帯</div>
+            <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200 sticky top-14 z-10">
+              <div className="p-2 bg-gray-50 font-medium text-gray-600 sticky left-0 z-20">時間帯</div>
               {weekDays.map(day => (
-                <div key={day.date} className="grid grid-cols-[repeat(13,1fr)] gap-px">
+                <div key={day.date} className={`grid grid-cols-[repeat(13,1fr)] gap-px ${day.isWeekend ? 'bg-gray-100' : ''}`}>
                   {TIME_SLOTS.map(slot => (
-                    <div 
-                      key={slot.id} 
+                    <div
+                      key={slot.id}
                       className={`p-1 text-xs text-center text-gray-500 border bg-gray-50 ${
                         isBreakTime(slot.id) ? 'bg-gray-200' : ''
                       }`}
@@ -463,10 +475,10 @@ export default function ShiftCalendar({
             </div>
 
             {/* 従業員行 */}
-            {employees.filter(emp => emp.status === 'active').map(employee => (
+            {filteredEmployees.map(employee => (
               <div key={employee.id} className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200">
                 {/* 従業員情報 */}
-                <div className={`p-4 border ${colorByEmployee ? getEmployeeColor(employee.id) : 'bg-white'}`}>
+                <div className={`p-4 border ${colorByEmployee ? getEmployeeColor(employee.id) : 'bg-white'} sticky left-0 z-10 bg-white`}>
                   <div className="font-medium text-lg text-gray-900">{employee.name}</div>
                   <div className="text-sm text-gray-600">{employee.position}</div>
                   {isOverwork(employee.id, weekDays[0].date) && (
@@ -476,14 +488,15 @@ export default function ShiftCalendar({
 
                 {/* 各日のシフト */}
                 {weekDays.map(day => (
-                  <div key={day.date} className="grid grid-cols-[repeat(13,1fr)] gap-px">
+                  <div key={day.date} className={`grid grid-cols-[repeat(13,1fr)] gap-px ${day.isWeekend ? 'bg-gray-100' : ''}`}
+                  >
                     {TIME_SLOTS.map(slot => {
                       const shift = getShiftForDateTime(employee.id, day.date, slot.id);
                       const truckSchedule = getTruckScheduleForDateTime(day.date, slot.id);
                       const isOverworkDay = isOverwork(employee.id, day.date);
                       const isBreak = isBreakTime(slot.id);
                       
-                      let cellClass = 'h-16 border cursor-pointer hover:opacity-80 transition-opacity relative';
+                      let cellClass = 'h-16 border cursor-pointer hover:opacity-80 transition-opacity relative group';
                       let tooltipText = `${day.date} ${slot.label} - 空き`;
 
                       if (shift) {
@@ -535,6 +548,11 @@ export default function ShiftCalendar({
                                   </div>
                                 )}
                               </div>
+                            </div>
+                          )}
+                          {!shift && !isBreak && !truckSchedule && (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none">
+                              ＋
                             </div>
                           )}
                           {truckSchedule && (
@@ -613,14 +631,14 @@ export default function ShiftCalendar({
             {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
               <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1">
                 {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
-                  const activeEmployees = employees.filter(emp => emp.status === 'active');
-                  
+                  const activeEmployees = filteredEmployees;
+
                   return (
                     <div
                       key={day.date}
                       className={`min-h-[200px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
+                      } ${day.isWeekend ? 'bg-gray-100' : ''} ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
                       onClick={() => setSelectedDate(day.date)}
                     >
                       <div className={`text-sm font-medium mb-2 ${
@@ -687,21 +705,23 @@ export default function ShiftCalendar({
           <div className="flex gap-2">
             <button
               onClick={goToPreviousPeriod}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-full bg-white shadow hover:bg-gray-50"
+              aria-label="前へ"
             >
-              ←
+              ‹
             </button>
             <button
               onClick={goToToday}
-              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-1 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700"
             >
               今日
             </button>
             <button
               onClick={goToNextPeriod}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-full bg-white shadow hover:bg-gray-50"
+              aria-label="次へ"
             >
-              →
+              ›
             </button>
           </div>
         </div>
@@ -728,6 +748,18 @@ export default function ShiftCalendar({
           >
             月ビュー
           </button>
+        </div>
+
+        {/* 従業員検索 */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="従業員検索..."
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+            className="w-full md:w-64 px-3 py-2 border rounded"
+          />
+          <p className="mt-2 text-xs text-gray-500">空欄をクリックまたはドラッグしてシフトを登録できます</p>
         </div>
 
         {/* 操作ボタンとオプション */}
