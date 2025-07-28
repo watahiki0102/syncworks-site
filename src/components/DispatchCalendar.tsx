@@ -924,7 +924,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(40%+8px)] h-[calc(250%+16px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
+                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(40%+8px)] min-h-[300px] max-h-[600px] overflow-y-auto z-20 bg-white shadow-xl border-2 border-blue-300 rounded-lg' : ''
                       }`}
                       onClick={(e) => {
                         // 展開表示中で、展開された日付以外をクリックした場合
@@ -964,14 +964,27 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                           <div className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-center font-medium">
                             {schedules.length}件
                           </div>
-                          
                           {/* 展開表示時 */}
                           {isExpandedView && expandedDate === day.date ? (
-                            <div className="space-y-2">
-                              {schedules.slice(0, 5).map((schedule, index) => (
+                            <div className="space-y-2 p-2">
+                              {/* 閉じるボタン */}
+                              <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                <span className="font-semibold text-sm">{schedules.length}件のスケジュール</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsExpandedView(false);
+                                    setExpandedDate(null);
+                                  }}
+                                  className="text-gray-500 hover:text-gray-700 text-lg"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                              {schedules.map((schedule, index) => (
                                 <div
                                   key={index}
-                                  className={`text-xs p-1 rounded cursor-pointer border ${
+                                  className={`text-xs p-2 rounded cursor-pointer border ${
                                     schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                                     schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                                     'bg-gray-50 text-gray-800 border-gray-200'
@@ -983,29 +996,33 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                     setHighlightedScheduleId(schedule.id);
                                   }}
                                 >
-                                  {/* 契約ステータスアイコンと依頼者名 */}
-                                  <div className="flex items-center gap-1 mb-1">
-                                    <span className="text-xs">
-                                      {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                    </span>
-                                    <span className="font-medium truncate">
-                                      {schedule.customerName || '予約済み'}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* 時間表示と発着情報 */}
-                                  <div className="text-xs text-gray-600 mb-1">
-                                    <div>{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</div>
-                                    {(schedule.origin || schedule.destination) && (
-                                      <div className="text-gray-500">
-                                        {schedule.origin && (
-                                          <span className="text-blue-600">発: {schedule.origin}</span>
-                                        )}
-                                        {schedule.destination && (
-                                          <span className="text-red-600 ml-2">着: {schedule.destination}</span>
-                                        )}
+                                  {/* 依頼者名と発着地を2行レイアウト */}
+                                  <div className="text-xs">
+                                    {/* 1行目: 依頼者名と発地 */}
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs">
+                                          {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                                        </span>
+                                        <span className="font-medium truncate">
+                                          {schedule.customerName || '予約済み'}
+                                        </span>
                                       </div>
-                                    )}
+                                      {schedule.origin && (
+                                        <span className="text-blue-600 text-xs truncate ml-1">
+                                          発：{schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                        </span>
+                                      )}
+                                    </div>
+                                    {/* 2行目: 時間と着地 */}
+                                    <div className="flex items-center justify-between text-gray-600">
+                                      <span>{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</span>
+                                      {schedule.destination && (
+                                        <span className="text-red-600 text-xs truncate ml-1">
+                                          着：{schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -1016,7 +1033,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               {schedules.slice(0, 2).map((schedule, index) => (
                                 <div
                                   key={index}
-                                  className={`text-xs p-1 rounded cursor-pointer border ${
+                                  className={`text-xs p-2 rounded cursor-pointer border ${
                                     schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                                     schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                                     'bg-gray-50 text-gray-800 border-gray-200'
