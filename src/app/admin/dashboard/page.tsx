@@ -61,30 +61,30 @@ function TrendPanel({ applicationCount, sales, contractRate, averageRating }: {
 }
 
 export default function AdminDashboard() {
-    const [adminEmail, setAdminEmail] = useState('');
-    const router = useRouter();
+  const [adminEmail, setAdminEmail] = useState('');
+  const router = useRouter();
 
-    /**
-     * ローカルストレージから管理者メールアドレスを取得
-     */
-    useEffect(() => {
-        const email = localStorage.getItem('adminEmail');
-        if (email) {
-            setAdminEmail(email);
-        }
-    }, []);
+  /**
+   * ローカルストレージから管理者メールアドレスを取得
+   */
+  useEffect(() => {
+    const email = localStorage.getItem('adminEmail');
+    if (email) {
+      setAdminEmail(email);
+    }
+  }, []);
 
-    /**
-     * ログアウト処理
-     */
-    const handleLogout = () => {
-        if (!window.confirm('本当にログアウトしますか？')) return;
-        localStorage.removeItem('adminLoggedIn');
-        localStorage.removeItem('adminEmail');
-        localStorage.removeItem('adminAutoLoginExpiry');
-        localStorage.removeItem('adminRememberMe');
-        router.push('/admin/login');
-    };
+  /**
+   * ログアウト処理
+   */
+  const handleLogout = () => {
+    if (!window.confirm('本当にログアウトしますか？')) return;
+    localStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('adminAutoLoginExpiry');
+    localStorage.removeItem('adminRememberMe');
+    router.push('/admin/login');
+  };
 
     // デフォルト値（実際のアプリケーションではAPIから取得）
     const applicationCount = 12;
@@ -92,32 +92,32 @@ export default function AdminDashboard() {
     const contractRate = 70;
     const averageRating = 4.8;
 
-    return (
-        <AdminAuthGuard>
+  return (
+    <AdminAuthGuard>
             <div className="min-h-screen bg-gray-50">
-                {/* ヘッダー */}
+          {/* ヘッダー */}
                 <header className="bg-white shadow-md">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center py-6">
-                            <div>
+                <div>
                                 <h1 className="text-3xl font-bold text-gray-900">
-                                    事業者管理画面
+                    事業者管理画面
                                 </h1>
                                 <p className="text-sm text-gray-900 mt-1">
                                     ログイン中: {adminEmail}
                                 </p>
-                            </div>
+                </div>
                             <button
-                                onClick={handleLogout}
+                    onClick={handleLogout}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                            >
-                                ログアウト
+                  >
+                    ログアウト
                             </button>
-                        </div>
-                    </div>
+            </div>
+          </div>
                 </header>
 
-                {/* メインコンテンツ */}
+          {/* メインコンテンツ */}
                 <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                     <div className="px-4 py-6 sm:px-0">
                         <div className="flex gap-8 flex-col lg:flex-row">
@@ -196,6 +196,6 @@ export default function AdminDashboard() {
                     </div>
                 </main>
             </div>
-        </AdminAuthGuard>
-    );
+    </AdminAuthGuard>
+  );
 }

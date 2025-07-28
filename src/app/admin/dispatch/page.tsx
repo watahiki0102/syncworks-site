@@ -132,7 +132,38 @@ export default function DispatchManagement() {
   const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
+  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  // 統一されたステータス表示システム
+  const getStatusConfig = (type: string, status: string) => {
+    const configs: Record<string, Record<string, { color: string; text: string; icon: string }>> = {
+      // 案件ステータス
+      submission: {
+        pending: { color: 'bg-orange-100 text-orange-800 border-orange-200', text: '未割り当て', icon: '⏳' },
+        assigned: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '割り当て済み', icon: '🚚' },
+        completed: { color: 'bg-green-100 text-green-800 border-green-200', text: '完了', icon: '✅' },
+      },
+      // トラックステータス
+      truck: {
+        available: { color: 'bg-green-600 text-white', text: '稼働中', icon: '🟢' },
+        maintenance: { color: 'bg-yellow-600 text-white', text: '整備中', icon: '🔧' },
+        inactive: { color: 'bg-red-600 text-white', text: '停止中', icon: '🔴' },
+      },
+      // 契約ステータス
+      contract: {
+        estimate: { color: 'bg-amber-100 text-amber-800 border-amber-200', text: '仮案件', icon: '📋' },
+        contracted: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: '本案件', icon: '📝' },
+      },
+      // スケジュールステータス
+      schedule: {
+        confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200', text: '確定', icon: '✅' },
+        estimate: { color: 'bg-orange-100 text-orange-700 border-orange-200', text: '仮予定', icon: '⏳' },
+      }
+    };
+
+    return configs[type]?.[status] || { color: 'bg-gray-100 text-gray-800 border-gray-200', text: '不明', icon: '❓' };
+  };
 
   useEffect(() => {
     // ローカルストレージからトラックデータを読み込み
@@ -544,7 +575,89 @@ export default function DispatchManagement() {
     }
   };
 
+  // バリデーション関数
+  const validateTruckAssignment = (submissionId: string, truckAssignment: TruckAssignment): { isValid: boolean; error?: string; warning?: string } => {
+    const submission = formSubmissions.find(s => s.id === submissionId);
+    const truck = trucks.find(t => t.id === truckAssignment.truckId);
+    
+    if (!submission || !truck) {
+      return { isValid: false, error: '案件またはトラックが見つかりません' };
+    }
+
+    // トラックステータスチェック
+    if (truck.status !== 'available') {
+      return { 
+        isValid: false, 
+        error: `このトラックは現在${truck.status === 'maintenance' ? '整備中' : '停止中'}のため割り当てできません`
+      };
+    }
+
+    // 容量チェック
+    if (truckAssignment.capacity > truck.capacityKg) {
+      return { 
+        isValid: false, 
+        error: `容量超過: ${truckAssignment.capacity.toLocaleString()}kg > ${truck.capacityKg.toLocaleString()}kg`
+      };
+    }
+
+    // 時間重複チェック（確定案件のみ）
+    const conflictingSchedules = truck.schedules.filter(schedule => {
+      if (schedule.date !== submission.moveDate) return false;
+      if (schedule.contractStatus !== 'confirmed') return false; // 確定案件のみチェック
+      
+      const scheduleStart = parseInt(schedule.startTime.replace(':', ''));
+      const scheduleEnd = parseInt(schedule.endTime.replace(':', ''));
+      const newStart = parseInt(truckAssignment.startTime.replace(':', ''));
+      const newEnd = parseInt(truckAssignment.endTime.replace(':', ''));
+      
+      return (newStart < scheduleEnd && newEnd > scheduleStart);
+    });
+
+    if (conflictingSchedules.length > 0) {
+      return { 
+        isValid: false, 
+        error: `時間重複: ${conflictingSchedules[0].startTime}-${conflictingSchedules[0].endTime} (${conflictingSchedules[0].customerName}様・確定案件)`
+      };
+    }
+
+    // 仮案件重複の警告
+    const tentativeConflicts = truck.schedules.filter(schedule => {
+      if (schedule.date !== submission.moveDate) return false;
+      if (schedule.contractStatus === 'confirmed') return false; // 仮案件のみチェック
+      
+      const scheduleStart = parseInt(schedule.startTime.replace(':', ''));
+      const scheduleEnd = parseInt(schedule.endTime.replace(':', ''));
+      const newStart = parseInt(truckAssignment.startTime.replace(':', ''));
+      const newEnd = parseInt(truckAssignment.endTime.replace(':', ''));
+      
+      return (newStart < scheduleEnd && newEnd > scheduleStart);
+    });
+
+    if (tentativeConflicts.length > 0) {
+      return { 
+        isValid: true, 
+        warning: `仮案件と重複: ${tentativeConflicts[0].startTime}-${tentativeConflicts[0].endTime} (${tentativeConflicts[0].customerName}様)`
+      };
+    }
+
+    return { isValid: true };
+  };
+
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
+    // バリデーション実行
+    const validation = validateTruckAssignment(submissionId, truckAssignment);
+    
+    if (!validation.isValid) {
+      alert(`❌ 割り当てエラー\n\n${validation.error}`);
+      return;
+    }
+
+    if (validation.warning) {
+      if (!window.confirm(`⚠️ 警告\n\n${validation.warning}\n\n続行しますか？`)) {
+        return;
+      }
+    }
+
     const submission = formSubmissions.find(s => s.id === submissionId);
     if (!submission) return;
 
@@ -557,6 +670,7 @@ export default function DispatchManagement() {
         startTime: truckAssignment.startTime,
         endTime: truckAssignment.endTime,
         status: 'booked',
+        contractStatus: submission.contractStatus === 'contracted' ? 'confirmed' : 'estimate',
         customerName: submission.customerName,
         workType: truckAssignment.workType,
         description: `引っ越し案件: ${submission.customerName}`,
@@ -584,6 +698,9 @@ export default function DispatchManagement() {
     };
 
     updateFormSubmission(updatedSubmission);
+    
+    // 成功メッセージ
+    alert(`✅ 割り当て完了\n\n${truck?.name} を ${submission.customerName}様の案件に割り当てました。`);
   };
 
   const removeTruckFromSubmission = (submissionId: string, truckId: string) => {
@@ -626,21 +743,11 @@ export default function DispatchManagement() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    return getStatusConfig('submission', status).color;
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return '未割り当て';
-      case 'assigned': return '割り当て済み';
-      case 'completed': return '完了';
-      default: return '不明';
-    }
+    return getStatusConfig('submission', status).text;
   };
 
   // formatDate と formatTime は utils/dateTimeUtils.ts からインポート
@@ -717,39 +824,23 @@ export default function DispatchManagement() {
                   onClick={() => router.push('/admin/dashboard')}
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  トップに戻る
+                  ← トップに戻る
                 </button>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">
                     配車管理
                   </h1>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-900 mt-1">
                     トラックの稼働スケジュール管理
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <a
-                  href="/admin/shifts"
-                  className="text-teal-600 hover:text-teal-800 text-sm"
-                >
-                  👥 シフト管理
-                </a>
-                <a
-                  href="/pricing/step2"
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  📊 料金設定を確認・編集
-                </a>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  ログアウト
-                </button>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                ログアウト
+              </button>
             </div>
           </div>
         </header>
@@ -757,268 +848,446 @@ export default function DispatchManagement() {
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            {/* タブ切り替え */}
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'calendar'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📅 配車カレンダー
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('assignments')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'assignments'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📋 案件割り当て
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('registration')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'registration'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    🚚 トラック登録・編集
-                  </button>
-                </nav>
-              </div>
+            {/* メニューカード */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className="block w-full text-left"
+              >
+                <div className={`bg-gradient-to-br from-blue-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
+                  activeTab === 'calendar' ? 'border-blue-500 bg-blue-100' : 'border-blue-400'
+                }`}>
+                  <div className="p-7 flex items-center gap-4">
+                    <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">📅</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-blue-600">配車カレンダー</h3>
+                      <p className="text-sm text-gray-900">スケジュール管理・編集</p>
+                    </div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('assignments')}
+                className="block w-full text-left"
+              >
+                <div className={`bg-gradient-to-br from-green-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
+                  activeTab === 'assignments' ? 'border-green-500 bg-green-100' : 'border-green-400'
+                }`}>
+                  <div className="p-7 flex items-center gap-4">
+                    <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-green-600">案件割り当て</h3>
+                      <p className="text-sm text-gray-900">引っ越し案件管理</p>
+                    </div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('registration')}
+                className="block w-full text-left"
+              >
+                <div className={`bg-gradient-to-br from-purple-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
+                  activeTab === 'registration' ? 'border-purple-500 bg-purple-100' : 'border-purple-400'
+                }`}>
+                  <div className="p-7 flex items-center gap-4">
+                    <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-purple-600">トラック登録</h3>
+                      <p className="text-sm text-gray-900">車両管理・編集</p>
+                    </div>
+                  </div>
+                </div>
+              </button>
             </div>
 
             {/* タブコンテンツ */}
             {activeTab === 'calendar' && (
-              <DispatchCalendar 
-                trucks={trucks}
-                onUpdateTruck={updateTruck}
-              />
+              <div className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 rounded-2xl shadow-md">
+                <div className="p-7 border-b border-blue-200">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">📅</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-blue-600">配車スケジュール管理</h3>
+                      <p className="text-sm text-gray-900">カレンダー形式でのスケジュール確認・編集</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-7">
+                  <DispatchCalendar 
+                    trucks={trucks}
+                    onUpdateTruck={updateTruck}
+                  />
+                </div>
+              </div>
             )}
             
             {activeTab === 'assignments' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* ヘッダーアクション */}
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold text-gray-900">引っ越し案件一覧</h2>
-                  <div className="text-sm text-gray-600">
-                    入力フォームから送信された案件: {formSubmissions.length}件
+                <div className="bg-gradient-to-br from-green-50 to-white border-2 border-green-400 rounded-2xl shadow-md p-7">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-bold text-green-600">引っ越し案件一覧</h2>
+                      <p className="text-sm text-gray-900 mt-1">
+                        入力フォームから送信された案件: {formSubmissions.length}件
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="bg-orange-100 px-3 py-1 rounded-full">
+                        未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
+                      </div>
+                      <div className="bg-blue-100 px-3 py-1 rounded-full">
+                        割当済: {formSubmissions.filter(s => s.status === 'assigned').length}件
+                      </div>
+                      <div className="bg-green-100 px-3 py-1 rounded-full">
+                        完了: {formSubmissions.filter(s => s.status === 'completed').length}件
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* トラック一覧 */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">トラック一覧</h3>
+                <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-400 rounded-2xl shadow-md">
+                  <div className="p-7 border-b border-indigo-200">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
+                      <div>
+                        <h3 className="text-xl font-bold text-indigo-600">トラック稼働状況</h3>
+                        <p className="text-sm text-gray-900">
+                          登録台数: {trucks.length}台 | 
+                          稼働中: {trucks.filter(t => t.status === 'available').length}台 | 
+                          整備中: {trucks.filter(t => t.status === 'maintenance').length}台
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   
                   {trucks.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">登録済みのトラックがありません</p>
+                    <div className="p-7 text-center">
+                      <p className="text-gray-500 mb-2">登録済みのトラックがありません</p>
+                      <p className="text-sm text-gray-400">トラック登録・編集タブから新しいトラックを追加してください</p>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {trucks.map(truck => {
-                        const nextSchedule = truck.schedules
-                          .filter(s => s.date >= new Date().toISOString().split('T')[0])
-                          .sort((a, b) => a.date.localeCompare(b.date))[0];
+                    <div className="p-7">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {trucks.map(truck => {
+                          const nextSchedule = truck.schedules
+                            .filter(s => s.date >= new Date().toISOString().split('T')[0])
+                            .sort((a, b) => a.date.localeCompare(b.date))[0];
+                          
+                          const todaySchedules = truck.schedules
+                            .filter(s => s.date === new Date().toISOString().split('T')[0])
+                            .length;
 
-                        return (
-                          <div key={truck.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-semibold text-gray-900">{truck.name}</h4>
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                truck.status === 'available' ? 'bg-green-100 text-green-800' :
-                                truck.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {truck.status === 'available' ? '稼働中' :
-                                 truck.status === 'maintenance' ? '整備中' : '停止中'}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">{truck.plateNumber}</p>
-                            <p className="text-sm text-gray-600 mb-2">積載量: {truck.capacityKg}kg</p>
-                            
-                            {nextSchedule ? (
-                              <div className="mt-2 p-2 rounded bg-blue-50">
-                                <p className="text-xs font-medium">次回稼働予定</p>
-                                <p className="text-xs">
-                                  {new Date(nextSchedule.date).toLocaleDateString('ja-JP')} {nextSchedule.startTime}-{nextSchedule.endTime}
-                                </p>
-                                {nextSchedule.customerName && (
-                                  <p className="text-xs">{nextSchedule.customerName}様</p>
-                                )}
+                          return (
+                            <div key={truck.id} className={`border-2 rounded-lg p-4 transition-all hover:shadow-md ${
+                              truck.status === 'available' ? 'border-green-200 bg-green-50' :
+                              truck.status === 'maintenance' ? 'border-yellow-200 bg-yellow-50' :
+                              'border-red-200 bg-red-50'
+                            }`}>
+                              {/* ヘッダー */}
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <h4 className="font-bold text-gray-900">{truck.name}</h4>
+                                  <p className="text-sm text-gray-600">{truck.plateNumber}</p>
+                                </div>
+                                <div className="text-right">
+                                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusConfig('truck', truck.status).color}`}>
+                                    {getStatusConfig('truck', truck.status).icon} {getStatusConfig('truck', truck.status).text}
+                                  </span>
+                                  {todaySchedules > 0 && (
+                                    <p className="text-xs text-gray-600 mt-1">本日: {todaySchedules}件</p>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
-                              <p className="text-xs text-gray-500 mt-2">稼働予定なし</p>
-                            )}
-                          </div>
-                        );
-                      })}
+
+                              {/* 基本情報 */}
+                              <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-500">📦</span>
+                                  <span className="font-medium">{truck.capacityKg.toLocaleString()}kg</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-500">🚛</span>
+                                  <span className="text-gray-700">{truck.truckType}</span>
+                                </div>
+                              </div>
+                              
+                              {/* 次回稼働予定 */}
+                              {nextSchedule ? (
+                                <div className={`p-3 rounded-lg border-l-4 ${
+                                  nextSchedule.contractStatus === 'confirmed' 
+                                    ? 'bg-blue-50 border-blue-400' 
+                                    : 'bg-orange-50 border-orange-400'
+                                }`}>
+                                  <div className="flex justify-between items-start mb-1">
+                                    <p className="text-sm font-bold text-gray-900">次回稼働予定</p>
+                                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusConfig('schedule', nextSchedule.contractStatus || 'estimate').color}`}>
+                                      {getStatusConfig('schedule', nextSchedule.contractStatus || 'estimate').icon} {getStatusConfig('schedule', nextSchedule.contractStatus || 'estimate').text}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium text-gray-800">
+                                    📅 {new Date(nextSchedule.date).toLocaleDateString('ja-JP', { 
+                                      month: 'short', 
+                                      day: 'numeric',
+                                      weekday: 'short' 
+                                    })}
+                                  </p>
+                                  <p className="text-sm text-gray-700">
+                                    ⏰ {nextSchedule.startTime}-{nextSchedule.endTime}
+                                  </p>
+                                  {nextSchedule.customerName && (
+                                    <p className="text-sm text-gray-700 mt-1">
+                                      👤 {nextSchedule.customerName}様
+                                    </p>
+                                  )}
+                                  {nextSchedule.workType && (
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      作業: {nextSchedule.workType === 'loading' ? '積み込み' :
+                                             nextSchedule.workType === 'unloading' ? '荷下ろし' :
+                                             nextSchedule.workType === 'moving' ? '輸送' : '整備'}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-3 rounded-lg bg-gray-100 border-l-4 border-gray-300">
+                                  <p className="text-sm font-medium text-gray-600">📋 稼働予定なし</p>
+                                  <p className="text-xs text-gray-500 mt-1">新しい案件をアサイン可能</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* 案件一覧 */}
-                {formSubmissions.length === 0 ? (
-                  <div className="bg-white rounded-lg shadow p-8 text-center">
-                    <p className="text-gray-500 mb-4">入力フォームから送信された案件がありません</p>
-                    <p className="text-sm text-gray-400">
-                      顧客が引っ越し見積もりフォームを送信すると、ここに表示されます
-                    </p>
+                <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-2xl shadow-md">
+                  <div className="p-7 border-b border-gray-200">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-600">案件詳細</h3>
+                        <p className="text-sm text-gray-900">引っ越し案件の管理・編集</p>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {formSubmissions.map(submission => (
-                      <div key={submission.id} className="bg-white rounded-lg shadow p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{submission.customerName}</h3>
-                            <p className="text-sm text-gray-600">{submission.customerEmail}</p>
-                            <p className="text-sm text-gray-500">
-                              {formatDate(submission.moveDate)} - {submission.customerPhone}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(submission.status)}`}>
-                              {getStatusText(submission.status)}
-                            </span>
-                            {/* 仮案件/本案件バッジ */}
-                            {submission.contractStatus === 'estimate' && (
-                              <span className="px-2 py-1 text-xs rounded-full bg-yellow-200 text-yellow-800">仮案件</span>
-                            )}
-                            {submission.contractStatus === 'contracted' && (
-                              <span className="px-2 py-1 text-xs rounded-full bg-green-200 text-green-800">本案件</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">総容量:</span>
-                            <span className="ml-1">{submission.totalCapacity.toLocaleString()}kg</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">荷物ポイント:</span>
-                            <span className="ml-1 font-semibold text-blue-600">{submission.totalPoints}pt</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">出発地:</span>
-                            <span className="ml-1">{submission.originAddress}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">終了地点:</span>
-                            <span className="ml-1">{submission.destinationAddress}</span>
-                          </div>
-                        </div>
-
-                        {/* 推奨トラックと見積もり価格 */}
-                        <div className="mb-4 p-3 bg-gray-50 rounded">
-                          <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-medium text-gray-900">料金設定に基づく推奨</h4>
-                            <span className="text-sm text-gray-600">
-                              見積もり: ¥{calculateEstimatedPrice(submission.totalPoints, submission.distance || 0).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {calculateRecommendedTrucks(submission.totalPoints).map(truck => (
-                              <span key={truck.id} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                {truck.name} ({truck.truckType})
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 荷物リスト */}
-                        <div className="mb-4">
-                          <h4 className="font-medium text-gray-900 mb-2">荷物リスト</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {submission.itemList.map((item, index) => (
-                              <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                                {item}
+                  
+                  {formSubmissions.length === 0 ? (
+                    <div className="p-7 text-center">
+                      <p className="text-gray-500 mb-4">入力フォームから送信された案件がありません</p>
+                      <p className="text-sm text-gray-400">
+                        顧客が引っ越し見積もりフォームを送信すると、ここに表示されます
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-7 space-y-6">
+                      {formSubmissions.map(submission => {
+                        const isExpanded = expandedSubmissions.has(submission.id);
+                        
+                        const toggleExpanded = () => {
+                          const newExpandedSubmissions = new Set(expandedSubmissions);
+                          if (isExpanded) {
+                            newExpandedSubmissions.delete(submission.id);
+                          } else {
+                            newExpandedSubmissions.add(submission.id);
+                          }
+                          setExpandedSubmissions(newExpandedSubmissions);
+                        };
+                        
+                        return (
+                          <div key={submission.id} className="bg-white rounded-xl shadow border-2 border-gray-200 hover:shadow-lg transition-all duration-300">
+                          <div className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex items-center gap-4">
+                                <div>
+                                  <h3 className="text-lg font-bold text-gray-900">{submission.customerName}</h3>
+                                  <p className="text-sm text-gray-600">{formatDate(submission.moveDate)}</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                    📊 {submission.totalPoints}pt
+                                  </span>
+                                  <span className="font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                                    💰 ¥{calculateEstimatedPrice(submission.totalPoints, submission.distance || 0).toLocaleString()}
+                                  </span>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 追加サービス */}
-                        {submission.additionalServices.length > 0 && (
-                          <div className="mb-4">
-                            <h4 className="font-medium text-gray-900 mb-2">追加サービス</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {submission.additionalServices.map((service, index) => (
-                                <span key={index} className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  {service}
+                              <div className="flex items-center gap-2">
+                                <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusConfig('submission', submission.status).color}`}>
+                                  {getStatusConfig('submission', submission.status).icon} {getStatusConfig('submission', submission.status).text}
                                 </span>
-                              ))}
+                                {submission.contractStatus === 'estimate' && (
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('contract', 'estimate').color}`}>
+                                    {getStatusConfig('contract', 'estimate').icon} {getStatusConfig('contract', 'estimate').text}
+                                  </span>
+                                )}
+                                {submission.contractStatus === 'contracted' && (
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('contract', 'contracted').color}`}>
+                                    {getStatusConfig('contract', 'contracted').icon} {getStatusConfig('contract', 'contracted').text}
+                                  </span>
+                                )}
+                                <button
+                                  onClick={toggleExpanded}
+                                  className="text-gray-500 hover:text-gray-700 p-1 rounded"
+                                >
+                                  {isExpanded ? '▲ 詳細を閉じる' : '▼ 詳細を表示'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* 基本情報の簡潔表示 */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">📦</span>
+                                <span className="font-medium">{submission.totalCapacity.toLocaleString()}kg</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">📍</span>
+                                <span className="text-gray-700 truncate">{submission.originAddress}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">🏁</span>
+                                <span className="text-gray-700 truncate">{submission.destinationAddress}</span>
+                              </div>
+                            </div>
+
+                            {/* 推奨トラックと割り当て状況（簡潔版） */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-600">推奨:</span>
+                                <div className="flex gap-1">
+                                  {calculateRecommendedTrucks(submission.totalPoints).slice(0, 3).map(truck => (
+                                    <span key={truck.id} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                      {truck.truckType}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {submission.truckAssignments.length > 0 && (
+                                  <span className="text-xs text-green-600 font-medium">
+                                    🚚 {submission.truckAssignments.length}台割当済
+                                  </span>
+                                )}
+                                {submission.status !== 'completed' && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedSubmission(submission);
+                                      setShowTruckModal(true);
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium"
+                                  >
+                                    + トラック割当
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        )}
 
-                        {/* トラック割り当て一覧 */}
-                        <div className="mb-4">
-                          <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-medium text-gray-900">割り当てトラック</h4>
-                            {submission.status !== 'completed' && (
-                              <button
-                                onClick={() => {
-                                  setSelectedSubmission(submission);
-                                  setShowTruckModal(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                + トラック追加
-                              </button>
-                            )}
-                          </div>
-                          
-                          {submission.truckAssignments.length === 0 ? (
-                            <p className="text-sm text-gray-500">割り当て済みのトラックがありません</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {submission.truckAssignments.map((truckAssignment, index) => (
-                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                  <div>
-                                    <p className="font-medium text-gray-900">{truckAssignment.truckName}</p>
-                                    <p className="text-sm text-gray-600">
-                                      {formatTime(truckAssignment.startTime)}-{formatTime(truckAssignment.endTime)} 
-                                      ({truckAssignment.capacity.toLocaleString()}kg)
-                                    </p>
-                                  </div>
-                                  {submission.status !== 'completed' && (
-                                    <button
-                                      onClick={() => removeTruckFromSubmission(submission.id, truckAssignment.truckId)}
-                                      className="text-red-600 hover:text-red-800 text-sm"
-                                    >
-                                      削除
-                                    </button>
-                                  )}
+                          {/* 展開可能な詳細情報 */}
+                          {isExpanded && (
+                            <div className="border-t bg-gray-50 p-6 space-y-4">
+                              {/* 連絡先情報 */}
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">連絡先情報</h4>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div>📧 {submission.customerEmail}</div>
+                                  <div>📞 {submission.customerPhone}</div>
                                 </div>
-                              ))}
+                              </div>
+                              {/* 荷物詳細 */}
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">荷物リスト</h4>
+                                <div className="flex flex-wrap gap-1">
+                                  {submission.itemList.map((item, index) => (
+                                    <span key={index} className="text-xs bg-white border px-2 py-1 rounded">
+                                      {item}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* 追加サービス */}
+                              {submission.additionalServices.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">追加サービス</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {submission.additionalServices.map((service, index) => (
+                                      <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                        {service}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 割り当てトラック */}
+                              {submission.truckAssignments.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">割り当てトラック</h4>
+                                  <div className="space-y-2">
+                                    {submission.truckAssignments.map((truckAssignment, index) => (
+                                      <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
+                                        <div>
+                                          <span className="font-medium text-sm">{truckAssignment.truckName}</span>
+                                          <span className="text-xs text-gray-600 ml-2">
+                                            {formatTime(truckAssignment.startTime)}-{formatTime(truckAssignment.endTime)} 
+                                            ({truckAssignment.capacity.toLocaleString()}kg)
+                                          </span>
+                                        </div>
+                                        {submission.status !== 'completed' && (
+                                          <button
+                                            onClick={() => removeTruckFromSubmission(submission.id, truckAssignment.truckId)}
+                                            className="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded"
+                                          >
+                                            削除
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      );
+                    })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
             {activeTab === 'registration' && (
-              <TruckRegistration
-                trucks={trucks}
-                selectedTruck={selectedTruck}
-                onAddTruck={addTruck}
-                onUpdateTruck={updateTruck}
-                onDeleteTruck={deleteTruck}
-                onSelectTruck={setSelectedTruck}
-                availableTruckTypes={availableTruckTypes}
-                pricingRules={pricingRules}
-              />
+              <div className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-400 rounded-2xl shadow-md">
+                <div className="p-7 border-b border-purple-200">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-purple-600">トラック登録・編集</h3>
+                      <p className="text-sm text-gray-900">車両情報の管理・更新</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-7">
+                  <TruckRegistration
+                    trucks={trucks}
+                    selectedTruck={selectedTruck}
+                    onAddTruck={addTruck}
+                    onUpdateTruck={updateTruck}
+                    onDeleteTruck={deleteTruck}
+                    onSelectTruck={setSelectedTruck}
+                    availableTruckTypes={availableTruckTypes}
+                    pricingRules={pricingRules}
+                  />
+                </div>
+              </div>
             )}
           </div>
         </main>

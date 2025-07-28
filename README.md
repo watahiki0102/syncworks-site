@@ -1,36 +1,212 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SyncWorks - 引越し業者管理システム
 
-## Getting Started
+引越し業者の業務管理と顧客対応を効率化する統合プラットフォームです。見積もり管理、配車管理、シフト管理を一元化し、業務効率の大幅な向上を実現します。
 
-First, run the development server:
+## 🚀 主な機能
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 顧客向け機能
+- **📋 見積もり依頼フォーム**: 直感的な3ステップフォーム
+- **🏠 住所自動補完**: 郵便番号による住所自動入力
+- **📱 レスポンシブデザイン**: モバイル・タブレット・デスクトップ対応
+- **⚡ リアルタイム保存**: 自動保存機能による安心な入力体験
+
+### 事業者向け機能
+- **📊 管理ダッシュボード**: 売上・成約率・評価の可視化
+- **💰 料金設定管理**: 柔軟な料金体系の設定
+- **📦 案件管理**: 見積もりから成約まで一元管理
+- **🚚 配車管理**: トラックの稼働スケジュール最適化
+- **👥 シフト管理**: 従業員の勤務時間管理
+- **⚙️ プロフィール管理**: 事業者情報の編集・更新
+
+## 🎨 技術スタック & アーキテクチャ
+
+### フロントエンド
+- **Next.js 15.3.2** - React フレームワーク
+- **TypeScript** - 型安全性の確保
+- **Tailwind CSS 4** - ユーティリティファーストCSS
+- **React Hook Form** - フォーム管理
+- **Lucide React** - アイコンライブラリ
+
+### デザインシステム
+- **統一されたUIコンポーネント** - Button, Input, Card, Typography, Modal
+- **アクセシビリティ対応** - WCAG準拠のアクセシブルなUI
+- **レスポンシブデザイン** - モバイルファーストアプローチ
+- **モダンなデザイン** - 洗練されたグラデーションとアニメーション
+
+### パフォーマンス最適化
+- **画像最適化** - WebP/AVIF フォーマット対応
+- **フォント最適化** - Google Fonts の効率的な読み込み
+- **コード分割** - 動的インポートによる最適化
+- **キャッシュ戦略** - 静的アセットの長期キャッシュ
+
+## 📁 プロジェクト構造
+
+```
+syncworks-site/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── admin/             # 管理画面
+│   │   ├── form/              # 顧客向けフォーム
+│   │   ├── pricing/           # 料金設定
+│   │   └── globals.css        # グローバルスタイル
+│   ├── components/
+│   │   ├── ui/                # 統一UIコンポーネント
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Typography.tsx
+│   │   │   ├── Modal.tsx
+│   │   │   └── index.ts
+│   │   └── layout/            # レイアウトコンポーネント
+│   │       ├── Header.tsx
+│   │       ├── Footer.tsx
+│   │       ├── Layout.tsx
+│   │       └── index.ts
+│   ├── types/                 # TypeScript型定義
+│   │   ├── common/
+│   │   ├── forms/
+│   │   ├── business/
+│   │   └── index.ts
+│   ├── utils/                 # ユーティリティ関数
+│   │   ├── accessibility.ts   # アクセシビリティヘルパー
+│   │   └── dateTimeUtils.ts
+│   └── constants/             # 定数定義
+├── public/                    # 静的ファイル
+├── next.config.ts            # Next.js設定
+├── tailwind.config.js        # Tailwind CSS設定
+└── tsconfig.json             # TypeScript設定
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎯 最近の改善点
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ✨ デザインシステム刷新
+- **統一されたUIコンポーネント**: 再利用可能なコンポーネントライブラリ
+- **モダンなカラーパレット**: 視認性とブランド性の向上
+- **改善されたタイポグラフィ**: 読みやすさと階層の明確化
+- **アニメーション**: 滑らかなトランジションとホバー効果
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 🔧 アーキテクチャ改善
+- **型安全性の強化**: 包括的なTypeScript型定義
+- **コンポーネント設計**: 責任分離とコードの再利用性
+- **状態管理**: フォームとUIの状態管理最適化
+- **パフォーマンス**: 読み込み速度とレスポンシブ性の向上
 
-## Learn More
+### ♿ アクセシビリティ向上
+- **キーボードナビゲーション**: 完全なキーボード操作対応
+- **スクリーンリーダー対応**: ARIA属性とセマンティックHTML
+- **フォーカス管理**: モーダルとフォームのフォーカストラップ
+- **カラーコントラスト**: WCAG AA/AAA準拠
 
-To learn more about Next.js, take a look at the following resources:
+### 🚀 パフォーマンス最適化
+- **画像最適化**: 次世代フォーマットと適応的サイズ
+- **フォント最適化**: 表示速度の改善
+- **セキュリティ**: セキュリティヘッダーの追加
+- **SEO**: メタデータとOGPの最適化
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ 開発環境セットアップ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 前提条件
+- Node.js 18.0.0 以上
+- npm または yarn
 
-## Deploy on Vercel
+### インストール
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# リポジトリのクローン
+git clone https://github.com/your-org/syncworks-site.git
+cd syncworks-site
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 依存関係のインストール
+npm install
+
+# 開発サーバーの起動
+npm run dev
+```
+
+### 利用可能なスクリプト
+
+```bash
+npm run dev      # 開発サーバー起動 (http://localhost:3000)
+npm run build    # プロダクションビルド
+npm run start    # プロダクションサーバー起動
+npm run lint     # ESLintによるコード検証
+```
+
+## 🎨 デザインシステム
+
+### カラーパレット
+- **プライマリ**: `#3b82f6` (Blue-500)
+- **セカンダリ**: `#64748b` (Slate-500)
+- **成功**: `#22c55e` (Green-500)
+- **警告**: `#f59e0b` (Amber-500)
+- **エラー**: `#ef4444` (Red-500)
+
+### タイポグラフィ
+- **フォント**: Inter (日本語: Hiragino Sans/Noto Sans JP)
+- **サイズスケール**: 12px, 14px, 16px, 18px, 20px, 24px, 30px, 36px, 48px
+- **行間**: tight(1.25), normal(1.5), relaxed(1.625)
+
+### コンポーネント使用例
+
+```typescript
+import { Button, Card, Heading, Text } from '@/components/ui';
+
+function ExampleComponent() {
+  return (
+    <Card>
+      <Heading level={2} size="xl">タイトル</Heading>
+      <Text variant="body">本文テキスト</Text>
+      <Button variant="primary" size="lg">
+        アクション
+      </Button>
+    </Card>
+  );
+}
+```
+
+## 📱 主要画面
+
+### 🏠 トップページ
+- ヒーローセクション with グラデーション背景
+- サービス特徴の6つのカード
+- 統計情報の表示
+- CTA（Call to Action）セクション
+
+### 📋 見積もりフォーム (3ステップ)
+1. **基本情報**: 顧客情報・引越しタイプ・希望日時
+2. **荷物情報**: 家具・家電などの詳細入力
+3. **確認・送信**: 入力内容の確認と送信
+
+### 📊 管理ダッシュボード
+- 月次実績の4つのKPI表示
+- 6つの主要機能へのアクセス
+- 最近のアクティビティ履歴
+- レスポンシブなグリッドレイアウト
+
+## 🔐 セキュリティ
+
+- **CSP**: Content Security Policy の設定
+- **セキュリティヘッダー**: XSS/Clickjacking対策
+- **データ保護**: ローカルストレージの適切な利用
+- **入力検証**: フォームデータの厳密な検証
+
+## 🌍 ブラウザサポート
+
+- **Chrome**: 最新版および1つ前のメジャーバージョン
+- **Firefox**: 最新版および1つ前のメジャーバージョン
+- **Safari**: 最新版および1つ前のメジャーバージョン
+- **Edge**: 最新版および1つ前のメジャーバージョン
+
+## 📞 サポート・お問い合わせ
+
+- **メール**: syncworks.official@gmail.com
+- **GitHub Issues**: バグ報告・機能要求
+- **ドキュメント**: このREADME及びコード内コメント
+
+## 📄 ライセンス
+
+このプロジェクトはプライベートライセンスの下で提供されています。
+
+---
+
+© 2025 SyncWorks. All rights reserved.

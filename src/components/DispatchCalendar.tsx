@@ -901,9 +901,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
             {/* 曜日ヘッダー */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-1 mb-1">
               {['日', '月', '火', '水', '木', '金', '土'].map(day => (
-                <div key={day} className="p-2 text-center font-medium text-gray-600">
+                <div key={day} className="p-1 text-center text-sm font-medium text-gray-600">
                   {day}
                 </div>
               ))}
@@ -911,7 +911,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
             {/* 日付グリッド */}
             {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-1 relative">
+              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5 relative">
                 {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const schedules = getSchedulesForDate(day.date);
                   const hasSchedules = schedules.length > 0;
@@ -921,7 +921,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       key={day.date}
                       data-date-cell
                       data-expanded-cell={isExpandedView && expandedDate === day.date ? 'true' : 'false'}
-                      className={`min-h-[200px] p-2 border cursor-pointer hover:bg-gray-50 transition-colors ${
+                      className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
                         isExpandedView && expandedDate === day.date ? 'absolute w-[calc(40%+8px)] h-[calc(250%+16px)] z-20 bg-white shadow-xl border-2 border-blue-300' : ''
@@ -952,7 +952,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                         }, 200);
                       }}
                     >
-                      <div className={`text-sm font-medium mb-1 ${
+                      <div className={`text-xs font-medium mb-0.5 ${
                         day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
                       } ${day.isToday ? 'text-blue-600' : ''}`}>
                         {day.day}
@@ -961,7 +961,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       {hasSchedules && (
                         <div className="space-y-1">
                           {/* 予約件数バッジ */}
-                          <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded text-center font-medium">
+                          <div className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-center font-medium">
                             {schedules.length}件
                           </div>
                           
@@ -971,7 +971,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               {schedules.slice(0, 5).map((schedule, index) => (
                                 <div
                                   key={index}
-                                  className={`text-xs p-2 rounded cursor-pointer border ${
+                                  className={`text-xs p-1 rounded cursor-pointer border ${
                                     schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                                     schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                                     'bg-gray-50 text-gray-800 border-gray-200'
@@ -1016,7 +1016,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               {schedules.slice(0, 2).map((schedule, index) => (
                                 <div
                                   key={index}
-                                  className={`text-xs p-2 rounded cursor-pointer border ${
+                                  className={`text-xs p-1 rounded cursor-pointer border ${
                                     schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                                     schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                                     'bg-gray-50 text-gray-800 border-gray-200'
@@ -1040,7 +1040,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               ))}
                               {schedules.length > 2 && (
                                 <button
-                                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-2 py-1 transition-colors w-full flex items-center justify-center gap-1"
+                                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-1 py-0.5 transition-colors w-full flex items-center justify-center gap-1"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setExpandedDate(day.date);
@@ -1299,7 +1299,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         )}
 
         {/* 時間帯ヘッダー */}
-        <div className="grid grid-cols-[250px_1fr] gap-1 mb-2">
+        <div className="grid grid-cols-[200px_1fr] gap-1 mb-2">
           <div className="p-2 font-medium text-gray-600">時間帯</div>
           <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeBlocks.length}, 1fr)` }}>
             {timeBlocks.map(block => (
@@ -1319,7 +1319,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
           
           return (
-            <div key={truck.id} className="grid grid-cols-[250px_1fr] gap-1 mb-1">
+            <div key={truck.id} className="grid grid-cols-[200px_1fr] gap-1 mb-1">
               {/* トラック情報 */}
               <div className="p-3 border bg-gray-50 rounded relative">
                 {/* トラック情報左側の容量バー */}
@@ -1342,7 +1342,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div className="ml-4">
                   <div className="font-medium text-gray-900">{truck.name}</div>
                   <div className="text-xs text-gray-600">{truck.plateNumber}</div>
-                  <div className="text-xs text-gray-500">{truck.capacityKg}kg</div>
+                  <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
                 </div>
               </div>
               
@@ -1366,7 +1366,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   );
                   
                   // スケジュール数に応じて高さを調整
-                  const cellHeight = schedules.length > 1 ? 'h-24' : schedules.length === 1 ? 'h-20' : 'h-12';
+                  const cellHeight = schedules.length > 1 ? 'h-20' : schedules.length === 1 ? 'h-16' : 'h-12';
                   
                   return (
                     <div
@@ -1767,12 +1767,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
             {/* ヘッダー行 */}
-            <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-2">
-              <div className="p-2 font-medium text-gray-600">トラック</div>
-              {weekDays.map(day => (
-                <div 
-                  key={day.date} 
-                  className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                          <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-2">
+                <div className="p-2 font-medium text-gray-600">トラック</div>
+                {weekDays.map(day => (
+                  <div 
+                    key={day.date} 
+                    className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setSelectedDate(day.date);
                     setViewMode('day');
@@ -1821,7 +1821,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div className="p-2 border bg-gray-50">
                   <div className="font-medium text-gray-900">{truck.name}</div>
                   <div className="text-xs text-gray-600">{truck.plateNumber}</div>
-                  <div className="text-xs text-gray-500">{truck.capacityKg}kg</div>
+                  <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
                 </div>
 
                 {/* 各日のスケジュール */}
@@ -1909,20 +1909,20 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   };
 
       return (
-      <div className="space-y-6">
+      <div className="space-y-3">
       {/* ビュー切り替えとナビゲーション */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">配車スケジュール</h2>
+      <div className="bg-white rounded-lg shadow p-3">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">配車スケジュール</h2>
         </div>
 
         {/* ビューモード選択と表示期間選択 */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           {/* ビューモード選択 */}
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <button
               onClick={() => setViewMode('month')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -1930,7 +1930,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </button>
             <button
               onClick={() => setViewMode('week')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -1938,61 +1938,41 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </button>
             <button
               onClick={() => setViewMode('day')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               日
             </button>
           </div>
-
-
         </div>
 
-
         {/* 凡例 */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-
-
-
-            {/* 契約ステータス */}
-            <div className="space-y-2">
-              <h5 className="text-xs font-medium text-gray-600">契約ステータス</h5>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">✅</span>
-                  <span className="text-xs">契約確定済み</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">⏳</span>
-                  <span className="text-xs">見積もり回答済み（仮）</span>
-                </div>
-              </div>
+        <div className="bg-gray-50 rounded p-2">
+          <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-1">
+              <span>✅</span>
+              <span>契約確定済み</span>
             </div>
-
-
-
-            {/* 日ビュー凡例 */}
+            <div className="flex items-center gap-1">
+              <span>⏳</span>
+              <span>見積もり回答済み（仮）</span>
+            </div>
             {viewMode === 'day' && (
-              <div className="space-y-2">
-                <h5 className="text-xs font-medium text-gray-600">容量使用率</h5>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span className="text-xs">50%未満</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span className="text-xs">50%以上</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span className="text-xs">80%以上</span>
-                  </div>
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span>50%未満</span>
                 </div>
-              </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span>50%以上</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <span>80%以上</span>
+                </div>
+              </>
             )}
           </div>
         </div>
