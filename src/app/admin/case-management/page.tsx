@@ -10,7 +10,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import ManualCaseRegistration from '@/components/ManualCaseRegistration';
 
 /**
  * 見積もり履歴の型定義
@@ -82,7 +81,6 @@ export default function CaseManagement() {
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummary[]>([]);
-  const [showManual, setShowManual] = useState(false);
   
   // フィルタリング状態
   const [searchTerm, setSearchTerm] = useState('');
@@ -432,25 +430,23 @@ export default function CaseManagement() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  案件管理
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900">案件管理</h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  見積もり回答履歴、通知、成約実績の統合管理
+                  見積もり回答・成約実績の管理
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setShowManual(true)}
+                  onClick={() => router.push('/admin/case-management/register')}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  ＋手動登録
+                  ＋案件登録
                 </button>
                 <button
                   onClick={() => router.push('/admin/dashboard')}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  トップに戻る
+                  ← ダッシュボードに戻る
                 </button>
               </div>
             </div>
@@ -853,7 +849,6 @@ export default function CaseManagement() {
             </div>
           )}
         </main>
-        <ManualCaseRegistration isOpen={showManual} onClose={() => setShowManual(false)} />
       </div>
     </AdminAuthGuard>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
@@ -56,6 +56,11 @@ interface FormSubmission {
   recommendedTruckTypes?: string[]; // 推奨トラック種別
   contractStatus: 'estimate' | 'contracted'; // 見積もり or 契約完了
   contractDate?: string; // 契約日
+  // 新規追加フィールド
+  caseStatus?: 'unanswered' | 'answered' | 'contracted' | 'lost' | 'cancelled'; // 案件ステータス
+  requestSource?: string; // 依頼元（シンクワーク/手動登録）
+  isManualRegistration?: boolean; // 手動登録フラグ
+  registeredBy?: string; // 登録者
 }
 
 interface TruckAssignment {
@@ -68,6 +73,7 @@ interface TruckAssignment {
 }
 
 export default function DispatchManagement() {
+  const searchParams = useSearchParams();
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([
     {
@@ -135,6 +141,10 @@ export default function DispatchManagement() {
   const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
   const router = useRouter();
 
+  // URLパラメータから選択された案件を取得
+  const selectedCaseId = searchParams.get('selectedCase');
+  const registrationMode = searchParams.get('mode');
+
   // 統一されたステータス表示システム
   const getStatusConfig = (type: string, status: string) => {
     const configs: Record<string, Record<string, { color: string; text: string; icon: string }>> = {
@@ -143,6 +153,14 @@ export default function DispatchManagement() {
         pending: { color: 'bg-orange-100 text-orange-800 border-orange-200', text: '未割り当て', icon: '⏳' },
         assigned: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '割り当て済み', icon: '🚚' },
         completed: { color: 'bg-green-100 text-green-800 border-green-200', text: '完了', icon: '✅' },
+      },
+      // 案件ステータス（新規追加）
+      caseStatus: {
+        unanswered: { color: 'bg-gray-100 text-gray-800 border-gray-200', text: '未回答', icon: '📝' },
+        answered: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '回答済み', icon: '✉️' },
+        contracted: { color: 'bg-green-100 text-green-800 border-green-200', text: '受注', icon: '✅' },
+        lost: { color: 'bg-red-100 text-red-800 border-red-200', text: '失注', icon: '❌' },
+        cancelled: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', text: 'キャンセル', icon: '🚫' },
       },
       // トラックステータス
       truck: {
@@ -538,6 +556,30 @@ export default function DispatchManagement() {
     }
   }, []);
 
+  // 初期化時にURLパラメータを処理
+  useEffect(() => {
+    if (selectedCaseId && registrationMode === 'registration') {
+      // 配車登録モードで遷移した場合
+      setActiveTab('assignments');
+      
+      // 該当案件を自動的に展開状態にする
+      setExpandedSubmissions(prev => new Set([...prev, selectedCaseId]));
+      
+      // 成功メッセージを表示
+      setTimeout(() => {
+        alert('案件登録が完了しました。配車登録を行ってください。');
+      }, 100);
+
+      // 30秒後にハイライトを自動的に解除（URLパラメータをクリア）
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('selectedCase');
+        url.searchParams.delete('mode');
+        window.history.replaceState({}, '', url.toString());
+      }, 30000);
+    }
+  }, [selectedCaseId, registrationMode]);
+
   const saveTrucks = (newTrucks: Truck[]) => {
     setTrucks(newTrucks);
     localStorage.setItem('trucks', JSON.stringify(newTrucks));
@@ -641,6 +683,33 @@ export default function DispatchManagement() {
     }
 
     return { isValid: true };
+  };
+
+  /**
+   * 案件ステータス変更（手動変更可能なもののみ）
+   */
+  const changeCaseStatus = (submissionId: string, newStatus: 'cancelled') => {
+    const submission = formSubmissions.find(s => s.id === submissionId);
+    if (!submission) return;
+
+    // 受注案件からキャンセルへの変更のみ許可
+    if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'contracted') {
+      alert('受注済み案件のみキャンセルに変更できます。');
+      return;
+    }
+
+    if (!confirm(`案件「${submission.customerName}様」をキャンセルに変更しますか？\n\n※キャンセル案件は請求対象となります。`)) {
+      return;
+    }
+
+    const updatedSubmissions = formSubmissions.map(s => 
+      s.id === submissionId 
+        ? { ...s, caseStatus: newStatus, contractStatus: newStatus === 'cancelled' ? 'contracted' : s.contractStatus }
+        : s
+    );
+    
+    saveFormSubmissions(updatedSubmissions);
+    alert(`案件ステータスを「${newStatus === 'cancelled' ? 'キャンセル' : newStatus}」に変更しました。`);
   };
 
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
@@ -1068,12 +1137,24 @@ export default function DispatchManagement() {
                 {/* 案件一覧 */}
                 <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-2xl shadow-md">
                   <div className="p-7 border-b border-gray-200">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-600">案件詳細</h3>
-                        <p className="text-sm text-gray-900">引っ越し案件の管理・編集</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-600">案件詳細</h3>
+                          <p className="text-sm text-gray-900">引っ越し案件の管理・編集</p>
+                        </div>
                       </div>
+                      {selectedCaseId && registrationMode === 'registration' && (
+                        <div className="bg-green-100 border border-green-300 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-600 text-lg">🎯</span>
+                            <span className="text-sm font-medium text-green-800">
+                              新規登録案件が緑色でハイライト表示されています
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1099,14 +1180,43 @@ export default function DispatchManagement() {
                           setExpandedSubmissions(newExpandedSubmissions);
                         };
                         
+                        // 新規登録された案件かどうかを判定
+                        const isNewlyRegistered = submission.id === selectedCaseId && registrationMode === 'registration';
+                        
                         return (
-                          <div key={submission.id} className="bg-white rounded-xl shadow border-2 border-gray-200 hover:shadow-lg transition-all duration-300">
+                          <div 
+                            key={submission.id} 
+                            className={`bg-white rounded-xl shadow border-2 hover:shadow-lg transition-all duration-300 ${
+                              isNewlyRegistered 
+                                ? 'border-green-400 bg-green-50 ring-2 ring-green-200 animate-pulse' 
+                                : 'border-gray-200'
+                            }`}
+                          >
                           <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                               <div className="flex items-center gap-4">
                                 <div>
-                                  <h3 className="text-lg font-bold text-gray-900">{submission.customerName}</h3>
-                                  <p className="text-sm text-gray-600">{formatDate(submission.moveDate)}</p>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-lg font-bold text-gray-900">{submission.customerName}</h3>
+                                    {isNewlyRegistered && (
+                                      <span className="px-2 py-1 text-xs font-bold bg-green-500 text-white rounded-full animate-bounce">
+                                        🆕 新規登録
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <p className="text-gray-600">{formatDate(submission.moveDate)}</p>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-blue-600 font-medium">
+                                        📋 {submission.requestSource || (submission.isManualRegistration ? '手動登録' : 'シンクワーク')}
+                                      </span>
+                                      {submission.isManualRegistration && submission.customerPhone && (
+                                        <span className="text-gray-600">
+                                          📞 {submission.customerPhone}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
                                   <span className="font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
@@ -1121,6 +1231,14 @@ export default function DispatchManagement() {
                                 <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusConfig('submission', submission.status).color}`}>
                                   {getStatusConfig('submission', submission.status).icon} {getStatusConfig('submission', submission.status).text}
                                 </span>
+                                
+                                {/* 案件ステータス */}
+                                {submission.caseStatus && (
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('caseStatus', submission.caseStatus).color}`}>
+                                    {getStatusConfig('caseStatus', submission.caseStatus).icon} {getStatusConfig('caseStatus', submission.caseStatus).text}
+                                  </span>
+                                )}
+                                
                                 {submission.contractStatus === 'estimate' && (
                                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('contract', 'estimate').color}`}>
                                     {getStatusConfig('contract', 'estimate').icon} {getStatusConfig('contract', 'estimate').text}
@@ -1131,6 +1249,19 @@ export default function DispatchManagement() {
                                     {getStatusConfig('contract', 'contracted').icon} {getStatusConfig('contract', 'contracted').text}
                                   </span>
                                 )}
+                                
+                                {/* キャンセルボタン（受注案件のみ表示） */}
+                                {(submission.caseStatus === 'contracted' || submission.contractStatus === 'contracted') && 
+                                 submission.caseStatus !== 'cancelled' && (
+                                  <button
+                                    onClick={() => changeCaseStatus(submission.id, 'cancelled')}
+                                    className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 border border-yellow-300 rounded hover:bg-yellow-200 transition-colors"
+                                    title="受注案件をキャンセルに変更（請求対象）"
+                                  >
+                                    🚫 キャンセル
+                                  </button>
+                                )}
+                                
                                 <button
                                   onClick={toggleExpanded}
                                   className="text-gray-500 hover:text-gray-700 p-1 rounded"
