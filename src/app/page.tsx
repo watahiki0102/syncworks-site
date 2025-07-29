@@ -1,276 +1,259 @@
 /**
  * SyncWorksトップページ
- * - 改善されたレイアウトとデザイン
- * - 新しいUIコンポーネントを使用
- * - レスポンシブデザイン最適化
+ * - PC・モバイル両対応のレスポンシブデザイン
+ * - 標準HTML要素とTailwind CSSを使用
+ * - 適切なサイズ調整
  */
 'use client';
 
 import React from 'react';
 import { Handshake, Calculator, HomeIcon, Settings, ArrowRight, Star, CheckCircle, Users } from 'lucide-react';
 import { Layout } from '@/components/layout';
-import { Button, Card, CardBody, Heading, Text } from '@/components/ui';
 
 export default function Home() {
   return (
     <Layout>
       {/* ヒーローセクション */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white">
+      <section className="relative overflow-hidden bg-gradient-to-r from-[#2d3f50] to-[#3498db] dark:from-slate-900 dark:to-blue-900 text-white min-h-[70vh] md:min-h-[80vh] lg:min-h-[90vh] flex items-center">
         <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative container mx-auto py-24 lg:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24 lg:py-32">
           <div className="max-w-4xl mx-auto text-center">
-            <Heading level={1} size="5xl" className="text-white mb-6 animate-fade-in-up">
-              引越しを、もっとシンプルに
-            </Heading>
-            <Text 
-              variant="lead" 
-              size="xl" 
-              className="text-blue-100 mb-8 leading-relaxed animate-fade-in-up"
-              style={{ animationDelay: '0.2s' }}
-            >
-              SyncWorksは、引越しのマッチングを通じて、<br />
+            <h1 className="text-white mb-6 animate-fade-in-up text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+              引越しを、もっと<br className="sm:hidden" />シンプルに
+            </h1>
+            <p className="text-blue-100 mb-8 leading-relaxed animate-fade-in-up text-base sm:text-lg md:text-xl lg:text-2xl px-2 sm:px-4 md:px-0 max-w-3xl mx-auto" style={{ animationDelay: '0.2s' }}>
+              SyncWorksは、引越しのマッチングを通じて、<br className="hidden md:block" />
               スムーズな住まいの移転をサポートします。
-            </Text>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-              <Button 
-                size="lg" 
-                variant="secondary"
-                className="bg-white text-blue-600 hover:bg-gray-50 shadow-lg"
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up px-2 sm:px-4 md:px-0" style={{ animationDelay: '0.4s' }}>
+              <button 
+                className="bg-white text-blue-600 hover:bg-gray-50 shadow-lg w-full sm:w-auto text-sm sm:text-base md:text-lg py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
                 onClick={() => window.location.href = '/form/step1'}
-                rightIcon={<ArrowRight className="w-5 h-5" />}
               >
                 無料見積もりを始める
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              <button 
+                className="border-2 border-white text-white hover:bg-white/10 hover:border-white/80 backdrop-blur-sm w-full sm:w-auto text-sm sm:text-base md:text-lg py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-medium transition-colors duration-200"
                 onClick={() => document.getElementById('service')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 サービス詳細を見る
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </section>
 
       {/* サービス概要セクション */}
-      <section id="service" className="section bg-white">
-        <div className="container mx-auto text-center">
-          <Heading level={2} size="3xl" className="mb-6">
+      <section id="service" className="bg-white dark:bg-slate-900 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="mb-6 text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
             引越しマッチングサービス「SyncMoving」
-          </Heading>
-          <Text variant="lead" className="text-gray-600 max-w-3xl mx-auto mb-12">
-            SyncMovingは、不動産契約後のお客様と地域の引越し業者をつなぐ、相見積もり支援サービスです。
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-4xl mx-auto mb-12 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
+            SyncMovingは、不動産契約後のお客様と地域の引越し業者をつなぐ、相見積もり支援サービスです。<br className="hidden md:block" />
             条件入力は一度だけ、上位3社から自動で見積もりが届き、価格交渉不要で安心して選べます。
-          </Text>
+          </p>
         </div>
       </section>
 
       {/* サービスの特徴セクション */}
-      <section className="section bg-gray-50">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <Heading level={2} size="3xl" className="mb-6">
+      <section className="bg-gray-50 dark:bg-slate-800 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="mb-6 text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
               選ばれる理由
-            </Heading>
-            <Text variant="lead" className="text-gray-600 max-w-2xl mx-auto">
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 max-w-3xl mx-auto text-base sm:text-lg md:text-xl lg:text-2xl">
               SyncWorksが多くのお客様に選ばれる理由をご紹介します
-            </Text>
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {/* 特徴1 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Handshake className="w-8 h-8 text-blue-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <Handshake className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-blue-600">
+                <h3 className="mb-3 md:mb-4 text-blue-600 text-lg sm:text-xl md:text-2xl font-semibold">
                   引越しマッチング
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
                   地域の信頼できる引越し業者から、条件に合った業者を自動でご案内します。
                   厳選された優良業者のみと提携しています。
-                </Text>
-              </CardBody>
-            </Card>
+                </p>
+              </div>
+            </div>
 
             {/* 特徴2 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Calculator className="w-8 h-8 text-green-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <Calculator className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-green-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-green-600">
+                <h3 className="mb-3 md:mb-4 text-green-600 text-lg sm:text-xl md:text-2xl font-semibold">
                   安心の料金体系
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
                   初回提示金額のままご契約いただける安心設計。
                   あとからの価格交渉はありません。透明性のある料金体系です。
-                </Text>
-              </CardBody>
-            </Card>
+                </p>
+              </div>
+            </div>
 
             {/* 特徴3 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <HomeIcon className="w-8 h-8 text-purple-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <HomeIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-purple-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-purple-600">
+                <h3 className="mb-3 md:mb-4 text-purple-600 text-lg sm:text-xl md:text-2xl font-semibold">
                   不動産連携
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
                   地域の不動産会社を通じて紹介されることで、
                   質の高い見込み顧客とのマッチングが実現します。
-                </Text>
-              </CardBody>
-            </Card>
+                </p>
+              </div>
+            </div>
 
             {/* 特徴4 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-8 h-8 text-blue-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <CheckCircle className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-blue-600">
+                <h3 className="mb-3 md:mb-4 text-blue-600 text-lg sm:text-xl md:text-2xl font-semibold">
                   信頼性の高いサービス
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
                   紹介されるのは、条件提示に納得し成約意志の高い顧客のみ。
                   効率よく成約につながります。
-                </Text>
-              </CardBody>
-            </Card>
+                </p>
+              </div>
+            </div>
 
             {/* 特徴5 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Star className="w-8 h-8 text-yellow-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <Star className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-yellow-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-yellow-600">
-                  迅速な対応
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
-                  引越し条件の入力後、自動で複数業者に見積もり依頼が届き、
-                  手間なく比較が完了します。
-                </Text>
-              </CardBody>
-            </Card>
+                <h3 className="mb-3 md:mb-4 text-yellow-600 text-lg sm:text-xl md:text-2xl font-semibold">
+                  実績と信頼
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
+                  多くの不動産会社様との連携実績があり、
+                  安心してご利用いただけるサービスです。
+                </p>
+              </div>
+            </div>
 
             {/* 特徴6 */}
-            <Card hoverable className="transition-all duration-300">
-              <CardBody className="text-center">
-                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Users className="w-8 h-8 text-indigo-600" />
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-center p-6 md:p-8">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-indigo-600" />
                 </div>
-                <Heading level={3} size="lg" className="mb-4 text-indigo-600">
+                <h3 className="mb-3 md:mb-4 text-indigo-600 text-lg sm:text-xl md:text-2xl font-semibold">
                   専門サポート
-                </Heading>
-                <Text variant="body" className="text-gray-600 leading-relaxed">
-                  専門スタッフがお客様の引越しをトータルサポート。
-                  安心してお任せいただけます。
-                </Text>
-              </CardBody>
-            </Card>
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg">
+                  専門スタッフによる丁寧なサポートで、
+                  スムーズな引越しをお手伝いします。
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* 事業者向けセクション */}
-      <section className="section bg-white">
-        <div className="container mx-auto">
+      <section className="bg-white dark:bg-slate-900 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <Card variant="elevated" className="p-8">
-              <CardBody>
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <Settings className="w-10 h-10 text-white" />
-                </div>
-                <Heading level={2} size="2xl" className="mb-4">
-                  事業者の皆様へ
-                </Heading>
-                <Text variant="lead" className="text-gray-600 mb-8">
-                  引越し事業者として、私たちのサービスに参加し、
-                  より多くのお客様との出会いを創出しませんか？
-                </Text>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    size="lg"
-                    onClick={() => window.location.href = '/admin/register'}
-                    rightIcon={<ArrowRight className="w-5 h-5" />}
-                  >
-                    事業者登録
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    onClick={() => window.location.href = '/admin/login'}
-                  >
-                    既存事業者ログイン
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-8 lg:p-12">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Settings className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              </div>
+              <h2 className="mb-6 text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold">
+                事業者の皆様へ
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-8 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
+                引越し事業者として、私たちのサービスに参加し、<br className="hidden md:block" />
+                より多くのお客様との出会いを創出しませんか？
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  className="w-full sm:w-auto text-sm sm:text-base md:text-lg py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-medium transition-colors duration-200 bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-2"
+                  onClick={() => window.location.href = '/admin/register'}
+                >
+                  事業者登録
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button 
+                  className="w-full sm:w-auto text-sm sm:text-base md:text-lg py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-medium transition-colors duration-200 border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                  onClick={() => window.location.href = '/admin/login'}
+                >
+                  既存事業者ログイン
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* お知らせセクション */}
-      <section className="section bg-gray-50">
-        <div className="container mx-auto">
+      <section className="bg-gray-50 dark:bg-slate-800 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <Heading level={2} size="3xl" className="mb-6">
+            <h2 className="mb-6 text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold">
               お知らせ
-            </Heading>
+            </h2>
           </div>
           
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardBody>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                  </div>
-                  <div className="flex-1">
-                    <Text variant="small" className="text-gray-500 mb-1">
-                      2025年5月15日
-                    </Text>
-                    <Heading level={3} size="lg" className="mb-2">
-                      SyncWorks公式サイトを公開しました
-                    </Heading>
-                    <Text variant="body" className="text-gray-600">
-                      引越しマッチングサービス「SyncMoving」の公式サイトをオープンしました。
-                      お客様により良いサービスを提供してまいります。
-                    </Text>
-                  </div>
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-6 md:p-8">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
                 </div>
-              </CardBody>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm">
+                    2025年5月15日
+                  </p>
+                  <h3 className="mb-3 text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-semibold">
+                    SyncWorks公式サイトを公開しました
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
+                    引越しマッチングサービス「SyncMoving」の公式サイトをオープンしました。
+                    お客様により良いサービスを提供してまいります。
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA セクション */}
-      <section className="section bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white">
-        <div className="container mx-auto text-center">
-          <Heading level={2} size="3xl" className="text-white mb-6">
+      <section className="bg-gradient-to-r from-[#2d3f50] to-[#3498db] dark:from-slate-900 dark:to-blue-900 text-white py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-white mb-6 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
             今すぐ無料見積もりを始めませんか？
-          </Heading>
-          <Text variant="lead" className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            簡単3ステップで、あなたに最適な引越し業者が見つかります。
+          </h2>
+          <p className="text-blue-100 mb-8 max-w-3xl mx-auto text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
+            簡単3ステップで、あなたに最適な引越し業者が見つかります。<br className="hidden md:block" />
             まずは無料見積もりからお気軽にお試しください。
-          </Text>
-          <Button 
-            size="lg"
-            variant="secondary"
-            className="bg-white text-blue-600 hover:bg-gray-50"
+          </p>
+          <button 
+            className="bg-white text-blue-600 hover:bg-gray-50 w-full sm:w-auto text-sm sm:text-base md:text-lg py-3 sm:py-4 px-6 sm:px-8 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 mx-auto"
             onClick={() => window.location.href = '/form/step1'}
-            rightIcon={<ArrowRight className="w-5 h-5" />}
           >
             無料見積もりを始める
-          </Button>
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </div>
       </section>
     </Layout>

@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui';
+// import { Button } from '@/components/ui';
 
 interface NavigationItem {
   label: string;
@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center">
             <Link 
               href="/" 
-              className="text-2xl font-bold text-primary-600 hover:text-primary-700 transition-colors"
+              className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
               onClick={closeMenu}
             >
               SyncWorks
@@ -75,8 +75,8 @@ const Header: React.FC<HeaderProps> = ({
                     <button
                       className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         isActiveLink(item.href)
-                          ? 'text-primary-600 bg-primary-50'
-                          : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                       }`}
                       onMouseEnter={() => setOpenDropdown(item.label)}
                       onMouseLeave={() => setOpenDropdown(null)}
@@ -96,8 +96,8 @@ const Header: React.FC<HeaderProps> = ({
                             href={child.href}
                             className={`block px-4 py-2 text-sm transition-colors ${
                               isActiveLink(child.href)
-                                ? 'text-primary-600 bg-primary-50'
-                                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                                ? 'text-blue-600 bg-blue-50'
+                                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                             }`}
                             onClick={closeMenu}
                           >
@@ -112,8 +112,8 @@ const Header: React.FC<HeaderProps> = ({
                     href={item.href}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       isActiveLink(item.href)
-                        ? 'text-primary-600 bg-primary-50'
-                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                     }`}
                     onClick={closeMenu}
                   >
@@ -129,26 +129,25 @@ const Header: React.FC<HeaderProps> = ({
             {showVendorReviews && (
               <Link
                 href="/vendors"
-                className="text-sm text-gray-600 hover:text-primary-600 transition-colors"
+                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
               >
                 口コミ
               </Link>
             )}
-                         {showBusinessLogin && (
-               <Link
-                 href="/admin/login"
-                 className="btn btn-outline btn-sm"
-               >
-                 事業者ログイン
-               </Link>
-             )}
+            {showBusinessLogin && (
+              <Link
+                href="/admin/login"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+              >
+                事業者ログイン
+              </Link>
+            )}
           </div>
 
           {/* モバイルメニューボタン */}
           <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               onClick={toggleMobileMenu}
               aria-label={isMobileMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
               aria-expanded={isMobileMenuOpen}
@@ -158,7 +157,7 @@ const Header: React.FC<HeaderProps> = ({
               ) : (
                 <Menu className="w-6 h-6" />
               )}
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -173,8 +172,8 @@ const Header: React.FC<HeaderProps> = ({
                       <button
                         className={`flex items-center justify-between w-full px-3 py-2 text-left text-sm font-medium rounded-md transition-colors ${
                           isActiveLink(item.href)
-                            ? 'text-primary-600 bg-primary-50'
-                            : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                         }`}
                         onClick={() => toggleDropdown(item.label)}
                         aria-expanded={openDropdown === item.label}
@@ -194,8 +193,8 @@ const Header: React.FC<HeaderProps> = ({
                               href={child.href}
                               className={`block px-3 py-2 text-sm rounded-md transition-colors ${
                                 isActiveLink(child.href)
-                                  ? 'text-primary-600 bg-primary-50'
-                                  : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                                  ? 'text-blue-600 bg-blue-50'
+                                  : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                               }`}
                               onClick={closeMenu}
                             >
@@ -210,8 +209,8 @@ const Header: React.FC<HeaderProps> = ({
                       href={item.href}
                       className={`block px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         isActiveLink(item.href)
-                          ? 'text-primary-600 bg-primary-50'
-                          : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                          ? 'text-blue-600 bg-blue-50'
+                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                       }`}
                       onClick={closeMenu}
                     >
@@ -226,23 +225,23 @@ const Header: React.FC<HeaderProps> = ({
                 {showVendorReviews && (
                   <Link
                     href="/vendors"
-                    className="block px-3 py-2 text-sm text-gray-600 hover:text-primary-600 transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                     onClick={closeMenu}
                   >
                     口コミ
                   </Link>
                 )}
-                                 {showBusinessLogin && (
-                   <div className="px-3">
-                     <Link
-                       href="/admin/login"
-                       className="btn btn-outline btn-sm w-full"
-                       onClick={closeMenu}
-                     >
-                       事業者ログイン
-                     </Link>
-                   </div>
-                 )}
+                {showBusinessLogin && (
+                  <div className="px-3">
+                    <Link
+                      href="/admin/login"
+                      className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                      onClick={closeMenu}
+                    >
+                      事業者ログイン
+                    </Link>
+                  </div>
+                )}
               </div>
             </nav>
           </div>

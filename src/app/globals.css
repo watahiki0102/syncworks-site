@@ -73,6 +73,37 @@
   --border-strong: #cbd5e1;
   --input-background: #ffffff;
   --input-border: #d1d5db;
+}
+
+/* === DARK MODE === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Colors */
+    --background: #0f172a;
+    --background-secondary: #1e293b;
+    --foreground: #f8fafc;
+    --foreground-muted: #94a3b8;
+    --border: #334155;
+    --border-strong: #475569;
+    --input-background: #1e293b;
+    --input-border: #475569;
+    
+    /* Darker gradients for hero section */
+    --hero-gradient-from: #1e293b;
+    --hero-gradient-to: #1e40af;
+  }
+}
+
+.dark {
+  /* Dark Mode Classes */
+  --background: #0f172a;
+  --background-secondary: #1e293b;
+  --foreground: #f8fafc;
+  --foreground-muted: #94a3b8;
+  --border: #334155;
+  --border-strong: #475569;
+  --input-background: #1e293b;
+  --input-border: #475569;
   
   /* === ENHANCED SHADOWS === */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -98,6 +129,13 @@
   --text-3xl: 1.875rem;    /* 30px */
   --text-4xl: 2.25rem;     /* 36px */
   --text-5xl: 3rem;        /* 48px */
+  
+  /* === MOBILE FIRST BREAKPOINTS === */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
   
   /* Line Heights */
   --leading-none: 1;
@@ -457,13 +495,7 @@ body {
 }
 
 /* === LAYOUT UTILITIES === */
-.container {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding-left: var(--spacing-4);
-  padding-right: var(--spacing-4);
-}
+/* Removed custom .container class to avoid conflicts with Tailwind's container */
 
 .section {
   padding-top: var(--spacing-16);
@@ -476,19 +508,7 @@ body {
 }
 
 /* === RESPONSIVE UTILITIES === */
-@media (min-width: 640px) {
-  .container {
-    padding-left: var(--spacing-6);
-    padding-right: var(--spacing-6);
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    padding-left: var(--spacing-8);
-    padding-right: var(--spacing-8);
-  }
-}
+/* Removed custom container responsive styles */
 
 /* === ACCESSIBILITY === */
 .sr-only {
@@ -568,6 +588,97 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* === MOBILE OPTIMIZATION === */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Typography adjustments for mobile only - without !important */
+  .mobile-h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  
+  .mobile-h2 {
+    font-size: 1.75rem;
+  }
+  
+  .mobile-h3 {
+    font-size: 1.5rem;
+  }
+  
+  /* Button improvements for mobile */
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  /* Card spacing for mobile */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Ensure touch targets are large enough */
+  button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Hero section mobile adjustments */
+  .hero-mobile {
+    min-height: 100vh;
+    padding: 2rem 0;
+  }
+  
+  /* Text size mobile adjustments */
+  .text-mobile-lg {
+    font-size: 1.125rem;
+  }
+  
+  .text-mobile-xl {
+    font-size: 1.25rem;
+  }
+  
+  /* Grid responsive */
+  .grid-mobile-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+/* === DARK MODE ANIMATIONS === */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* === RESPONSIVE UTILITIES === */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === SAFE AREA SUPPORT === */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
 

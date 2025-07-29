@@ -54,7 +54,7 @@ const Layout: React.FC<LayoutProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`min-h-screen flex flex-col ${className}`}>
+    <div className={`min-h-screen flex flex-col bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 ${className}`}>
       {showHeader && (
         <Header
           navigation={navigation}

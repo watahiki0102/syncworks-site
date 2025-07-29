@@ -924,7 +924,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                       } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(40%+8px)] min-h-[300px] max-h-[600px] overflow-y-auto z-20 bg-white shadow-xl border-2 border-blue-300 rounded-lg' : ''
+                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(20%+8px)] min-h-[300px] max-h-[600px] overflow-y-auto z-20 bg-white shadow-xl border-2 border-blue-300 rounded-lg' : ''
                       }`}
                       onClick={(e) => {
                         // 展開表示中で、展開された日付以外をクリックした場合
