@@ -446,7 +446,7 @@ export default function CaseManagement() {
                   onClick={() => router.push('/admin/dashboard')}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  ← ダッシュボードに戻る
+                  トップに戻る
                 </button>
               </div>
             </div>

@@ -872,15 +872,6 @@ function DispatchManagementContent() {
 
 
 
-  const handleLogout = () => {
-    if (!window.confirm('本当にログアウトしますか？')) return;
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminAutoLoginExpiry');
-    localStorage.removeItem('adminRememberMe');
-    router.push('/admin/login');
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
@@ -892,7 +883,7 @@ function DispatchManagementContent() {
                 onClick={() => router.push('/admin/dashboard')}
                 className="text-blue-600 hover:text-blue-800 font-medium"
               >
-                ← トップに戻る
+                トップに戻る
               </button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
@@ -903,12 +894,6 @@ function DispatchManagementContent() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              ログアウト
-            </button>
           </div>
         </div>
       </header>

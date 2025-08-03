@@ -500,15 +500,6 @@ export default function ShiftManagement() {
     });
   };
 
-  const handleLogout = () => {
-    if (!window.confirm('本当にログアウトしますか？')) return;
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminAutoLoginExpiry');
-    localStorage.removeItem('adminRememberMe');
-    router.push('/admin/login');
-  };
-
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
@@ -539,12 +530,6 @@ export default function ShiftManagement() {
                 >
                   🚚 配車管理
                 </a>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  ログアウト
-                </button>
               </div>
             </div>
           </div>
