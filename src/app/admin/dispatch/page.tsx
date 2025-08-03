@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -875,99 +875,73 @@ function DispatchManagementContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow-md">
+      <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">配車管理</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                トラックの稼働スケジュール管理
+              </p>
+            </div>
+            <div className="flex items-center gap-4 min-h-[44px]">
               <button
                 onClick={() => router.push('/admin/dashboard')}
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 トップに戻る
               </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  配車管理
-                </h1>
-                <p className="text-sm text-gray-900 mt-1">
-                  トラックの稼働スケジュール管理
-                </p>
-              </div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* タブナビゲーション */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'calendar'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              配車カレンダー
+            </button>
+            <button
+              onClick={() => setActiveTab('assignments')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'assignments'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              案件割り当て
+            </button>
+            <button
+              onClick={() => setActiveTab('registration')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'registration'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              トラック登録
+            </button>
+          </nav>
+        </div>
+      </div>
+
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* メニューカード */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className="block w-full text-left"
-            >
-              <div className={`bg-gradient-to-br from-blue-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
-                activeTab === 'calendar' ? 'border-blue-500 bg-blue-100' : 'border-blue-400'
-              }`}>
-                <div className="p-7 flex items-center gap-4">
-                  <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">📅</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-blue-600">配車カレンダー</h3>
-                    <p className="text-sm text-gray-900">スケジュール管理・編集</p>
-                  </div>
-                </div>
-              </div>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('assignments')}
-              className="block w-full text-left"
-            >
-              <div className={`bg-gradient-to-br from-green-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
-                activeTab === 'assignments' ? 'border-green-500 bg-green-100' : 'border-green-400'
-              }`}>
-                <div className="p-7 flex items-center gap-4">
-                  <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-green-600">案件割り当て</h3>
-                    <p className="text-sm text-gray-900">引っ越し案件管理</p>
-                  </div>
-                </div>
-              </div>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('registration')}
-              className="block w-full text-left"
-            >
-              <div className={`bg-gradient-to-br from-purple-50 to-white border-2 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 ${
-                activeTab === 'registration' ? 'border-purple-500 bg-purple-100' : 'border-purple-400'
-              }`}>
-                <div className="p-7 flex items-center gap-4">
-                  <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-purple-600">トラック登録</h3>
-                    <p className="text-sm text-gray-900">車両管理・編集</p>
-                  </div>
-                </div>
-              </div>
-            </button>
-          </div>
 
           {/* タブコンテンツ */}
           {activeTab === 'calendar' && (
-            <div className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 rounded-2xl shadow-md">
-              <div className="p-7 border-b border-blue-200">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-3xl">📅</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-blue-600">配車スケジュール管理</h3>
-                    <p className="text-sm text-gray-900">カレンダー形式でのスケジュール確認・編集</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-7">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
                 <DispatchCalendar 
                   trucks={trucks}
                   onUpdateTruck={updateTruck}
@@ -979,11 +953,11 @@ function DispatchManagementContent() {
           {activeTab === 'assignments' && (
             <div className="space-y-8">
               {/* ヘッダーアクション */}
-              <div className="bg-gradient-to-br from-green-50 to-white border-2 border-green-400 rounded-2xl shadow-md p-7">
+              <div className="bg-white shadow rounded-lg px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="text-xl font-bold text-green-600">引っ越し案件一覧</h2>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <h2 className="text-xl font-bold text-gray-900">引っ越し案件一覧</h2>
+                    <p className="text-sm text-gray-600 mt-1">
                       入力フォームから送信された案件: {formSubmissions.length}件
                     </p>
                   </div>
@@ -1002,13 +976,13 @@ function DispatchManagementContent() {
               </div>
 
               {/* トラック一覧 */}
-              <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-400 rounded-2xl shadow-md">
-                <div className="p-7 border-b border-indigo-200">
+              <div className="bg-white shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
                   <div className="flex items-center gap-4 mb-2">
                     <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
                     <div>
-                      <h3 className="text-xl font-bold text-indigo-600">トラック稼働状況</h3>
-                      <p className="text-sm text-gray-900">
+                      <h3 className="text-xl font-bold text-gray-900">トラック稼働状況</h3>
+                      <p className="text-sm text-gray-600">
                         登録台数: {trucks.length}台 | 
                         稼働中: {trucks.filter(t => t.status === 'available').length}台 | 
                         整備中: {trucks.filter(t => t.status === 'maintenance').length}台
@@ -1119,8 +1093,8 @@ function DispatchManagementContent() {
               </div>
 
               {/* 案件一覧 */}
-              <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-2xl shadow-md">
-                <div className="p-7 border-b border-gray-200">
+              <div className="bg-white shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
@@ -1380,8 +1354,8 @@ function DispatchManagementContent() {
           )}
           
           {activeTab === 'registration' && (
-            <div className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-400 rounded-2xl shadow-md">
-              <div className="p-7 border-b border-purple-200">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
                   <div>
@@ -1390,7 +1364,7 @@ function DispatchManagementContent() {
                   </div>
                 </div>
               </div>
-              <div className="p-7">
+              <div className="px-4 py-5 sm:p-6">
                 <TruckRegistration
                   trucks={trucks}
                   selectedTruck={selectedTruck}
