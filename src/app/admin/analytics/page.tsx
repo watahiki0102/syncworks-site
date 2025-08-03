@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+
+// プロット間隔の型定義
+type PlotInterval = 'day' | 'week' | 'month' | 'year';
 
 // KPIカードコンポーネント
 function KPICard({ title, value, unit, icon, color }: {
@@ -478,6 +481,7 @@ export default function AdminAnalytics() {
   const router = useRouter();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [plotInterval, setPlotInterval] = useState<PlotInterval>('day');
   const [filteredData, setFilteredData] = useState({
     contracts: 12,
     contractRate: 34.5,
@@ -498,30 +502,147 @@ export default function AdminAnalytics() {
     setEndDate(endOfMonthStr);
   }, []);
 
-  // デモデータ
-  const contractsData = [
-    { id: 'SY-2025-0001', customerName: '田中様', contractDate: '2025/01/15', amount: 85000, truckType: '2tショート', status: '成約' },
-    { id: 'SY-2025-0002', customerName: '佐藤様', contractDate: '2025/01/18', amount: 120000, truckType: '3t', status: '成約' },
-    { id: 'SY-2025-0003', customerName: '高橋様', contractDate: '2025/01/20', amount: 75000, truckType: '2t', status: '成約' },
-    { id: 'SY-2025-0004', customerName: '山田様', contractDate: '2025/01/22', amount: 95000, truckType: '2tショート', status: '成約' },
-    { id: 'SY-2025-0005', customerName: '鈴木様', contractDate: '2025/01/25', amount: 110000, truckType: '3t', status: '成約' },
+  // 生データ（実際のアプリケーションではAPIから取得）
+  const rawContractsData = [
+    { id: 'SY-2025-0001', customerName: '田中様', contractDate: '2025-01-15', amount: 85000, truckType: '2tショート', status: '成約' },
+    { id: 'SY-2025-0002', customerName: '佐藤様', contractDate: '2025-01-18', amount: 120000, truckType: '3t', status: '成約' },
+    { id: 'SY-2025-0003', customerName: '高橋様', contractDate: '2025-01-20', amount: 75000, truckType: '2t', status: '成約' },
+    { id: 'SY-2025-0004', customerName: '山田様', contractDate: '2025-01-22', amount: 95000, truckType: '2tショート', status: '成約' },
+    { id: 'SY-2025-0005', customerName: '鈴木様', contractDate: '2025-01-25', amount: 110000, truckType: '3t', status: '成約' },
+    { id: 'SY-2025-0006', customerName: '中村様', contractDate: '2025-02-02', amount: 90000, truckType: '2t', status: '成約' },
+    { id: 'SY-2025-0007', customerName: '小林様', contractDate: '2025-02-08', amount: 105000, truckType: '3t', status: '成約' },
+    { id: 'SY-2025-0008', customerName: '加藤様', contractDate: '2025-02-15', amount: 80000, truckType: '2tショート', status: '成約' },
   ];
 
-  const chartData = [
-    { label: '1/15', value: 1 },
-    { label: '1/18', value: 1 },
-    { label: '1/20', value: 1 },
-    { label: '1/22', value: 1 },
-    { label: '1/25', value: 1 },
-  ];
+  // データ集計関数
+  const aggregateDataByInterval = useMemo(() => {
+    return (contracts: any[], interval: PlotInterval) => {
+      const aggregated = new Map();
+      
+      contracts.forEach(contract => {
+        const date = new Date(contract.contractDate);
+        let key: string;
+        
+        switch (interval) {
+          case 'day':
+            key = `${date.getMonth() + 1}/${date.getDate()}`;
+            break;
+          case 'week':
+            // 週の開始日（月曜日）を計算
+            const startOfWeek = new Date(date);
+            const dayOfWeek = date.getDay(); // 0:日曜, 1:月曜, ..., 6:土曜
+            const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 月曜日を起点とする
+            startOfWeek.setDate(date.getDate() - mondayOffset);
+            
+            // 週の終了日（日曜日）を計算
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            
+            // 週の日付範囲を表示用にフォーマット
+            const startMonth = startOfWeek.getMonth() + 1;
+            const startDay = startOfWeek.getDate();
+            const endMonth = endOfWeek.getMonth() + 1;
+            const endDay = endOfWeek.getDate();
+            
+            // 同月内の週か、月をまたぐ週かで表示を分ける
+            if (startMonth === endMonth) {
+              key = `${startMonth}/${startDay}-${endDay}`;
+            } else {
+              key = `${startMonth}/${startDay}-${endMonth}/${endDay}`;
+            }
+            break;
+          case 'month':
+            key = `${date.getFullYear()}/${date.getMonth() + 1}月`;
+            break;
+          case 'year':
+            key = `${date.getFullYear()}年`;
+            break;
+          default:
+            key = `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+        
+        if (!aggregated.has(key)) {
+          aggregated.set(key, { contracts: 0, sales: 0 });
+        }
+        
+        const current = aggregated.get(key);
+        current.contracts += 1;
+        current.sales += contract.amount;
+      });
+      
+      // 週間隔の場合は時系列順にソート
+      const result = Array.from(aggregated.entries()).map(([label, data]) => ({
+        label,
+        contracts: data.contracts,
+        sales: data.sales
+      }));
+      
+      if (interval === 'week') {
+        // 週間隔の場合は、週の開始日でソート
+        result.sort((a, b) => {
+          const getWeekStartDate = (weekLabel: string) => {
+            const parts = weekLabel.split('-')[0].split('/');
+            const month = parseInt(parts[0], 10);
+            const day = parseInt(parts[1], 10);
+            return new Date(2025, month - 1, day); // 仮に2025年として計算
+          };
+          
+          return getWeekStartDate(a.label).getTime() - getWeekStartDate(b.label).getTime();
+        });
+      }
+      
+      return result;
+    };
+  }, []);
 
-  const salesData = [
-    { label: '1/15', value: 85000 },
-    { label: '1/18', value: 120000 },
-    { label: '1/20', value: 75000 },
-    { label: '1/22', value: 95000 },
-    { label: '1/25', value: 110000 },
-  ];
+  // 集計されたデータ
+  const aggregatedData = useMemo(() => {
+    return aggregateDataByInterval(rawContractsData, plotInterval);
+  }, [rawContractsData, plotInterval, aggregateDataByInterval]);
+
+  // グラフデータ
+  const chartData = useMemo(() => {
+    return aggregatedData.map(item => ({
+      label: item.label,
+      value: item.contracts
+    }));
+  }, [aggregatedData]);
+
+  const salesData = useMemo(() => {
+    return aggregatedData.map(item => ({
+      label: item.label,
+      value: item.sales
+    }));
+  }, [aggregatedData]);
+
+  // 累計売上データ
+  const cumulativeData = useMemo(() => {
+    let cumulative = 0;
+    return aggregatedData.map(item => {
+      cumulative += item.sales;
+      return {
+        label: item.label,
+        value: cumulative
+      };
+    });
+  }, [aggregatedData]);
+
+  // 間隔ラベル
+  const getIntervalLabel = (interval: PlotInterval) => {
+    switch (interval) {
+      case 'day': return '日別';
+      case 'week': return '週別';
+      case 'month': return '月別';
+      case 'year': return '年別';
+      default: return '日別';
+    }
+  };
+
+  // 表示用の契約データ（日付フォーマット調整）
+  const contractsData = rawContractsData.map(contract => ({
+    ...contract,
+    contractDate: contract.contractDate.replace(/-/g, '/')
+  }));
 
   // 追加のグラフデータ
   const truckTypeData = [
@@ -538,33 +659,15 @@ export default function AdminAnalytics() {
     { label: '1月', value: 15 },
   ];
 
-  const comboBarData = [
-    { label: '1/15', value: 1 },
-    { label: '1/18', value: 1 },
-    { label: '1/20', value: 1 },
-    { label: '1/22', value: 1 },
-    { label: '1/25', value: 1 },
-  ];
-
-  const comboLineData = [
-    { label: '1/15', value: 8.5 },
-    { label: '1/18', value: 12 },
-    { label: '1/20', value: 7.5 },
-    { label: '1/22', value: 9.5 },
-    { label: '1/25', value: 11 },
-  ];
-
-  const cumulativeData = [
-    { label: '1/15', value: 85000 },
-    { label: '1/18', value: 205000 },
-    { label: '1/20', value: 280000 },
-    { label: '1/22', value: 375000 },
-    { label: '1/25', value: 485000 },
-  ];
+  const comboBarData = chartData;
+  const comboLineData = salesData.map(item => ({
+    label: item.label,
+    value: item.value / 10000 // 万円単位に変換
+  }));
 
   const handleFilterUpdate = () => {
     // フィルター更新処理（実際のアプリケーションでは API 呼び出し）
-    console.log('フィルター更新:', startDate, endDate);
+    console.log('フィルター更新:', startDate, endDate, plotInterval);
   };
 
   const handleCSVExport = () => {
@@ -610,9 +713,10 @@ export default function AdminAnalytics() {
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="space-y-6">
-            {/* 期間指定フィルター */}
+            {/* 期間指定フィルター＆プロット間隔選択 */}
             <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-6 flex-wrap">
+                {/* 期間指定 */}
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700">📅 期間指定：</label>
                   <input
@@ -629,18 +733,45 @@ export default function AdminAnalytics() {
                     className="border border-gray-300 rounded-md px-3 py-2 text-sm"
                   />
                 </div>
-                <button
-                  onClick={handleFilterUpdate}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  更新
-                </button>
-                <button
-                  onClick={handleCSVExport}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  CSV出力
-                </button>
+                
+                {/* プロット間隔選択 */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">📊 表示間隔：</label>
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                    {(['day', 'week', 'month', 'year'] as PlotInterval[]).map((interval) => (
+                      <button
+                        key={interval}
+                        onClick={() => setPlotInterval(interval)}
+                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                          plotInterval === interval
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        {interval === 'day' && '日'}
+                        {interval === 'week' && '週'}
+                        {interval === 'month' && '月'}
+                        {interval === 'year' && '年'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* アクションボタン */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleFilterUpdate}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    更新
+                  </button>
+                  <button
+                    onClick={handleCSVExport}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    CSV出力
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -681,12 +812,12 @@ export default function AdminAnalytics() {
               {/* 1行目: 基本グラフ */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SimpleChart
-                  title="📊 成約件数の推移（棒グラフ）"
+                  title={`📊 成約件数の推移（${getIntervalLabel(plotInterval)}・棒グラフ）`}
                   data={chartData}
                   type="bar"
                 />
                 <LineChart
-                  title="💰 売上金額の推移（折れ線グラフ）"
+                  title={`💰 売上金額の推移（${getIntervalLabel(plotInterval)}・折れ線グラフ）`}
                   data={salesData}
                 />
               </div>
@@ -698,7 +829,7 @@ export default function AdminAnalytics() {
                   data={truckTypeData}
                 />
                 <ComboChart
-                  title="📈 成約件数 vs 売上推移"
+                  title={`📈 成約件数 vs 売上推移（${getIntervalLabel(plotInterval)}）`}
                   barData={comboBarData}
                   lineData={comboLineData}
                 />
@@ -711,7 +842,7 @@ export default function AdminAnalytics() {
                   data={monthlyTrendData}
                 />
                 <AreaChart
-                  title="💹 累計売上推移（エリアチャート）"
+                  title={`💹 累計売上推移（${getIntervalLabel(plotInterval)}・エリアチャート）`}
                   data={cumulativeData}
                 />
               </div>
