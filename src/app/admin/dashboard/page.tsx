@@ -313,8 +313,20 @@ export default function AdminDashboard() {
               </Link>
             </div>
 
-            {/* 空きスペース */}
-            <div className="lg:col-start-2"></div>
+            {/* 集計管理 */}
+            <div className="lg:col-start-2">
+              <Link href="/admin/analytics" className="block h-full">
+                <div className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 h-full min-h-[120px]">
+                  <div className="p-3 flex items-center gap-2 h-full">
+                    <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center text-lg">📊</div>
+                    <div>
+                      <h3 className="text-base font-bold text-purple-600">集計管理</h3>
+                      <p className="text-xs text-gray-900">成約率・売上などのKPI分析</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
 
             {/* トレンド情報 - 右列に配置 */}
             <div className="lg:col-start-3 lg:row-start-1 lg:row-end-4">
