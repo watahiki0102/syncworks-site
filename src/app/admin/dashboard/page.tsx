@@ -7,7 +7,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
@@ -172,6 +172,24 @@ export default function AdminDashboard() {
   const [adminEmail, setAdminEmail] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const router = useRouter();
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  // 設定メニュー外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setShowSettings(false);
+      }
+    };
+
+    if (showSettings) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSettings]);
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -209,7 +227,7 @@ export default function AdminDashboard() {
               
               <div className="flex items-center space-x-4">
                 {/* 基本情報設定メニュー */}
-                <div className="relative">
+                <div className="relative" ref={settingsRef}>
                   <button
                     onClick={() => setShowSettings(!showSettings)}
                     className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"

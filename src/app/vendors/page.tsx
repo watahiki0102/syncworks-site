@@ -7,7 +7,7 @@
  */
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Filter, MapPin, Star, Users, Calendar, ArrowRight } from 'lucide-react';
 import { Layout } from '@/components/layout';
@@ -145,13 +145,31 @@ export default function VendorsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPrefectures, setSelectedPrefectures] = useState<string[]>([]);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // フィルター外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters]);
 
   // 検索とソートの処理
   const filteredAndSortedVendors = useMemo(() => {
     let filtered = vendors.filter(vendor => {
       // 1. 地域フィルターチェック
       let passesAreaFilter = true;
-      
+
       if (selectedPrefectures.length > 0) {
         const serviceAreasText = vendor.serviceAreas.join(' ');
         passesAreaFilter = selectedPrefectures.some(pref => {
@@ -162,11 +180,11 @@ export default function VendorsPage() {
       }
 
       // 2. 検索条件チェック
-      const passesSearchFilter = !searchTerm.trim() || 
+      const passesSearchFilter = !searchTerm.trim() ||
         vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vendor.serviceAreas.some(area => area.toLowerCase().includes(searchTerm.toLowerCase())) ||
         vendor.specialties.some(specialty => specialty.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       return passesAreaFilter && passesSearchFilter;
     });
     return filtered.sort((a, b) => {
@@ -262,17 +280,17 @@ export default function VendorsPage() {
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <Filter className="w-4 h-4" />
-                フィルター
+                対応地域で絞り込み
               </button>
             </div>
           </div>
 
           {/* フィルターパネル */}
           {showFilters && (
-            <div className="mt-4 p-6 bg-white rounded-lg shadow-md border">
+            <div className="mt-4 p-6 bg-white rounded-lg shadow-md border" ref={filterRef}>
               <div className="mb-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">対応地域で絞り込み</h3>
-                
+
                 {/* 地方選択ボタン */}
                 <div className="mb-4">
                   <div className="mb-2 font-medium text-gray-700">地域を選択</div>
@@ -281,11 +299,10 @@ export default function VendorsPage() {
                       <button
                         key={region.name}
                         type="button"
-                        className={`px-3 py-2 rounded-md border transition-colors ${
-                          selectedRegion === region.name 
-                            ? 'bg-blue-600 text-white border-blue-600' 
+                        className={`px-3 py-2 rounded-md border transition-colors ${selectedRegion === region.name
+                            ? 'bg-blue-600 text-white border-blue-600'
                             : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
-                        }`}
+                          }`}
                         onClick={() => handleRegionSelect(region.name)}
                       >
                         {region.name}
@@ -349,9 +366,9 @@ export default function VendorsPage() {
                           className="inline-flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full"
                         >
                           {pref}
-                          <button 
-                            type="button" 
-                            onClick={() => handleRemovePrefTag(pref)} 
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePrefTag(pref)}
                             className="ml-2 text-blue-600 hover:text-red-500 transition-colors"
                           >
                             ×
@@ -379,7 +396,7 @@ export default function VendorsPage() {
           <div className="mt-4 text-sm text-gray-600">
             {selectedPrefectures.length > 0 && (
               <span className="text-blue-600 font-medium">
-                {selectedPrefectures.join('、')}での検索結果: 
+                {selectedPrefectures.join('、')}での検索結果:
               </span>
             )}
             <span className="ml-1">

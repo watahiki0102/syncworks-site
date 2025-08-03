@@ -34,7 +34,7 @@ const defaultNavigation: NavigationItem[] = [
     href: '/vendors'
   },
   {
-    label: 'よくある質問',
+    label: 'よくあるご質問',
     href: '/faq'
   },
   {

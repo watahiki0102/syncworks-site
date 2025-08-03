@@ -1,8 +1,8 @@
 /**
- * よくある質問ページ
+ * よくあるご質問ページ
  * - 引越しサービスに関するFAQ
- * - アコーディオン式の質問表示
- * - レスポンシブデザイン対応
+ * - アコーディオン形式での表示
+ * - カテゴリ別の分類
  */
 'use client';
 
@@ -86,7 +86,7 @@ export default function FAQPage() {
       <section className="bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            よくある質問
+            よくあるご質問
           </h1>
           <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto">
             SyncWorksの引越しマッチングサービスに関する
