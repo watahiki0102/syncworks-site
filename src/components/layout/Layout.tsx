@@ -31,7 +31,7 @@ const defaultNavigation: NavigationItem[] = [
   },
   {
     label: 'お客様の声',
-    href: '/reviews'
+    href: '/vendors'
   },
   {
     label: 'よくある質問',

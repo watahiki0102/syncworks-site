@@ -126,14 +126,6 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* アクションボタン（デスクトップ） */}
           <div className="hidden md:flex items-center space-x-4">
-            {showVendorReviews && (
-              <Link
-                href="/vendors"
-                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                口コミ
-              </Link>
-            )}
             {showBusinessLogin && (
               <Link
                 href="/admin/login"
@@ -222,15 +214,6 @@ const Header: React.FC<HeaderProps> = ({
 
               {/* モバイル用アクションボタン */}
               <div className="pt-4 border-t border-gray-200 space-y-2">
-                {showVendorReviews && (
-                  <Link
-                    href="/vendors"
-                    className="block px-3 py-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                    onClick={closeMenu}
-                  >
-                    口コミ
-                  </Link>
-                )}
                 {showBusinessLogin && (
                   <div className="px-3">
                     <Link
