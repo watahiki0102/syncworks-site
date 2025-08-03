@@ -710,8 +710,12 @@ export default function AdminAnalytics() {
 
   // データ集計関数
   const aggregateDataByInterval = useMemo(() => {
-    return (contracts: any[], interval: PlotInterval) => {
+    return (contracts: any[], interval: PlotInterval, startDate?: string, endDate?: string) => {
       const aggregated = new Map();
+      
+      // 期間の開始日と終了日
+      const periodStart = startDate ? new Date(startDate) : null;
+      const periodEnd = endDate ? new Date(endDate) : null;
       
       contracts.forEach(contract => {
         const date = new Date(contract.contractDate);
@@ -722,27 +726,59 @@ export default function AdminAnalytics() {
             key = `${date.getMonth() + 1}/${date.getDate()}`;
             break;
           case 'week':
-            // 週の開始日（月曜日）を計算
-            const startOfWeek = new Date(date);
-            const dayOfWeek = date.getDay(); // 0:日曜, 1:月曜, ..., 6:土曜
-            const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 月曜日を起点とする
-            startOfWeek.setDate(date.getDate() - mondayOffset);
-            
-            // 週の終了日（日曜日）を計算
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            
-            // 週の日付範囲を表示用にフォーマット
-            const startMonth = startOfWeek.getMonth() + 1;
-            const startDay = startOfWeek.getDate();
-            const endMonth = endOfWeek.getMonth() + 1;
-            const endDay = endOfWeek.getDate();
-            
-            // 同月内の週か、月をまたぐ週かで表示を分ける
-            if (startMonth === endMonth) {
-              key = `${startMonth}/${startDay}-${endDay}`;
+            // 期間開始日を基準にした週間隔を計算
+            if (periodStart) {
+              // 契約日と期間開始日の差を計算
+              const diffTime = date.getTime() - periodStart.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              
+              // 7日刻みでどの週に属するかを計算
+              const weekNumber = Math.floor(diffDays / 7);
+              
+              // その週の開始日と終了日を計算
+              const weekStart = new Date(periodStart);
+              weekStart.setDate(periodStart.getDate() + (weekNumber * 7));
+              
+              const weekEnd = new Date(weekStart);
+              weekEnd.setDate(weekStart.getDate() + 6);
+              
+              // 期間終了日を超えないように調整
+              if (periodEnd && weekEnd > periodEnd) {
+                weekEnd.setTime(periodEnd.getTime());
+              }
+              
+              // 週の日付範囲を表示用にフォーマット
+              const startMonth = weekStart.getMonth() + 1;
+              const startDay = weekStart.getDate();
+              const endMonth = weekEnd.getMonth() + 1;
+              const endDay = weekEnd.getDate();
+              
+              // 同月内の週か、月をまたぐ週かで表示を分ける
+              if (startMonth === endMonth) {
+                key = `${startMonth}/${startDay}-${endDay}`;
+              } else {
+                key = `${startMonth}/${startDay}-${endMonth}/${endDay}`;
+              }
             } else {
-              key = `${startMonth}/${startDay}-${endMonth}/${endDay}`;
+              // 期間指定がない場合は従来の月曜日ベース
+              const startOfWeek = new Date(date);
+              const dayOfWeek = date.getDay();
+              const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+              startOfWeek.setDate(date.getDate() - mondayOffset);
+              
+              const endOfWeek = new Date(startOfWeek);
+              endOfWeek.setDate(startOfWeek.getDate() + 6);
+              
+              const startMonth = startOfWeek.getMonth() + 1;
+              const startDay = startOfWeek.getDate();
+              const endMonth = endOfWeek.getMonth() + 1;
+              const endDay = endOfWeek.getDate();
+              
+              if (startMonth === endMonth) {
+                key = `${startMonth}/${startDay}-${endDay}`;
+              } else {
+                key = `${startMonth}/${startDay}-${endMonth}/${endDay}`;
+              }
             }
             break;
           case 'month':
@@ -778,7 +814,9 @@ export default function AdminAnalytics() {
             const parts = weekLabel.split('-')[0].split('/');
             const month = parseInt(parts[0], 10);
             const day = parseInt(parts[1], 10);
-            return new Date(2025, month - 1, day); // 仮に2025年として計算
+            // 現在の年度を基準にする（より正確にするため）
+            const currentYear = periodStart ? periodStart.getFullYear() : new Date().getFullYear();
+            return new Date(currentYear, month - 1, day);
           };
           
           return getWeekStartDate(a.label).getTime() - getWeekStartDate(b.label).getTime();
@@ -810,8 +848,8 @@ export default function AdminAnalytics() {
 
   // 集計されたデータ（フィルタリング済み）
   const aggregatedData = useMemo(() => {
-    return aggregateDataByInterval(filteredContractsData, plotInterval);
-  }, [filteredContractsData, plotInterval, aggregateDataByInterval]);
+    return aggregateDataByInterval(filteredContractsData, plotInterval, startDate, endDate);
+  }, [filteredContractsData, plotInterval, startDate, endDate, aggregateDataByInterval]);
 
   // グラフデータ
   const chartData = useMemo(() => {
