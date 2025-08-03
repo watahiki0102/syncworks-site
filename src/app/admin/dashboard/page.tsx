@@ -17,13 +17,12 @@ import React from 'react';
  * トレンド情報パネルコンポーネント
  * - 未回答数、本日の成約数、申し込み数、売上、成約率、平均評価を表示
  */
-function TrendPanel({ unansweredCount, todayContracts, applicationCount, sales, contractRate, averageRating }: {
+function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sales, contractRate }: {
   unansweredCount: number;  // 未回答数
-  todayContracts: number;   // 本日の成約数
-  applicationCount: number;  // 今月の申し込み件数
+  todayApplications: number; // 本日の申し込み数
+  monthlyContracts: number; // 今月の成約数
   sales: number;            // 今月の売上
   contractRate: number;     // 今月の成約率
-  averageRating: number;    // 平均評価
 }) {
   return (
     <div className="w-full space-y-2 border border-gray-200 rounded-2xl p-3 bg-white shadow-lg h-full min-h-[520px]">
@@ -38,46 +37,41 @@ function TrendPanel({ unansweredCount, todayContracts, applicationCount, sales, 
         </div>
       </div>
       
-      {/* 本日の成約数 */}
-      <div className="flex items-center gap-2 bg-gradient-to-r from-emerald-100 to-emerald-50 p-2 rounded-xl shadow border-l-4 border-emerald-400">
-        <div className="text-lg">🎯</div>
+      {/* 本日の申し込み数 */}
+      <div className="flex items-center gap-2 bg-gradient-to-r from-blue-100 to-blue-50 p-2 rounded-xl shadow border-l-4 border-blue-400">
+        <div className="text-lg">📝</div>
         <div>
-          <div className="text-xs text-gray-900">本日の成約数</div>
-          <div className="text-lg font-extrabold text-emerald-700 tracking-tight">{todayContracts}<span className="text-xs font-medium text-gray-900 ml-1">件</span></div>
+          <div className="text-xs text-gray-900">本日の申し込み数</div>
+          <div className="text-lg font-extrabold text-blue-700 tracking-tight">{todayApplications}<span className="text-xs font-medium text-gray-900 ml-1">件</span></div>
         </div>
       </div>
       
-      {/* 集計データ風カード */}
-      <div className="flex items-center gap-2 bg-gradient-to-r from-blue-100 to-blue-50 p-2 rounded-xl shadow border-l-4 border-blue-400">
-        <div className="text-lg">📋</div>
+      {/* 今月の成約数 */}
+      <div className="flex items-center gap-2 bg-gradient-to-r from-green-100 to-green-50 p-2 rounded-xl shadow border-l-4 border-green-400">
+        <div className="text-lg">🎯</div>
         <div>
-          <div className="text-xs text-gray-900">今月の申し込み</div>
-          <div className="text-lg font-extrabold text-blue-700 tracking-tight">{applicationCount}<span className="text-xs font-medium text-gray-900 ml-1">件</span></div>
+          <div className="text-xs text-gray-900">今月の成約数</div>
+          <div className="text-lg font-extrabold text-green-700 tracking-tight">{monthlyContracts}<span className="text-xs font-medium text-gray-900 ml-1">件</span></div>
         </div>
       </div>
-      <div className="flex items-center gap-2 bg-gradient-to-r from-green-100 to-green-50 p-2 rounded-xl shadow border-l-4 border-green-400">
+      
+      {/* 今月の売上 */}
+      <div className="flex items-center gap-2 bg-gradient-to-r from-amber-100 to-amber-50 p-2 rounded-xl shadow border-l-4 border-amber-400">
         <div className="text-lg">💰</div>
         <div>
           <div className="text-xs text-gray-900">今月の売上</div>
-          <div className="text-lg font-extrabold text-green-700 tracking-tight">¥{sales.toLocaleString()}</div>
+          <div className="text-lg font-extrabold text-amber-700 tracking-tight">¥{sales.toLocaleString()}</div>
         </div>
       </div>
+      
+      {/* 今月の成約率 */}
       <div className="flex items-center gap-2 bg-gradient-to-r from-purple-100 to-purple-50 p-2 rounded-xl shadow border-l-4 border-purple-400">
-        <div className="text-lg">🕒</div>
+        <div className="text-lg">📊</div>
         <div>
           <div className="text-xs text-gray-900">今月の成約率</div>
           <div className="text-lg font-extrabold text-purple-700 tracking-tight">{contractRate}<span className="text-xs font-medium text-gray-900 ml-1">%</span></div>
         </div>
       </div>
-      <a href="/reviews/1" className="block">
-        <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-100 to-yellow-50 p-2 rounded-xl shadow border-l-4 border-yellow-400 hover:shadow-lg transition-all duration-300 hover:scale-102">
-          <div className="text-lg">⭐</div>
-          <div>
-            <div className="text-xs text-gray-900">平均評価</div>
-            <div className="text-lg font-extrabold text-yellow-600 tracking-tight">{averageRating}<span className="text-xs font-medium text-gray-900 ml-1">/5.0</span></div>
-          </div>
-        </div>
-      </a>
     </div>
   );
 }
@@ -195,12 +189,11 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
-  const applicationCount = 12;
   const sales = 450000;
   const contractRate = 70;
-  const averageRating = 4.8;
   const unansweredCount = 3;  // 未回答数
-  const todayContracts = 2;   // 本日の成約数
+  const todayApplications = 5; // 本日の申し込み数
+  const monthlyContracts = 10; // 今月の成約数
 
   return (
     <AdminAuthGuard>
@@ -327,11 +320,10 @@ export default function AdminDashboard() {
             <div className="lg:col-start-3 lg:row-start-1 lg:row-end-4">
               <TrendPanel
                 unansweredCount={unansweredCount}
-                todayContracts={todayContracts}
-                applicationCount={applicationCount}
+                todayApplications={todayApplications}
+                monthlyContracts={monthlyContracts}
                 sales={sales}
                 contractRate={contractRate}
-                averageRating={averageRating}
               />
             </div>
           </div>
