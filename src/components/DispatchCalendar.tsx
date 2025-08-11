@@ -639,8 +639,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   onChange={(e) => setFormData(prev => ({ ...prev, contractStatus: e.target.value as any }))}
                   className="w-full p-2 border rounded"
                 >
-                  <option value="estimate">見積もり回答済み（仮）</option>
-                  <option value="confirmed">契約確定済み</option>
+                                          <option value="estimate">未確定</option>
+                                          <option value="confirmed">確定</option>
                 </select>
               </div>
             </div>
@@ -1529,7 +1529,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                   e.stopPropagation();
                                   handleTimeBlockScheduleClick(schedule, truck);
                                 }}
-                                title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(契約確定済み)' : '(見積もり回答済み)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
+                                title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(確定)' : '(未確定)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
                               >
                                 <div className="text-xs text-gray-600 mt-1">
                                   {schedule.origin && (
@@ -1555,9 +1555,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                           {schedules.map((schedule, index) => (
                             <div key={`status-${schedule.id}`} className="flex items-center gap-1">
                               {schedule.contractStatus === 'confirmed' ? (
-                                <span title={`${schedule.customerName || '予約済み'} - 契約確定済み`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
+                                <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
                               ) : schedule.contractStatus === 'estimate' ? (
-                                <span title={`${schedule.customerName || '予約済み'} - 見積もり回答済み（仮）`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
+                                                                  <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
                               ) : null}
                             </div>
                           ))}
@@ -1688,7 +1688,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">契約ステータス</label>
                     <p className="text-gray-900">
-                      {selectedSchedule.contractStatus === 'confirmed' ? '✅ 契約確定済み' : '⏳ 見積もり回答済み（仮）'}
+                                              {selectedSchedule.contractStatus === 'confirmed' ? '✅ 確定' : '⏳ 未確定'}
                     </p>
                   </div>
                 </div>
@@ -2051,11 +2051,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           <div className="flex items-center gap-6 text-xs">
             <div className="flex items-center gap-1">
               <span>✅</span>
-              <span>契約確定済み</span>
+                                      <span>確定</span>
             </div>
             <div className="flex items-center gap-1">
               <span>⏳</span>
-              <span>見積もり回答済み（仮）</span>
+                                      <span>未確定</span>
             </div>
             {viewMode === 'day' && (
               <>

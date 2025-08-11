@@ -107,7 +107,7 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
                   ? 'bg-green-100 text-green-800'
                   : 'bg-yellow-100 text-yellow-800'
               }`}>
-                {schedule.contractStatus === 'confirmed' ? '✅ 契約確定済み' : '⏳ 見積もり回答済み（仮）'}
+                                    {schedule.contractStatus === 'confirmed' ? '✅ 確定' : '⏳ 未確定'}
               </span>
             </div>
           )}
