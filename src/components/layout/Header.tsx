@@ -71,10 +71,10 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header ref={headerRef} className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* ロゴ */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             <Link 
               href="/" 
               className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* デスクトップナビゲーション */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
             {navigation.map((item) => (
               <div key={item.label} className="relative group">
                 {item.children ? (
@@ -140,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* アクションボタン（デスクトップ） */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center flex-shrink-0">
             {showBusinessLogin && (
               <Link
                 href="/admin/login"

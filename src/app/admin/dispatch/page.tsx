@@ -956,7 +956,7 @@ function DispatchManagementContent() {
               <div className="bg-white shadow rounded-lg px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">引っ越し案件一覧</h2>
+                    <h2 className="text-xl font-bold text-gray-900">引越し案件一覧</h2>
                     <p className="text-sm text-gray-600 mt-1">
                       入力フォームから送信された案件: {formSubmissions.length}件
                     </p>
@@ -1100,7 +1100,7 @@ function DispatchManagementContent() {
                       <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-3xl">📋</div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-600">案件詳細</h3>
-                        <p className="text-sm text-gray-900">引っ越し案件の管理・編集</p>
+                        <p className="text-sm text-gray-900">引越し案件の管理・編集</p>
                       </div>
                     </div>
                     {selectedCaseId && registrationMode === 'registration' && (
@@ -1120,7 +1120,7 @@ function DispatchManagementContent() {
                   <div className="p-7 text-center">
                     <p className="text-gray-500 mb-4">入力フォームから送信された案件がありません</p>
                     <p className="text-sm text-gray-400">
-                      顧客が引っ越し見積もりフォームを送信すると、ここに表示されます
+                      顧客が引越し見積もりフォームを送信すると、ここに表示されます
                     </p>
                   </div>
                 ) : (

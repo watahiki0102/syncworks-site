@@ -1,6 +1,6 @@
 /**
  * 作業区分の定数定義
- * 引っ越し作業で使用される作業種別を定義
+ * 引越し作業で使用される作業種別を定義
  */
 
 export interface WorkTypeDefinition {

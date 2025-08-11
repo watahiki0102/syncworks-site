@@ -1702,7 +1702,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div className="grid grid-cols-2 gap-4">
                   {selectedSchedule.capacity && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">引っ越し容量</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">引越し容量</label>
                       <p className="text-gray-900">{selectedSchedule.capacity.toLocaleString()}kg</p>
                     </div>
                   )}

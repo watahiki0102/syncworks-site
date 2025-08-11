@@ -1,6 +1,6 @@
 /**
  * トラック種別の定数定義
- * 引っ越し業界で使用される標準的なトラック種別を定義
+ * 引越し業界で使用される標準的なトラック種別を定義
  */
 
 export interface TruckTypeDefinition {
@@ -23,7 +23,7 @@ export const TRUCK_TYPES: TruckTypeDefinition[] = [
     displayName: '2トンショート',
     capacityKg: 1000,
     maxPoints: 50,
-    description: '小型引っ越しに適した2トンショートトラック'
+         description: '小型引越しに適した2トンショートトラック'
   },
   {
     id: '2tロング',
@@ -31,7 +31,7 @@ export const TRUCK_TYPES: TruckTypeDefinition[] = [
     displayName: '2トンロング',
     capacityKg: 1500,
     maxPoints: 75,
-    description: '中型引っ越しに適した2トンロングトラック'
+         description: '中型引越しに適した2トンロングトラック'
   },
   {
     id: '4t',
@@ -39,7 +39,7 @@ export const TRUCK_TYPES: TruckTypeDefinition[] = [
     displayName: '4トン',
     capacityKg: 2000,
     maxPoints: 100,
-    description: '大型引っ越しに適した4トントラック'
+         description: '大型引越しに適した4トントラック'
   },
   {
     id: '6t',
@@ -47,7 +47,7 @@ export const TRUCK_TYPES: TruckTypeDefinition[] = [
     displayName: '6トン',
     capacityKg: 3000,
     maxPoints: 150,
-    description: '大規模引っ越しに適した6トントラック'
+         description: '大規模引越しに適した6トントラック'
   },
   {
     id: '10t',
@@ -55,7 +55,7 @@ export const TRUCK_TYPES: TruckTypeDefinition[] = [
     displayName: '10トン',
     capacityKg: 5000,
     maxPoints: 250,
-    description: '超大規模引っ越しに適した10トントラック'
+         description: '超大規模引越しに適した10トントラック'
   }
 ];
 

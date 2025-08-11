@@ -223,7 +223,7 @@ export default function TruckAssignmentModal({
               <span className="font-medium">顧客名:</span> {selectedSubmission.customerName}
             </div>
             <div>
-              <span className="font-medium">引っ越し日:</span> {selectedSubmission.moveDate}
+                               <span className="font-medium">引越し日:</span> {selectedSubmission.moveDate}
             </div>
             <div>
               <span className="font-medium">総容量:</span> {selectedSubmission.totalCapacity.toLocaleString()}kg

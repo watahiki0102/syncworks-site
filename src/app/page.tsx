@@ -144,12 +144,12 @@ export default function Home() {
               </div>
             </motion.div>
 
-            <AnimatedText
-              text="引っ越しを、シンプルに"
-              className="text-gray-900 mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
-              delay={0.3}
-              type="word"
-            />
+                         <AnimatedText
+               text="引越しを、シンプルに"
+               className="text-gray-900 mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
+               delay={0.3}
+               type="word"
+             />
 
             <motion.p
               initial={{ opacity: 0, y: 30 }}
