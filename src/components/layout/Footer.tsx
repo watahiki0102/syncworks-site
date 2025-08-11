@@ -38,16 +38,13 @@ const defaultSections: FooterSection[] = [
     title: 'サービス',
     links: [
       { label: '見積もり依頼', href: '/form/step1' },
-      { label: '料金について', href: '/pricing' },
-      { label: 'サービスエリア', href: '/areas' },
     ]
   },
   {
     title: '事業者向け',
     links: [
       { label: '事業者登録', href: '/admin/register' },
-      { label: 'ログイン', href: '/admin/login' },
-      { label: '料金設定', href: '/pricing/step1' },
+      { label: '事業者ログイン', href: '/admin/login' },
     ]
   },
   {
@@ -56,7 +53,6 @@ const defaultSections: FooterSection[] = [
       { label: 'お客様の声', href: '/vendors' },
       { label: 'よくあるご質問', href: '/faq' },
       { label: 'お問い合わせ', href: '/contact' },
-      { label: 'ヘルプ', href: '/help' },
     ]
   },
   {
@@ -84,20 +80,20 @@ const Footer: React.FC<FooterProps> = ({
 }) => {
   return (
     <footer className="bg-gray-900 text-white">
-      <div className="container mx-auto py-12">
+      <div className="container mx-auto py-8">
         {/* メインコンテンツ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {/* 会社情報 */}
           <div className="lg:col-span-2">
-            <Heading level={3} size="xl" color="default" className="text-white mb-4">
+            <Heading level={3} size="xl" color="default" className="text-white mb-3">
               {companyName}
             </Heading>
-            <Text variant="body" color="default" className="text-gray-300 mb-6 leading-relaxed">
+            <Text variant="body" color="default" className="text-gray-300 mb-4 leading-relaxed">
               {description}
             </Text>
 
             {/* 連絡先情報 */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {contactInfo.email && (
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-primary-400 flex-shrink-0" />
@@ -134,10 +130,10 @@ const Footer: React.FC<FooterProps> = ({
           {/* ナビゲーションセクション */}
           {sections.map((section) => (
             <div key={section.title}>
-              <Heading level={4} size="base" color="default" className="text-white mb-4">
+              <Heading level={4} size="base" color="default" className="text-white mb-3">
                 {section.title}
               </Heading>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {section.links.map((link) => (
                   <li key={link.label}>
                     <Link
@@ -154,29 +150,13 @@ const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* ボーダー */}
-        <div className="border-t border-gray-800 my-8"></div>
+        <div className="border-t border-gray-800 my-6"></div>
 
         {/* フッター下部 */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <Text variant="small" color="default" className="text-gray-400">
             © {copyrightYear} {companyName}. All rights reserved.
           </Text>
-          
-          {/* 追加リンク */}
-          <div className="flex gap-6">
-            <Link
-              href="/privacy"
-              className="text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              プライバシーポリシー
-            </Link>
-            <Link
-              href="/terms"
-              className="text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              利用規約
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

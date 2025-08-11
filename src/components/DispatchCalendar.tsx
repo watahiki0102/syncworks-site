@@ -46,6 +46,8 @@ interface Schedule {
   selectedOptions?: Array<{ name: string; price?: number }>;
   truckName?: string;
   truckId?: string;
+  isConfirmedOnly?: boolean;
+  isUnconfirmedOnly?: boolean;
 }
 
 interface TimeBlock {
@@ -218,8 +220,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         date: toLocalDateString(prevDate),
         day: prevDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
+        dayOfWeekNumber: prevDate.getDay(),
         isCurrentMonth: false,
         isToday: prevDate.toDateString() === new Date().toDateString(),
+        isHoliday: isHoliday(prevDate),
       });
     }
 
@@ -230,8 +234,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         date: toLocalDateString(currentDate),
         day: day,
         dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
+        dayOfWeekNumber: currentDate.getDay(),
         isCurrentMonth: true,
         isToday: currentDate.toDateString() === new Date().toDateString(),
+        isHoliday: isHoliday(currentDate),
       });
     }
 
@@ -243,8 +249,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         date: toLocalDateString(nextDate),
         day: nextDate.getDate(),
         dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
+        dayOfWeekNumber: nextDate.getDay(),
         isCurrentMonth: false,
         isToday: nextDate.toDateString() === new Date().toDateString(),
+        isHoliday: isHoliday(nextDate),
       });
     }
 
@@ -256,12 +264,48 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    * @param date - 基準日
    * @returns 日付情報
    */
+    /**
+   * 祝日かどうかを判定する関数（簡易版）
+   * @param date - 判定する日付
+   * @returns 祝日かどうか
+   */
+  const isHoliday = (date: Date) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    // 主要な祝日（簡易版）
+    const holidays = [
+      { month: 1, day: 1 },   // 元日
+      { month: 1, day: 2 },   // 振替休日
+      { month: 1, day: 3 },   // 振替休日
+      { month: 1, day: 9 },   // 成人の日
+      { month: 2, day: 11 },  // 建国記念の日
+      { month: 2, day: 23 },  // 天皇誕生日
+      { month: 3, day: 21 },  // 春分の日
+      { month: 4, day: 29 },  // 昭和の日
+      { month: 5, day: 3 },   // 憲法記念日
+      { month: 5, day: 4 },   // みどりの日
+      { month: 5, day: 5 },   // こどもの日
+      { month: 7, day: 17 },  // 海の日
+      { month: 8, day: 11 },  // 山の日
+      { month: 9, day: 21 },  // 敬老の日
+      { month: 9, day: 23 },  // 秋分の日
+      { month: 10, day: 14 }, // スポーツの日
+      { month: 11, day: 3 },  // 文化の日
+      { month: 11, day: 23 }, // 勤労感謝の日
+    ];
+    
+    return holidays.some(holiday => holiday.month === month && holiday.day === day);
+  };
+
   const getDayInfo = (date: Date) => {
     return {
       date: toLocalDateString(date),
       day: date.getDate(),
       dayOfWeek: WEEKDAYS_JA[date.getDay()],
+      dayOfWeekNumber: date.getDay(),
       isToday: date.toDateString() === new Date().toDateString(),
+      isHoliday: isHoliday(date),
     };
   };
 
@@ -866,6 +910,110 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       return 'bg-red-100 text-red-800';
     };
 
+    // 月ビュー用スケジュール一覧モーダル
+    const MonthScheduleModal = ({ date, schedules, onClose }: { 
+      date: string; 
+      schedules: any[]; 
+      onClose: () => void; 
+    }) => {
+      // 成約済みと未成約を分けて表示
+      const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
+      const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
+      
+      // selectedScheduleのフラグに基づいて表示する案件を決定
+      let displaySchedules = schedules;
+      let title = `${formatDate(date)} のスケジュール (${schedules.length}件)`;
+      
+      if (selectedSchedule?.isConfirmedOnly) {
+        displaySchedules = confirmedSchedules;
+        title = `${formatDate(date)} の成約済みスケジュール (${confirmedSchedules.length}件)`;
+      } else if (selectedSchedule?.isUnconfirmedOnly) {
+        displaySchedules = unconfirmedSchedules;
+        title = `${formatDate(date)} の未成約スケジュール (${unconfirmedSchedules.length}件)`;
+      }
+
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl border">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {title}
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {displaySchedules.map((schedule, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded border cursor-pointer hover:bg-gray-50 transition-colors ${
+                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                    'bg-gray-50 text-gray-800 border-gray-200'
+                  }`}
+                  onClick={() => {
+                    setSelectedDate(date);
+                    setViewMode('day');
+                    setHighlightedScheduleId(schedule.id);
+                    onClose();
+                    // 日ビューのセクションにスクロール
+                    setTimeout(() => {
+                      const dayViewElement = document.querySelector('[data-view="day"]');
+                      if (dayViewElement) {
+                        dayViewElement.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start' 
+                        });
+                      }
+                    }, 200);
+                  }}
+                >
+                  {/* 依頼者名と発着地を2行レイアウト */}
+                  <div className="text-sm">
+                    {/* 1行目: 依頼者名と発地 */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                        </span>
+                        <span className="font-medium">
+                          {schedule.customerName || '予約済み'}
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          {schedule.truckName}
+                        </span>
+                      </div>
+                      {schedule.origin && (
+                        <span className="text-blue-600 text-xs truncate ml-2">
+                          発：{schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                        </span>
+                      )}
+                    </div>
+                    {/* 2行目: 時間と着地 */}
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span className="text-sm font-medium">
+                        {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                      </span>
+                      {schedule.destination && (
+                        <span className="text-red-600 text-xs truncate ml-2">
+                          着：{schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
         {/* 月次ナビゲーション */}
@@ -911,7 +1059,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 
             {/* 日付グリッド */}
             {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5 relative">
+              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5">
                 {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const schedules = getSchedulesForDate(day.date);
                   const hasSchedules = schedules.length > 0;
@@ -920,26 +1068,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     <div
                       key={day.date}
                       data-date-cell
-                      data-expanded-cell={isExpandedView && expandedDate === day.date ? 'true' : 'false'}
                       className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${
                         day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-                        isExpandedView && expandedDate === day.date ? 'absolute w-[calc(20%+8px)] min-h-[300px] max-h-[600px] overflow-y-auto z-20 bg-white shadow-xl border-2 border-blue-300 rounded-lg' : ''
-                      }`}
+                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
                       onClick={(e) => {
-                        // 展開表示中で、展開された日付以外をクリックした場合
-                        if (isExpandedView && expandedDate !== day.date) {
-                          setIsExpandedView(false);
-                          setExpandedDate(null);
-                          setHighlightedScheduleId(null);
-                          return;
-                        }
-                        
                         console.log('Date clicked:', day.date);
                         setSelectedDate(day.date);
                         setViewMode('day');
-                        setExpandedDate(null); // 展開状態をリセット
-                        setIsExpandedView(false); // 展開表示をリセット
                         // 日ビューのセクションにスクロール
                         setTimeout(() => {
                           const dayViewElement = document.querySelector('[data-view="day"]');
@@ -954,122 +1089,59 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     >
                       <div className={`text-xs font-medium mb-0.5 ${
                         day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                      } ${day.isToday ? 'text-blue-600' : ''}`}>
+                      } ${day.isToday ? 'text-blue-600' : ''} ${
+                        // 土曜日は青色、日曜日と祝日は赤色で表示
+                        day.dayOfWeekNumber === 6 ? 'text-blue-600' : 
+                        (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
+                      }`}>
                         {day.day}
                       </div>
                       
                       {hasSchedules && (
-                        <div className="space-y-1">
-                          {/* 予約件数バッジ */}
-                          <div className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-center font-medium">
-                            {schedules.length}件
-                          </div>
-                          {/* 展開表示時 */}
-                          {isExpandedView && expandedDate === day.date ? (
-                            <div className="space-y-2 p-2">
-                              {/* 閉じるボタン */}
-                              <div className="flex justify-between items-center mb-2 pb-2 border-b">
-                                <span className="font-semibold text-sm">{schedules.length}件のスケジュール</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsExpandedView(false);
-                                    setExpandedDate(null);
-                                  }}
-                                  className="text-gray-500 hover:text-gray-700 text-lg"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              {schedules.map((schedule, index) => (
-                                <div
-                                  key={index}
-                                  className={`text-xs p-2 rounded cursor-pointer border ${
-                                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                                    'bg-gray-50 text-gray-800 border-gray-200'
-                                  } ${highlightedScheduleId === schedule.id ? 'ring-2 ring-blue-400' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedDate(day.date);
-                                    setViewMode('day');
-                                    setHighlightedScheduleId(schedule.id);
-                                  }}
-                                >
-                                  {/* 依頼者名と発着地を2行レイアウト */}
-                                  <div className="text-xs">
-                                    {/* 1行目: 依頼者名と発地 */}
-                                    <div className="flex items-center justify-between mb-0.5">
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-xs">
-                                          {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                        </span>
-                                        <span className="font-medium truncate">
-                                          {schedule.customerName || '予約済み'}
-                                        </span>
-                                      </div>
-                                      {schedule.origin && (
-                                        <span className="text-blue-600 text-xs truncate ml-1">
-                                          発：{schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
-                                        </span>
-                                      )}
-                                    </div>
-                                    {/* 2行目: 時間と着地 */}
-                                    <div className="flex items-center justify-between text-gray-600">
-                                      <span>{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</span>
-                                      {schedule.destination && (
-                                        <span className="text-red-600 text-xs truncate ml-1">
-                                          着：{schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
-                                        </span>
-                                      )}
-                                    </div>
+                        <div className="space-y-1 flex flex-col items-center">
+                          {/* 成約済みと未成約の件数を分けて表示 */}
+                          {(() => {
+                            const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
+                            const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
+                            
+                            return (
+                              <>
+                                {/* 成約済み件数 */}
+                                {confirmedSchedules.length > 0 && (
+                                  <div 
+                                    className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-green-200 transition-colors w-full flex items-center justify-center gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedDate(day.date);
+                                      setIsExpandedView(true);
+                                      // 成約済みのみを表示するためのフラグを設定
+                                      setSelectedSchedule({ ...confirmedSchedules[0], isConfirmedOnly: true });
+                                    }}
+                                  >
+                                    <span>✅</span>
+                                    <span>{confirmedSchedules.length}件</span>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            /* 通常時: 最初の2件のみ表示 + プラスボタン */
-                            <>
-                              {schedules.slice(0, 2).map((schedule, index) => (
-                                <div
-                                  key={index}
-                                  className={`text-xs p-2 rounded cursor-pointer border ${
-                                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                                    'bg-gray-50 text-gray-800 border-gray-200'
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedDate(day.date);
-                                    setIsExpandedView(true);
-                                  }}
-                                >
-                                  {/* 契約ステータスアイコンと依頼者名 */}
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs">
-                                      {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                    </span>
-                                    <span className="font-medium truncate">
-                                      {schedule.customerName || '予約済み'}
-                                    </span>
+                                )}
+                                
+                                {/* 未成約件数 */}
+                                {unconfirmedSchedules.length > 0 && (
+                                  <div 
+                                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-gray-200 transition-colors w-full flex items-center justify-center gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedDate(day.date);
+                                      setIsExpandedView(true);
+                                      // 未成約のみを表示するためのフラグを設定
+                                      setSelectedSchedule({ ...unconfirmedSchedules[0], isUnconfirmedOnly: true });
+                                    }}
+                                  >
+                                    <span>⏳</span>
+                                    <span>{unconfirmedSchedules.length}件</span>
                                   </div>
-                                </div>
-                              ))}
-                              {schedules.length > 2 && (
-                                <button
-                                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-1 py-0.5 transition-colors w-full flex items-center justify-center gap-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedDate(day.date);
-                                    setIsExpandedView(true);
-                                  }}
-                                >
-                                  <span className="text-sm font-medium">+</span>
-                                  <span>{schedules.length - 2}件</span>
-                                </button>
-                              )}
-                            </>
-                          )}
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
@@ -1080,7 +1152,17 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           </div>
         </div>
 
-
+        {/* 月ビュー用スケジュール一覧モーダル */}
+        {isExpandedView && expandedDate && (
+          <MonthScheduleModal
+            date={expandedDate}
+            schedules={getSchedulesForDate(expandedDate)}
+            onClose={() => {
+              setIsExpandedView(false);
+              setExpandedDate(null);
+            }}
+          />
+        )}
       </div>
     );
   };
