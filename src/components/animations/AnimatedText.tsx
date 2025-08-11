@@ -1,11 +1,10 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 interface AnimatedTextProps {
   text: string;
   className?: string;
   delay?: number;
-  duration?: number;
   type?: 'word' | 'character';
 }
 
@@ -13,12 +12,11 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
   text,
   className = '',
   delay = 0,
-  duration = 0.5,
   type = 'word'
 }) => {
   const words = text.split(' ');
 
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     visible: (i = 1) => ({
       opacity: 1,
@@ -26,15 +24,14 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
     }),
   };
 
-  const child = {
+  const child: Variants = {
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         type: "spring",
         damping: 12,
-        stiffness: 200,
-        duration
+        stiffness: 200
       }
     },
     hidden: {
