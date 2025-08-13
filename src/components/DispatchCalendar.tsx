@@ -76,7 +76,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(today));
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('month'); // 初期表示を月ビューに変更
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showScheduleDetail, setShowScheduleDetail] = useState(false);
@@ -320,6 +320,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
   const dayInfo = getDayInfo(currentDate);
+
+  // 初回レンダー時に週ビューが要求されている場合、selectedDateを今日に揃える
+  useEffect(() => {
+    if (viewMode === 'week') {
+      setSelectedDate(toLocalDateString(today));
+      setCurrentDate(today);
+    }
+  }, []);
 
   // 顧客ごとの色を生成（案件ごとに色分け）
   const getCustomerColor = (customerName: string) => {
@@ -2082,7 +2090,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               月
             </button>
             <button
-              onClick={() => setViewMode('week')}
+              onClick={() => {
+                setSelectedDate(toLocalDateString(today));
+                setCurrentDate(today);
+                setViewMode('week');
+              }}
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
@@ -2090,7 +2102,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               週
             </button>
             <button
-              onClick={() => setViewMode('day')}
+              onClick={() => {
+                setSelectedDate(toLocalDateString(today));
+                setViewMode('day');
+              }}
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
