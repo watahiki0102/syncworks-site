@@ -30,6 +30,7 @@ interface Schedule {
   status: 'available' | 'maintenance';
   contractStatus?: 'confirmed' | 'estimate';
   customerName?: string;
+  customerPhone?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
   description?: string;
   capacity?: number;
@@ -82,18 +83,24 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [highlightedScheduleId, setHighlightedScheduleId] = useState<string | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [isExpandedView, setIsExpandedView] = useState(false);
+  const [monthViewFilterType, setMonthViewFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
 
 
   // グローバルクリックイベントの処理
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
+
       // 展開されたセルまたはその子要素をクリックした場合は何もしない
       if (target.closest('[data-expanded-cell="true"]')) {
         return;
       }
       
+      // 月ビューのモーダル内をクリックした場合は何もしない
+      if (target.closest('[data-month-modal="true"]')) {
+        return;
+      }
+
       // 日付セルをクリックした場合も何もしない（個別に処理される）
       if (target.closest('[data-date-cell]')) {
         return;
@@ -111,7 +118,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     return () => {
       document.removeEventListener('click', handleGlobalClick);
     };
-  }, [isExpandedView]);
+  }, [isExpandedView, expandedDate]);
 
   // 案件ハイライト機能
   const handleScheduleClick = (scheduleId: string, e: React.MouseEvent) => {
@@ -915,10 +922,20 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       schedules: any[]; 
       onClose: () => void; 
     }) => {
-      // フィルター状態を管理
-      const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
+      const formatPrefMunicipality = (addr?: string) => {
+        if (!addr) return '-';
+        const prefMatch = addr.match(/^(.*?[都道府県])/);
+        const afterPref = addr.replace(/^(.*?[都道府県])/, '');
+        const muniMatch = afterPref.match(/^(.*?[市区町村])/);
+        const pref = prefMatch?.[1] || '';
+        const muni = muniMatch?.[1] || '';
+        const combined = `${pref}${muni}`.trim();
+        return combined || '-';
+      };
+      // フィルター状態を管理（月ビューの状態を使用）
+      const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>(monthViewFilterType);
       
-      // 成約済みと未成約を分けて表示
+      // 確定と未確定を分けて表示
       const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
       const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
       
@@ -935,8 +952,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       }
 
       return (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl border">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          data-month-modal="true"
+          onClick={onClose}
+        >
+          <div
+            className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl border"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-start mb-6">
               <h3 className="text-xl font-semibold text-gray-900">
                 {title}
@@ -950,19 +974,23 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </div>
 
             {/* フィルター選択 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                表示フィルター
-              </label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as 'all' | 'confirmed' | 'unconfirmed')}
-                className="w-full p-2 border rounded text-sm"
-              >
-                <option value="all">全選択</option>
-                <option value="confirmed">確定のみ</option>
-                <option value="unconfirmed">未確定のみ</option>
-              </select>
+            <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">表示フィルター</label>
+              <div className="inline-flex items-center gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setFilterType(e.target.value as 'all' | 'confirmed' | 'unconfirmed');
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-2 py-1 border rounded text-sm w-auto min-w-[8rem]"
+                >
+                  <option value="all">全て</option>
+                  <option value="confirmed">確定のみ</option>
+                  <option value="unconfirmed">未確定のみ</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -1005,10 +1033,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                         <span className="text-xs text-gray-600">
                           {schedule.truckName}
                         </span>
+                        {schedule.customerPhone && (
+                          <span className="text-xs text-gray-600 ml-2" title="電話番号">
+                            ☎ {schedule.customerPhone}
+                          </span>
+                        )}
                       </div>
                       {schedule.origin && (
                         <span className="text-blue-600 text-xs truncate ml-2">
-                          発：{schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                          発：{formatPrefMunicipality(schedule.origin)}
                         </span>
                       )}
                     </div>
@@ -1019,7 +1052,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       </span>
                       {schedule.destination && (
                         <span className="text-red-600 text-xs truncate ml-2">
-                          着：{schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                          着：{formatPrefMunicipality(schedule.destination)}
                         </span>
                       )}
                     </div>
@@ -1117,14 +1150,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       
                       {hasSchedules && (
                         <div className="space-y-1 flex flex-col items-center">
-                          {/* 成約済みと未成約の件数を分けて表示 */}
+                          {/* 確定と未確定の件数を分けて表示 */}
                           {(() => {
                             const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
                             const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
                             
                             return (
                               <>
-                                {/* 成約済み件数 */}
+                                {/* 確定件数 */}
                                 {confirmedSchedules.length > 0 && (
                                   <div 
                                     className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-green-200 transition-colors w-full flex items-center justify-center gap-1"
@@ -1132,6 +1165,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                       e.stopPropagation();
                                       setExpandedDate(day.date);
                                       setIsExpandedView(true);
+                                      // 確定でフィルターをかけた状態でモーダルを開く
+                                      setMonthViewFilterType('confirmed');
                                     }}
                                   >
                                     <span>✅</span>
@@ -1139,7 +1174,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                   </div>
                                 )}
                                 
-                                {/* 未成約件数 */}
+                                {/* 未確定件数 */}
                                 {unconfirmedSchedules.length > 0 && (
                                   <div 
                                     className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-gray-200 transition-colors w-full flex items-center justify-center gap-1"
@@ -1147,6 +1182,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                       e.stopPropagation();
                                       setExpandedDate(day.date);
                                       setIsExpandedView(true);
+                                      // 未確定でフィルターをかけた状態でモーダルを開く
+                                      setMonthViewFilterType('unconfirmed');
                                     }}
                                   >
                                     <span>⏳</span>
@@ -1175,6 +1212,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               setIsExpandedView(false);
               setExpandedDate(null);
               setSelectedSchedule(null);
+              setMonthViewFilterType('all'); // フィルター状態をリセット
             }}
           />
         )}

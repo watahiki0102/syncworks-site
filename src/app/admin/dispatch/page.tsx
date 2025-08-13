@@ -27,6 +27,7 @@ interface Schedule {
   status: 'available' | 'maintenance';
   contractStatus?: 'confirmed' | 'estimate'; // 確定 or 見積もり回答済み
   customerName?: string;
+  customerPhone?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
   description?: string;
   capacity?: number;
@@ -208,6 +209,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '田中 一郎',
+              customerPhone: '090-1111-2222',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 300,
@@ -223,6 +225,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'estimate',
               customerName: '佐藤 花子',
+              customerPhone: '080-3333-4444',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 400,
@@ -238,6 +241,7 @@ function DispatchManagementContent() {
               status: 'available',  
               contractStatus: 'confirmed',
               customerName: '山田 三郎',
+              customerPhone: '070-5555-6666',
               workType: 'moving',
               description: '引っ越し作業',
               capacity: 600,
@@ -253,6 +257,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'estimate',
               customerName: '鈴木 四郎',
+              customerPhone: '090-7777-8888',
               workType: 'unloading',
               description: '引っ越し作業',
               capacity: 500,
@@ -268,6 +273,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '高橋 五郎',
+              customerPhone: '080-9999-0000',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 200,
@@ -284,6 +290,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '田中 一郎',
+              customerPhone: '090-1111-2222',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 300,
@@ -299,6 +306,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'estimate',
               customerName: '佐藤 花子',
+              customerPhone: '080-3333-4444',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 400,
@@ -314,6 +322,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '山田 三郎',
+              customerPhone: '070-5555-6666',
               workType: 'moving',
               description: '引っ越し作業',
               capacity: 600,
@@ -340,6 +349,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '山田 次郎',
+              customerPhone: '090-2222-3333',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 800,
@@ -355,6 +365,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'estimate',
               customerName: '伊藤 六郎',
+              customerPhone: '080-4444-5555',
               workType: 'loading',
               description: '引っ越し作業',
               capacity: 600,
@@ -370,6 +381,7 @@ function DispatchManagementContent() {
               status: 'available',
               contractStatus: 'confirmed',
               customerName: '渡辺 七郎',
+              customerPhone: '070-6666-7777',
               workType: 'unloading',
               description: '引っ越し作業',
               capacity: 1000,
@@ -741,6 +753,7 @@ function DispatchManagementContent() {
         status: 'available',
         contractStatus: submission.contractStatus === 'contracted' ? 'confirmed' : 'estimate',
         customerName: submission.customerName,
+        customerPhone: submission.customerPhone,
         workType: truckAssignment.workType,
         description: `引っ越し案件: ${submission.customerName}`,
         capacity: truckAssignment.capacity,
