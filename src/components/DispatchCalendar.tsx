@@ -27,7 +27,7 @@ interface Schedule {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'available' | 'booked' | 'maintenance';
+  status: 'available' | 'maintenance';
   contractStatus?: 'confirmed' | 'estimate';
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
@@ -374,7 +374,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     
     const schedule = schedules[0];
     switch (schedule.status) {
-      case 'booked':
+      case 'available':
         return 'bg-blue-200'; // 予約済み
       case 'maintenance':
         return 'bg-yellow-200'; // 整備中
@@ -459,7 +459,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       date: selectedDate,
       startTime: '09:00',
       endTime: '17:00',
-      status: 'booked',
+      status: 'available',
       contractStatus: 'estimate',
       customerName: '',
       workType: 'moving',
@@ -628,7 +628,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   className="w-full p-2 border rounded"
                 >
                   <option value="available">稼働中</option>
-                  <option value="booked">予約済み</option>
                   <option value="maintenance">整備中</option>
                 </select>
               </div>
@@ -898,7 +897,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 日付ごとの稼働率を計算
     const getUtilizationRate = (date: string) => {
       const schedules = getSchedulesForDate(date);
-      const bookedSchedules = schedules.filter(s => s.status === 'booked');
+      const bookedSchedules = schedules.filter(s => s.status === 'available');
       const totalTrucks = trucks.length;
       return totalTrucks > 0 ? (bookedSchedules.length / totalTrucks) * 100 : 0;
     };
@@ -952,7 +951,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div
                   key={index}
                   className={`p-3 rounded border cursor-pointer hover:bg-gray-50 transition-colors ${
-                    schedule.status === 'booked' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                    schedule.status === 'available' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                     schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
                     'bg-gray-50 text-gray-800 border-gray-200'
                   }`}
@@ -1219,7 +1218,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           s.date === currentDayView.date && 
           s.startTime <= time && 
           s.endTime > time &&
-          s.status === 'booked' &&
+          s.status === 'available' &&
           s.capacity
         );
         return total + schedules.reduce((sum, s) => sum + (s.capacity || 0), 0);
@@ -1242,7 +1241,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       return trucks.reduce((total, truck) => {
         const daySchedules = truck.schedules.filter(s => 
           s.date === currentDayView.date && 
-          s.status === 'booked'
+          s.status === 'available'
         );
         return total + daySchedules.length;
       }, 0);
@@ -1253,7 +1252,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       return trucks.map(truck => {
         const daySchedules = truck.schedules.filter(s => 
           s.date === currentDayView.date && 
-          s.status === 'booked'
+          s.status === 'available'
         );
         return {
           truckName: truck.name,
@@ -1413,7 +1412,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         {trucks.map(truck => {
           // トラック全体の使用容量を計算
           const totalUsed = truck.schedules
-            .filter(s => s.date === currentDayView.date && s.status === 'booked' && s.capacity)
+            .filter(s => s.date === currentDayView.date && s.status === 'available' && s.capacity)
             .reduce((sum, s) => sum + (s.capacity || 0), 0);
           const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
           
@@ -1434,7 +1433,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     }}
                     title={`重さ合計: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)
 ポイント合計: ${truck.schedules
-  .filter(s => s.date === currentDayView.date && s.status === 'booked')
+  .filter(s => s.date === currentDayView.date && s.status === 'available')
   .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
                   />
                 </div>
@@ -1453,7 +1452,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     s.date === currentDayView.date &&
                     s.startTime <= block.time &&
                     s.endTime > block.time &&
-                    s.status === 'booked' &&
+                    s.status === 'available' &&
                     s.capacity
                   ).reduce((sum, s) => sum + (s.capacity || 0), 0);
                   const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
@@ -1958,7 +1957,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                 return '#f9fafb';
                               })() : 
                               schedule ? 
-                                (schedule.status === 'booked' ? '#dbeafe' : 
+                                (schedule.status === 'available' ? '#dbeafe' : 
                                  schedule.status === 'maintenance' ? '#fef3c7' : '#dcfce7') : 
                                 '#f9fafb'
                           }}

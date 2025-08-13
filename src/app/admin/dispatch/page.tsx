@@ -24,7 +24,7 @@ interface Schedule {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'available' | 'booked' | 'maintenance';
+  status: 'available' | 'maintenance';
   contractStatus?: 'confirmed' | 'estimate'; // 確定 or 見積もり回答済み
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
@@ -205,7 +205,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '09:00',
               endTime: '11:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '田中 一郎',
               workType: 'loading',
@@ -220,7 +220,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '09:00',
               endTime: '11:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'estimate',
               customerName: '佐藤 花子',
               workType: 'loading',
@@ -235,7 +235,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '11:00',
               endTime: '13:00',
-              status: 'booked',
+              status: 'available',  
               contractStatus: 'confirmed',
               customerName: '山田 三郎',
               workType: 'moving',
@@ -250,7 +250,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '14:00',
               endTime: '16:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'estimate',
               customerName: '鈴木 四郎',
               workType: 'unloading',
@@ -265,7 +265,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '16:00',
               endTime: '18:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '高橋 五郎',
               workType: 'loading',
@@ -281,7 +281,7 @@ function DispatchManagementContent() {
               date: '2025-07-26',
               startTime: '09:00',
               endTime: '11:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '田中 一郎',
               workType: 'loading',
@@ -296,7 +296,7 @@ function DispatchManagementContent() {
               date: '2025-07-26',
               startTime: '09:00',
               endTime: '11:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'estimate',
               customerName: '佐藤 花子',
               workType: 'loading',
@@ -311,7 +311,7 @@ function DispatchManagementContent() {
               date: '2025-07-26',
               startTime: '09:00',
               endTime: '11:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '山田 三郎',
               workType: 'moving',
@@ -337,7 +337,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '10:00',
               endTime: '12:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '山田 次郎',
               workType: 'loading',
@@ -352,7 +352,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '10:00',
               endTime: '12:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'estimate',
               customerName: '伊藤 六郎',
               workType: 'loading',
@@ -367,7 +367,7 @@ function DispatchManagementContent() {
               date: new Date().toISOString().split('T')[0],
               startTime: '13:00',
               endTime: '15:00',
-              status: 'booked',
+              status: 'available',
               contractStatus: 'confirmed',
               customerName: '渡辺 七郎',
               workType: 'unloading',
@@ -738,7 +738,7 @@ function DispatchManagementContent() {
         date: submission.moveDate,
         startTime: truckAssignment.startTime,
         endTime: truckAssignment.endTime,
-        status: 'booked',
+        status: 'available',
         contractStatus: submission.contractStatus === 'contracted' ? 'confirmed' : 'estimate',
         customerName: submission.customerName,
         workType: truckAssignment.workType,
@@ -784,7 +784,7 @@ function DispatchManagementContent() {
         schedules: truck.schedules.filter(s => 
           !(s.date === submission.moveDate && 
             s.customerName === submission.customerName &&
-            s.status === 'booked')
+            s.status === 'available')
         ),
       };
 
