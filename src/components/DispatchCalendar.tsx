@@ -915,20 +915,23 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       schedules: any[]; 
       onClose: () => void; 
     }) => {
+      // フィルター状態を管理
+      const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
+      
       // 成約済みと未成約を分けて表示
       const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
       const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
       
-      // selectedScheduleのフラグに基づいて表示する案件を決定
+      // フィルターに基づいて表示する案件を決定
       let displaySchedules = schedules;
       let title = `${formatDate(date)} のスケジュール (${schedules.length}件)`;
       
-      if (selectedSchedule?.isConfirmedOnly) {
+      if (filterType === 'confirmed') {
         displaySchedules = confirmedSchedules;
-        title = `${formatDate(date)} の成約済みスケジュール (${confirmedSchedules.length}件)`;
-      } else if (selectedSchedule?.isUnconfirmedOnly) {
+        title = `${formatDate(date)} の確定スケジュール (${confirmedSchedules.length}件)`;
+      } else if (filterType === 'unconfirmed') {
         displaySchedules = unconfirmedSchedules;
-        title = `${formatDate(date)} の未成約スケジュール (${unconfirmedSchedules.length}件)`;
+        title = `${formatDate(date)} の未確定スケジュール (${unconfirmedSchedules.length}件)`;
       }
 
       return (
@@ -946,14 +949,30 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               </button>
             </div>
 
+            {/* フィルター選択 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                表示フィルター
+              </label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as 'all' | 'confirmed' | 'unconfirmed')}
+                className="w-full p-2 border rounded text-sm"
+              >
+                <option value="all">全選択</option>
+                <option value="confirmed">確定のみ</option>
+                <option value="unconfirmed">未確定のみ</option>
+              </select>
+            </div>
+
             <div className="space-y-3">
               {displaySchedules.map((schedule, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded border cursor-pointer hover:bg-gray-50 transition-colors ${
-                    schedule.status === 'available' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                    schedule.status === 'maintenance' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
-                    'bg-gray-50 text-gray-800 border-gray-200'
+                  className={`p-3 rounded border cursor-pointer hover:opacity-80 transition-opacity ${
+                    schedule.contractStatus === 'confirmed' 
+                      ? 'bg-green-100 text-green-800 border-green-200' 
+                      : 'bg-gray-100 text-gray-700 border-gray-200'
                   }`}
                   onClick={() => {
                     setSelectedDate(date);
@@ -1113,8 +1132,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                       e.stopPropagation();
                                       setExpandedDate(day.date);
                                       setIsExpandedView(true);
-                                      // 成約済みのみを表示するためのフラグを設定
-                                      setSelectedSchedule({ ...confirmedSchedules[0], isConfirmedOnly: true });
                                     }}
                                   >
                                     <span>✅</span>
@@ -1130,8 +1147,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                       e.stopPropagation();
                                       setExpandedDate(day.date);
                                       setIsExpandedView(true);
-                                      // 未成約のみを表示するためのフラグを設定
-                                      setSelectedSchedule({ ...unconfirmedSchedules[0], isUnconfirmedOnly: true });
                                     }}
                                   >
                                     <span>⏳</span>
@@ -1159,6 +1174,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             onClose={() => {
               setIsExpandedView(false);
               setExpandedDate(null);
+              setSelectedSchedule(null);
             }}
           />
         )}
