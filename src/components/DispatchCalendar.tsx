@@ -72,8 +72,9 @@ interface DispatchCalendarProps {
 }
 
 export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 6, 1)); // 2025年7月1日を初期値に設定
-  const [selectedDate, setSelectedDate] = useState<string>('2025-07-27'); // 7月27日を初期値に設定
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(today));
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('month'); // 初期表示を月ビューに変更
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);

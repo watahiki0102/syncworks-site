@@ -82,7 +82,7 @@ function DispatchManagementContent() {
       customerName: '山田 太郎',
       customerEmail: 'taro@example.com',
       customerPhone: '090-1234-5678',
-      moveDate: '2023-10-15',
+      moveDate: '2025-08-15',
       originAddress: '東京都新宿区西新宿1-1-1',
       destinationAddress: '東京都渋谷区渋谷2-2-2',
       totalPoints: 100,
@@ -91,7 +91,7 @@ function DispatchManagementContent() {
       additionalServices: ['梱包', '開梱'],
       status: 'pending',
       truckAssignments: [],
-      createdAt: '2023-10-01T10:00:00Z',
+      createdAt: '2025-08-01T10:00:00Z',
       contractStatus: 'estimate',
     },
     {
@@ -99,7 +99,7 @@ function DispatchManagementContent() {
       customerName: '鈴木 花子',
       customerEmail: 'hanako@example.com',
       customerPhone: '080-9876-5432',
-      moveDate: '2023-10-20',
+      moveDate: '2025-08-20',
       originAddress: '大阪府大阪市北区梅田3-3-3',
       destinationAddress: '大阪府大阪市中央区難波4-4-4',
       totalPoints: 150,
@@ -108,7 +108,7 @@ function DispatchManagementContent() {
       additionalServices: ['保険'],
       status: 'assigned',
       truckAssignments: [],
-      createdAt: '2023-10-02T11:00:00Z',
+      createdAt: '2025-08-02T11:00:00Z',
       contractStatus: 'estimate',
     },
     {
@@ -116,7 +116,7 @@ function DispatchManagementContent() {
       customerName: '佐藤 次郎',
       customerEmail: 'jiro@example.com',
       customerPhone: '070-5555-6666',
-      moveDate: '2023-10-25',
+      moveDate: '2025-08-25',
       originAddress: '福岡県福岡市博多区博多駅前5-5-5',
       destinationAddress: '福岡県福岡市中央区天神6-6-6',
       totalPoints: 200,
@@ -125,9 +125,9 @@ function DispatchManagementContent() {
       additionalServices: ['保管'],
       status: 'completed',
       truckAssignments: [],
-      createdAt: '2023-10-03T12:00:00Z',
+      createdAt: '2025-08-03T12:00:00Z',
       contractStatus: 'contracted',
-      contractDate: '2023-10-10T12:00:00Z',
+      contractDate: '2025-08-10T12:00:00Z',
     },
   ]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
@@ -284,7 +284,7 @@ function DispatchManagementContent() {
             // 7/26のテストデータを追加
             {
               id: 'schedule-7-26-1',
-              date: '2025-07-26',
+              date: '2025-08-26',
               startTime: '09:00',
               endTime: '11:00',
               status: 'available',
@@ -300,7 +300,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-7-26-2',
-              date: '2025-07-26',
+              date: '2025-08-26',
               startTime: '09:00',
               endTime: '11:00',
               status: 'available',
@@ -316,7 +316,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-7-26-3',
-              date: '2025-07-26',
+              date: '2025-08-26',
               startTime: '09:00',
               endTime: '11:00',
               status: 'available',
