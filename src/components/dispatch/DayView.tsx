@@ -1,0 +1,499 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
+import { TIME_SLOTS } from '@/constants/calendar';
+import CaseDetail from '../CaseDetail';
+
+interface Truck {
+  id: string;
+  name: string;
+  plateNumber: string;
+  capacityKg: number;
+  inspectionExpiry: string;
+  status: 'available' | 'maintenance' | 'inactive';
+  truckType: string;
+  schedules: Schedule[];
+}
+
+interface Schedule {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'available' | 'maintenance';
+  contractStatus?: 'confirmed' | 'estimate';
+  customerName?: string;
+  customerPhone?: string;
+  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
+  description?: string;
+  capacity?: number;
+  points?: number;
+  origin?: string;
+  destination?: string;
+  employeeId?: string;
+}
+
+interface DayViewProps {
+  selectedDate: string;
+  trucks: Truck[];
+  onUpdateTruck: (truck: Truck) => void;
+  onScheduleClick?: (schedule: Schedule, truck: Truck) => void;
+  highlightedScheduleId?: string | null;
+}
+
+interface TimeSlot {
+  time: string;
+  label: string;
+  start: string;
+  end: string;
+}
+
+interface OverlappingSchedule {
+  schedule: Schedule;
+  truck: Truck;
+  column: number;
+  totalColumns: number;
+}
+
+export default function DayView({ 
+  selectedDate, 
+  trucks, 
+  onUpdateTruck, 
+  onScheduleClick,
+  highlightedScheduleId 
+}: DayViewProps) {
+  const [displayTimeRange, setDisplayTimeRange] = useState<{ start: number; end: number }>({ start: 8, end: 20 });
+  const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showScheduleDetail, setShowScheduleDetail] = useState(false);
+  const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
+
+  // 表示時間範囲に基づいて時間スロットを生成
+  const generateTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+    for (let hour = displayTimeRange.start; hour < displayTimeRange.end; hour++) {
+      const time = `${hour.toString().padStart(2, '0')}:00`;
+      const nextHour = `${(hour + 1).toString().padStart(2, '0')}:00`;
+      slots.push({
+        time,
+        label: time,
+        start: time,
+        end: nextHour
+      });
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // 指定された日付と時間のスケジュールを取得
+  const getSchedulesForDateTime = (date: string, time: string) => {
+    return trucks.flatMap(truck =>
+      truck.schedules
+        .filter(schedule => schedule.date === date)
+        .filter(schedule => {
+          const scheduleStart = schedule.startTime;
+          const scheduleEnd = schedule.endTime;
+          return time >= scheduleStart && time < scheduleEnd;
+        })
+        .map(schedule => ({
+          ...schedule,
+          truckName: truck.name,
+          truckId: truck.id,
+        }))
+    );
+  };
+
+  // 重なり回避アルゴリズム：同一時間帯の最大同時案件数でカラム幅を算出
+  const calculateOverlappingLayout = (schedules: Schedule[], truck: Truck): OverlappingSchedule[] => {
+    if (schedules.length === 0) return [];
+
+    // 時間帯ごとにグループ化
+    const timeGroups = new Map<string, Schedule[]>();
+    
+    schedules.forEach(schedule => {
+      const timeKey = `${schedule.startTime}-${schedule.endTime}`;
+      if (!timeGroups.has(timeKey)) {
+        timeGroups.set(timeKey, []);
+      }
+      timeGroups.get(timeKey)!.push(schedule);
+    });
+
+    const result: OverlappingSchedule[] = [];
+    
+    timeGroups.forEach((groupSchedules, timeKey) => {
+      const totalColumns = groupSchedules.length;
+      
+      groupSchedules.forEach((schedule, index) => {
+        result.push({
+          schedule,
+          truck,
+          column: index,
+          totalColumns
+        });
+      });
+    });
+
+    return result;
+  };
+
+  // 容量バーの色を取得
+  const getBarColor = (percent: number) => {
+    if (percent >= 80) return 'bg-red-500';
+    if (percent >= 50) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  // 顧客ごとの色を生成（案件ごとに色分け）
+  const getCustomerColor = (customerName: string) => {
+    const colors = [
+      '#e0f2fe', // 薄い青
+      '#fce7f3', // 薄いピンク
+      '#dcfce7', // 薄い緑
+      '#fef3c7', // 薄い黄色
+      '#f3e8ff', // 薄い紫
+      '#fed7aa', // 薄いオレンジ
+      '#ccfbf1', // 薄いティール
+      '#fecaca', // 薄い赤
+      '#dbeafe', // 薄いブルー
+      '#e0e7ff', // 薄いインディゴ
+    ];
+
+    // 顧客名のハッシュ値で色を決定
+    let hash = 0;
+    for (let i = 0; i < customerName.length; i++) {
+      hash = customerName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // 住所の簡易表示を安全に処理
+  const shortPrefMuni = (addr?: string) => {
+    if (!addr) return '';
+    const m = addr.match(/^(.*?[都道府県])\s*(.*?[市区町村])/);
+    if (m) return `${m[1]}${m[2]}`;
+    return addr.split(/[ \t　]/).slice(0,2).join('');
+  };
+
+  // セルクリックハンドラー
+  const handleCellClick = (truck: Truck, time: string) => {
+    setSelectedTruck(truck);
+    setSelectedSchedule(null);
+    const nextHour = `${String(Number(time.slice(0,2))+1).padStart(2,'0')}:00`;
+    setPrefillTime({ start: time, end: nextHour });
+    setShowScheduleModal(true);
+  };
+
+  // スケジュールクリックハンドラー
+  const handleScheduleClick = (schedule: Schedule, truck: Truck) => {
+    if (onScheduleClick) {
+      onScheduleClick(schedule, truck);
+    } else {
+      setSelectedTruck(truck);
+      setSelectedSchedule(schedule);
+      setShowScheduleDetail(true);
+    }
+  };
+
+  // 当日の合計対応件数を計算
+  const getTotalSchedulesForDay = () => {
+    return trucks.reduce((total, truck) => {
+      const daySchedules = truck.schedules.filter(s =>
+        s.date === selectedDate &&
+        s.status === 'available'
+      );
+      return total + daySchedules.length;
+    }, 0);
+  };
+
+  // トラック毎の対応件数を計算
+  const getTruckSchedulesForDay = () => {
+    return trucks.map(truck => {
+      const daySchedules = truck.schedules.filter(s =>
+        s.date === selectedDate &&
+        s.status === 'available'
+      );
+      return {
+        truckName: truck.name,
+        count: daySchedules.length
+      };
+    }).filter(truck => truck.count > 0);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6" data-view="day">
+      {/* 日付ヘッダー */}
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">
+            {new Date(selectedDate).getMonth() + 1}月{new Date(selectedDate).getDate()}日
+          </h3>
+          <div className="mt-2">
+            <p className="text-sm font-medium text-gray-700 mb-1">
+              総計対応件数: {getTotalSchedulesForDay()}件
+            </p>
+            {getTruckSchedulesForDay().length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {getTruckSchedulesForDay().map((truck, index) => (
+                  <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {truck.truckName}: {truck.count}件
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 表示期間選択 */}
+      <div className="flex items-center gap-4 mb-4">
+        <span className="text-sm font-medium text-gray-700">表示期間:</span>
+        <div className="flex items-center gap-2">
+          <select
+            value={displayTimeRange.start}
+            onChange={(e) => {
+              const newStart = parseInt(e.target.value);
+              setDisplayTimeRange({
+                start: newStart,
+                end: Math.max(newStart + 1, displayTimeRange.end)
+              });
+            }}
+            className="px-3 py-1 border rounded text-sm"
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-500">～</span>
+          <select
+            value={displayTimeRange.end}
+            onChange={(e) => setDisplayTimeRange({ ...displayTimeRange, end: parseInt(e.target.value) })}
+            className="px-3 py-1 border rounded text-sm"
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              i > displayTimeRange.start && (
+                <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+              )
+            ))}
+          </select>
+          <button
+            onClick={() => setDisplayTimeRange({ start: 8, end: 20 })}
+            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+          >
+            リセット
+          </button>
+        </div>
+      </div>
+
+      {/* 時間帯ヘッダー - 固定表示 */}
+      <div className="grid grid-cols-[200px_1fr] gap-1 mb-2 sticky top-0 bg-white z-10">
+        <div className="p-2 font-medium text-gray-600 bg-gray-50 border rounded">時間帯</div>
+        <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
+          {timeSlots.map(slot => (
+            <div key={slot.time} className="p-2 text-center text-sm font-medium text-gray-600 border bg-gray-50 rounded">
+              {slot.time}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* トラック行 - スクロール対応 */}
+      <div className="overflow-y-auto max-h-[600px]">
+        {trucks.map(truck => {
+          // トラック全体の使用容量を計算
+          const totalUsed = truck.schedules
+            .filter(s => s.date === selectedDate && s.status === 'available' && s.capacity)
+            .reduce((sum, s) => sum + (s.capacity || 0), 0);
+          const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
+
+          return (
+            <div key={truck.id} className="grid grid-cols-[200px_1fr] gap-1 mb-1">
+              {/* トラック情報 - 左側固定 */}
+              <div className="p-3 border bg-gray-50 rounded relative">
+                {/* トラック情報左側の容量バー */}
+                <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-300 rounded border border-gray-400">
+                  <div
+                    className={`rounded transition-all duration-200 ${getBarColor(totalPercent)}`}
+                    style={{
+                      height: `${Math.min(totalPercent, 100)}%`,
+                      width: '100%',
+                      minHeight: totalPercent > 0 ? '4px' : '0px',
+                      position: 'absolute',
+                      bottom: '0'
+                    }}
+                    title={`重さ合計: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)
+ポイント合計: ${truck.schedules
+                        .filter(s => s.date === selectedDate && s.status === 'available')
+                        .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
+                  />
+                </div>
+                <div className="ml-4">
+                  <div className="font-medium text-gray-900">{truck.name}</div>
+                  <div className="text-xs text-gray-600">{truck.plateNumber}</div>
+                  <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
+                </div>
+              </div>
+
+              {/* 時間ブロック - 重なり回避レイアウト */}
+              <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
+                {timeSlots.map(slot => {
+                  // そのトラックのその時間帯のスケジュール
+                  const schedules = truck.schedules.filter(s =>
+                    s.date === selectedDate &&
+                    s.startTime <= slot.time &&
+                    s.endTime > slot.time
+                  );
+
+                  // 重なり回避レイアウトを計算
+                  const overlappingLayout = calculateOverlappingLayout(schedules, truck);
+
+                  // そのトラックのその時間帯の予約済み容量合計
+                  const used = schedules.reduce((sum, s) => sum + (s.capacity || 0), 0);
+                  const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
+
+                  // スケジュール数に応じて高さを調整
+                  const cellHeight = schedules.length > 1 ? 'h-20' : schedules.length === 1 ? 'h-16' : 'h-12';
+
+                  return (
+                    <div
+                      key={slot.time}
+                      className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${
+                        schedules.length > 0 ? '' : 'bg-gray-50'
+                      }`}
+                      onClick={() => handleCellClick(truck, slot.time)}
+                      title={schedules.length > 0 ?
+                        `${schedules.length}件のスケジュール
+重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
+ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt` :
+                        `${selectedDate} ${slot.time} - 空き`
+                      }
+                    >
+                      {/* トラック毎の縦軸容量バー */}
+                      <div className="absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded z-10 border border-gray-400">
+                        <div
+                          className={`rounded transition-all duration-200 ${getBarColor(percent)}`}
+                          style={{
+                            height: `${Math.min(percent, 100)}%`,
+                            width: '100%',
+                            minHeight: percent > 0 ? '4px' : '0px',
+                            position: 'absolute',
+                            bottom: '0'
+                          }}
+                          title={`重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
+ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
+                        />
+                      </div>
+
+                      {/* 重なり回避レイアウトでスケジュール表示 */}
+                      {overlappingLayout.length > 0 && (
+                        <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
+                          {overlappingLayout.map(({ schedule, column, totalColumns }, index) => {
+                            // 顧客ごとの色を取得
+                            const customerColor = schedule.customerName ?
+                              getCustomerColor(schedule.customerName) :
+                              '#f3f4f6';
+
+                            // 重なり回避のための位置と幅を計算
+                            const leftPercent = (column / totalColumns) * 100;
+                            const widthPercent = 100 / totalColumns;
+
+                            return (
+                              <div
+                                key={`${schedule.id}-${index}`}
+                                className="rounded border cursor-pointer hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm"
+                                style={{
+                                  backgroundColor: customerColor,
+                                  left: `${leftPercent}%`,
+                                  width: `calc(${widthPercent}% - 2px)`,
+                                  maxWidth: `calc(${widthPercent}% - 2px)`,
+                                  position: 'absolute',
+                                  top: `${index * 20}px`,
+                                  height: '18px',
+                                  zIndex: index + 1
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleScheduleClick(schedule, truck);
+                                }}
+                                title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(確定)' : '(未確定)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
+                              >
+                                <div className="text-xs text-gray-600 text-center leading-[18px] truncate px-1">
+                                  {schedule.origin && (
+                                    <span className="text-blue-600" title={schedule.origin}>
+                                      発 {shortPrefMuni(schedule.origin)}
+                                    </span>
+                                  )}
+                                  {schedule.destination && (
+                                    <span className="text-red-600 ml-1" title={schedule.destination}>
+                                      着 {shortPrefMuni(schedule.destination)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* 時間帯の契約ステータス表示 */}
+                      {schedules.length > 0 && (
+                        <div className="absolute top-1 right-1 flex flex-col gap-1">
+                          {schedules.map((schedule, index) => (
+                            <div key={`status-${schedule.id}`} className="flex items-center gap-1">
+                              {schedule.contractStatus === 'confirmed' ? (
+                                <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
+                              ) : schedule.contractStatus === 'estimate' ? (
+                                <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* スケジュール詳細（ステータスごとに色分け） */}
+      <div className="mt-8">
+        <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
+        <div className="space-y-3">
+          {trucks.flatMap(truck =>
+            truck.schedules
+              .filter(s => s.date === selectedDate)
+              .map(schedule => ({
+                ...schedule,
+                truckName: truck.name,
+                truckId: truck.id,
+              }))
+          ).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
+            const truckObj = trucks.find(t => t.id === schedule.truckId);
+            const isHighlighted = highlightedScheduleId === schedule.id;
+
+            return (
+              <CaseDetail
+                key={schedule.id}
+                schedule={schedule}
+                truck={truckObj}
+                isHighlighted={isHighlighted}
+                onEdit={() => {
+                  if (truckObj) {
+                    setSelectedTruck(truckObj);
+                    setSelectedSchedule(schedule);
+                    setShowScheduleModal(true);
+                  }
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
