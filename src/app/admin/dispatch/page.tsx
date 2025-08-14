@@ -6,7 +6,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
-import { formatDate, formatTime } from '@/utils/dateTimeUtils';
+import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
 
 interface Truck {
   id: string;
@@ -185,6 +185,9 @@ function DispatchManagementContent() {
   };
 
   useEffect(() => {
+    // テスト用：ローカルストレージをクリアしてテストデータを確実に読み込む
+    localStorage.removeItem('trucks');
+    
     // ローカルストレージからトラックデータを読み込み
     const savedTrucks = localStorage.getItem('trucks');
     if (savedTrucks) {
@@ -203,7 +206,7 @@ function DispatchManagementContent() {
           schedules: [
             {
               id: 'schedule-1',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '09:00',
               endTime: '11:00',
               status: 'available',
@@ -219,7 +222,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-1-2',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '09:00',
               endTime: '11:00',
               status: 'available',
@@ -235,7 +238,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-2',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '11:00',
               endTime: '13:00',
               status: 'available',  
@@ -251,7 +254,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-3',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '14:00',
               endTime: '16:00',
               status: 'available',
@@ -267,7 +270,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-4',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '16:00',
               endTime: '18:00',
               status: 'available',
@@ -275,7 +278,7 @@ function DispatchManagementContent() {
               customerName: '高橋 五郎',
               customerPhone: '080-9999-0000',
               workType: 'loading',
-              description: '引っ越し作業',
+                              description: '引っ越し作業',
               capacity: 200,
               points: 30,
               origin: '東京都江戸川区葛西11-11-11',
@@ -297,6 +300,40 @@ function DispatchManagementContent() {
               points: 50,
               origin: '東京都新宿区西新宿1-1',
               destination: '東京都渋谷区渋谷2-2',
+            },
+            // 単一案件のテストデータを追加（13:00-15:00）
+            {
+              id: 'schedule-single-1',
+              date: toLocalDateString(new Date()),
+              startTime: '13:00',
+              endTime: '15:00',
+              status: 'available',
+              contractStatus: 'confirmed',
+              customerName: '単一案件 太郎',
+              customerPhone: '090-0000-0000',
+              workType: 'loading',
+              description: '単一案件のテスト',
+              capacity: 100,
+              points: 20,
+              origin: '東京都新宿区',
+              destination: '東京都渋谷区',
+            },
+            // 単一案件のテストデータを追加（15:00-17:00）- 確実に表示されるように
+            {
+              id: 'schedule-single-2',
+              date: toLocalDateString(new Date()),
+              startTime: '15:00',
+              endTime: '17:00',
+              status: 'available',
+              contractStatus: 'estimate',
+              customerName: '単一案件 花子',
+              customerPhone: '090-0000-0001',
+              workType: 'unloading',
+              description: '単一案件のテスト2',
+              capacity: 150,
+              points: 25,
+              origin: '東京都新宿区',
+              destination: '東京都渋谷区',
             },
             {
               id: 'schedule-7-26-2',
@@ -343,7 +380,7 @@ function DispatchManagementContent() {
           schedules: [
             {
               id: 'schedule-5',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '10:00',
               endTime: '12:00',
               status: 'available',
@@ -359,7 +396,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-6',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '10:00',
               endTime: '12:00',
               status: 'available',
@@ -375,7 +412,7 @@ function DispatchManagementContent() {
             },
             {
               id: 'schedule-7',
-              date: new Date().toISOString().split('T')[0],
+              date: toLocalDateString(new Date()),
               startTime: '13:00',
               endTime: '15:00',
               status: 'available',
@@ -401,8 +438,8 @@ function DispatchManagementContent() {
           truckType: '軽トラ',
           schedules: [
             {
-              id: 'schedule-4',
-              date: new Date().toISOString().split('T')[0],
+              id: 'schedule-8',
+              date: toLocalDateString(new Date()),
               startTime: '08:00',
               endTime: '10:00',
               status: 'maintenance',
@@ -746,7 +783,7 @@ function DispatchManagementContent() {
     const truck = trucks.find(t => t.id === truckAssignment.truckId);
     if (truck) {
       const newSchedule: Schedule = {
-        id: `schedule-${Date.now()}`,
+        id: `schedule-${crypto.randomUUID()}`,
         date: submission.moveDate,
         startTime: truckAssignment.startTime,
         endTime: truckAssignment.endTime,

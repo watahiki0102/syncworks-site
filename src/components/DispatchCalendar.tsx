@@ -85,6 +85,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [isExpandedView, setIsExpandedView] = useState(false);
   const [monthViewFilterType, setMonthViewFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
+  const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
 
 
   // グローバルクリックイベントの処理
@@ -96,7 +97,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       if (target.closest('[data-expanded-cell="true"]')) {
         return;
       }
-      
+
       // 月ビューのモーダル内をクリックした場合は何もしない
       if (target.closest('[data-month-modal="true"]')) {
         return;
@@ -106,7 +107,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       if (target.closest('[data-date-cell]')) {
         return;
       }
-      
+
       // その他の場所をクリックした場合は展開を閉じる
       if (isExpandedView) {
         setIsExpandedView(false);
@@ -139,9 +140,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       setTimeout(() => {
         const scheduleElement = document.getElementById(`schedule-${highlightedScheduleId}`);
         if (scheduleElement) {
-          scheduleElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
+          scheduleElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
           });
         }
       }, 300);
@@ -160,7 +161,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    */
   const generateTimeBlocks = () => {
     const blocks: TimeBlock[] = [];
-    for (let hour = displayTimeRange.start; hour <= displayTimeRange.end; hour++) {
+    for (let hour = displayTimeRange.start; hour < displayTimeRange.end; hour++) {
       const time = `${hour.toString().padStart(2, '0')}:00`;
       blocks.push({ time, hour, minute: 0 });
     }
@@ -172,10 +173,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    * @returns TimeSlot[]
    */
   const generateWeekTimeBlocks = () => [
-    { time: '09:00-12:00', label: '午前', start: '09:00', end: '12:00' },
-    { time: '12:00-15:00', label: '昼', start: '12:00', end: '15:00' },
-    { time: '15:00-18:00', label: '午後', start: '15:00', end: '18:00' },
-    { time: '18:00-21:00', label: '夜', start: '18:00', end: '21:00' },
+    { time: '09:00-11:00', label: '9:00', start: '09:00', end: '11:00' },
+    { time: '11:00-13:00', label: '11:00', start: '11:00', end: '13:00' },
+    { time: '13:00-15:00', label: '13:00', start: '13:00', end: '15:00' },
+    { time: '15:00-17:00', label: '15:00', start: '15:00', end: '17:00' },
+    { time: '17:00-19:00', label: '17:00', start: '17:00', end: '19:00' },
+    { time: '19:00-21:00', label: '19:00', start: '19:00', end: '21:00' },
   ];
 
   const timeBlocks = generateTimeBlocks();
@@ -219,7 +222,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
+
     // 前月の日付を追加
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const prevMonthLastDay = new Date(year, month, 0).getDate();
@@ -272,15 +275,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    * @param date - 基準日
    * @returns 日付情報
    */
-    /**
-   * 祝日かどうかを判定する関数（簡易版）
-   * @param date - 判定する日付
-   * @returns 祝日かどうか
-   */
+  /**
+ * 祝日かどうかを判定する関数（簡易版）
+ * @param date - 判定する日付
+ * @returns 祝日かどうか
+ */
   const isHoliday = (date: Date) => {
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    
+
     // 主要な祝日（簡易版）
     const holidays = [
       { month: 1, day: 1 },   // 元日
@@ -302,7 +305,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       { month: 11, day: 3 },  // 文化の日
       { month: 11, day: 23 }, // 勤労感謝の日
     ];
-    
+
     return holidays.some(holiday => holiday.month === month && holiday.day === day);
   };
 
@@ -320,6 +323,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
   const dayInfo = getDayInfo(currentDate);
+  
+  // デバッグ用：トラックデータを確認
+  useEffect(() => {
+    console.log('Trucks data in DispatchCalendar:', trucks);
+    if (trucks.length > 0 && trucks[0].schedules) {
+      console.log('First truck schedules:', trucks[0].schedules);
+    }
+  }, [trucks]);
 
   // 初回レンダー時に週ビューが要求されている場合、selectedDateを今日に揃える
   useEffect(() => {
@@ -329,29 +340,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     }
   }, []);
 
-  // 顧客ごとの色を生成（案件ごとに色分け）
-  const getCustomerColor = (customerName: string) => {
-    const colors = [
-      'bg-red-100 text-red-800 border-red-200',
-      'bg-blue-100 text-blue-800 border-blue-200',
-      'bg-green-100 text-green-800 border-green-200',
-      'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'bg-purple-100 text-purple-800 border-purple-200',
-      'bg-pink-100 text-pink-800 border-pink-200',
-      'bg-indigo-100 text-indigo-800 border-indigo-200',
-      'bg-orange-100 text-orange-800 border-orange-200',
-      'bg-teal-100 text-teal-800 border-teal-200',
-      'bg-cyan-100 text-cyan-800 border-cyan-200',
-    ];
-    
-    // 顧客名のハッシュ値で色を決定
-    let hash = 0;
-    for (let i = 0; i < customerName.length; i++) {
-      hash = customerName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
   /**
    * 指定された日付と時間のスケジュールを取得
    * @param date - 日付文字列
@@ -359,7 +347,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    * @returns 該当するスケジュール配列
    */
   const getSchedulesForDateTime = (date: string, time: string) => {
-    return trucks.flatMap(truck => 
+    return trucks.flatMap(truck =>
       truck.schedules
         .filter(schedule => schedule.date === date)
         .filter(schedule => {
@@ -383,11 +371,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    */
   const getTimeBlockBackgroundColor = (date: string, time: string) => {
     const schedules = getSchedulesForDateTime(date, time);
-    
+
     if (schedules.length === 0) {
       return 'bg-gray-50'; // 空き
     }
-    
+
     const schedule = schedules[0];
     switch (schedule.status) {
       case 'available':
@@ -471,10 +459,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
    */
   const ScheduleModal = () => {
     const [formData, setFormData] = useState<Schedule>({
-      id: `schedule-${Date.now()}`,
+      id: `schedule-${crypto.randomUUID()}`,
       date: selectedDate,
-      startTime: '09:00',
-      endTime: '17:00',
+      startTime: prefillTime.start ?? '09:00',
+      endTime: prefillTime.end ?? '17:00',
       status: 'available',
       contractStatus: 'estimate',
       customerName: '',
@@ -522,9 +510,18 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       }
     }, [selectedSchedule]);
 
+    // prefillTimeの変更を監視してフォームデータを更新
+    useEffect(() => {
+      setFormData(prev => ({
+        ...prev,
+        startTime: prefillTime.start ?? prev.startTime,
+        endTime: prefillTime.end ?? prev.endTime,
+      }));
+    }, [prefillTime]);
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      
+
       if (!selectedTruck) return;
 
       const newSchedule: Schedule = {
@@ -654,8 +651,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   onChange={(e) => setFormData(prev => ({ ...prev, contractStatus: e.target.value as any }))}
                   className="w-full p-2 border rounded"
                 >
-                                          <option value="estimate">未確定</option>
-                                          <option value="confirmed">確定</option>
+                  <option value="estimate">未確定</option>
+                  <option value="confirmed">確定</option>
                 </select>
               </div>
             </div>
@@ -899,7 +896,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     };
 
     const getSchedulesForDate = (date: string) => {
-      return trucks.flatMap(truck => 
+      return trucks.flatMap(truck =>
         truck.schedules
           .filter(schedule => schedule.date === date)
           .map(schedule => ({
@@ -926,10 +923,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     };
 
     // 月ビュー用スケジュール一覧モーダル
-    const MonthScheduleModal = ({ date, schedules, onClose }: { 
-      date: string; 
-      schedules: any[]; 
-      onClose: () => void; 
+    const MonthScheduleModal = ({ date, schedules, onClose }: {
+      date: string;
+      schedules: any[];
+      onClose: () => void;
     }) => {
       const formatPrefMunicipality = (addr?: string) => {
         if (!addr) return '-';
@@ -943,15 +940,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
       };
       // フィルター状態を管理（月ビューの状態を使用）
       const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>(monthViewFilterType);
-      
+
       // 確定と未確定を分けて表示
       const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
       const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
-      
+
       // フィルターに基づいて表示する案件を決定
       let displaySchedules = schedules;
       let title = `${formatDate(date)} のスケジュール (${schedules.length}件)`;
-      
+
       if (filterType === 'confirmed') {
         displaySchedules = confirmedSchedules;
         title = `${formatDate(date)} の確定スケジュール (${confirmedSchedules.length}件)`;
@@ -1006,11 +1003,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               {displaySchedules.map((schedule, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded border cursor-pointer hover:opacity-80 transition-opacity ${
-                    schedule.contractStatus === 'confirmed' 
-                      ? 'bg-green-100 text-green-800 border-green-200' 
+                  className={`p-3 rounded border cursor-pointer hover:opacity-80 transition-opacity ${schedule.contractStatus === 'confirmed'
+                      ? 'bg-green-100 text-green-800 border-green-200'
                       : 'bg-gray-100 text-gray-700 border-gray-200'
-                  }`}
+                    }`}
                   onClick={() => {
                     setSelectedDate(date);
                     setViewMode('day');
@@ -1020,9 +1016,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     setTimeout(() => {
                       const dayViewElement = document.querySelector('[data-view="day"]');
                       if (dayViewElement) {
-                        dayViewElement.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start' 
+                        dayViewElement.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start'
                         });
                       }
                     }, 200);
@@ -1123,14 +1119,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const schedules = getSchedulesForDate(day.date);
                   const hasSchedules = schedules.length > 0;
-                  
+
                   return (
                     <div
                       key={day.date}
                       data-date-cell
-                      className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${
-                        day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                      } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
+                      className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                        } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
                       onClick={(e) => {
                         console.log('Date clicked:', day.date);
                         setSelectedDate(day.date);
@@ -1139,36 +1134,35 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                         setTimeout(() => {
                           const dayViewElement = document.querySelector('[data-view="day"]');
                           if (dayViewElement) {
-                            dayViewElement.scrollIntoView({ 
-                              behavior: 'smooth', 
-                              block: 'start' 
+                            dayViewElement.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start'
                             });
                           }
                         }, 200);
                       }}
                     >
-                      <div className={`text-xs font-medium mb-0.5 ${
-                        day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                      } ${day.isToday ? 'text-blue-600' : ''} ${
+                      <div className={`text-xs font-medium mb-0.5 ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                        } ${day.isToday ? 'text-blue-600' : ''} ${
                         // 土曜日は青色、日曜日と祝日は赤色で表示
-                        day.dayOfWeekNumber === 6 ? 'text-blue-600' : 
-                        (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
-                      }`}>
+                        day.dayOfWeekNumber === 6 ? 'text-blue-600' :
+                          (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
+                        }`}>
                         {day.day}
                       </div>
-                      
+
                       {hasSchedules && (
                         <div className="space-y-1 flex flex-col items-center">
                           {/* 確定と未確定の件数を分けて表示 */}
                           {(() => {
                             const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
                             const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
-                            
+
                             return (
                               <>
                                 {/* 確定件数 */}
                                 {confirmedSchedules.length > 0 && (
-                                  <div 
+                                  <div
                                     className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-green-200 transition-colors w-full flex items-center justify-center gap-1"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1182,10 +1176,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                     <span>{confirmedSchedules.length}件</span>
                                   </div>
                                 )}
-                                
+
                                 {/* 未確定件数 */}
                                 {unconfirmedSchedules.length > 0 && (
-                                  <div 
+                                  <div
                                     className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-gray-200 transition-colors w-full flex items-center justify-center gap-1"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1244,6 +1238,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     const handleCellClick = (truck: Truck, time: string) => {
       setSelectedTruck(truck);
       setSelectedSchedule(null);
+      setPrefillTime({ start: time, end: `${String(Number(time.slice(0,2))+1).padStart(2,'0')}:00` }); // 1時間枠想定
       setShowScheduleModal(true);
     };
 
@@ -1256,16 +1251,16 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 時間帯の案件をクリックした際に当日スケジュール詳細にスクロール
     const handleTimeBlockScheduleClick = (schedule: Schedule, truck: Truck) => {
       setHighlightedScheduleId(schedule.id);
-      
+
       // 当日スケジュール詳細の該当箇所にスクロール
       setTimeout(() => {
         const scheduleElement = document.getElementById(`schedule-${schedule.id}`);
         if (scheduleElement) {
-          scheduleElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
+          scheduleElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
           });
-          
+
           // ハイライト効果を3秒後に解除
           setTimeout(() => {
             setHighlightedScheduleId(null);
@@ -1277,9 +1272,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 時間ごとの容量を計算
     const getCapacityForTime = (time: string) => {
       const totalCapacity = trucks.reduce((total, truck) => {
-        const schedules = truck.schedules.filter(s => 
-          s.date === currentDayView.date && 
-          s.startTime <= time && 
+        const schedules = truck.schedules.filter(s =>
+          s.date === currentDayView.date &&
+          s.startTime <= time &&
           s.endTime > time &&
           s.status === 'available' &&
           s.capacity
@@ -1302,8 +1297,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 当日の合計対応件数を計算
     const getTotalSchedulesForDay = () => {
       return trucks.reduce((total, truck) => {
-        const daySchedules = truck.schedules.filter(s => 
-          s.date === currentDayView.date && 
+        const daySchedules = truck.schedules.filter(s =>
+          s.date === currentDayView.date &&
           s.status === 'available'
         );
         return total + daySchedules.length;
@@ -1313,8 +1308,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // トラック毎の対応件数を計算
     const getTruckSchedulesForDay = () => {
       return trucks.map(truck => {
-        const daySchedules = truck.schedules.filter(s => 
-          s.date === currentDayView.date && 
+        const daySchedules = truck.schedules.filter(s =>
+          s.date === currentDayView.date &&
           s.status === 'available'
         );
         return {
@@ -1322,6 +1317,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           count: daySchedules.length
         };
       }).filter(truck => truck.count > 0); // 対応件数が0より大きいトラックのみ
+    };
+
+    // 住所の簡易表示を安全に処理
+    const shortPrefMuni = (addr?: string) => {
+      if (!addr) return '';
+      const m = addr.match(/^(.*?[都道府県])\s*(.*?[市区町村])/);
+      if (m) return `${m[1]}${m[2]}`;
+      // フォールバック：空白/記号で分割して最初の2トークン程度
+      return addr.split(/[ \t　]/).slice(0,2).join('');
     };
 
     // 作業区分のアイコンと色を取得
@@ -1350,18 +1354,39 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 顧客ごとの色を生成（案件ごとに色分け）
     const getCustomerColor = (customerName: string) => {
       const colors = [
-        'bg-red-100 text-red-800 border-red-200',
-        'bg-blue-100 text-blue-800 border-blue-200',
-        'bg-green-100 text-green-800 border-green-200',
-        'bg-yellow-100 text-yellow-800 border-yellow-200',
-        'bg-purple-100 text-purple-800 border-purple-200',
-        'bg-pink-100 text-pink-800 border-pink-200',
-        'bg-indigo-100 text-indigo-800 border-indigo-200',
-        'bg-orange-100 text-orange-800 border-orange-200',
-        'bg-teal-100 text-teal-800 border-teal-200',
-        'bg-cyan-100 text-cyan-800 border-cyan-200',
+        '#e0f2fe', // 薄い青
+        '#fce7f3', // 薄いピンク
+        '#dcfce7', // 薄い緑
+        '#fef3c7', // 薄い黄色
+        '#f3e8ff', // 薄い紫
+        '#fed7aa', // 薄いオレンジ
+        '#ccfbf1', // 薄いティール
+        '#fecaca', // 薄い赤
+        '#dbeafe', // 薄いブルー
+        '#e0e7ff', // 薄いインディゴ
+        '#fef2f2', // 薄いローズ
+        '#f0fdf4', // 薄いエメラルド
+        '#fffbeb', // 薄いアンバー
+        '#f5f3ff', // 薄いバイオレット
+        '#ecfdf5', // 薄いエメラルド
+        '#fefce8', // 薄いライム
+        '#fdf2f8', // 薄いピンク
+        '#f0f9ff', // 薄いスカイ
+        '#fdf4ff', // 薄いフューシャ
+        '#f0fdfa', // 薄いティール
+        '#fef7f0', // 薄いオレンジ
+        '#f4f4f5', // 薄いグレー
+        '#fafafa', // 薄いスレート
+        '#f8fafc', // 薄いスレート
+        '#f1f5f9', // 薄いスレート
+        '#f9fafb', // 薄いグレー
+        '#faf5ff', // 薄いバイオレット
+        '#fef2f2', // 薄いローズ
+        '#f0fdf4', // 薄いエメラルド
+        '#fefce8', // 薄いライム
+        '#fef2f2'  // 薄いローズ
       ];
-      
+
       // 顧客名のハッシュ値で色を決定
       let hash = 0;
       for (let i = 0; i < customerName.length; i++) {
@@ -1426,9 +1451,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 value={displayTimeRange.start}
                 onChange={(e) => {
                   const newStart = parseInt(e.target.value);
-                  setDisplayTimeRange({ 
-                    start: newStart, 
-                    end: Math.max(newStart + 1, displayTimeRange.end) 
+                  setDisplayTimeRange({
+                    start: newStart,
+                    end: Math.max(newStart + 1, displayTimeRange.end)
                   });
                 }}
                 className="px-3 py-1 border rounded text-sm"
@@ -1478,7 +1503,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             .filter(s => s.date === currentDayView.date && s.status === 'available' && s.capacity)
             .reduce((sum, s) => sum + (s.capacity || 0), 0);
           const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
-          
+
           return (
             <div key={truck.id} className="grid grid-cols-[200px_1fr] gap-1 mb-1">
               {/* トラック情報 */}
@@ -1487,8 +1512,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-300 rounded border border-gray-400">
                   <div
                     className={`rounded transition-all duration-200 ${getBarColor(totalPercent)}`}
-                    style={{ 
-                      height: `${Math.min(totalPercent, 100)}%`, 
+                    style={{
+                      height: `${Math.min(totalPercent, 100)}%`,
                       width: '100%',
                       minHeight: totalPercent > 0 ? '4px' : '0px',
                       position: 'absolute',
@@ -1496,8 +1521,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     }}
                     title={`重さ合計: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)
 ポイント合計: ${truck.schedules
-  .filter(s => s.date === currentDayView.date && s.status === 'available')
-  .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
+                        .filter(s => s.date === currentDayView.date && s.status === 'available')
+                        .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
                   />
                 </div>
                 <div className="ml-4">
@@ -1506,7 +1531,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
                 </div>
               </div>
-              
+
               {/* 時間ブロック */}
               <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeBlocks.length}, 1fr)` }}>
                 {timeBlocks.map(block => {
@@ -1519,27 +1544,26 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                     s.capacity
                   ).reduce((sum, s) => sum + (s.capacity || 0), 0);
                   const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
-                  
-                  const schedules = truck.schedules.filter(s => 
-                    s.date === currentDayView.date && 
-                    s.startTime <= block.time && 
+
+                  const schedules = truck.schedules.filter(s =>
+                    s.date === currentDayView.date &&
+                    s.startTime <= block.time &&
                     s.endTime > block.time
                   );
-                  
+
                   // スケジュール数に応じて高さを調整
                   const cellHeight = schedules.length > 1 ? 'h-20' : schedules.length === 1 ? 'h-16' : 'h-12';
-                  
+
                   return (
                     <div
                       key={block.time}
-                      className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${
-                        schedules.length > 0 ? '' : 'bg-gray-50'
-                      }`}
+                      className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${schedules.length > 0 ? '' : 'bg-gray-50'
+                        }`}
                       onClick={() => handleCellClick(truck, block.time)}
-                      title={schedules.length > 0 ? 
+                      title={schedules.length > 0 ?
                         `${schedules.length}件のスケジュール
 重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
-ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt` : 
+ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt` :
                         `${currentDayView.date} ${block.time} - 空き`
                       }
                     >
@@ -1547,8 +1571,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                       <div className="absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded z-10 border border-gray-400">
                         <div
                           className={`rounded transition-all duration-200 ${getBarColor(percent)}`}
-                          style={{ 
-                            height: `${Math.min(percent, 100)}%`, 
+                          style={{
+                            height: `${Math.min(percent, 100)}%`,
                             width: '100%',
                             minHeight: percent > 0 ? '4px' : '0px',
                             position: 'absolute',
@@ -1558,20 +1582,20 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
 ポイント合計: ${schedules.reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
                         />
                       </div>
-                      
+
                       {/* 複数スケジュール表示（顧客ごとに色分け） */}
                       {schedules.length > 0 && (
                         <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
                           {schedules.map((schedule, index) => {
                             // 顧客ごとの色を取得（一貫性を保つため）
-                            const customerColor = schedule.customerName ? 
-                              getCustomerColor(schedule.customerName) : 
-                              'bg-gray-100 text-gray-800 border-gray-200';
-                            
+                            const customerColor = schedule.customerName ?
+                              getCustomerColor(schedule.customerName) :
+                              '#f3f4f6';
+
                             // 複数スケジュールがある場合の高さ調整
                             const scheduleHeight = schedules.length > 1 ? 'h-10' : 'h-full';
                             const maxSchedules = 3; // 最大表示件数
-                            
+
                             if (index >= maxSchedules) {
                               return (
                                 <div
@@ -1582,11 +1606,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                 </div>
                               );
                             }
-                            
+
                             return (
                               <div
                                 key={schedule.id}
-                                className={`${scheduleHeight} ${customerColor} rounded border cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center justify-center px-1`}
+                                className={`${scheduleHeight} rounded border cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center justify-center px-1`}
+                                style={{ backgroundColor: customerColor }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleTimeBlockScheduleClick(schedule, truck);
@@ -1596,12 +1621,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                                 <div className="text-xs text-gray-600 mt-1">
                                   {schedule.origin && (
                                     <span className="text-blue-600" title={schedule.origin}>
-                                      発 {schedule.origin.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                      発 {shortPrefMuni(schedule.origin)}
                                     </span>
                                   )}
                                   {schedule.destination && (
                                     <span className="text-red-600 ml-1" title={schedule.destination}>
-                                      着 {schedule.destination.replace(/^.*?[都府県]/, '').split('区')[0]}区
+                                      着 {shortPrefMuni(schedule.destination)}
                                     </span>
                                   )}
                                 </div>
@@ -1619,7 +1644,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                               {schedule.contractStatus === 'confirmed' ? (
                                 <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
                               ) : schedule.contractStatus === 'estimate' ? (
-                                                                  <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
+                                <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
                               ) : null}
                             </div>
                           ))}
@@ -1637,7 +1662,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
         <div className="mt-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
           <div className="space-y-3">
-            {trucks.flatMap(truck => 
+            {trucks.flatMap(truck =>
               truck.schedules
                 .filter(s => s.date === currentDayView.date)
                 .map(schedule => ({
@@ -1648,7 +1673,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             ).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
               const truckObj = trucks.find(t => t.id === schedule.truckId);
               const isHighlighted = highlightedScheduleId === schedule.id;
-              
+
               return (
                 <CaseDetail
                   key={schedule.id}
@@ -1729,10 +1754,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">作業区分</label>
                   <p className="text-gray-900">
-                    {selectedSchedule.workType === 'loading' ? '積込' : 
-                     selectedSchedule.workType === 'moving' ? '移動' : 
-                     selectedSchedule.workType === 'unloading' ? '積卸' : 
-                     selectedSchedule.workType === 'maintenance' ? '整備' : '作業'}
+                    {selectedSchedule.workType === 'loading' ? '積込' :
+                      selectedSchedule.workType === 'moving' ? '移動' :
+                        selectedSchedule.workType === 'unloading' ? '積卸' :
+                          selectedSchedule.workType === 'maintenance' ? '整備' : '作業'}
                   </p>
                 </div>
               </div>
@@ -1750,7 +1775,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">契約ステータス</label>
                     <p className="text-gray-900">
-                                              {selectedSchedule.contractStatus === 'confirmed' ? '✅ 確定' : '⏳ 未確定'}
+                      {selectedSchedule.contractStatus === 'confirmed' ? '✅ 確定' : '⏳ 未確定'}
                     </p>
                   </div>
                 </div>
@@ -1841,17 +1866,67 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const GanttView = () => {
     const weekTimeBlocks = generateWeekTimeBlocks();
 
-    const handleCellClick = (truck: Truck, date: string, timeSlot: string) => {
-      setSelectedTruck(truck);
+    const handleCellClick = (date: string, timeSlot: string) => {
+      const [start, end] = timeSlot.split('-');
       setSelectedDate(date);
       setSelectedSchedule(null);
+      setPrefillTime({ start, end });
       setShowScheduleModal(true);
     };
 
-    const handleScheduleClick = (schedule: Schedule, truck: Truck) => {
-      setSelectedTruck(truck);
+    const handleScheduleClick = (schedule: Schedule) => {
       setSelectedSchedule(schedule);
       setShowScheduleModal(true);
+    };
+
+    // 指定された日付と時間帯のスケジュールを取得（全トラックから）
+    const getBlockSchedules = (date: string, timeBlock: TimeSlot) => {
+      const allSchedules = trucks.flatMap(truck =>
+        truck.schedules
+          .filter(schedule => schedule.date === date)
+          .filter(schedule => {
+            const scheduleStart = schedule.startTime;
+            const scheduleEnd = schedule.endTime;
+            // 時間ブロックとスケジュールの重複を正しく判定
+            // スケジュールの開始時刻 < 時間ブロックの終了時刻 かつ
+            // スケジュールの終了時刻 > 時間ブロックの開始時刻
+            const hasOverlap = scheduleStart < timeBlock.end && scheduleEnd > timeBlock.start;
+            
+            // デバッグ用：重複判定の詳細を確認
+            if (date === toLocalDateString(new Date()) && timeBlock.start === '13:00') {
+              console.log(`Schedule overlap check:`, {
+                date,
+                timeBlock: timeBlock.start + '-' + timeBlock.end,
+                schedule: {
+                  id: schedule.id,
+                  startTime: scheduleStart,
+                  endTime: scheduleEnd,
+                  customerName: schedule.customerName
+                },
+                hasOverlap
+              });
+            }
+            
+            return hasOverlap;
+          })
+          .map(schedule => ({
+            ...schedule,
+            truckName: truck.name,
+            truckId: truck.id,
+          }))
+      );
+
+      // 重複するスケジュールを除外（IDベースでユニークにする）
+      const uniqueSchedules = allSchedules.filter((schedule, index, self) =>
+        index === self.findIndex(s => s.id === schedule.id)
+      );
+
+      // デバッグ用：最終結果を確認
+      if (date === toLocalDateString(new Date()) && timeBlock.start === '13:00') {
+        console.log(`Final schedules for ${date} ${timeBlock.time}:`, uniqueSchedules);
+      }
+
+      return uniqueSchedules;
     };
 
     // 作業区分のアイコンと色を取得
@@ -1873,24 +1948,81 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     // 顧客ごとの色を生成（案件ごとに色分け）
     const getCustomerColor = (customerName: string) => {
       const colors = [
-        'bg-red-100 text-red-800 border-red-200',
-        'bg-blue-100 text-blue-800 border-blue-200',
-        'bg-green-100 text-green-800 border-green-200',
-        'bg-yellow-100 text-yellow-800 border-yellow-200',
-        'bg-purple-100 text-purple-800 border-purple-200',
-        'bg-pink-100 text-pink-800 border-pink-200',
-        'bg-indigo-100 text-indigo-800 border-indigo-200',
-        'bg-orange-100 text-orange-800 border-orange-200',
-        'bg-teal-100 text-teal-800 border-teal-200',
-        'bg-cyan-100 text-cyan-800 border-cyan-200',
+        '#e0f2fe', // 薄い青
+        '#fce7f3', // 薄いピンク
+        '#dcfce7', // 薄い緑
+        '#fef3c7', // 薄い黄色
+        '#f3e8ff', // 薄い紫
+        '#fed7aa', // 薄いオレンジ
+        '#ccfbf1', // 薄いティール
+        '#fecaca', // 薄い赤
+        '#dbeafe', // 薄いブルー
+        '#e0e7ff', // 薄いインディゴ
+        '#fef2f2', // 薄いローズ
+        '#f0fdf4', // 薄いエメラルド
+        '#fffbeb', // 薄いアンバー
+        '#f5f3ff', // 薄いバイオレット
+        '#ecfdf5', // 薄いエメラルド
+        '#fefce8', // 薄いライム
+        '#fdf2f8', // 薄いピンク
+        '#f0f9ff', // 薄いスカイ
+        '#fdf4ff', // 薄いフューシャ
+        '#f0fdfa', // 薄いティール
+        '#fef7f0', // 薄いオレンジ
+        '#f4f4f5', // 薄いグレー
+        '#fafafa', // 薄いスレート
+        '#f8fafc', // 薄いスレート
+        '#f1f5f9', // 薄いスレート
+        '#f9fafb', // 薄いグレー
+        '#faf5ff', // 薄いバイオレット
+        '#fef2f2', // 薄いローズ
+        '#f0fdf4', // 薄いエメラルド
+        '#fefce8', // 薄いライム
+        '#fef2f2'  // 薄いローズ
       ];
-      
+
       // 顧客名のハッシュ値で色を決定
       let hash = 0;
       for (let i = 0; i < customerName.length; i++) {
         hash = customerName.charCodeAt(i) + ((hash << 5) - hash);
       }
       return colors[Math.abs(hash) % colors.length];
+    };
+
+    // 案件の表示用スタイルを取得
+    const getScheduleDisplayStyle = (schedule: Schedule, index: number, totalSchedules: number) => {
+      const baseColor = schedule.customerName ? 
+        getCustomerColor(schedule.customerName) : 
+        schedule.status === 'available' ? '#dbeafe' : '#fef3c7';
+      
+      // 境界線の色を決定（より濃い色で区切りを明確に）
+      const borderColor = schedule.customerName ? 
+        getCustomerColor(schedule.customerName).replace('0', '8') : 
+        '#94a3b8';
+      
+      return {
+        backgroundColor: baseColor,
+        borderColor: borderColor,
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      };
+    };
+
+    // 苗字を抽出する関数
+    const getLastName = (fullName?: string) => {
+      if (!fullName) return '?';
+      // 空白、全角空白、タブで分割して最初の部分（苗字）を取得
+      const parts = fullName.split(/[ \t　]/);
+      return parts[0] || '?';
+    };
+
+    // 住所の簡易表示を安全に処理
+    const shortPrefMuni = (addr?: string) => {
+      if (!addr) return '';
+      const m = addr.match(/^(.*?[都道府県])\s*(.*?[市区町村])/);
+      if (m) return `${m[1]}${m[2]}`;
+      // フォールバック：空白/記号で分割して最初の2トークン程度
+      return addr.split(/[ \t　]/).slice(0,2).join('');
     };
 
     return (
@@ -1925,27 +2057,27 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             </button>
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
-            {/* ヘッダー行 */}
-                          <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-2">
-                <div className="p-2 font-medium text-gray-600">トラック</div>
-                {weekDays.map(day => (
-                  <div 
-                    key={day.date} 
-                    className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+            {/* ヘッダー行 - 曜日のみ */}
+            <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2">
+              <div className="p-2 font-medium text-gray-600">時間</div>
+              {weekDays.map(day => (
+                <div
+                  key={day.date}
+                  className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setSelectedDate(day.date);
                     setViewMode('day');
-                    setExpandedDate(null); // 展開状態をリセット
-                    setIsExpandedView(false); // 展開表示をリセット
-                    // 日ビューのセクションにスクロール
+                    setExpandedDate(null);
+                    setIsExpandedView(false);
                     setTimeout(() => {
                       const dayViewElement = document.querySelector('[data-view="day"]');
                       if (dayViewElement) {
-                        dayViewElement.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start' 
+                        dayViewElement.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start'
                         });
                       }
                     }, 100);
@@ -1961,116 +2093,168 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
               ))}
             </div>
 
-            {/* 時間帯ヘッダー */}
-            <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-2">
-              <div className="p-2 font-medium text-gray-600">時間帯</div>
-              {weekDays.map(day => (
-                <div key={day.date} className="grid grid-cols-[repeat(4,1fr)] gap-px">
-                  {weekTimeBlocks.map(block => (
-                    <div key={block.time} className="p-1 text-xs text-center text-gray-500 border bg-gray-50">
-                      {block.label}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            {/* トラック行 */}
-            {trucks.map(truck => (
-              <div key={truck.id} className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 mb-1">
-                {/* トラック情報 */}
-                <div className="p-2 border bg-gray-50">
-                  <div className="font-medium text-gray-900">{truck.name}</div>
-                  <div className="text-xs text-gray-600">{truck.plateNumber}</div>
-                  <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
+            {/* メイングリッド - 各行が時間ブロック、各列が曜日 */}
+            {weekTimeBlocks.map(block => (
+              <div key={block.time} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-1">
+                {/* 時間軸（左側） */}
+                <div className="p-2 text-sm text-gray-600 border bg-gray-50 flex items-center justify-center">
+                  {block.label}
                 </div>
 
-                {/* 各日のスケジュール */}
-                {weekDays.map(day => (
-                  <div key={day.date} className="grid grid-cols-[repeat(4,1fr)] gap-px">
-                    {weekTimeBlocks.map(block => {
-                      const schedules = truck.schedules.filter(s => 
-                        s.date === day.date && 
-                        s.startTime < block.end && 
-                        s.endTime > block.start
-                      );
-                      const schedule = schedules[0];
+                {/* 各曜日のスケジュール */}
+                {weekDays.map(day => {
+                  const schedules = getBlockSchedules(day.date, block);
+                  
+                  // デバッグ用：特定の時間帯のスケジュールを確認
+                  if (day.date === toLocalDateString(new Date()) && block.start === '13:00') {
+                    console.log(`Debug - Date: ${day.date}, Time: ${block.time}, Schedules count: ${schedules.length}`, schedules);
+                  }
 
-                      return (
+                  return (
+                    <div
+                      key={day.date}
+                      className={`h-20 border transition-opacity ${schedules.length > 0 ? 'relative overflow-hidden' : ''
+                        }`}
+                      style={{
+                        backgroundColor: '#f9fafb' // セルの背景色を統一
+                      }}
+                      onClick={() => handleCellClick(day.date, block.time)}
+                      title={schedules.length > 0 ?
+                        schedules.length >= 5 ?
+                          `${schedules.length}件のスケジュール` :
+                          `${schedules.length}件のスケジュール` :
+                        `${day.date} ${block.label} - 空き`
+                      }
+                    >
+                      {schedules.length === 0 ? (
+                        // 空き時間は何も表示しない
+                        <div className="w-full h-full"></div>
+                      ) : schedules.length >= 5 ? (
+                        // 5件以上は件数のみ表示、クリックで日ビューに飛ばす
                         <div
-                          key={block.time}
-                          className={`h-16 border cursor-pointer hover:opacity-80 transition-opacity ${
-                            schedule ? 'relative' : ''
-                          }`}
-                          style={{
-                            backgroundColor: schedule && schedule.customerName ? 
-                              (() => {
-                                const color = getCustomerColor(schedule.customerName);
-                                // 色クラスから背景色を抽出
-                                if (color.includes('red')) return '#fee2e2';
-                                if (color.includes('blue')) return '#dbeafe';
-                                if (color.includes('green')) return '#dcfce7';
-                                if (color.includes('yellow')) return '#fef3c7';
-                                if (color.includes('purple')) return '#f3e8ff';
-                                if (color.includes('pink')) return '#fce7f3';
-                                if (color.includes('indigo')) return '#e0e7ff';
-                                if (color.includes('orange')) return '#fed7aa';
-                                if (color.includes('teal')) return '#ccfbf1';
-                                if (color.includes('cyan')) return '#cffafe';
-                                return '#f9fafb';
-                              })() : 
-                              schedule ? 
-                                (schedule.status === 'available' ? '#dbeafe' : 
-                                 schedule.status === 'maintenance' ? '#fef3c7' : '#dcfce7') : 
-                                '#f9fafb'
+                          className="absolute inset-0 flex flex-col items-center justify-center text-xs cursor-pointer p-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDate(day.date);
+                            setViewMode('day');
                           }}
-                          onClick={() => handleCellClick(truck, day.date, block.time)}
-                          title={schedule ? 
-                            `${schedule.customerName || '予約済み'} ${schedule.startTime}-${schedule.endTime}` : 
-                            `${day.date} ${block.label} - 空き`
-                          }
                         >
-                          {schedule && (
+                          <div className="text-center w-full">
+                            <div className="text-lg font-bold text-orange-600">
+                              +{schedules.length}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // 4件までは横に重ねて表示
+                        schedules.map((schedule, index) => {
+                          // 横並びの位置を計算（セルの境界内に収める）
+                          let leftPercent = 0;
+                          if (schedules.length === 1) {
+                            leftPercent = 0;
+                          } else if (schedules.length === 2) {
+                            leftPercent = index === 0 ? 0 : 50;
+                          } else if (schedules.length === 3) {
+                            leftPercent = index === 0 ? 0 : index === 1 ? 33.33 : index === 2 ? 66.67 : 0;
+                          } else if (schedules.length === 4) {
+                            leftPercent = index === 0 ? 0 : index === 1 ? 25 : index === 2 ? 50 : 75;
+                          }
+
+                          const displayStyle = getScheduleDisplayStyle(schedule, index, schedules.length);
+
+                          return (
                             <div
-                              className="absolute inset-0 flex flex-col items-center justify-center text-xs cursor-pointer p-1"
+                              key={`${schedule.id}-${index}`}
+                              className={`absolute top-0 bottom-0 cursor-pointer p-1 text-xs hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm`}
+                              style={{
+                                left: `${leftPercent}%`,
+                                width: `calc(${100 / schedules.length}% - 2px)`,
+                                maxWidth: `calc(${100 / schedules.length}% - 2px)`,
+                                ...displayStyle
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedDate(schedule.date);
                                 setViewMode('day');
                                 setHighlightedScheduleId(schedule.id);
                               }}
+                              onMouseEnter={(e) => {
+                                e.stopPropagation();
+                                // ホバー時のツールチップ表示
+                                const tooltip = document.createElement('div');
+                                tooltip.className = 'absolute z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap';
+                                tooltip.textContent = `${schedule.customerName || '未設定'} (${schedule.startTime}-${schedule.endTime})`;
+                                tooltip.style.left = `${e.clientX + 10}px`;
+                                tooltip.style.top = `${e.clientY - 30}px`;
+                                document.body.appendChild(tooltip);
+                                
+                                // マウスアウト時にツールチップを削除
+                                const removeTooltip = () => {
+                                  if (tooltip.parentNode) {
+                                    tooltip.parentNode.removeChild(tooltip);
+                                  }
+                                  document.removeEventListener('mouseleave', removeTooltip);
+                                };
+                                document.addEventListener('mouseleave', removeTooltip);
+                              }}
+                              onMouseLeave={(e) => {
+                                e.stopPropagation();
+                                // ツールチップを削除
+                                const tooltips = document.querySelectorAll('.absolute.z-50.bg-gray-900');
+                                tooltips.forEach(tooltip => {
+                                  if (tooltip.parentNode) {
+                                    tooltip.parentNode.removeChild(tooltip);
+                                  }
+                                });
+                              }}
                             >
-                              {schedule.customerName && (
-                                <div className="text-center w-full">
-                                  <div className="flex items-center justify-center gap-1 mb-1">
-                                    <span className="text-lg">
-                                      {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                    </span>
+                              <div className="text-center w-full h-full flex flex-col justify-center">
+                                {schedules.length === 1 ? (
+                                  // 1件の場合は契約状況アイコン、顧客名、時間の順で表示
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="flex items-center justify-center">
+                                      <span className="text-sm opacity-80">
+                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800">
+                                      {schedule.customerName || '未設定'}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {schedule.startTime}-{schedule.endTime}
+                                    </div>
                                   </div>
-                                  <div className="text-xs opacity-75">
-                                    {formatTime(schedule.startTime)}-{formatTime(schedule.endTime)}
+                                ) : (
+                                  // 2-4件の場合は契約状況アイコンと顧客名の苗字を表示
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="flex items-center justify-center">
+                                      <span className="text-sm opacity-80">
+                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800">
+                                      {getLastName(schedule.customerName)}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                          );
+                        })
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
-
-
       </div>
     );
   };
 
-      return (
-      <div className="space-y-3">
+  return (
+    <div className="space-y-3">
       {/* ビュー切り替えとナビゲーション */}
       <div className="bg-white rounded-lg shadow p-3">
         <div className="flex justify-between items-center mb-3">
@@ -2083,9 +2267,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           <div className="flex gap-1">
             <button
               onClick={() => setViewMode('month')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                viewMode === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               月
             </button>
@@ -2095,9 +2278,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 setCurrentDate(today);
                 setViewMode('week');
               }}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               週
             </button>
@@ -2106,9 +2288,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 setSelectedDate(toLocalDateString(today));
                 setViewMode('day');
               }}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               日
             </button>
@@ -2120,12 +2301,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           <div className="flex items-center gap-6 text-xs">
             <div className="flex items-center gap-1">
               <span>✅</span>
-                                      <span>確定</span>
+              <span>確定</span>
             </div>
             <div className="flex items-center gap-1">
               <span>⏳</span>
-                                      <span>未確定</span>
+              <span>未確定</span>
             </div>
+
             {viewMode === 'day' && (
               <>
                 <div className="flex items-center gap-1">

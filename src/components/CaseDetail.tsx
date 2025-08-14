@@ -77,6 +77,18 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
       'bg-orange-50 border-orange-200',
       'bg-teal-50 border-teal-200',
       'bg-cyan-50 border-cyan-200',
+      'bg-rose-50 border-rose-200',
+      'bg-emerald-50 border-emerald-200',
+      'bg-amber-50 border-amber-200',
+      'bg-violet-50 border-violet-200',
+      'bg-lime-50 border-lime-200',
+      'bg-sky-50 border-sky-200',
+      'bg-fuchsia-50 border-fuchsia-200',
+      'bg-slate-50 border-slate-200',
+      'bg-gray-50 border-gray-200',
+      'bg-zinc-50 border-zinc-200',
+      'bg-neutral-50 border-neutral-200',
+      'bg-stone-50 border-stone-200'
     ];
     let hash = 0;
     for (let i = 0; i < customerName.length; i++) {
