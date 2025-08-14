@@ -106,8 +106,17 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
     >
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
-          <h5 className="font-semibold text-gray-900 text-lg mb-1">
+          <h5 
+            data-case-heading
+            tabIndex={-1}
+            className="font-semibold text-gray-900 text-lg mb-1 scroll-mt-[var(--header-h,80px)]"
+          >
             {schedule.customerName ? `${schedule.customerName}様` : '予約済み'}
+            {schedule.destination && (
+              <span className="block text-sm font-normal text-gray-600 mt-1">
+                到着地: {schedule.destination}
+              </span>
+            )}
           </h5>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-medium text-gray-700">{schedule.truckName || truck?.name}</span>
@@ -202,7 +211,7 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
           )}
           {schedule.destination && (
             <div>
-              <p><strong>終了地点:</strong> {schedule.destination}</p>
+              <p><strong>到着地:</strong> {schedule.destination}</p>
             </div>
           )}
         </div>

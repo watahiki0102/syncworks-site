@@ -6,36 +6,10 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
+import StatusFilter from '@/components/dispatch/StatusFilter';
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
-
-interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules: Schedule[];
-}
-
-interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'maintenance';
-  contractStatus?: 'confirmed' | 'estimate'; // 確定 or 見積もり回答済み
-  customerName?: string;
-  customerPhone?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  points?: number; // ポイント数を追加
-  origin?: string;
-  destination?: string;
-  employeeId?: string; // 従業員IDを追加
-}
+import { Truck, Schedule } from '@/types/dispatch';
+import { ContractStatus } from '@/types/case';
 
 interface FormSubmission {
   id: string;
@@ -55,7 +29,7 @@ interface FormSubmission {
   distance?: number; // 距離（km）
   estimatedPrice?: number; // 見積もり価格
   recommendedTruckTypes?: string[]; // 推奨トラック種別
-  contractStatus: 'estimate' | 'contracted'; // 見積もり or 契約完了
+  contractStatus: ContractStatus; // 見積もり or 契約完了
   contractDate?: string; // 契約日
   // 新規追加フィールド
   caseStatus?: 'unanswered' | 'answered' | 'contracted' | 'lost' | 'cancelled'; // 案件ステータス
@@ -126,7 +100,7 @@ function DispatchManagementContent() {
       status: 'completed',
       truckAssignments: [],
       createdAt: '2025-08-03T12:00:00Z',
-      contractStatus: 'contracted',
+      contractStatus: 'confirmed',
       contractDate: '2025-08-10T12:00:00Z',
     },
   ]);
@@ -140,6 +114,7 @@ function DispatchManagementContent() {
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
   const router = useRouter();
 
   // URLパラメータから選択された案件を取得
@@ -563,7 +538,7 @@ function DispatchManagementContent() {
             },
           ],
           createdAt: '2024-01-03T12:00:00Z',
-          contractStatus: 'contracted',
+          contractStatus: 'confirmed',
           contractDate: '2024-01-05T12:00:00Z',
         },
       ];
@@ -742,7 +717,7 @@ function DispatchManagementContent() {
     if (!submission) return;
 
     // 受注案件からキャンセルへの変更のみ許可
-    if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'contracted') {
+            if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'confirmed') {
       alert('受注済み案件のみキャンセルに変更できます。');
       return;
     }
@@ -753,7 +728,7 @@ function DispatchManagementContent() {
 
     const updatedSubmissions = formSubmissions.map(s => 
       s.id === submissionId 
-        ? { ...s, caseStatus: newStatus, contractStatus: newStatus === 'cancelled' ? 'contracted' : s.contractStatus }
+        ? { ...s, caseStatus: newStatus, contractStatus: newStatus === 'cancelled' ? 'confirmed' : s.contractStatus }
         : s
     );
     
@@ -788,7 +763,7 @@ function DispatchManagementContent() {
         startTime: truckAssignment.startTime,
         endTime: truckAssignment.endTime,
         status: 'available',
-        contractStatus: submission.contractStatus === 'contracted' ? 'confirmed' : 'estimate',
+        contractStatus: submission.contractStatus === 'confirmed' ? 'confirmed' : 'estimate',
         customerName: submission.customerName,
         customerPhone: submission.customerPhone,
         workType: truckAssignment.workType,
@@ -992,9 +967,17 @@ function DispatchManagementContent() {
           {activeTab === 'calendar' && (
             <div className="bg-white shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
+                {/* ステータスフィルタ */}
+                <div className="mb-6">
+                  <StatusFilter 
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                  />
+                </div>
                 <DispatchCalendar 
-                  trucks={trucks}
+                  trucks={trucks as any}
                   onUpdateTruck={updateTruck}
+                  statusFilter={statusFilter}
                 />
               </div>
             </div>
@@ -1252,14 +1235,14 @@ function DispatchManagementContent() {
                                   {getStatusConfig('contract', 'estimate').icon} {getStatusConfig('contract', 'estimate').text}
                                 </span>
                               )}
-                              {submission.contractStatus === 'contracted' && (
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('contract', 'contracted').color}`}>
-                                  {getStatusConfig('contract', 'contracted').icon} {getStatusConfig('contract', 'contracted').text}
+                              {submission.contractStatus === 'confirmed' && (
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusConfig('contract', 'confirmed').color}`}>
+                                  {getStatusConfig('contract', 'confirmed').icon} {getStatusConfig('contract', 'confirmed').text}
                                 </span>
                               )}
                               
                               {/* キャンセルボタン（受注案件のみ表示） */}
-                              {(submission.caseStatus === 'contracted' || submission.contractStatus === 'contracted') && 
+                              {(submission.caseStatus === 'contracted' || submission.contractStatus === 'confirmed') && 
                                submission.caseStatus !== 'cancelled' && (
                                 <button
                                   onClick={() => changeCaseStatus(submission.id, 'cancelled')}

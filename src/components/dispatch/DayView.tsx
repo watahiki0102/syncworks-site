@@ -1,45 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
-import { TIME_SLOTS } from '@/constants/calendar';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import CaseDetail from '../CaseDetail';
-
-interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules: Schedule[];
-}
-
-interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'maintenance';
-  contractStatus?: 'confirmed' | 'estimate';
-  customerName?: string;
-  customerPhone?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  points?: number;
-  origin?: string;
-  destination?: string;
-  employeeId?: string;
-}
+import { CaseDetail as CaseDetailType } from '../../types/case';
+import { Truck, Schedule } from '../../types/dispatch';
 
 interface DayViewProps {
   selectedDate: string;
   trucks: Truck[];
+  cases: CaseDetailType[]; // 案件配列を追加
   onUpdateTruck: (truck: Truck) => void;
-  onScheduleClick?: (schedule: Schedule, truck: Truck) => void;
+  onSelect?: (caseId: string) => void; // onScheduleClickをonSelectに変更
   highlightedScheduleId?: string | null;
+  onEditCase?: (caseId: string) => void;
+  statusFilter?: 'all' | 'confirmed' | 'estimate';
 }
 
 interface TimeSlot {
@@ -52,6 +27,7 @@ interface TimeSlot {
 interface OverlappingSchedule {
   schedule: Schedule;
   truck: Truck;
+  caseId: string; // 案件IDを追加
   column: number;
   totalColumns: number;
 }
@@ -59,16 +35,65 @@ interface OverlappingSchedule {
 export default function DayView({ 
   selectedDate, 
   trucks, 
+  cases,
   onUpdateTruck, 
-  onScheduleClick,
-  highlightedScheduleId 
+  onSelect,
+  highlightedScheduleId,
+  onEditCase,
+  statusFilter = 'all'
 }: DayViewProps) {
+  const router = useRouter();
   const [displayTimeRange, setDisplayTimeRange] = useState<{ start: number; end: number }>({ start: 8, end: 20 });
-  const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showScheduleDetail, setShowScheduleDetail] = useState(false);
-  const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
+  // 日ビューでは未使用: const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
+  // 日ビューでは未使用: const [showScheduleModal, setShowScheduleModal] = useState(false);
+  // 日ビューでは未使用: const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
+
+  // フィルタ適用後の案件配列
+  const visibleCases = useMemo(() => {
+    if (statusFilter === 'all') return cases;
+    return cases.filter(c => c.contractStatus === statusFilter);
+  }, [cases, statusFilter]);
+
+  // フィルタ適用後のスケジュール配列
+  const getFilteredSchedules = (truckSchedules: Schedule[]) => {
+    if (statusFilter === 'all') return truckSchedules;
+    return truckSchedules.filter(s => s.contractStatus === statusFilter);
+  };
+
+  // URLハッシュから案件IDを取得
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#case-')) {
+      const caseId = hash.replace('#case-', '');
+      // レイアウト確定後にスクロール
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`case-${caseId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            const heading = el.querySelector<HTMLElement>('[data-case-heading]');
+            if (heading) {
+              heading.focus();
+              
+              // 既存ハイライトのクリア
+              document.querySelectorAll('.__case-highlight').forEach(n => 
+                n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
+              );
+              
+              // カード全体にハイライトを付与
+              el.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
+              
+              // 1.5秒後にハイライトを除去
+              setTimeout(() => 
+                el.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
+                1500
+              );
+            }
+          }, 180);
+        }
+      });
+    }
+  }, [selectedDate, statusFilter]);
 
   // 表示時間範囲に基づいて時間スロットを生成
   const generateTimeSlots = (): TimeSlot[] => {
@@ -91,7 +116,7 @@ export default function DayView({
   // 指定された日付と時間のスケジュールを取得
   const getSchedulesForDateTime = (date: string, time: string) => {
     return trucks.flatMap(truck =>
-      truck.schedules
+      getFilteredSchedules(truck.schedules)
         .filter(schedule => schedule.date === date)
         .filter(schedule => {
           const scheduleStart = schedule.startTime;
@@ -130,6 +155,7 @@ export default function DayView({
         result.push({
           schedule,
           truck,
+          caseId: schedule.id, // 案件IDを追加
           column: index,
           totalColumns
         });
@@ -177,30 +203,54 @@ export default function DayView({
     return addr.split(/[ \t　]/).slice(0,2).join('');
   };
 
-  // セルクリックハンドラー
-  const handleCellClick = (truck: Truck, time: string) => {
-    setSelectedTruck(truck);
-    setSelectedSchedule(null);
-    const nextHour = `${String(Number(time.slice(0,2))+1).padStart(2,'0')}:00`;
-    setPrefillTime({ start: time, end: nextHour });
-    setShowScheduleModal(true);
-  };
+  // セルクリックハンドラー（空きセル用 - 新規作成モーダル）
+  // 日ビューでは未使用 - 直接編集画面に遷移するため
+  // const handleCellClick = (truck: Truck, time: string) => {
+  //   // 日ビューでは新規作成モーダルは使用しない
+  // };
 
-  // スケジュールクリックハンドラー
-  const handleScheduleClick = (schedule: Schedule, truck: Truck) => {
-    if (onScheduleClick) {
-      onScheduleClick(schedule, truck);
+  // 案件選択ハンドラー（スクロール処理）
+  const handleCaseSelect = (caseId: string) => {
+    if (onSelect) {
+      onSelect(caseId);
     } else {
-      setSelectedTruck(truck);
-      setSelectedSchedule(schedule);
-      setShowScheduleDetail(true);
+      // 同一画面内でスクロール
+      const el = document.getElementById(`case-${caseId}`);
+      if (el) {
+        // レイアウト確定後に実行
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            const heading = el.querySelector<HTMLElement>('[data-case-heading]');
+            if (heading) {
+              heading.focus();
+              
+              // 既存ハイライトのクリア
+              document.querySelectorAll('.__case-highlight').forEach(n => 
+                n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
+              );
+              
+              // カード全体にハイライトを付与
+              el.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
+              
+              history.replaceState(null, '', `#case-${caseId}`);
+              
+              // 1.5秒後にハイライトを除去
+              setTimeout(() => 
+                el.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
+                1500
+              );
+            }
+          }, 180);
+        });
+      }
     }
   };
 
   // 当日の合計対応件数を計算
   const getTotalSchedulesForDay = () => {
     return trucks.reduce((total, truck) => {
-      const daySchedules = truck.schedules.filter(s =>
+      const daySchedules = getFilteredSchedules(truck.schedules).filter(s =>
         s.date === selectedDate &&
         s.status === 'available'
       );
@@ -211,7 +261,7 @@ export default function DayView({
   // トラック毎の対応件数を計算
   const getTruckSchedulesForDay = () => {
     return trucks.map(truck => {
-      const daySchedules = truck.schedules.filter(s =>
+      const daySchedules = getFilteredSchedules(truck.schedules).filter(s =>
         s.date === selectedDate &&
         s.status === 'available'
       );
@@ -303,7 +353,7 @@ export default function DayView({
       <div className="overflow-y-auto max-h-[600px]">
         {trucks.map(truck => {
           // トラック全体の使用容量を計算
-          const totalUsed = truck.schedules
+          const totalUsed = getFilteredSchedules(truck.schedules)
             .filter(s => s.date === selectedDate && s.status === 'available' && s.capacity)
             .reduce((sum, s) => sum + (s.capacity || 0), 0);
           const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
@@ -324,7 +374,7 @@ export default function DayView({
                       bottom: '0'
                     }}
                     title={`重さ合計: ${totalUsed}kg / ${truck.capacityKg}kg (${totalPercent.toFixed(1)}%)
-ポイント合計: ${truck.schedules
+ポイント合計: ${getFilteredSchedules(truck.schedules)
                         .filter(s => s.date === selectedDate && s.status === 'available')
                         .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
                   />
@@ -340,7 +390,7 @@ export default function DayView({
               <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
                 {timeSlots.map(slot => {
                   // そのトラックのその時間帯のスケジュール
-                  const schedules = truck.schedules.filter(s =>
+                  const schedules = getFilteredSchedules(truck.schedules).filter(s =>
                     s.date === selectedDate &&
                     s.startTime <= slot.time &&
                     s.endTime > slot.time
@@ -359,10 +409,15 @@ export default function DayView({
                   return (
                     <div
                       key={slot.time}
-                      className={`${cellHeight} border cursor-pointer hover:opacity-80 transition-opacity relative ${
-                        schedules.length > 0 ? '' : 'bg-gray-50'
+                      className={`${cellHeight} border transition-opacity relative ${
+                        schedules.length > 0 ? 'cursor-pointer hover:opacity-80' : 'bg-gray-50'
                       }`}
-                      onClick={() => handleCellClick(truck, slot.time)}
+                      onClick={schedules.length > 0 ? () => {
+                        // スケジュールがある場合のみ案件選択
+                        if (schedules.length === 1) {
+                          handleCaseSelect(schedules[0].id);
+                        }
+                      } : undefined}
                       title={schedules.length > 0 ?
                         `${schedules.length}件のスケジュール
 重さ合計: ${used}kg / ${truck.capacityKg}kg (${percent.toFixed(1)}%)
@@ -389,7 +444,7 @@ export default function DayView({
                       {/* 重なり回避レイアウトでスケジュール表示 */}
                       {overlappingLayout.length > 0 && (
                         <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
-                          {overlappingLayout.map(({ schedule, column, totalColumns }, index) => {
+                          {overlappingLayout.map(({ schedule, column, totalColumns, caseId }, index) => {
                             // 顧客ごとの色を取得
                             const customerColor = schedule.customerName ?
                               getCustomerColor(schedule.customerName) :
@@ -402,6 +457,8 @@ export default function DayView({
                             return (
                               <div
                                 key={`${schedule.id}-${index}`}
+                                role="button"
+                                tabIndex={0}
                                 className="rounded border cursor-pointer hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm"
                                 style={{
                                   backgroundColor: customerColor,
@@ -415,19 +472,26 @@ export default function DayView({
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleScheduleClick(schedule, truck);
+                                  handleCaseSelect(caseId);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleCaseSelect(caseId);
+                                  }
                                 }}
                                 title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(確定)' : '(未確定)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
                               >
                                 <div className="text-xs text-gray-600 text-center leading-[18px] truncate px-1">
                                   {schedule.origin && (
                                     <span className="text-blue-600" title={schedule.origin}>
-                                      発 {shortPrefMuni(schedule.origin)}
+                                      出発地 {shortPrefMuni(schedule.origin)}
                                     </span>
                                   )}
                                   {schedule.destination && (
                                     <span className="text-red-600 ml-1" title={schedule.destination}>
-                                      着 {shortPrefMuni(schedule.destination)}
+                                      到着地 {shortPrefMuni(schedule.destination)}
                                     </span>
                                   )}
                                 </div>
@@ -460,40 +524,61 @@ export default function DayView({
         })}
       </div>
 
-      {/* スケジュール詳細（ステータスごとに色分け） */}
+      {/* 案件詳細（ステータスごとに色分け） */}
       <div className="mt-8">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
         <div className="space-y-3">
-          {trucks.flatMap(truck =>
-            truck.schedules
-              .filter(s => s.date === selectedDate)
-              .map(schedule => ({
-                ...schedule,
-                truckName: truck.name,
-                truckId: truck.id,
-              }))
-          ).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((schedule, index) => {
-            const truckObj = trucks.find(t => t.id === schedule.truckId);
-            const isHighlighted = highlightedScheduleId === schedule.id;
+          {visibleCases
+            .filter(c => c.confirmedDate === selectedDate)
+            .sort((a, b) => a.startTime.localeCompare(b.startTime))
+            .map((caseDetail, index) => {
+              const isHighlighted = highlightedScheduleId === caseDetail.id;
 
-            return (
-              <CaseDetail
-                key={schedule.id}
-                schedule={schedule}
-                truck={truckObj}
-                isHighlighted={isHighlighted}
-                onEdit={() => {
-                  if (truckObj) {
-                    setSelectedTruck(truckObj);
-                    setSelectedSchedule(schedule);
-                    setShowScheduleModal(true);
-                  }
-                }}
-              />
-            );
-          })}
+              return (
+                <div
+                  key={caseDetail.id}
+                  id={`case-${caseDetail.id}`}
+                  data-case-id={caseDetail.id}
+                  className={`scroll-mt-[var(--header-h,80px)] ${isHighlighted ? 'ring-2 ring-blue-400' : ''}`}
+                >
+                  <CaseDetail
+                    schedule={{
+                      id: caseDetail.id,
+                      date: caseDetail.confirmedDate || '',
+                      startTime: caseDetail.startTime,
+                      endTime: caseDetail.endTime,
+                      status: 'available',
+                      contractStatus: caseDetail.contractStatus,
+                      customerName: caseDetail.customerName,
+                      description: caseDetail.options?.join(', '),
+                      capacity: 0,
+                      points: 0,
+                      origin: '', // 出発地は現在の型では利用不可
+                      destination: caseDetail.arrivalAddress
+                    }}
+                    truck={{
+                      id: caseDetail.truckId || '',
+                      name: caseDetail.truckName || '未割当',
+                      plateNumber: '',
+                      capacityKg: 0,
+                      inspectionExpiry: '',
+                      status: 'available',
+                      truckType: ''
+                    }}
+                    isHighlighted={isHighlighted}
+                    onEdit={() => {
+                      // 直接編集画面に遷移
+                      router.push(`/admin/cases/${caseDetail.id}/edit?from=dispatch-day&caseId=${caseDetail.id}`);
+                    }}
+                  />
+                </div>
+              );
+            })}
         </div>
       </div>
+
+      {/* TODO: 新規作成モーダル - 空きセルクリック時に表示 */}
+      {/* 日ビューでは案件詳細パネルは使用しない - 直接編集画面に遷移するため */}
     </div>
   );
 }

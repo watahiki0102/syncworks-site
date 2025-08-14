@@ -9,26 +9,7 @@
 import { useState, useEffect } from 'react';
 import { formatTime } from '@/utils/dateTimeUtils';
 import { TRUCK_STATUS_LABELS, TRUCK_STATUS_COLORS } from '../constants/truckStatus';
-
-interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string; // 料金設定のトラック種別
-  schedules: Schedule[];
-  maxPoints?: number; // 最大荷物ポイント
-}
-
-interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'maintenance';
-}
+import { Truck, Schedule } from '../types/dispatch';
 
 interface TruckRegistrationProps {
   trucks: Truck[];
@@ -58,7 +39,6 @@ export default function TruckRegistration({
     inspectionExpiry: '',
     status: 'available' as 'available' | 'maintenance' | 'inactive',
     truckType: '',
-    maxPoints: 0,
   });
   const [schedules, setSchedules] = useState<Omit<Schedule, 'id'>[]>([]);
   const [newSchedule, setNewSchedule] = useState({
@@ -69,22 +49,11 @@ export default function TruckRegistration({
   });
 
   /**
-   * 料金設定からトラック種別の最大ポイントを取得
-   * @param truckType - トラック種別
-   * @returns 最大ポイント数
-   */
-  const getMaxPointsForTruckType = (truckType: string): number => {
-    const rule = pricingRules.find((rule: any) => rule.truckType === truckType);
-    return rule?.maxPoint || 0;
-  };
-
-  /**
    * トラック種別が変更された時の処理
    * @param truckType - 選択されたトラック種別
    */
   const handleTruckTypeChange = (truckType: string) => {
-    const maxPoints = getMaxPointsForTruckType(truckType);
-    setFormData({ ...formData, truckType, maxPoints });
+    setFormData({ ...formData, truckType });
   };
 
   /**
@@ -99,7 +68,6 @@ export default function TruckRegistration({
         inspectionExpiry: selectedTruck.inspectionExpiry,
         status: selectedTruck.status,
         truckType: selectedTruck.truckType || '',
-        maxPoints: selectedTruck.maxPoints || 0
       });
       setSchedules(selectedTruck.schedules.map(s => ({
         date: s.date,
@@ -123,7 +91,6 @@ export default function TruckRegistration({
       inspectionExpiry: '',
       status: 'available',
       truckType: '',
-      maxPoints: 0,
     });
     setSchedules([]);
     setNewSchedule({
@@ -232,11 +199,6 @@ export default function TruckRegistration({
               {truck.truckType && (
                 <p className="text-sm text-gray-600 mb-2">種別: {truck.truckType}</p>
               )}
-              {truck.maxPoints && truck.maxPoints > 0 && (
-                <p className="text-sm text-blue-600 font-medium mb-2">
-                  最大荷物ポイント: {truck.maxPoints}pt
-                </p>
-              )}
               <p className="text-sm text-gray-600 mb-3">車検: {truck.inspectionExpiry}</p>
               <div className="flex gap-2">
                 <button
@@ -328,20 +290,6 @@ export default function TruckRegistration({
                 onChange={(e) => setFormData({ ...formData, capacityKg: parseInt(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                最大荷物ポイント (pt)
-              </label>
-              <input
-                type="number"
-                value={formData.maxPoints}
-                onChange={(e) => setFormData({ ...formData, maxPoints: parseInt(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="0"
-                placeholder="手動で設定する場合"
               />
             </div>
             

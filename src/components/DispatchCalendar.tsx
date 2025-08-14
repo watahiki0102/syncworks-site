@@ -7,49 +7,18 @@
  * - 案件の追加・編集・削除
  */
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
-import { WEEKDAYS_JA, VIEW_MODE_LABELS } from '../constants/calendar';
+import { TIME_SLOTS, WEEKDAYS_JA } from '@/constants/calendar';
 import CaseDetail from './CaseDetail';
 import DayViewComponent from './dispatch/DayView';
+import StatusFilter from './dispatch/StatusFilter';
+import { CaseDetail as CaseDetailType } from '../types/case';
+import { Truck, Schedule } from '../types/dispatch';
 
-interface Truck {
-  id: string;
+interface Option {
   name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules: Schedule[];
-}
-
-interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'maintenance';
-  contractStatus?: 'confirmed' | 'estimate';
-  customerName?: string;
-  customerPhone?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  points?: number;
-  origin?: string;
-  destination?: string;
-  preferredDate1?: string;
-  preferredDate2?: string;
-  preferredDate3?: string;
-  paymentMethod?: 'cash' | 'card' | 'transfer' | 'invoice';
-  paymentStatus?: 'paid' | 'pending' | 'partial';
-  paymentAmount?: number;
-  paymentDueDate?: string;
-  selectedOptions?: Array<{ name: string; price?: number }>;
-  truckName?: string;
-  truckId?: string;
-  isConfirmedOnly?: boolean;
-  isUnconfirmedOnly?: boolean;
+  price?: number;
 }
 
 interface TimeBlock {
@@ -70,9 +39,11 @@ type ViewMode = 'month' | 'week' | 'day';
 interface DispatchCalendarProps {
   trucks: Truck[];
   onUpdateTruck: (truck: Truck) => void;
+  statusFilter?: 'all' | 'confirmed' | 'estimate';
 }
 
-export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCalendarProps) {
+export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter = 'all' }: DispatchCalendarProps) {
+  const router = useRouter();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(today));
@@ -87,7 +58,14 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
   const [isExpandedView, setIsExpandedView] = useState(false);
   const [monthViewFilterType, setMonthViewFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
   const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
+  
+  // 日ビュー用のステータスフィルタ状態管理
+  const [dayViewStatusFilter, setDayViewStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
 
+  // 編集ハンドラー
+  const handleEditCase = (caseId: string) => {
+    router.push(`/admin/cases/${caseId}/edit`);
+  };
 
   // グローバルクリックイベントの処理
   useEffect(() => {
@@ -314,7 +292,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     return {
       date: toLocalDateString(date),
       day: date.getDate(),
-      dayOfWeek: WEEKDAYS_JA[date.getDay()],
+              dayOfWeek: WEEKDAYS_JA[date.getDay()],
       dayOfWeekNumber: date.getDay(),
       isToday: date.toDateString() === new Date().toDateString(),
       isHoliday: isHoliday(date),
@@ -709,7 +687,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
             {/* 場所情報 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">出発地</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">発地</label>
                 <input
                   type="text"
                   value={formData.origin}
@@ -1224,22 +1202,54 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
     );
   };
 
-  // 日ビュー - 新しいDayViewComponentを使用
-  const DayView = () => {
-    return (
-      <DayViewComponent
-        selectedDate={selectedDate}
-        trucks={trucks}
-        onUpdateTruck={onUpdateTruck}
-        onScheduleClick={(schedule, truck) => {
-          setSelectedTruck(truck);
-          setSelectedSchedule(schedule);
-          setShowScheduleDetail(true);
-        }}
-        highlightedScheduleId={highlightedScheduleId}
-      />
-    );
-  };
+             // 日ビュー - 新しいDayViewComponentを使用
+           const DayView = () => {
+             // トラックのスケジュールから案件データを生成
+             const generateCases = (): CaseDetailType[] => {
+               return trucks.flatMap(truck =>
+                 truck.schedules
+                   .filter(s => s.date === selectedDate && s.status === 'available')
+                   .map(schedule => ({
+                     id: schedule.id,
+                     customerName: schedule.customerName || '予約済み',
+                     customerPhone: schedule.customerPhone,
+                     sourceType: 'manual' as const,
+                     preferredDate: null,
+                     confirmedDate: schedule.date,
+                     arrivalAddress: schedule.destination || '未設定',
+                     options: schedule.description ? [schedule.description] : [],
+                     priceTaxIncluded: null,
+                     truckId: truck.id,
+                     truckName: truck.name,
+                     assignedEmployees: schedule.employeeId ? [{ id: schedule.employeeId, name: '従業員名' }] : [],
+                     startTime: schedule.startTime,
+                     endTime: schedule.endTime,
+                     contractStatus: schedule.contractStatus || 'estimate'
+                   }))
+               );
+             };
+
+             return (
+               <div>
+                 {/* 日ビュー用のステータスフィルタ */}
+                 <div className="mb-6">
+                   <StatusFilter 
+                     value={dayViewStatusFilter}
+                     onChange={setDayViewStatusFilter}
+                   />
+                 </div>
+                 <DayViewComponent
+                   selectedDate={selectedDate}
+                   trucks={trucks}
+                   cases={generateCases()}
+                   onUpdateTruck={onUpdateTruck}
+                   highlightedScheduleId={highlightedScheduleId}
+                   onEditCase={handleEditCase}
+                   statusFilter={dayViewStatusFilter}
+                 />
+               </div>
+             );
+           };
 
 
 
@@ -1361,7 +1371,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
                 <div className="space-y-3">
                   {selectedSchedule.origin && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">出発地</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">発地</label>
                       <p className="text-gray-900">{selectedSchedule.origin}</p>
                     </div>
                   )}
@@ -1902,7 +1912,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck }: DispatchCale
           <div className="mb-2"><span className="font-semibold">着:</span> {selectedSchedule.destination || '-'}</div>
           <div className="mb-2"><span className="font-semibold">備考:</span> {selectedSchedule.description || '-'}</div>
           <div className="flex gap-3 pt-4">
-            <button onClick={() => { setShowScheduleDetail(false); setShowScheduleModal(true); }} className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">編集</button>
+                            <button onClick={() => { setShowScheduleDetail(false); }} className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">詳細</button>
             <button onClick={() => setShowScheduleDetail(false)} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">閉じる</button>
           </div>
         </div>

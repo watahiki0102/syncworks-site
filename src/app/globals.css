@@ -73,6 +73,9 @@
   --border-strong: #cbd5e1;
   --input-background: #ffffff;
   --input-border: #d1d5db;
+  
+  /* === LAYOUT VARIABLES === */
+  --header-h: 80px; /* 固定ヘッダー高さ */
 }
 
 /* === DARK MODE === */

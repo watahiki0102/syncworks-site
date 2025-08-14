@@ -9,6 +9,8 @@
 
 import { useState, useEffect } from 'react';
 import { formatTime } from '@/utils/dateTimeUtils';
+import { ContractStatus } from '@/types/case';
+import { Truck, Schedule } from '@/types/dispatch';
 
 interface FormSubmission {
   id: string;
@@ -28,7 +30,7 @@ interface FormSubmission {
   distance?: number;
   estimatedPrice?: number;
   recommendedTruckTypes?: string[];
-  contractStatus: 'estimate' | 'contracted';
+  contractStatus: ContractStatus;
   contractDate?: string;
 }
 
@@ -40,32 +42,6 @@ interface TruckAssignment {
   endTime: string;
   workType: 'loading' | 'moving' | 'unloading';
   employeeId?: string; // 従業員IDを追加
-}
-
-interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules: Schedule[];
-}
-
-interface Schedule {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'booked' | 'maintenance';
-  customerName?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  origin?: string;
-  destination?: string;
-  employeeId?: string;
 }
 
 interface Employee {
