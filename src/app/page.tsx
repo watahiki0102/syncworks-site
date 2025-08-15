@@ -47,15 +47,15 @@ export default function Home() {
     {
       icon: Calculator,
       title: "安心の料金体系",
-      description: "初回提示金額のままご契約いただける安心設計。あとからの価格交渉はありません。",
+      description: "初回提示金額のままご契約いただける安心設計。あとからの価格交渉はありません。※入力内容に誤りがない場合に限る",
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-100",
       iconColor: "text-green-600"
     },
     {
       icon: HomeIcon,
-      title: "不動産連携",
-      description: "地域の不動産会社を通じて紹介されることで、質の高い見込み顧客とのマッチングが実現します。",
+      title: "不動産会社との連携",
+      description: "地域の不動産会社を通じて、信頼できる引越し業者をご紹介いたします。",
       color: "from-purple-500 to-purple-600",
       bgColor: "bg-purple-100",
       iconColor: "text-purple-600"
@@ -63,7 +63,7 @@ export default function Home() {
     {
       icon: Shield,
       title: "信頼性の高いサービス",
-      description: "紹介されるのは、条件提示に納得し成約意志の高い顧客のみ。効率よく成約につながります。",
+      description: "厳選された引越し業者から、条件に合ったサービスをご提供いたします。",
       color: "from-indigo-500 to-indigo-600",
       bgColor: "bg-indigo-100",
       iconColor: "text-indigo-600"
@@ -71,7 +71,7 @@ export default function Home() {
     {
       icon: Star,
       title: "実績と信頼",
-      description: "多くの不動産会社様との連携実績があり、安心してご利用いただけるサービスです。",
+      description: "多くのお客様にご利用いただき、高い満足度をいただいているサービスです。",
       color: "from-yellow-500 to-yellow-600",
       bgColor: "bg-yellow-100",
       iconColor: "text-yellow-600"
@@ -370,7 +370,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  新規会員登録
+                  引越し業者登録
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 <motion.button 
@@ -380,6 +380,22 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                 >
                   事業者ログイン
+                </motion.button>
+              </div>
+              
+              {/* 不動産事業者向けCTA */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <p className="text-gray-600 mb-4 text-base">
+                  不動産事業者の方はこちら
+                </p>
+                <motion.button 
+                  className="w-full sm:w-auto text-sm sm:text-base py-3 px-6 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 flex items-center justify-center gap-2 mx-auto shadow-lg"
+                  onClick={() => window.location.href = '/real-estates/register'}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  不動産事業者登録（無料）
+                  <ArrowRight className="w-4 h-4" />
                 </motion.button>
               </div>
             </AnimatedCard>

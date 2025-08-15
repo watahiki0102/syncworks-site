@@ -12,7 +12,9 @@ import { Layout } from '@/components/layout';
 
 interface FormData {
   name: string;
+  companyName: string;
   email: string;
+  phone: string;
   subject: string;
   message: string;
   inquiryType: string;
@@ -21,7 +23,9 @@ interface FormData {
 export default function ContactPage() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
+    companyName: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
     inquiryType: 'general'
@@ -49,7 +53,9 @@ export default function ContactPage() {
       // フォームリセット
       setFormData({
         name: '',
+        companyName: '',
         email: '',
+        phone: '',
         subject: '',
         message: '',
         inquiryType: 'general'
@@ -91,7 +97,7 @@ export default function ContactPage() {
                   </h3>
                   <p className="text-gray-700">
                     お問い合わせありがとうございます。<br />
-                    2営業日以内にご返信いたします。
+                    数営業日かかる場合があります。
                   </p>
                   <button
                     className="mt-4 text-blue-600 hover:text-blue-700"
@@ -139,6 +145,22 @@ export default function ContactPage() {
                     />
                   </div>
 
+                  {/* 事業者名 */}
+                  <div>
+                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                      事業者名
+                    </label>
+                    <input
+                      type="text"
+                      id="companyName"
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="会社名・店舗名など"
+                    />
+                  </div>
+
                   {/* メールアドレス */}
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -152,6 +174,22 @@ export default function ContactPage() {
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
+                    />
+                  </div>
+
+                  {/* 電話番号 */}
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                      電話番号
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="03-1234-5678"
                     />
                   </div>
 
@@ -264,7 +302,7 @@ export default function ContactPage() {
                   お問い合わせに関して
                 </h3>
                 <ul className="text-sm text-gray-700 space-y-2">
-                  <li>• ご回答まで2営業日程度お時間をいただく場合があります</li>
+                  <li>• ご回答まで数営業日かかる場合があります</li>
                   <li>• 内容によってはお電話でご連絡する場合があります</li>
                   <li>• 土日祝日にいただいたお問い合わせは翌営業日以降の対応となります</li>
                   <li>• 緊急のお問い合わせはお電話にてご連絡ください</li>
