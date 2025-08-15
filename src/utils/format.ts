@@ -86,3 +86,24 @@ export function shortenAddress(address: string, mode: 'full' | 'compact' | 'mini
   
   return address.substring(0, maxLength - 1) + '…';
 }
+
+/**
+ * 金額を税込表記でフォーマット（analytics用）
+ * @param value 金額（数値）
+ * @returns フォーマットされた文字列（例：¥123,456）
+ */
+export function formatCurrencyJPY(value: number): string {
+  return new Intl.NumberFormat('ja-JP', { 
+    style: 'currency', 
+    currency: 'JPY' 
+  }).format(value);
+}
+
+/**
+ * 労働時間を時間単位でフォーマット（analytics用）
+ * @param hours 時間（数値）
+ * @returns フォーマットされた文字列（例：12.5h）
+ */
+export function formatLaborHours(hours: number): string {
+  return `${hours.toFixed(1)}h`;
+}

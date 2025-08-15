@@ -3,6 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import ExpensesForm from './components/ExpensesForm';
+import TrendsChart from './components/TrendsChart';
+import PieRatio from './components/PieRatio';
+import TruckUtilizationPie from './components/TruckUtilizationPie';
+import SectionHeader from './components/SectionHeader';
+import { DailyMetric, DailyMetricBySource, TruckTypeRatio, SourceTypeCode } from '@/types/analytics';
+import { formatCurrencyJPY, formatLaborHours } from '@/utils/format';
 
 // プロット間隔の型定義
 type PlotInterval = 'day' | 'week' | 'month' | 'year';
@@ -97,492 +104,12 @@ function ContractTable({ contracts }: { contracts: any[] }) {
   );
 }
 
-// 簡易グラフコンポーネント
-function SimpleChart({ title, data, type = 'bar' }: {
-  title: string;
-  data: { label: string; value: number }[];
-  type?: 'bar' | 'line';
-}) {
-  // データが空またはundefinedの場合の処理
-  if (!data || data.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          データがありません
-        </div>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...data.map(d => d.value)) || 1;
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-      <div className="space-y-3">
-        {data.map((item, index) => {
-          const percentage = (item.value / maxValue) * 100;
-          const safePercentage = isNaN(percentage) ? 0 : percentage;
-          
-          return (
-            <div key={index} className="flex items-center gap-3">
-              <div className="w-16 text-sm text-gray-600">{item.label}</div>
-              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                <div 
-                  className="bg-blue-500 h-6 rounded-full transition-all duration-500"
-                  style={{ width: `${safePercentage}%` }}
-                ></div>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
-                  {item.value}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// 円グラフコンポーネント
-function PieChart({ title, data }: {
-  title: string;
-  data: { label: string; value: number; color: string }[];
-}) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let currentAngle = 0;
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-      <div className="flex items-center justify-center">
-        <div className="relative w-48 h-48">
-          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-            {data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
-              const angle = (percentage / 100) * 360;
-              const x1 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
-              const y1 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
-              const x2 = 50 + 40 * Math.cos(((currentAngle + angle) * Math.PI) / 180);
-              const y2 = 50 + 40 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
-              const largeArcFlag = angle > 180 ? 1 : 0;
-              
-              const pathData = [
-                `M 50 50`,
-                `L ${x1} ${y1}`,
-                `A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                `Z`
-              ].join(' ');
-
-              currentAngle += angle;
-
-              return (
-                <path
-                  key={index}
-                  d={pathData}
-                  fill={item.color}
-                  stroke="white"
-                  strokeWidth="0.5"
-                  className="hover:opacity-80 transition-opacity"
-                />
-              );
-            })}
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{total}</div>
-              <div className="text-xs text-gray-600">総計</div>
-            </div>
-          </div>
-        </div>
-        <div className="ml-6 space-y-2">
-          {data.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color }}
-              ></div>
-              <span className="text-sm text-gray-700">{item.label}</span>
-              <span className="text-sm font-medium text-gray-900">
-                {item.value} ({((item.value / total) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// 折れ線グラフコンポーネント
-function LineChart({ title, data }: {
-  title: string;
-  data: { label: string; value: number }[];
-}) {
-  // データが空またはundefinedの場合の処理
-  if (!data || data.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          データがありません
-        </div>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
-  const range = maxValue - minValue || 1;
-
-  const points = data.map((item, index) => {
-    // データが1つの場合は中央に配置
-    const x = data.length === 1 
-      ? 160 // 中央の位置
-      : (index / (data.length - 1)) * 280 + 20;
-    const y = 180 - ((item.value - minValue) / range) * 140 + 20;
-    
-    // NaN チェック
-    const safeX = isNaN(x) ? 160 : x;
-    const safeY = isNaN(y) ? 100 : y;
-    
-    return `${safeX},${safeY}`;
-  }).join(' ');
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-      <div className="relative">
-        <svg viewBox="0 0 320 220" className="w-full h-64">
-          {/* グリッド線 */}
-          {[0, 1, 2, 3, 4].map(i => (
-            <line
-              key={i}
-              x1="20"
-              y1={20 + i * 35}
-              x2="300"
-              y2={20 + i * 35}
-              stroke="#f3f4f6"
-              strokeWidth="1"
-            />
-          ))}
-          
-          {/* 折れ線 */}
-          <polyline
-            points={points}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          
-          {/* データポイント */}
-          {data.map((item, index) => {
-            // データが1つの場合は中央に配置
-            const x = data.length === 1 
-              ? 160 // 中央の位置
-              : (index / (data.length - 1)) * 280 + 20;
-            const y = 180 - ((item.value - minValue) / range) * 140 + 20;
-            
-            // NaN チェック
-            const safeX = isNaN(x) ? 160 : x;
-            const safeY = isNaN(y) ? 100 : y;
-            
-            return (
-              <g key={index}>
-                <circle
-                  cx={safeX}
-                  cy={safeY}
-                  r="4"
-                  fill="#3b82f6"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <text
-                  x={safeX}
-                  y={210}
-                  textAnchor="middle"
-                  className="text-xs fill-gray-600"
-                >
-                  {item.label}
-                </text>
-                <text
-                  x={safeX}
-                  y={safeY - 10}
-                  textAnchor="middle"
-                  className="text-xs fill-gray-900 font-medium"
-                >
-                  {item.value.toLocaleString()}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// 複合グラフコンポーネント（棒グラフ+折れ線）
-function ComboChart({ title, barData, lineData }: {
-  title: string;
-  barData: { label: string; value: number }[];
-  lineData: { label: string; value: number }[];
-}) {
-  // データが空の場合の処理
-  if (!barData || barData.length === 0 || !lineData || lineData.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          データがありません
-        </div>
-      </div>
-    );
-  }
-
-  const maxBarValue = Math.max(...barData.map(d => d.value)) || 1;
-  const maxLineValue = Math.max(...lineData.map(d => d.value)) || 1;
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-      <div className="relative">
-        <svg viewBox="0 0 320 240" className="w-full h-64">
-          {/* グリッド線 */}
-          {[0, 1, 2, 3, 4].map(i => (
-            <line
-              key={i}
-              x1="20"
-              y1={20 + i * 35}
-              x2="300"
-              y2={20 + i * 35}
-              stroke="#f3f4f6"
-              strokeWidth="1"
-            />
-          ))}
-          
-          {/* 棒グラフ */}
-          {barData.map((item, index) => {
-            const x = 40 + index * 50;
-            const height = (item.value / maxBarValue) * 140;
-            const y = 160 - height;
-            
-            // NaN チェック
-            const safeX = isNaN(x) ? 40 : x;
-            const safeY = isNaN(y) ? 160 : y;
-            const safeHeight = isNaN(height) ? 0 : height;
-            
-            return (
-              <rect
-                key={index}
-                x={safeX}
-                y={safeY}
-                width="20"
-                height={safeHeight}
-                fill="#60a5fa"
-                rx="2"
-              />
-            );
-          })}
-          
-          {/* 折れ線 */}
-          <polyline
-            points={lineData.map((item, index) => {
-              const x = 50 + index * 50;
-              const y = 160 - (item.value / maxLineValue) * 140;
-              
-              // NaN チェック
-              const safeX = isNaN(x) ? 50 : x;
-              const safeY = isNaN(y) ? 160 : y;
-              
-              return `${safeX},${safeY}`;
-            }).join(' ')}
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          
-          {/* 折れ線のポイント */}
-          {lineData.map((item, index) => {
-            const x = 50 + index * 50;
-            const y = 160 - (item.value / maxLineValue) * 140;
-            
-            // NaN チェック
-            const safeX = isNaN(x) ? 50 : x;
-            const safeY = isNaN(y) ? 160 : y;
-            
-            return (
-              <circle
-                key={index}
-                cx={safeX}
-                cy={safeY}
-                r="3"
-                fill="#ef4444"
-                stroke="white"
-                strokeWidth="2"
-              />
-            );
-          })}
-          
-          {/* X軸ラベル */}
-          {barData.map((item, index) => (
-            <text
-              key={index}
-              x={50 + index * 50}
-              y={185}
-              textAnchor="middle"
-              className="text-xs fill-gray-600"
-            >
-              {item.label}
-            </text>
-          ))}
-        </svg>
-        
-        {/* 凡例 */}
-        <div className="flex justify-center gap-6 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-400 rounded"></div>
-            <span className="text-sm text-gray-600">成約件数</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-            <span className="text-sm text-gray-600">売上（万円）</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// エリアチャートコンポーネント
-function AreaChart({ title, data }: {
-  title: string;
-  data: { label: string; value: number }[];
-}) {
-  // データが空またはundefinedの場合の処理
-  if (!data || data.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          データがありません
-        </div>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
-  const range = maxValue - minValue || 1;
-
-  const points = data.map((item, index) => {
-    // データが1つの場合は中央に配置
-    const x = data.length === 1 
-      ? 160 // 中央の位置
-      : (index / (data.length - 1)) * 280 + 20;
-    const y = 180 - ((item.value - minValue) / range) * 140 + 20;
-    
-    // NaN チェック
-    const safeX = isNaN(x) ? 160 : x;
-    const safeY = isNaN(y) ? 100 : y;
-    
-    return `${safeX},${safeY}`;
-  }).join(' ');
-
-  const areaPoints = `20,180 ${points} 300,180`;
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
-      <div className="relative">
-        <svg viewBox="0 0 320 220" className="w-full h-64">
-          {/* グリッド線 */}
-          {[0, 1, 2, 3, 4].map(i => (
-            <line
-              key={i}
-              x1="20"
-              y1={20 + i * 35}
-              x2="300"
-              y2={20 + i * 35}
-              stroke="#f3f4f6"
-              strokeWidth="1"
-            />
-          ))}
-          
-          {/* エリア */}
-          <polygon
-            points={areaPoints}
-            fill="url(#areaGradient)"
-            stroke="none"
-          />
-          
-          {/* 折れ線 */}
-          <polyline
-            points={points}
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          
-          {/* データポイント */}
-          {data.map((item, index) => {
-            // データが1つの場合は中央に配置
-            const x = data.length === 1 
-              ? 160 // 中央の位置
-              : (index / (data.length - 1)) * 280 + 20;
-            const y = 180 - ((item.value - minValue) / range) * 140 + 20;
-            
-            // NaN チェック
-            const safeX = isNaN(x) ? 160 : x;
-            const safeY = isNaN(y) ? 100 : y;
-            
-            return (
-              <g key={index}>
-                <circle
-                  cx={safeX}
-                  cy={safeY}
-                  r="4"
-                  fill="#10b981"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <text
-                  x={safeX}
-                  y={210}
-                  textAnchor="middle"
-                  className="text-xs fill-gray-600"
-                >
-                  {item.label}
-                </text>
-              </g>
-            );
-          })}
-          
-          {/* グラデーション定義 */}
-          <defs>
-            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
-              <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.05 }} />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminAnalytics() {
   const router = useRouter();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [plotInterval, setPlotInterval] = useState<PlotInterval>('day');
+  const [selectedSource, setSelectedSource] = useState<SourceTypeCode>('syncmoving');
 
   // 現在の月の開始日と終了日を設定
   useEffect(() => {
@@ -941,6 +468,12 @@ export default function AdminAnalytics() {
     value: item.value / 10000 // 万円単位に変換
   }));
 
+  // 経費作成後の処理
+  const handleExpenseCreated = () => {
+    // 経費が作成された後の処理（必要に応じてデータを再取得）
+    console.log('経費が作成されました');
+  };
+
   const handleFilterUpdate = () => {
     // フィルター更新処理（実際のアプリケーションでは API 呼び出し）
     console.log('フィルター更新:', startDate, endDate, plotInterval);
@@ -990,6 +523,9 @@ export default function AdminAnalytics() {
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="space-y-6">
+            {/* 経費入力フォーム */}
+            <ExpensesForm onExpenseCreated={handleExpenseCreated} />
+
             {/* 期間指定フィルター＆プロット間隔選択 */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <div className="space-y-4">
@@ -1110,41 +646,86 @@ export default function AdminAnalytics() {
 
             {/* グラフ表示 */}
             <div className="space-y-6">
-              {/* 1行目: 基本グラフ */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SimpleChart
-                  title={`📊 成約件数の推移（${getIntervalLabel(plotInterval)}・棒グラフ）`}
+              {/* 1行目: 成約件数推移（全体） */}
+              <div className="grid grid-cols-1 gap-6">
+                <TrendsChart
+                  title={`📊 成約件数の推移（全体・${getIntervalLabel(plotInterval)}）`}
                   data={chartData}
-                  type="bar"
-                />
-                <LineChart
-                  title={`💰 売上金額の推移（${getIntervalLabel(plotInterval)}・折れ線グラフ）`}
-                  data={salesData}
+                  type="line"
+                  valueFormatter={(value) => `${value}件`}
                 />
               </div>
 
-              {/* 2行目: 分析グラフ */}
+              {/* 2行目: 対応/売上/コスト推移 */}
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <SectionHeader title="📈 対応/売上/コスト 推移">
+                    <div className="text-sm text-gray-600">
+                      対応件数（棒）・売上（折れ線）・コスト（折れ線）
+                    </div>
+                  </SectionHeader>
+                  <div className="h-80">
+                    <TrendsChart
+                      title=""
+                      data={chartData}
+                      type="combo"
+                      height={320}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3行目: トラック種別割合とトラック稼働状況 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PieChart
-                  title="🚚 トラック種別別成約比率"
+                <PieRatio
+                  title="🚚 トラック種別の割合"
                   data={truckTypeData}
                 />
-                <ComboChart
-                  title={`📈 成約件数 vs 売上推移（${getIntervalLabel(plotInterval)}）`}
-                  barData={comboBarData}
-                  lineData={comboLineData}
-                />
+                <TruckUtilizationPie />
               </div>
 
-              {/* 3行目: トレンド分析 */}
+              {/* 4行目: 成約件数推移（媒体別） */}
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <SectionHeader title="📊 成約件数 推移（媒体別）">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">媒体:</label>
+                      <select
+                        value={selectedSource}
+                        onChange={(e) => setSelectedSource(e.target.value as SourceTypeCode)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      >
+                        <option value="syncmoving">syncmoving</option>
+                        <option value="他社サービス">他社サービス</option>
+                        <option value="手動">手動</option>
+                      </select>
+                    </div>
+                  </SectionHeader>
+                  <div className="h-80">
+                    <TrendsChart
+                      title=""
+                      data={chartData} // 実際は fetchDailyMetricsBySource(selectedSource) の結果を使用
+                      type="line"
+                      height={320}
+                      valueFormatter={(value) => `${value}件`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 5行目: その他の分析グラフ */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LineChart
+                <TrendsChart
                   title="📈 月別成約件数トレンド"
                   data={monthlyTrendData}
+                  type="line"
+                  valueFormatter={(value) => `${value}件`}
                 />
-                <AreaChart
-                  title={`💹 累計売上推移（${getIntervalLabel(plotInterval)}・エリアチャート）`}
+                <TrendsChart
+                  title={`💹 累計売上推移（${getIntervalLabel(plotInterval)}）`}
                   data={cumulativeData}
+                  type="line"
+                  valueFormatter={(value) => formatCurrencyJPY(value)}
                 />
               </div>
             </div>
