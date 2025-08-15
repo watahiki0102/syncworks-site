@@ -34,6 +34,10 @@ const defaultNavigation: NavigationItem[] = [
     href: '/vendors'
   },
   {
+    label: '事業者の方へ',
+    href: '/for-movers'
+  },
+  {
     label: 'よくあるご質問',
     href: '/faq'
   },
