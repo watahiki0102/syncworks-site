@@ -86,7 +86,7 @@ export default function AdminRegister() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -103,11 +103,11 @@ export default function AdminRegister() {
         address: formData.address,
         registeredAt: new Date().toISOString()
       };
-      
+
       localStorage.setItem('adminData', JSON.stringify(adminData));
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminEmail', formData.email);
-      
+
       // 登録成功後、ダッシュボードに遷移
       router.push('/admin/dashboard');
     } catch (err) {
@@ -127,7 +127,7 @@ export default function AdminRegister() {
       ...prev,
       [name]: value
     }));
-    
+
     // エラーをクリア
     if (errors[name]) {
       setErrors(prev => ({
@@ -166,9 +166,8 @@ export default function AdminRegister() {
                   required
                   value={formData.companyName}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.companyName ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.companyName ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="株式会社○○○"
                 />
               </div>
@@ -191,9 +190,8 @@ export default function AdminRegister() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="admin@example.com"
                 />
               </div>
@@ -216,9 +214,8 @@ export default function AdminRegister() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="03-1234-5678"
                 />
               </div>
@@ -240,9 +237,8 @@ export default function AdminRegister() {
                   required
                   value={formData.address}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.address ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.address ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="東京都渋谷区○○○"
                 />
               </div>
@@ -265,9 +261,8 @@ export default function AdminRegister() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.password ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="8文字以上で入力"
                 />
               </div>
@@ -290,9 +285,8 @@ export default function AdminRegister() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="パスワードを再入力"
                 />
               </div>
@@ -328,9 +322,12 @@ export default function AdminRegister() {
           </div>
 
           <div className="mt-6 text-center">
-            <Link href="/" className="text-blue-600 hover:text-blue-500 text-sm">
-              ← トップに戻る
-            </Link>
+              <button
+                className="text-center w-1/2 bg-gray-500 text-white font-semibold py-2 rounded-lg shadow-sm hover:bg-gray-600 transition text-lg"
+                onClick={() => router.push('/admin/login')}
+              >
+                戻る
+              </button>
           </div>
         </div>
       </div>

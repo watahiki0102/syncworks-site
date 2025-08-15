@@ -1,6 +1,21 @@
 export type ContractStatus = 'confirmed' | 'estimate';
 export type SourceType = 'sync' | 'suumo' | 'other_agency' | 'manual';
 
+// 新しく追加する型定義
+export type EstimateInputMode = 'calc' | 'manual';
+export type MoveDateKind = '希望日' | '確定日';
+export type PaymentMethod = '銀行振込' | '現金' | 'クレジットカード' | '請求書';
+export type PaymentStatus = '未請求' | '請求済' | '入金待ち' | '入金済' | '保留';
+
+export interface CompanyProfile {
+  name: string;
+  postal: string;
+  address: string;
+  tel: string;
+  email?: string;
+  logoUrl?: string;
+}
+
 export interface EmployeeRef {
   id: string;
   name: string;
