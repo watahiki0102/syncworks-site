@@ -63,71 +63,77 @@ export default function DayView({
 
   // URLハッシュから案件IDを取得
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.startsWith('#case-')) {
-      const caseId = hash.replace('#case-', '');
-      
-      // レイアウト確定後にスクロール
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`case-${caseId}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          setTimeout(() => {
-            const heading = el.querySelector<HTMLElement>('[data-case-heading]');
-            if (heading) {
-              heading.focus();
-              
-              // 既存ハイライトのクリア
-              document.querySelectorAll('.__case-highlight').forEach(n => 
-                n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
-              );
-              
-              // カード全体にハイライトを付与
-              el.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
-              
-              // 1.5秒後にハイライトを除去
-              setTimeout(() => 
-                el.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
-                1500
-              );
-            }
-          }, 180);
-        } else {
-          // ハッシュ対象が見つからない場合（フィルタで非表示になっている可能性）
-          // 一時的に全件表示してスクロールを試行
-          const originalFilter = statusFilter;
-          if (originalFilter !== 'all') {
-            // フィルタを一時的に 'all' に戻してスクロールを試行
+    // 初期表示時のスクロールを防ぐため、少し遅延させる
+    const timer = setTimeout(() => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#case-')) {
+        const caseId = hash.replace('#case-', '');
+        
+        // レイアウト確定後にスクロール
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`case-${caseId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(() => {
-              const elRetry = document.getElementById(`case-${caseId}`);
-              if (elRetry) {
-                elRetry.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setTimeout(() => {
-                  const heading = elRetry.querySelector<HTMLElement>('[data-case-heading]');
-                  if (heading) {
-                    heading.focus();
-                    
-                    // 既存ハイライトをクリア
-                    document.querySelectorAll('.__case-highlight').forEach(n => 
-                      n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
-                    );
-                    
-                    // カード全体にハイライトを付与
-                    elRetry.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
-                    
-                    // 1.5秒後にハイライトを除去
-                    setTimeout(() => 
-                      elRetry.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
-                      1500
-                    );
-                  }
-                }, 180);
+              const heading = el.querySelector<HTMLElement>('[data-case-heading]');
+              if (heading) {
+                heading.focus();
+                
+                // 既存ハイライトのクリア
+                document.querySelectorAll('.__case-highlight').forEach(n => 
+                  n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
+                );
+                
+                // カード全体にハイライトを付与
+                el.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
+                
+                // 1.5秒後にハイライトを除去
+                setTimeout(() => 
+                  el.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
+                  1500
+                );
               }
-            }, 100);
+            }, 180);
+          } else {
+            // ハッシュ対象が見つからない場合（フィルタで非表示になっている可能性）
+            // 一時的に全件表示してスクロールを試行
+            const originalFilter = statusFilter;
+            if (originalFilter !== 'all') {
+              // フィルタを一時的に 'all' に戻してスクロールを試行
+              setTimeout(() => {
+                const elRetry = document.getElementById(`case-${caseId}`);
+                if (elRetry) {
+                  elRetry.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  setTimeout(() => {
+                    const heading = elRetry.querySelector<HTMLElement>('[data-case-heading]');
+                    if (heading) {
+                      heading.focus();
+                      
+                      // 既存ハイライトをクリア
+                      document.querySelectorAll('.__case-highlight').forEach(n => 
+                        n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
+                      );
+                      
+                      // カード全体にハイライトを付与
+                      elRetry.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
+                      
+                      // 1.5秒後にハイライトを除去
+                      setTimeout(() => 
+                        elRetry.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
+                        1500
+                      );
+                    }
+                  }, 180);
+                }
+              }, 100);
+            }
           }
-        }
-      });
-    }
+        });
+      }
+    }, 500); // 500ms遅延
+
+    // クリーンアップ
+    return () => clearTimeout(timer);
   }, [selectedDate, statusFilter]);
 
   // 表示時間範囲に基づいて時間スロットを生成
@@ -586,7 +592,8 @@ export default function DayView({
                       capacity: 0,
                       points: 0,
                       origin: '', // 出発地は現在の型では利用不可
-                      destination: caseDetail.arrivalAddress
+                      destination: caseDetail.arrivalAddress,
+                      assignedEmployees: caseDetail.assignedEmployees || []
                     }}
                     truck={{
                       id: caseDetail.truckId || '',

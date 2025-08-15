@@ -39,6 +39,11 @@ interface Schedule {
   selectedOptions?: Option[];
   truckName?: string;
   truckId?: string;
+  assignedEmployees?: Array<{
+    id: string;
+    name: string;
+    role?: string;
+  }>;
 }
 
 interface CaseDetailProps {
@@ -172,6 +177,28 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
           }</p>
         </div>
       </div>
+
+      {/* 従業員情報 */}
+      {schedule.assignedEmployees && schedule.assignedEmployees.length > 0 && (
+        <div className="mb-3">
+          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+            <div className="font-bold text-blue-800 mb-2">担当従業員</div>
+            <div className="space-y-1">
+              {schedule.assignedEmployees.map((employee, idx) => (
+                <div key={employee.id} className="flex items-center gap-2 text-sm">
+                  <span className="text-blue-600">👤</span>
+                  <span className="font-medium">{employee.name}</span>
+                  {employee.role && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      {employee.role}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 荷物・ポイント情報 */}
       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">

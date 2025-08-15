@@ -253,7 +253,7 @@ export default function AdminDashboard() {
                         </Link>
                         <Link
                           href="/admin/profile"
-                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                           onClick={() => setShowSettings(false)}
                         >
                           <span className="text-lg">📝</span>
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* メインコンテンツ */}
+                {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 auto-rows-min">
             {/* 最新ニュース - 2列分の幅を取る */}

@@ -7,6 +7,7 @@ import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
+import { TruckManagement } from '@/components/dispatch/TruckManagement';
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
 import { Truck, Schedule } from '@/types/dispatch';
 import { ContractStatus } from '@/types/case';
@@ -106,7 +107,7 @@ function DispatchManagementContent() {
   ]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'assignments' | 'registration'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'registration' | 'truck-management'>('calendar');
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
@@ -584,7 +585,7 @@ function DispatchManagementContent() {
   useEffect(() => {
     if (selectedCaseId && registrationMode === 'registration') {
       // 配車登録モードで遷移した場合
-      setActiveTab('assignments');
+      setActiveTab('registration');
       
       // 該当案件を自動的に展開状態にする
       setExpandedSubmissions(prev => new Set([...prev, selectedCaseId]));
@@ -935,16 +936,7 @@ function DispatchManagementContent() {
             >
               配車カレンダー
             </button>
-            <button
-              onClick={() => setActiveTab('assignments')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'assignments'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              案件割り当て
-            </button>
+
             <button
               onClick={() => setActiveTab('registration')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -954,6 +946,17 @@ function DispatchManagementContent() {
               }`}
             >
               トラック登録
+            </button>
+
+            <button
+              onClick={() => setActiveTab('truck-management')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'truck-management'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              トラック管理
             </button>
           </nav>
         </div>
@@ -975,32 +978,47 @@ function DispatchManagementContent() {
               </div>
             </div>
           )}
-          
-          {activeTab === 'assignments' && (
-            <div className="space-y-8">
-              {/* ヘッダーアクション */}
-              <div className="bg-white shadow rounded-lg px-4 py-5 sm:p-6">
-                <div className="flex justify-between items-center">
+
+          {activeTab === 'truck-management' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <TruckManagement 
+                  trucks={trucks as any}
+                  onTrucksChange={setTrucks}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'registration' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">引越し案件一覧</h2>
-                    <p className="text-sm text-gray-600 mt-1">
-                      入力フォームから送信された案件: {formSubmissions.length}件
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="bg-orange-100 px-3 py-1 rounded-full">
-                      未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
-                    </div>
-                    <div className="bg-blue-100 px-3 py-1 rounded-full">
-                      割当済: {formSubmissions.filter(s => s.status === 'assigned').length}件
-                    </div>
-                    <div className="bg-green-100 px-3 py-1 rounded-full">
-                      完了: {formSubmissions.filter(s => s.status === 'completed').length}件
-                    </div>
+                    <h3 className="text-xl font-bold text-purple-600">トラック登録・編集</h3>
+                    <p className="text-sm text-gray-900">車両情報の管理・更新</p>
                   </div>
                 </div>
               </div>
+              <div className="px-4 py-5 sm:p-6">
+                <TruckRegistration
+                  trucks={trucks}
+                  selectedTruck={selectedTruck}
+                  onAddTruck={addTruck}
+                  onUpdateTruck={updateTruck}
+                  onDeleteTruck={deleteTruck}
+                  onSelectTruck={setSelectedTruck}
+                  availableTruckTypes={availableTruckTypes}
+                  pricingRules={pricingRules}
+                />
+              </div>
+            </div>
+          )}
 
+          {/* トラック一覧と案件一覧（calendarタブで表示） */}
+          {activeTab === 'calendar' && (
+            <>
               {/* トラック一覧 */}
               <div className="bg-white shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
@@ -1266,7 +1284,7 @@ function DispatchManagementContent() {
                               <span className="text-gray-700 truncate">{submission.originAddress}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-500">🏁</span>
+                              <span className="text-gray-600">🏁</span>
                               <span className="text-gray-700 truncate">{submission.destinationAddress}</span>
                             </div>
                           </div>
@@ -1376,7 +1394,7 @@ function DispatchManagementContent() {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           )}
           
           {activeTab === 'registration' && (

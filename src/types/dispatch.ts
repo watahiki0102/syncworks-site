@@ -5,6 +5,23 @@ export interface Option {
 
 import { ContractStatus } from './case';
 
+// 作業者割り当て用の型定義
+export type ScheduleId = string; // truckId + date + timeRange などで一意
+
+export interface WorkerRef { 
+  id: string; 
+  name: string; 
+  role: 'driver'|'staff'|'leader'; 
+  active: boolean; 
+}
+
+export interface WorkerAssignment {
+  scheduleId: ScheduleId;          // ★スケジュール単位で割当
+  employeeId: string;
+  start: string;                   // 'HH:mm'
+  end: string;                     // 'HH:mm'
+}
+
 export interface Schedule {
   id: string;
   date: string;
@@ -33,6 +50,8 @@ export interface Schedule {
   isConfirmedOnly?: boolean;
   isUnconfirmedOnly?: boolean;
   employeeId?: string;
+  // 作業者割り当て情報を追加
+  workerAssignments?: WorkerAssignment[];
 }
 
 export interface Truck {

@@ -15,6 +15,7 @@ import DayViewComponent from './dispatch/DayView';
 import StatusFilter from './dispatch/StatusFilter';
 import { CaseDetail as CaseDetailType } from '../types/case';
 import { Truck, Schedule } from '../types/dispatch';
+import WorkerAssignmentView from '../app/admin/dispatch/views/WorkerAssignmentView';
 
 interface Option {
   name: string;
@@ -34,7 +35,7 @@ interface TimeSlot {
   end: string;
 }
 
-type ViewMode = 'month' | 'week' | 'day';
+type ViewMode = 'month' | 'week' | 'day' | 'worker-assignment';
 
 interface DispatchCalendarProps {
   trucks: Truck[];
@@ -1880,6 +1881,16 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
             >
               日
             </button>
+            <button
+              onClick={() => {
+                setSelectedDate(toLocalDateString(today));
+                setViewMode('worker-assignment');
+              }}
+              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'worker-assignment' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              作業者割り当て
+            </button>
           </div>
         </div>
 
@@ -1921,6 +1932,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       {viewMode === 'month' && <MonthView />}
       {viewMode === 'week' && <GanttView />}
       {viewMode === 'day' && <DayView />}
+      {viewMode === 'worker-assignment' && (
+        <WorkerAssignmentView
+          trucks={trucks}
+          selectedDate={selectedDate}
+          onUpdateTruck={onUpdateTruck}
+        />
+      )}
 
       {/* スケジュールモーダル */}
       {showScheduleModal && <ScheduleModal />}
