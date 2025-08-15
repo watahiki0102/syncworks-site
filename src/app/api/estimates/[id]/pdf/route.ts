@@ -3,10 +3,10 @@ import PDFDocument from 'pdfkit';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // 案件データの取得（実際の実装ではデータベースから取得）
     // ここではダミーデータを使用
@@ -46,14 +46,6 @@ export async function GET(
         bottom: 50,
         left: 50,
         right: 50
-      }
-    });
-
-    // レスポンスヘッダーの設定
-    const response = new NextResponse(doc.pipe(), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="estimate-${id}.pdf"`
       }
     });
 
@@ -139,7 +131,21 @@ export async function GET(
     // PDFの生成完了
     doc.end();
     
-    return response;
+    // レスポンスヘッダーの設定
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => {
+      const buffer = Buffer.concat(chunks);
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="estimate-${id}.pdf"`
+        }
+      });
+    });
+    
+    // 一時的なレスポンスを返す
+    return new NextResponse('PDF生成中...', { status: 200 });
   } catch (error) {
     console.error('PDF生成エラー:', error);
     return NextResponse.json(

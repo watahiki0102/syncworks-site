@@ -2,6 +2,7 @@
  * フォーム送信完了ページコンポーネント
  * - 送信完了の確認
  * - 見積もり結果の表示
+ * - 連絡手段選択（LINE/メール）
  * - 次のステップの案内
  */
 'use client';
@@ -22,13 +23,17 @@ interface CompleteData {
   moveDate: string;
   fromAddress: string;
   toAddress: string;
+  referralId?: string | null;
+  contactPreference?: 'line' | 'email';
 }
 
 function FormCompleteContent() {
   const searchParams = useSearchParams();
-  const submissionId = searchParams.get('id');
+  const submissionId = searchParams.get('ticket');
   const [completeData, setCompleteData] = useState<CompleteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContactSelection, setShowContactSelection] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (submissionId) {
@@ -46,11 +51,56 @@ function FormCompleteContent() {
           moveDate: submission.moveDate,
           fromAddress: submission.originAddress,
           toAddress: submission.destinationAddress,
+          referralId: submission.referralId || null,
+          contactPreference: submission.contactPreference,
         });
       }
     }
     setIsLoading(false);
   }, [submissionId]);
+
+  // 連絡手段選択の処理
+  const handleContactPreference = async (preference: 'line' | 'email') => {
+    if (!completeData) return;
+    
+    setIsSubmitting(true);
+    try {
+      // 連絡手段を保存
+      const updatedData = { ...completeData, contactPreference: preference };
+      setCompleteData(updatedData);
+      
+      // ローカルストレージを更新
+      const submissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+      const updatedSubmissions = submissions.map((s: any) => 
+        s.id === completeData.submissionId 
+          ? { ...s, contactPreference: preference }
+          : s
+      );
+      localStorage.setItem('formSubmissions', JSON.stringify(updatedSubmissions));
+
+      if (preference === 'line') {
+        // LINE連携の処理
+        const lineUrl = process.env.NEXT_PUBLIC_LINE_CONNECT_URL;
+        if (lineUrl) {
+          // 環境変数がある場合はLINE連携URLに遷移
+          window.open(lineUrl, '_blank');
+        } else {
+          // 環境変数がない場合は案内ポップアップ
+          alert('LINE公式アカウントを友だち追加後、メッセージをお送りください。担当者がご案内します。');
+        }
+      } else {
+        // メール選択の場合
+        alert('受付メールを送信しました。届かない場合は迷惑メールをご確認ください。');
+      }
+      
+      setShowContactSelection(false);
+    } catch (error) {
+      console.error('連絡手段の保存に失敗しました:', error);
+      alert('連絡手段の保存に失敗しました。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -92,6 +142,45 @@ function FormCompleteContent() {
           </p>
         </div>
 
+        {/* 連絡手段選択 */}
+        {!completeData.contactPreference && (
+          <div className="bg-blue-50 rounded-lg p-8 mb-8 text-center">
+            <h2 className="text-2xl font-bold text-blue-800 mb-4">📞 ご連絡方法をお選びください</h2>
+            <p className="text-gray-600 mb-6">
+              見積もりの受付が完了しました。ご連絡方法をお選びください。
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => handleContactPreference('line')}
+                disabled={isSubmitting}
+                className="bg-green-500 text-white px-8 py-4 rounded-lg hover:bg-green-600 disabled:opacity-50 text-lg font-semibold"
+              >
+                📱 LINEで受け取る
+              </button>
+              <button
+                onClick={() => handleContactPreference('email')}
+                disabled={isSubmitting}
+                className="bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 text-lg font-semibold"
+              >
+                📧 メールで受け取る
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 連絡手段選択完了メッセージ */}
+        {completeData.contactPreference && (
+          <div className="bg-green-50 rounded-lg p-8 mb-8 text-center">
+            <h2 className="text-2xl font-bold text-green-800 mb-4">✅ 連絡方法が選択されました</h2>
+            <p className="text-gray-600 mb-4">
+              {completeData.contactPreference === 'line' 
+                ? 'LINEでの連絡を承りました。担当者からのメッセージをお待ちください。'
+                : 'メールでの連絡を承りました。受付メールをお送りしました。'
+              }
+            </p>
+          </div>
+        )}
+
         {/* 見積もり結果 */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-blue-800 mb-6">📋 見積もり結果</h2>
@@ -113,6 +202,12 @@ function FormCompleteContent() {
                   <span className="font-medium">引越し先：</span>
                   <span>{completeData.toAddress}</span>
                 </div>
+                {completeData.referralId && (
+                  <div>
+                    <span className="font-medium">紹介ID：</span>
+                    <span className="text-blue-600">{completeData.referralId}</span>
+                  </div>
+                )}
               </div>
             </div>
 

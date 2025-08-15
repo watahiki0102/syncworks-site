@@ -8,9 +8,9 @@
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useForm, UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -41,6 +41,7 @@ interface FormData {
   toResidenceType: string; // 引越し先住宅タイプ
   toResidenceOther?: string; // 引越し先その他の住宅タイプ
   toFloor: string; // 引越し先階数
+  referralId?: string | null; // 紹介ID（URLから取得）
 }
 
 /**
@@ -157,7 +158,7 @@ const DateTimeSection = ({
           type="date"
           {...register(dateField, {
             required: isRequired ? `※ 第${index}希望日は必須です` : false,
-            validate: (value: string | undefined) => {
+            validate: (value: string | null | undefined) => {
               // 非必須の場合は空の場合はtrueを返す
               if (!isRequired && !value) return true;
               if (!value) return true;
@@ -185,7 +186,7 @@ const DateTimeSection = ({
         <select
           {...register(timeField, {
             required: isRequired,
-            validate: (value: string | undefined) => {
+            validate: (value: string | null | undefined) => {
               // 必須枠の場合
               if (isRequired) {
                 if (!value || value === 'none') {
@@ -355,12 +356,16 @@ const AddressSection = ({
   );
 };
 
-export default function Step1FormPage() {
+function Step1FormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const prevPostalCodeRef = useRef<string | null>(null);
+
+  // URLから紹介IDを取得
+  const referralId = searchParams.get('ref') ?? null;
 
   const {
     register,
@@ -382,7 +387,11 @@ export default function Step1FormPage() {
         setValue(key as keyof FormData, value);
       });
     }
-  }, [setValue]);
+    // 紹介IDをフォームデータに設定
+    if (referralId) {
+      setValue('referralId', referralId);
+    }
+  }, [setValue, referralId]);
 
   // メールアドレスのサジェスチョンを処理する関数
   const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -697,7 +706,20 @@ export default function Step1FormPage() {
           </button>
           <div className="text-sm text-gray-600">1 / 3 ページ</div>
         </section>
+
+        {/* 紹介IDをhiddenフィールドで保持 */}
+        {referralId && (
+          <input type="hidden" {...register('referralId')} value={referralId} />
+        )}
       </form>
     </main>
+  );
+}
+
+export default function Step1FormPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Step1FormContent />
+    </Suspense>
   );
 }

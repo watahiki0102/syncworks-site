@@ -72,6 +72,8 @@ interface CompleteFormData {
   recommendedTruckType: string;
   submissionId: string;
   distance: number;
+  referralId?: string | null; // 紹介ID
+  contactPreference?: 'line' | 'email'; // 連絡手段
 }
 
 /**
@@ -244,6 +246,7 @@ const createNotificationData = (completeData: CompleteFormData) => {
     contractStatus: 'estimate',
     estimatedPrice: completeData.estimatedPrice,
     recommendedTruckType: completeData.recommendedTruckType,
+    referralId: completeData.referralId, // 紹介IDを含める
   };
 };
 
@@ -289,6 +292,7 @@ export default function Step3FormPage() {
         recommendedTruckType: estimateResult.recommendedTruckType,
         submissionId: `submission-${Date.now()}`,
         distance: estimateResult.distance,
+        referralId: step1Data.referralId || null, // 紹介IDを含める
       };
       
       // 管理者画面への通知データを作成
@@ -301,8 +305,8 @@ export default function Step3FormPage() {
       const updatedSubmissions = [...existingSubmissions, notificationData];
       localStorage.setItem('formSubmissions', JSON.stringify(updatedSubmissions));
       
-      // 完了画面に遷移
-      router.push(`/form/complete?id=${completeData.submissionId}`);
+      // 完了画面に遷移（ticketパラメータを使用）
+      router.push(`/form/complete?ticket=${completeData.submissionId}`);
       
     } catch (e) {
       console.error("Step3送信エラー:", e);
