@@ -62,6 +62,32 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
   // 日ビュー用のステータスフィルタ状態管理
   const [dayViewStatusFilter, setDayViewStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
 
+  // URLクエリパラメータとの同期
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status') as 'all' | 'confirmed' | 'estimate' | null;
+    
+    if (statusParam && ['all', 'confirmed', 'estimate'].includes(statusParam)) {
+      setDayViewStatusFilter(statusParam);
+    }
+  }, []);
+
+  // フィルタ変更時にURLを更新
+  const handleDayViewStatusFilterChange = (newStatus: 'all' | 'confirmed' | 'estimate') => {
+    setDayViewStatusFilter(newStatus);
+    
+    // URLクエリパラメータを更新
+    const url = new URL(window.location.href);
+    if (newStatus === 'all') {
+      url.searchParams.delete('status');
+    } else {
+      url.searchParams.set('status', newStatus);
+    }
+    
+    // 履歴を更新（ページリロードなし）
+    window.history.replaceState({}, '', url.toString());
+  };
+
   // 編集ハンドラー
   const handleEditCase = (caseId: string) => {
     router.push(`/admin/cases/${caseId}/edit`);
@@ -1231,11 +1257,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
              return (
                <div>
-                 {/* 日ビュー用のステータスフィルタ */}
+                 {/* 日ビュー用のステータスフィルタ - 日ビューのみ表示 */}
                  <div className="mb-6">
                    <StatusFilter 
                      value={dayViewStatusFilter}
-                     onChange={setDayViewStatusFilter}
+                     onChange={handleDayViewStatusFilterChange}
                    />
                  </div>
                  <DayViewComponent

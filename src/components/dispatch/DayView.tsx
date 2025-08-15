@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import CaseDetail from '../CaseDetail';
 import { CaseDetail as CaseDetailType } from '../../types/case';
 import { Truck, Schedule } from '../../types/dispatch';
+import PlaceLabels from './PlaceLabels';
 
 interface DayViewProps {
   selectedDate: string;
@@ -65,6 +66,7 @@ export default function DayView({
     const hash = window.location.hash;
     if (hash.startsWith('#case-')) {
       const caseId = hash.replace('#case-', '');
+      
       // レイアウト確定後にスクロール
       requestAnimationFrame(() => {
         const el = document.getElementById(`case-${caseId}`);
@@ -90,6 +92,39 @@ export default function DayView({
               );
             }
           }, 180);
+        } else {
+          // ハッシュ対象が見つからない場合（フィルタで非表示になっている可能性）
+          // 一時的に全件表示してスクロールを試行
+          const originalFilter = statusFilter;
+          if (originalFilter !== 'all') {
+            // フィルタを一時的に 'all' に戻してスクロールを試行
+            setTimeout(() => {
+              const elRetry = document.getElementById(`case-${caseId}`);
+              if (elRetry) {
+                elRetry.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => {
+                  const heading = elRetry.querySelector<HTMLElement>('[data-case-heading]');
+                  if (heading) {
+                    heading.focus();
+                    
+                    // 既存ハイライトをクリア
+                    document.querySelectorAll('.__case-highlight').forEach(n => 
+                      n.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400')
+                    );
+                    
+                    // カード全体にハイライトを付与
+                    elRetry.classList.add('__case-highlight', 'ring-2', 'ring-blue-400');
+                    
+                    // 1.5秒後にハイライトを除去
+                    setTimeout(() => 
+                      elRetry.classList.remove('__case-highlight', 'ring-2', 'ring-blue-400'), 
+                      1500
+                    );
+                  }
+                }, 180);
+              }
+            }, 100);
+          }
         }
       });
     }
@@ -202,6 +237,8 @@ export default function DayView({
     if (m) return `${m[1]}${m[2]}`;
     return addr.split(/[ \t　]/).slice(0,2).join('');
   };
+
+
 
   // セルクリックハンドラー（空きセル用 - 新規作成モーダル）
   // 日ビューでは未使用 - 直接編集画面に遷移するため
@@ -483,17 +520,12 @@ export default function DayView({
                                 }}
                                 title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(確定)' : '(未確定)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
                               >
-                                <div className="text-xs text-gray-600 text-center leading-[18px] truncate px-1">
-                                  {schedule.origin && (
-                                    <span className="text-blue-600" title={schedule.origin}>
-                                      出発地 {shortPrefMuni(schedule.origin)}
-                                    </span>
-                                  )}
-                                  {schedule.destination && (
-                                    <span className="text-red-600 ml-1" title={schedule.destination}>
-                                      到着地 {shortPrefMuni(schedule.destination)}
-                                    </span>
-                                  )}
+                                <div className="text-xs text-gray-600 text-center leading-[18px] px-1">
+                                  <PlaceLabels
+                                    origin={schedule.origin || ''}
+                                    destination={schedule.destination || ''}
+                                    className="text-xs"
+                                  />
                                 </div>
                               </div>
                             );

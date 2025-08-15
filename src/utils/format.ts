@@ -47,3 +47,42 @@ export function formatHHmm(t: string): string {
     return t;
   }
 }
+
+/**
+ * 住所を短縮表示用にフォーマット
+ * @param address 住所文字列
+ * @param mode 表示モード（'full' | 'compact' | 'mini' | 'too-narrow'）
+ * @returns 短縮された住所文字列
+ */
+export function shortenAddress(address: string, mode: 'full' | 'compact' | 'mini' | 'too-narrow' = 'compact'): string {
+  if (!address) return '';
+  
+  // 住所を解析して市区町村を優先
+  const parts = address.split(/[都道府県市区町村]/).filter(Boolean);
+  
+  // モードに応じた長さ制限
+  const maxLengths = {
+    'full': 20,
+    'compact': 15,
+    'mini': 10,
+    'too-narrow': 8
+  };
+  
+  const maxLength = maxLengths[mode];
+  
+  // 市区町村が見つかった場合はそれを優先
+  if (parts.length >= 2) {
+    const cityTown = parts[1]; // 市区町村部分
+    if (cityTown.length <= maxLength) {
+      return cityTown;
+    }
+    return cityTown.substring(0, maxLength - 1) + '…';
+  }
+  
+  // 市区町村が見つからない場合は全体を短縮
+  if (address.length <= maxLength) {
+    return address;
+  }
+  
+  return address.substring(0, maxLength - 1) + '…';
+}
