@@ -24,9 +24,7 @@ const defaultNavigation: NavigationItem[] = [
     label: 'サービス',
     href: '/services',
     children: [
-      { label: '見積もり依頼', href: '/form/step1' },
-      { label: '料金について', href: '/pricing' },
-      { label: 'サービスエリア', href: '/areas' },
+      { label: 'SyncMoving', href: '#service' },
     ]
   },
   {

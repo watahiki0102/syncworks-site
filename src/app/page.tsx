@@ -52,14 +52,7 @@ export default function Home() {
       bgColor: "bg-green-100",
       iconColor: "text-green-600"
     },
-    {
-      icon: HomeIcon,
-      title: "不動産会社との連携",
-      description: "地域の不動産会社を通じて、信頼できる引越し業者をご紹介いたします。",
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-100",
-      iconColor: "text-purple-600"
-    },
+
     {
       icon: Shield,
       title: "信頼性の高いサービス",
@@ -75,14 +68,6 @@ export default function Home() {
       color: "from-yellow-500 to-yellow-600",
       bgColor: "bg-yellow-100",
       iconColor: "text-yellow-600"
-    },
-    {
-      icon: Users,
-      title: "専門サポート",
-      description: "専門スタッフによる丁寧なサポートで、スムーズな引越しをお手伝いします。",
-      color: "from-pink-500 to-pink-600",
-      bgColor: "bg-pink-100",
-      iconColor: "text-pink-600"
     }
   ];
 
@@ -157,7 +142,7 @@ export default function Home() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="text-gray-700 mb-12 leading-relaxed text-lg sm:text-xl md:text-2xl lg:text-3xl px-2 sm:px-4 md:px-0 max-w-3xl mx-auto"
             >
-              SyncMovingは、引越しのマッチングを通じて、<br className="hidden md:block" />
+              SyncWorksは、引越しのマッチングを通じて、<br className="hidden md:block" />
               スムーズな住まいの移転をサポートします。
             </motion.p>
 
@@ -295,7 +280,7 @@ export default function Home() {
               選ばれる理由
             </h2>
             <p className="text-blue-700 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl">
-              SyncWorksが多くのお客様に選ばれる理由をご紹介します
+              SyncMovigが多くのお客様に選ばれる理由をご紹介します
             </p>
           </motion.div>
 
