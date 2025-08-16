@@ -157,7 +157,7 @@ export default function Home() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="text-gray-700 mb-12 leading-relaxed text-lg sm:text-xl md:text-2xl lg:text-3xl px-2 sm:px-4 md:px-0 max-w-3xl mx-auto"
             >
-              SyncWorksは、引越しのマッチングを通じて、<br className="hidden md:block" />
+              SyncMovingは、引越しのマッチングを通じて、<br className="hidden md:block" />
               スムーズな住まいの移転をサポートします。
             </motion.p>
 
