@@ -14,6 +14,13 @@ const mockData: AccountRow[] = [
     email: 'admin@example.com',
     name: '管理者太郎',
     role: 'superadmin',
+    permissions: {
+      billingManagement: true,
+      accountManagement: true,
+      partnerManagement: true,
+      contactManagement: true,
+      newsManagement: true,
+    },
     active: true,
     createdAt: '2024-01-01T00:00:00Z',
   },
@@ -22,6 +29,13 @@ const mockData: AccountRow[] = [
     email: 'manager@example.com',
     name: 'マネージャー花子',
     role: 'manager',
+    permissions: {
+      billingManagement: true,
+      accountManagement: false,
+      partnerManagement: true,
+      contactManagement: true,
+      newsManagement: true,
+    },
     active: true,
     createdAt: '2024-01-15T00:00:00Z',
   },
@@ -30,6 +44,13 @@ const mockData: AccountRow[] = [
     email: 'viewer@example.com',
     name: '閲覧者次郎',
     role: 'viewer',
+    permissions: {
+      billingManagement: false,
+      accountManagement: false,
+      partnerManagement: false,
+      contactManagement: true,
+      newsManagement: false,
+    },
     active: false,
     createdAt: '2024-02-01T00:00:00Z',
   },
@@ -57,6 +78,26 @@ export default function AccountsPage() {
     
     setData(prev => prev.map(row => 
       row.id === id ? { ...row, role: newRole } : row
+    ));
+  };
+
+  const handlePermissionChange = async (id: string, permission: keyof AccountRow['permissions'], value: boolean) => {
+    const account = data.find(row => row.id === id);
+    if (!account) return;
+
+    // superadminの自己権限変更を防ぐ
+    if (account.email === currentUserEmail && account.role === 'superadmin') {
+      alert('superadminの自身の権限を変更することはできません');
+      return;
+    }
+
+    console.log('Permission updated:', id, permission, value);
+    
+    setData(prev => prev.map(row => 
+      row.id === id ? { 
+        ...row, 
+        permissions: { ...row.permissions, [permission]: value }
+      } : row
     ));
   };
 
@@ -108,6 +149,9 @@ export default function AccountsPage() {
                       権限
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      個別権限
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       状態
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -142,6 +186,60 @@ export default function AccountsPage() {
                             <option value="admin">admin</option>
                             <option value="superadmin">superadmin</option>
                           </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-1">
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={row.permissions.billingManagement}
+                                onChange={(e) => handlePermissionChange(row.id, 'billingManagement', e.target.checked)}
+                                disabled={isCurrentUser && isSuperAdmin}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                              />
+                              請求管理
+                            </label>
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={row.permissions.accountManagement}
+                                onChange={(e) => handlePermissionChange(row.id, 'accountManagement', e.target.checked)}
+                                disabled={isCurrentUser && isSuperAdmin}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                              />
+                              アカウント管理
+                            </label>
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={row.permissions.partnerManagement}
+                                onChange={(e) => handlePermissionChange(row.id, 'partnerManagement', e.target.checked)}
+                                disabled={isCurrentUser && isSuperAdmin}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                              />
+                              利用業者管理
+                            </label>
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={row.permissions.contactManagement}
+                                onChange={(e) => handlePermissionChange(row.id, 'contactManagement', e.target.checked)}
+                                disabled={isCurrentUser && isSuperAdmin}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                              />
+                              お問い合わせ管理
+                            </label>
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={row.permissions.newsManagement}
+                                onChange={(e) => handlePermissionChange(row.id, 'newsManagement', e.target.checked)}
+                                disabled={isCurrentUser && isSuperAdmin}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                              />
+                              ニュース管理
+                            </label>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <label className="flex items-center">
@@ -223,6 +321,9 @@ export default function AccountsPage() {
                            権限
                          </th>
                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           個別権限
+                         </th>
+                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                            状態
                          </th>
                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -257,6 +358,60 @@ export default function AccountsPage() {
                                  <option value="admin">admin</option>
                                  <option value="superadmin">superadmin</option>
                                </select>
+                             </td>
+                             <td className="px-6 py-4 whitespace-nowrap">
+                               <div className="space-y-1">
+                                 <label className="flex items-center text-xs">
+                                   <input
+                                     type="checkbox"
+                                     checked={row.permissions.billingManagement}
+                                     onChange={(e) => handlePermissionChange(row.id, 'billingManagement', e.target.checked)}
+                                     disabled={isCurrentUser && isSuperAdmin}
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                                   />
+                                   請求管理
+                                 </label>
+                                 <label className="flex items-center text-xs">
+                                   <input
+                                     type="checkbox"
+                                     checked={row.permissions.accountManagement}
+                                     onChange={(e) => handlePermissionChange(row.id, 'accountManagement', e.target.checked)}
+                                     disabled={isCurrentUser && isSuperAdmin}
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                                   />
+                                   アカウント管理
+                                 </label>
+                                 <label className="flex items-center text-xs">
+                                   <input
+                                     type="checkbox"
+                                     checked={row.permissions.partnerManagement}
+                                     onChange={(e) => handlePermissionChange(row.id, 'partnerManagement', e.target.checked)}
+                                     disabled={isCurrentUser && isSuperAdmin}
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                                   />
+                                   利用業者管理
+                                 </label>
+                                 <label className="flex items-center text-xs">
+                                   <input
+                                     type="checkbox"
+                                     checked={row.permissions.contactManagement}
+                                     onChange={(e) => handlePermissionChange(row.id, 'contactManagement', e.target.checked)}
+                                     disabled={isCurrentUser && isSuperAdmin}
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                                   />
+                                   お問い合わせ管理
+                                 </label>
+                                 <label className="flex items-center text-xs">
+                                   <input
+                                     type="checkbox"
+                                     checked={row.permissions.newsManagement}
+                                     onChange={(e) => handlePermissionChange(row.id, 'newsManagement', e.target.checked)}
+                                     disabled={isCurrentUser && isSuperAdmin}
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
+                                   />
+                                   ニュース管理
+                                 </label>
+                               </div>
                              </td>
                              <td className="px-6 py-4 whitespace-nowrap">
                                <label className="flex items-center">

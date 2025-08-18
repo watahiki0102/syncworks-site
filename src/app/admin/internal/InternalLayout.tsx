@@ -8,11 +8,9 @@ interface InternalLayoutProps {
 }
 
 const navigation = [
-  { name: 'ダッシュボード', href: '/admin/internal' },
-  { name: '請求状況', href: '/admin/internal/billing-status' },
+  { name: '請求管理', href: '/admin/internal/billing' },
   { name: 'アカウント管理', href: '/admin/internal/accounts' },
   { name: '利用業者管理', href: '/admin/internal/partners' },
-  { name: '請求管理', href: '/admin/internal/invoices' },
   { name: 'お問い合わせ', href: '/admin/internal/contacts' },
   { name: 'ニュース編集', href: '/admin/internal/news' },
 ];

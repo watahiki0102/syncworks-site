@@ -16,6 +16,13 @@ export interface AccountRow {
   email: string;
   name: string;
   role: 'admin' | 'manager' | 'viewer' | 'superadmin';
+  permissions: {
+    billingManagement: boolean;
+    accountManagement: boolean;
+    partnerManagement: boolean;
+    contactManagement: boolean;
+    newsManagement: boolean;
+  };
   active: boolean;
   createdAt: string;
 }
@@ -46,6 +53,7 @@ export interface ContactRow {
   tel?: string;
   message: string;
   source?: string;
+  status: '未完了' | '対応中' | '完了';
 }
 
 export interface NewsItem {

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.83",
     "@heroicons/react": "^2.2.0",
     "@types/pdfkit": "^0.17.2",
     "date-fns": "^4.1.0",

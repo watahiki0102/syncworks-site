@@ -17,6 +17,7 @@ const mockData: ContactRow[] = [
     tel: '090-1234-5678',
     message: '引越しの見積もりについて詳しく知りたいです。',
     source: 'お問い合わせフォーム',
+    status: '未完了',
   },
   {
     id: '2',
@@ -26,6 +27,7 @@ const mockData: ContactRow[] = [
     tel: '080-9876-5432',
     message: '不動産の売却について相談したいです。',
     source: 'お問い合わせフォーム',
+    status: '対応中',
   },
   {
     id: '3',
@@ -34,6 +36,7 @@ const mockData: ContactRow[] = [
     email: 'suzuki@example.com',
     message: 'サービスについて質問があります。',
     source: 'メール',
+    status: '完了',
   },
   {
     id: '4',
@@ -43,12 +46,14 @@ const mockData: ContactRow[] = [
     tel: '070-5555-1234',
     message: '引越しの料金体系について教えてください。',
     source: 'お問い合わせフォーム',
+    status: '未完了',
   },
 ];
 
 export default function ContactsPage() {
   const [data, setData] = useState<ContactRow[]>(mockData);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'全て' | '未完了' | '対応中' | '完了'>('全て');
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ja-JP', {
@@ -60,7 +65,20 @@ export default function ContactsPage() {
     });
   };
 
+  const handleStatusChange = (id: string, newStatus: ContactRow['status']) => {
+    setData(prev => prev.map(row => 
+      row.id === id ? { ...row, status: newStatus } : row
+    ));
+  };
+
   const filteredData = data.filter(row => {
+    // ステータスフィルター（完了は非表示、未完了・対応中のみ表示）
+    if (statusFilter === '未完了' && row.status !== '未完了') return false;
+    if (statusFilter === '対応中' && row.status !== '対応中') return false;
+    if (statusFilter === '完了' && row.status !== '完了') return false;
+    if (statusFilter === '全て' && row.status === '完了') return false; // デフォルトでは完了は非表示
+    
+    // 検索フィルター
     if (!searchQuery) return true;
     
     const query = searchQuery.toLowerCase();
@@ -88,41 +106,63 @@ export default function ContactsPage() {
             </p>
           </div>
 
-          {/* 検索 */}
+          {/* 検索・フィルタ */}
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div className="max-w-md">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                検索
-              </label>
-              <input
-                type="text"
-                id="search"
-                placeholder="名前、メール、電話番号、メッセージで検索..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                  検索
+                </label>
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="名前、メール、電話番号、メッセージで検索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  ステータス
+                </label>
+                <select
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="全て">未完了・対応中</option>
+                  <option value="未完了">未完了のみ</option>
+                  <option value="対応中">対応中のみ</option>
+                  <option value="完了">完了済み</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* 統計情報 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <div className="text-sm font-medium text-gray-500">総件数</div>
               <div className="text-2xl font-bold text-gray-900">{data.length}</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">検索結果</div>
-              <div className="text-2xl font-bold text-blue-600">{filteredData.length}</div>
+              <div className="text-sm font-medium text-red-500">未完了</div>
+              <div className="text-2xl font-bold text-red-600">
+                {data.filter(row => row.status === '未完了').length}
+              </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">今日の件数</div>
+              <div className="text-sm font-medium text-yellow-500">対応中</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {data.filter(row => row.status === '対応中').length}
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-sm font-medium text-green-500">完了</div>
               <div className="text-2xl font-bold text-green-600">
-                {data.filter(row => {
-                  const today = new Date();
-                  const contactDate = new Date(row.createdAt);
-                  return today.toDateString() === contactDate.toDateString();
-                }).length}
+                {data.filter(row => row.status === '完了').length}
               </div>
             </div>
           </div>
@@ -150,6 +190,9 @@ export default function ContactsPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       送信元
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ステータス
                     </th>
                   </tr>
                 </thead>
@@ -196,6 +239,21 @@ export default function ContactsPage() {
                           {row.source || '不明'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <select
+                          value={row.status}
+                          onChange={(e) => handleStatusChange(row.id, e.target.value as ContactRow['status'])}
+                          className={`text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            row.status === '未完了' ? 'border-red-300 bg-red-50' :
+                            row.status === '対応中' ? 'border-yellow-300 bg-yellow-50' :
+                            'border-green-300 bg-green-50'
+                          }`}
+                        >
+                          <option value="未完了">未完了</option>
+                          <option value="対応中">対応中</option>
+                          <option value="完了">完了</option>
+                        </select>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -233,41 +291,63 @@ export default function ContactsPage() {
                 </p>
               </div>
 
-              {/* 検索 */}
+              {/* 検索・フィルタ */}
               <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <div className="max-w-md">
-                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                    検索
-                  </label>
-                  <input
-                    type="text"
-                    id="search"
-                    placeholder="名前、メール、電話番号、メッセージで検索..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                      検索
+                    </label>
+                    <input
+                      type="text"
+                      id="search"
+                      placeholder="名前、メール、電話番号、メッセージで検索..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                      ステータス
+                    </label>
+                    <select
+                      id="statusFilter"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="全て">未完了・対応中</option>
+                      <option value="未完了">未完了のみ</option>
+                      <option value="対応中">対応中のみ</option>
+                      <option value="完了">完了済み</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               {/* 統計情報 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <div className="text-sm font-medium text-gray-500">総件数</div>
                   <div className="text-2xl font-bold text-gray-900">{data.length}</div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="text-sm font-medium text-gray-500">検索結果</div>
-                  <div className="text-2xl font-bold text-blue-600">{filteredData.length}</div>
+                  <div className="text-sm font-medium text-red-500">未完了</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {data.filter(row => row.status === '未完了').length}
+                  </div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="text-sm font-medium text-gray-500">今日の件数</div>
+                  <div className="text-sm font-medium text-yellow-500">対応中</div>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {data.filter(row => row.status === '対応中').length}
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="text-sm font-medium text-green-500">完了</div>
                   <div className="text-2xl font-bold text-green-600">
-                    {data.filter(row => {
-                      const today = new Date();
-                      const contactDate = new Date(row.createdAt);
-                      return today.toDateString() === contactDate.toDateString();
-                    }).length}
+                    {data.filter(row => row.status === '完了').length}
                   </div>
                 </div>
               </div>
@@ -295,6 +375,9 @@ export default function ContactsPage() {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           送信元
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ステータス
                         </th>
                       </tr>
                     </thead>
@@ -340,6 +423,21 @@ export default function ContactsPage() {
                             }`}>
                               {row.source || '不明'}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <select
+                              value={row.status}
+                              onChange={(e) => handleStatusChange(row.id, e.target.value as ContactRow['status'])}
+                              className={`text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                row.status === '未完了' ? 'border-red-300 bg-red-50' :
+                                row.status === '対応中' ? 'border-yellow-300 bg-yellow-50' :
+                                'border-green-300 bg-green-50'
+                              }`}
+                            >
+                              <option value="未完了">未完了</option>
+                              <option value="対応中">対応中</option>
+                              <option value="完了">完了</option>
+                            </select>
                           </td>
                         </tr>
                       ))}

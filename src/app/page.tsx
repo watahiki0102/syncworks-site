@@ -47,7 +47,7 @@ export default function Home() {
     {
       icon: Calculator,
       title: "安心の料金体系",
-      description: "初回提示金額のままご契約いただける安心設計。あとからの価格交渉はありません。※入力内容に誤りがない場合に限る",
+      description: "提示金額のままご契約いただける安心設計。あとからの価格交渉はありません。※入力内容に誤りがない場合に限る",
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-100",
       iconColor: "text-green-600"
