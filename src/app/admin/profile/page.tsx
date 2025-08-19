@@ -73,6 +73,7 @@ const ALL_PREFS = REGIONS.flatMap(r => r.prefectures);
 interface FormData {
   companyName: string;           // 事業者名
   email: string;                // メールアドレス
+  billingEmail: string;         // 請求書送付用メールアドレス
   phone: string;                // 電話番号
   postalCode: string;           // 郵便番号
   address: string;              // 住所
@@ -95,6 +96,7 @@ export default function AdminProfile() {
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     email: '',
+    billingEmail: '',
     phone: '',
     postalCode: '',
     address: '',
@@ -151,6 +153,7 @@ export default function AdminProfile() {
       setFormData({
         companyName: data.companyName || '',
         email: data.email || '',
+        billingEmail: data.billingEmail || '',
         phone: data.phone || '',
         postalCode: data.postalCode || '',
         address: data.address || '',
@@ -182,6 +185,8 @@ export default function AdminProfile() {
     if (!formData.companyName.trim()) newErrors.companyName = '事業者名は必須です';
     if (!formData.email) newErrors.email = 'メールアドレスは必須です';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = '正しいメールアドレス形式で入力してください';
+    if (!formData.billingEmail) newErrors.billingEmail = '請求書送付用メールアドレスは必須です';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.billingEmail)) newErrors.billingEmail = '正しいメールアドレス形式で入力してください';
     if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
     if (!formData.address.trim()) newErrors.address = '住所は必須です';
     if (!formData.description.trim()) newErrors.description = '事業コンセプトは必須です';
@@ -477,6 +482,24 @@ export default function AdminProfile() {
                       placeholder="admin@example.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  </div>
+
+                  {/* 請求書送付用メールアドレス */}
+                  <div className="mb-6">
+                    <label htmlFor="billingEmail" className="block text-base font-medium text-gray-700 mb-1">
+                      請求書送付用メールアドレス <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="billingEmail"
+                      name="billingEmail"
+                      type="email"
+                      required
+                      value={formData.billingEmail}
+                      onChange={handleInputChange}
+                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.billingEmail ? 'border-red-300' : 'border-gray-300'}`}
+                      placeholder="billing@example.com"
+                    />
+                    {errors.billingEmail && <p className="mt-1 text-sm text-red-600">{errors.billingEmail}</p>}
                   </div>
 
                   {/* 電話番号 */}

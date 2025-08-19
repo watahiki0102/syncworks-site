@@ -16,6 +16,7 @@ import Link from 'next/link';
 interface FormData {
   companyName: string;     // 事業者名
   email: string;          // メールアドレス
+  billingEmail: string;   // 請求書送付用メールアドレス
   phone: string;          // 電話番号
   address: string;        // 住所
   password: string;       // パスワード
@@ -26,6 +27,7 @@ export default function AdminRegister() {
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     email: '',
+    billingEmail: '',
     phone: '',
     address: '',
     password: '',
@@ -52,6 +54,13 @@ export default function AdminRegister() {
       newErrors.email = 'メールアドレスは必須です';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = '正しいメールアドレス形式で入力してください';
+    }
+
+    // 請求書送付用メールアドレス
+    if (!formData.billingEmail) {
+      newErrors.billingEmail = '請求書送付用メールアドレスは必須です';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.billingEmail)) {
+      newErrors.billingEmail = '正しいメールアドレス形式で入力してください';
     }
 
     // 電話番号
@@ -99,6 +108,7 @@ export default function AdminRegister() {
       const adminData = {
         companyName: formData.companyName,
         email: formData.email,
+        billingEmail: formData.billingEmail,
         phone: formData.phone,
         address: formData.address,
         registeredAt: new Date().toISOString()
@@ -197,6 +207,30 @@ export default function AdminRegister() {
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* 請求書送付用メールアドレス */}
+            <div>
+              <label htmlFor="billingEmail" className="block text-sm font-medium text-gray-700">
+                請求書送付用メールアドレス <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-1">
+                <input
+                  id="billingEmail"
+                  name="billingEmail"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.billingEmail}
+                  onChange={handleInputChange}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${errors.billingEmail ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  placeholder="billing@example.com"
+                />
+              </div>
+              {errors.billingEmail && (
+                <p className="mt-1 text-sm text-red-600">{errors.billingEmail}</p>
               )}
             </div>
 

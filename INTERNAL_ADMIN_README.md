@@ -9,10 +9,9 @@
 開発環境（`NODE_ENV=development`）では、認証なしでアクセス可能：
 ```
 http://localhost:3000/admin/internal
-http://localhost:3000/admin/internal/billing-status
+http://localhost:3000/admin/internal/billing
 http://localhost:3000/admin/internal/accounts
 http://localhost:3000/admin/internal/partners
-http://localhost:3000/admin/internal/invoices
 http://localhost:3000/admin/internal/contacts
 http://localhost:3000/admin/internal/news
 ```
@@ -21,10 +20,9 @@ http://localhost:3000/admin/internal/news
 本番環境では、以下のクエリパラメータが必要：
 ```
 /admin/internal?internal=1
-/admin/internal/billing-status?internal=1
+/admin/internal/billing?internal=1
 /admin/internal/accounts?internal=1
 /admin/internal/partners?internal=1
-/admin/internal/invoices?internal=1
 /admin/internal/contacts?internal=1
 /admin/internal/news?internal=1
 ```
@@ -37,15 +35,16 @@ NEXT_PUBLIC_INTERNAL_CONSOLE=enabled
 
 ## 機能一覧
 
-### 1. 請求状況管理 (`/admin/internal/billing-status`)
+### 1. 請求管理 (`/admin/internal/billing`)
 - パートナー別の請求状況を表示
 - ステータスのインライン編集（未請求/請求済/入金待ち/入金済/保留）
+- 請求書の発行機能
 - 月・パートナーでのフィルタリング
 - 金額は税込表示
 
 ### 2. アカウント管理 (`/admin/internal/accounts`)
 - 管理者アカウントの一覧表示
-- 権限の変更（viewer/manager/admin/superadmin）
+- 個別権限のチェックボックス管理
 - アカウントの有効/無効切り替え
 - superadminの自己降格・無効化は防止
 
@@ -55,19 +54,14 @@ NEXT_PUBLIC_INTERNAL_CONSOLE=enabled
 - 編集モーダル
 - 有効/無効切り替え
 
-### 4. 請求管理 (`/admin/internal/invoices`)
-- 請求書の発行状況管理
-- 入金状況の管理
-- 月・パートナーでのフィルタリング
-- 統計情報の表示
-
-### 5. お問い合わせ一覧 (`/admin/internal/contacts`)
+### 4. お問い合わせ一覧 (`/admin/internal/contacts`)
 - お客様からの問い合わせ一覧
+- ステータス管理（未完了/対応中/完了）
+- ステータスフィルター機能
 - 全文検索機能
 - メール・電話番号への直接リンク
-- 統計情報の表示
 
-### 6. ニュース編集 (`/admin/internal/news`)
+### 5. ニュース編集 (`/admin/internal/news`)
 - ニュース記事の一覧表示
 - 新規作成・編集フォーム
 - 公開/非公開の切り替え
@@ -92,10 +86,9 @@ NEXT_PUBLIC_INTERNAL_CONSOLE=enabled
 http://localhost:3000/admin/internal
 
 # 各機能ページ
-http://localhost:3000/admin/internal/billing-status
+http://localhost:3000/admin/internal/billing
 http://localhost:3000/admin/internal/accounts
 http://localhost:3000/admin/internal/partners
-http://localhost:3000/admin/internal/invoices
 http://localhost:3000/admin/internal/contacts
 http://localhost:3000/admin/internal/news
 ```
@@ -104,14 +97,14 @@ http://localhost:3000/admin/internal/news
 ```
 # クエリパラメータが必要
 http://localhost:3000/admin/internal?internal=1
-http://localhost:3000/admin/internal/billing-status?internal=1
+http://localhost:3000/admin/internal/billing?internal=1
 ```
 
 ### 3. アクセス制御確認
 ```
 # 本番環境でフラグなしでアクセス → 404エラー
 http://localhost:3000/admin/internal
-http://localhost:3000/admin/internal/billing-status
+http://localhost:3000/admin/internal/billing
 ```
 
 ### 3. 機能確認
@@ -132,12 +125,11 @@ http://localhost:3000/admin/internal/billing-status
 ```
 src/
 ├── app/admin/internal/
-│   ├── page.tsx                 # ダッシュボード
+│   ├── page.tsx                 # リダイレクト（お問い合わせページへ）
 │   ├── InternalLayout.tsx       # 内部画面専用レイアウト
-│   ├── billing-status/page.tsx  # 請求状況管理
+│   ├── billing/page.tsx         # 統合請求管理
 │   ├── accounts/page.tsx        # アカウント管理
 │   ├── partners/page.tsx        # 利用業者管理
-│   ├── invoices/page.tsx        # 請求管理
 │   ├── contacts/page.tsx        # お問い合わせ一覧
 │   └── news/page.tsx            # ニュース編集
 ├── components/admin/
@@ -147,11 +139,10 @@ src/
 ```
 
 ### 型定義
-- `BillingStatusRow`: 請求状況
+- `BillingData`: 統合請求管理データ
 - `AccountRow`: アカウント情報
 - `PartnerRow`: パートナー情報
-- `InvoiceRow`: 請求情報
-- `ContactRow`: お問い合わせ
+- `ContactRow`: お問い合わせ（ステータス付き）
 - `NewsItem`: ニュース記事
 
 ## 注意事項
