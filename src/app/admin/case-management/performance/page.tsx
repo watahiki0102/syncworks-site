@@ -8,6 +8,9 @@ export default function PerformancePage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [serviceFilter, setServiceFilter] = useState<'all' | 'internal' | 'external'>('all');
 
   useEffect(() => {
     const demoContracts: Contract[] = [
@@ -21,7 +24,8 @@ export default function PerformancePage() {
         revenue: 40500,
         items: ['シングルベッド', '冷蔵庫', 'テレビ'],
         fromAddress: '東京都渋谷区',
-        toAddress: '東京都新宿区'
+        toAddress: '東京都新宿区',
+        serviceType: 'internal' as const
       },
       {
         id: '2',
@@ -33,7 +37,8 @@ export default function PerformancePage() {
         revenue: 37800,
         items: ['セミダブルベッド', '電子レンジ', '本棚'],
         fromAddress: '東京都中野区',
-        toAddress: '東京都杉並区'
+        toAddress: '東京都杉並区',
+        serviceType: 'external' as const
       },
       {
         id: '3',
@@ -45,7 +50,8 @@ export default function PerformancePage() {
         revenue: 46800,
         items: ['ダブルベッド', '洗濯機', 'ソファ'],
         fromAddress: '東京都世田谷区',
-        toAddress: '神奈川県横浜市'
+        toAddress: '神奈川県横浜市',
+        serviceType: 'internal' as const
       },
       {
         id: '4',
@@ -57,7 +63,8 @@ export default function PerformancePage() {
         revenue: 34200,
         items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
         fromAddress: '東京都港区',
-        toAddress: '東京都品川区'
+        toAddress: '東京都品川区',
+        serviceType: 'external' as const
       }
     ];
 
@@ -66,14 +73,30 @@ export default function PerformancePage() {
 
   useEffect(() => {
     let filtered = contracts.filter(contract => {
+      // 検索条件
       if (searchTerm && !contract.customerName.includes(searchTerm)) {
         return false;
       }
+      
+      // 期間フィルター
+      if (startDate && contract.contractDate < startDate) {
+        return false;
+      }
+      
+      if (endDate && contract.contractDate > endDate) {
+        return false;
+      }
+      
+      // 業者フィルター
+      if (serviceFilter !== 'all' && contract.serviceType !== serviceFilter) {
+        return false;
+      }
+      
       return true;
     });
 
     setFilteredContracts(filtered);
-  }, [contracts, searchTerm]);
+  }, [contracts, searchTerm, startDate, endDate, serviceFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -104,14 +127,62 @@ export default function PerformancePage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">成約管理実績</h1>
           
-          <div className="flex flex-wrap gap-4 items-center mb-6">
-            <input
-              type="text"
-              placeholder="顧客名で検索..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                顧客名検索
+              </label>
+              <input
+                id="search"
+                type="text"
+                placeholder="顧客名で検索..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                開始日
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                終了日
+              </label>
+              <input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="serviceFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                業者種別
+              </label>
+              <select
+                id="serviceFilter"
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value as 'all' | 'internal' | 'external')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">全て</option>
+                <option value="internal">自社サービス</option>
+                <option value="external">他社サービス</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -171,10 +242,7 @@ export default function PerformancePage() {
                     手数料差引額
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    住所
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    荷物
+                    業者種別
                   </th>
                 </tr>
               </thead>
@@ -214,22 +282,14 @@ export default function PerformancePage() {
                       </div>
                       <div className="text-xs text-gray-500">(税込)</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        <div className="font-medium">元:</div>
-                        <div className="text-gray-600">{contract.fromAddress}</div>
-                        <div className="font-medium mt-1">先:</div>
-                        <div className="text-gray-600">{contract.toAddress}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {contract.items.map((item, index) => (
-                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                            {item}
-                          </span>
-                        ))}
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        contract.serviceType === 'internal' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {contract.serviceType === 'internal' ? '自社サービス' : '他社サービス'}
+                      </span>
                     </td>
                   </tr>
                 ))}

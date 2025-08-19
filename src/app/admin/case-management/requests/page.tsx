@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteRequest, TruckAvailability } from '../types';
 import { SourceType, normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
+import TruckAssignmentModal from '../../../dispatch/components/TruckAssignmentModal';
 
 type ResponseStep = 'content' | 'truck' | 'complete';
 
@@ -15,6 +16,16 @@ export default function QuoteRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [responseStep, setResponseStep] = useState<ResponseStep>('content');
   const [truckAvailability, setTruckAvailability] = useState<TruckAvailability | null>(null);
+  const [editableItems, setEditableItems] = useState<string[]>([]);
+  const [editablePoints, setEditablePoints] = useState<number>(0);
+  const [manualAmount, setManualAmount] = useState<number>(45000);
+  const [contentConfirmed, setContentConfirmed] = useState<boolean>(false);
+  const [showTruckAssignmentModal, setShowTruckAssignmentModal] = useState<boolean>(false);
+  const [trucks] = useState([
+    { id: '1', name: 'トラック1', plateNumber: '品川500あ1234', capacityKg: 2000, status: 'available' as const },
+    { id: '2', name: 'トラック2', plateNumber: '品川500あ1235', capacityKg: 3000, status: 'available' as const },
+    { id: '3', name: 'トラック3', plateNumber: '品川500あ1236', capacityKg: 4000, status: 'available' as const },
+  ]);
 
   useEffect(() => {
     const demoRequests: QuoteRequest[] = [
@@ -122,6 +133,9 @@ export default function QuoteRequestsPage() {
   const startResponse = (request: QuoteRequest) => {
     setSelectedRequest(request);
     setResponseStep('content');
+    setEditableItems([...request.summary.items]);
+    setEditablePoints(request.summary.totalPoints);
+    setContentConfirmed(false);
     
     // トラック空き状況の取得（デモデータ）
     const mockAvailability: TruckAvailability = {
@@ -138,7 +152,7 @@ export default function QuoteRequestsPage() {
   };
 
   const nextStep = () => {
-    if (responseStep === 'content') {
+    if (responseStep === 'content' && contentConfirmed) {
       setResponseStep('truck');
     } else if (responseStep === 'truck') {
       setResponseStep('complete');
@@ -154,6 +168,9 @@ export default function QuoteRequestsPage() {
   };
 
   const canProceedToNext = () => {
+    if (responseStep === 'content') {
+      return contentConfirmed;
+    }
     if (responseStep === 'truck' && truckAvailability) {
       return truckAvailability.availableTrucks > 0;
     }
@@ -184,6 +201,41 @@ export default function QuoteRequestsPage() {
       style: 'currency',
       currency: 'JPY'
     }).format(amount);
+  };
+
+  // トラック割り当てモーダル用の関数
+  const assignTruckToSubmission = (submissionId: string, truckAssignment: any) => {
+    console.log('トラック割り当て:', submissionId, truckAssignment);
+    setShowTruckAssignmentModal(false);
+  };
+
+  const calculateRecommendedTrucks = (points: number) => {
+    return trucks.filter(truck => truck.capacityKg >= points * 100);
+  };
+
+  const calculateEstimatedPrice = (points: number, distance?: number) => {
+    return points * 1000 + (distance || 10) * 100;
+  };
+
+  // 見積もり依頼をトラック割り当て用フォーマットに変換
+  const convertToFormSubmission = (request: QuoteRequest) => {
+    return {
+      id: request.id,
+      customerName: request.customerName,
+      customerEmail: 'demo@example.com',
+      customerPhone: '090-1234-5678',
+      moveDate: request.summary.moveDate,
+      originAddress: request.summary.fromAddress,
+      destinationAddress: request.summary.toAddress,
+      totalPoints: editablePoints,
+      totalCapacity: editablePoints * 50, // 仮の計算
+      itemList: editableItems,
+      additionalServices: [],
+      status: 'pending' as const,
+      truckAssignments: [],
+      createdAt: request.requestDate,
+      contractStatus: 'pending' as const
+    };
   };
 
   if (selectedRequest) {
@@ -235,7 +287,7 @@ export default function QuoteRequestsPage() {
           {/* ステップ1: 内容確認 */}
           {responseStep === 'content' && (
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">依頼内容の確認</h2>
+              <h2 className="text-xl font-semibold mb-4">依頼内容の確認・編集</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -257,7 +309,13 @@ export default function QuoteRequestsPage() {
                 
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">総ポイント</h3>
-                  <p className="text-gray-600">{selectedRequest.summary.totalPoints}ポイント</p>
+                  <input
+                    type="number"
+                    value={editablePoints}
+                    onChange={(e) => setEditablePoints(Number(e.target.value))}
+                    className="w-24 px-2 py-1 border border-gray-300 rounded text-gray-600"
+                  />
+                  <span className="ml-1 text-gray-600">ポイント</span>
                 </div>
               </div>
               
@@ -276,21 +334,52 @@ export default function QuoteRequestsPage() {
               </div>
               
               <div className="mt-6">
-                <h3 className="font-medium text-gray-900 mb-2">荷物</h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRequest.summary.items.map((item, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
-                      {item}
-                    </span>
+                <h3 className="font-medium text-gray-900 mb-2">荷物（編集可能）</h3>
+                <div className="space-y-2">
+                  {editableItems.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => {
+                          const newItems = [...editableItems];
+                          newItems[index] = e.target.value;
+                          setEditableItems(newItems);
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded"
+                      />
+                      <button
+                        onClick={() => {
+                          const newItems = editableItems.filter((_, i) => i !== index);
+                          setEditableItems(newItems);
+                        }}
+                        className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        削除
+                      </button>
+                    </div>
                   ))}
+                  <button
+                    onClick={() => setEditableItems([...editableItems, ''])}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  >
+                    荷物を追加
+                  </button>
                 </div>
               </div>
-              
+
               <div className="mt-6">
-                <h3 className="font-medium text-gray-900 mb-2">時間帯割増の影響</h3>
-                <p className="text-gray-600">
-                  夜間作業（22:00-05:00）の場合、割増率1.25倍が適用されます。
-                </p>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={contentConfirmed}
+                    onChange={(e) => setContentConfirmed(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    内容を確認し、次のステップに進む準備ができました
+                  </span>
+                </label>
               </div>
             </div>
           )}
@@ -298,7 +387,7 @@ export default function QuoteRequestsPage() {
           {/* ステップ2: トラック割り当て */}
           {responseStep === 'truck' && truckAvailability && (
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">トラック空き状況</h2>
+              <h2 className="text-xl font-semibold mb-4">トラック割り当て</h2>
               
               <div className="mb-6">
                 <h3 className="font-medium text-gray-900 mb-2">選択日: {truckAvailability.date}</h3>
@@ -324,12 +413,29 @@ export default function QuoteRequestsPage() {
                 </div>
               </div>
               
-              {truckAvailability.availableTrucks === 0 && (
+              {truckAvailability.availableTrucks === 0 ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                   <p className="text-red-800 font-medium">トラックの空きがありません</p>
                   <p className="text-red-600 text-sm mt-1">
                     別の日時を選択するか、空き状況を確認してください。
                   </p>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-green-800 font-medium">トラックの割り当てが可能です</p>
+                      <p className="text-green-600 text-sm mt-1">
+                        配車管理システムを使用してトラックを割り当ててください。
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowTruckAssignmentModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      トラック割り当て
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -342,15 +448,28 @@ export default function QuoteRequestsPage() {
               
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">見積もり金額</h3>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(45000)} <span className="text-sm text-gray-500">(税込)</span>
-                  </p>
+                  <h3 className="font-medium text-gray-900 mb-2">見積もり金額（編集可能）</h3>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="number"
+                      value={manualAmount}
+                      onChange={(e) => setManualAmount(Number(e.target.value))}
+                      className="w-32 px-3 py-2 border border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-500">円（税抜）</span>
+                    <div className="text-lg font-bold text-blue-600">
+                      {formatCurrency(manualAmount * 1.1)} <span className="text-sm text-gray-500">(税込)</span>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">作業時間</h3>
-                  <p className="text-gray-600">約4時間（午前中）</p>
+                  <h3 className="font-medium text-gray-900 mb-2">確認した内容</h3>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">総ポイント:</span> {editablePoints}ポイント</div>
+                    <div><span className="font-medium">荷物数:</span> {editableItems.length}点</div>
+                    <div><span className="font-medium">作業時間:</span> 約4時間（{selectedRequest.summary.moveTime}）</div>
+                  </div>
                 </div>
                 
                 <div className="p-4 bg-gray-50 rounded-lg">
@@ -406,6 +525,19 @@ export default function QuoteRequestsPage() {
               )}
             </div>
           </div>
+
+          {/* トラック割り当てモーダル */}
+          {showTruckAssignmentModal && selectedRequest && (
+            <TruckAssignmentModal
+              selectedSubmission={convertToFormSubmission(selectedRequest)}
+              trucks={trucks}
+              pricingTrucks={trucks}
+              setShowTruckModal={setShowTruckAssignmentModal}
+              assignTruckToSubmission={assignTruckToSubmission}
+              calculateRecommendedTrucks={calculateRecommendedTrucks}
+              calculateEstimatedPrice={calculateEstimatedPrice}
+            />
+          )}
         </div>
       </AdminAuthGuard>
     );
@@ -439,25 +571,24 @@ export default function QuoteRequestsPage() {
           </div>
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid gap-3">
           {filteredRequests.map((request) => (
             <div 
               key={request.id} 
-              className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${getDeadlineColor(request.deadline)}`}
+              className={`bg-white rounded-lg shadow-sm p-4 border border-gray-200 ${getDeadlineColor(request.deadline).replace('border-', 'border-l-4 border-l-')}`}
               aria-label={getDeadlineAriaLabel(request.deadline)}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{request.customerName}</h3>
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                    <span>依頼日: {request.requestDate}</span>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{request.customerName}</h3>
+                  <div className="flex items-center space-x-3 text-sm text-gray-600">
                     <span>引越し日: {request.summary.moveDate}</span>
                     <span>回答期限: {request.deadline}</span>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     request.status === 'answered' ? 'bg-green-100 text-green-800' :
                     'bg-red-100 text-red-800'
@@ -466,7 +597,7 @@ export default function QuoteRequestsPage() {
                      request.status === 'answered' ? '回答済' : '期限切れ'}
                   </span>
                   
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     request.priority === 'high' ? 'bg-red-100 text-red-800' :
                     request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-green-100 text-green-800'
@@ -474,46 +605,35 @@ export default function QuoteRequestsPage() {
                     {request.priority === 'high' ? '高' :
                      request.priority === 'medium' ? '中' : '低'}
                   </span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">住所</h4>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">元:</span> {request.summary.fromAddress}<br />
-                    <span className="font-medium">先:</span> {request.summary.toAddress}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">依頼元種別</h4>
-                  <p className="text-sm text-gray-600">{getSourceTypeLabel(request.sourceType)}</p>
-                </div>
-              </div>
+                  <div className="text-sm font-medium text-gray-600">
+                    {request.summary.totalPoints}ポイント
+                  </div>
 
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">荷物</h4>
-                <div className="flex flex-wrap gap-2">
-                  {request.summary.items.map((item, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
-                      {item}
-                    </span>
-                  ))}
+                  <button
+                    onClick={() => startResponse(request)}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                  >
+                    回答する
+                  </button>
                 </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={() => startResponse(request)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  回答する
-                </button>
               </div>
             </div>
           ))}
         </div>
+        
+        {/* トラック割り当てモーダル（一覧画面用） */}
+        {showTruckAssignmentModal && selectedRequest && (
+          <TruckAssignmentModal
+            selectedSubmission={convertToFormSubmission(selectedRequest)}
+            trucks={trucks}
+            pricingTrucks={trucks}
+            setShowTruckModal={setShowTruckAssignmentModal}
+            assignTruckToSubmission={assignTruckToSubmission}
+            calculateRecommendedTrucks={calculateRecommendedTrucks}
+            calculateEstimatedPrice={calculateEstimatedPrice}
+          />
+        )}
       </div>
     </AdminAuthGuard>
   );

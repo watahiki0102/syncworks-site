@@ -28,6 +28,7 @@ export interface QuoteHistory {
   moveDate: string;        // 引越し予定日
   sourceType: SourceType;  // 依頼元種別
   isContracted: boolean;   // 成約フラグ
+  isReQuote: boolean;      // 再見積もりフラグ
   timeBandSurcharges: TimeBandSurcharge[]; // 時間帯割増賃金
 }
 
@@ -71,6 +72,7 @@ export interface Contract {
   items: string[];         // 荷物リスト
   fromAddress: string;     // 引越し元住所
   toAddress: string;       // 引越し先住所
+  serviceType: 'internal' | 'external'; // 業者種別（自社 or 他社サービス）
 }
 
 /**

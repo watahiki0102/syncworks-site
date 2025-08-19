@@ -12,6 +12,7 @@ export default function QuoteHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingQuote, setEditingQuote] = useState<QuoteHistory | null>(null);
   const [editingSurcharges, setEditingSurcharges] = useState<TimeBandSurcharge[]>([]);
+  const [viewingQuote, setViewingQuote] = useState<QuoteHistory | null>(null);
 
   useEffect(() => {
     const demoQuotes: QuoteHistory[] = [
@@ -29,6 +30,7 @@ export default function QuoteHistoryPage() {
         moveDate: '2025-02-01',
         sourceType: 'syncmoving',
         isContracted: true,
+        isReQuote: false,
         timeBandSurcharges: [
           { id: '1', start: '22:00', end: '05:00', kind: 'rate', value: 1.25 }
         ]
@@ -181,21 +183,25 @@ export default function QuoteHistoryPage() {
           </div>
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid gap-3">
           {filteredQuotes.map((quote) => (
-            <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{quote.customerName}</h3>
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                    <span>依頼日: {quote.requestDate}</span>
+            <div key={quote.id} className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{quote.customerName}</h3>
+                  <div className="flex items-center space-x-3 text-sm text-gray-600">
                     <span>引越し日: {quote.moveDate}</span>
                     <span>回答日: {quote.responseDate}</span>
+                    {quote.isReQuote && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        再見積もり
+                      </span>
+                    )}
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     quote.status === '成約' ? 'bg-green-100 text-green-800' :
                     quote.status === '見積中' ? 'bg-yellow-100 text-yellow-800' :
                     quote.status === '完了' || quote.status === '完了(自動)' ? 'bg-blue-100 text-blue-800' :
@@ -205,218 +211,129 @@ export default function QuoteHistoryPage() {
                     {quote.status}
                   </span>
                   
-                  <label className="flex items-center space-x-2">
+                  <div className="text-sm font-semibold text-blue-600">
+                    {formatCurrency(quote.amountWithTax)}
+                  </div>
+                  
+                  <label className="flex items-center space-x-1">
                     <input
                       type="checkbox"
                       checked={quote.isContracted}
                       onChange={() => toggleContracted(quote.id)}
                       disabled={quote.sourceType === 'syncmoving' && quote.isContracted}
-                      className="rounded border-gray-300"
+                      className="rounded border-gray-300 text-xs"
                     />
-                    <span className="text-sm text-gray-700">成約</span>
+                    <span className="text-xs text-gray-700">成約</span>
                   </label>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">住所</h4>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">元:</span> {quote.fromAddress}<br />
-                    <span className="font-medium">先:</span> {quote.toAddress}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">依頼元種別</h4>
-                  <select
-                    value={quote.sourceType}
-                    disabled={!isSourceTypeEditable(quote.sourceType)}
-                    onChange={(e) => {
-                      setQuotes(quotes.map(q => 
-                        q.id === quote.id ? { ...q, sourceType: e.target.value as SourceType } : q
-                      ));
-                    }}
-                    className={`px-3 py-2 border rounded-md text-sm ${
-                      isSourceTypeEditable(quote.sourceType) 
-                        ? 'border-gray-300 focus:ring-2 focus:ring-blue-500' 
-                        : 'border-gray-200 bg-gray-100 text-gray-500'
-                    }`}
+                  <button
+                    onClick={() => setViewingQuote(quote)}
+                    className="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
                   >
-                    <option value="syncmoving">SyncMoving</option>
-                    <option value="suumo">スーモ</option>
-                    <option value="外部">外部</option>
-                    <option value="手動">手動登録</option>
+                    詳細
+                  </button>
+                  
+                  {isSourceTypeEditable(quote.sourceType) && (
+                    <button
+                      onClick={() => window.location.href = `/admin/case-management/edit/${quote.id}`}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                    >
+                      編集
+                    </button>
+                  )}
+                  
+                  <select
+                    value={quote.status}
+                    onChange={(e) => updateStatus(quote.id, e.target.value as QuoteStatus)}
+                    disabled={quote.sourceType === 'syncmoving' && quote.isContracted && quote.status !== 'キャンセル'}
+                    className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="見積中">見積中</option>
+                    <option value="回答済">回答済</option>
+                    <option value="成約">成約</option>
+                    <option value="不成約">不成約</option>
+                    <option value="キャンセル">キャンセル</option>
+                    <option value="完了">完了</option>
+                    <option value="完了(自動)">完了(自動)</option>
                   </select>
                 </div>
               </div>
+            </div>
+          ))}
+        </div>
 
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">荷物</h4>
+        {/* 詳細表示モーダル（閲覧のみ） */}
+        {viewingQuote && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-semibold">見積もり詳細 - {viewingQuote.customerName}</h3>
+                <button
+                  onClick={() => setViewingQuote(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">基本情報</h4>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">依頼日:</span> {viewingQuote.requestDate}</div>
+                    <div><span className="font-medium">回答日:</span> {viewingQuote.responseDate}</div>
+                    <div><span className="font-medium">引越し日:</span> {viewingQuote.moveDate}</div>
+                    <div><span className="font-medium">ステータス:</span> {viewingQuote.status}</div>
+                    <div><span className="font-medium">依頼元:</span> {getSourceTypeLabel(viewingQuote.sourceType)}</div>
+                    {viewingQuote.isReQuote && (
+                      <div><span className="font-medium text-purple-600">再見積もり</span></div>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">金額情報</h4>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">基本金額:</span> {formatCurrency(viewingQuote.amount)}</div>
+                    <div><span className="font-medium">税込金額:</span> <span className="text-lg font-semibold text-blue-600">{formatCurrency(viewingQuote.amountWithTax)}</span></div>
+                    <div><span className="font-medium">成約状況:</span> {viewingQuote.isContracted ? '成約済み' : '未成約'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">住所</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-500">引越し元:</span>
+                    <p className="text-gray-700">{viewingQuote.fromAddress}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">引越し先:</span>
+                    <p className="text-gray-700">{viewingQuote.toAddress}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">荷物一覧</h4>
                 <div className="flex flex-wrap gap-2">
-                  {quote.items.map((item, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
+                  {viewingQuote.items.map((item, index) => (
+                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                       {item}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">金額</h4>
-                <div className="text-lg font-semibold text-blue-600">
-                  {formatCurrency(quote.amountWithTax)} <span className="text-sm text-gray-500">(税込)</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-2">時間帯割増賃金</h4>
-                {quote.timeBandSurcharges.length > 0 ? (
-                  <div className="space-y-2">
-                    {quote.timeBandSurcharges.map((surcharge) => (
-                      <div key={surcharge.id} className="flex items-center space-x-2 text-sm">
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
-                          {surcharge.start} - {surcharge.end}
-                        </span>
-                        <span className="text-gray-600">
-                          {surcharge.kind === 'rate' ? `×${surcharge.value}` : `+${formatCurrency(surcharge.value)}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">設定なし</p>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                {editingQuote?.id === quote.id ? (
-                  <>
-                    <button
-                      onClick={saveQuote}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      保存
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                    >
-                      キャンセル
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => startEditing(quote)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      編集
-                    </button>
-                    
-                    <select
-                      value={quote.status}
-                      onChange={(e) => updateStatus(quote.id, e.target.value as QuoteStatus)}
-                      disabled={quote.sourceType === 'syncmoving' && quote.isContracted && quote.status !== 'キャンセル'}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="見積中">見積中</option>
-                      <option value="回答済">回答済</option>
-                      <option value="成約">成約</option>
-                      <option value="不成約">不成約</option>
-                      <option value="キャンセル">キャンセル</option>
-                      <option value="完了">完了</option>
-                      <option value="完了(自動)">完了(自動)</option>
-                    </select>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {editingQuote && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-semibold mb-4">時間帯割増賃金の編集</h3>
-              
-              <div className="space-y-4">
-                {editingSurcharges.map((surcharge) => (
-                  <div key={surcharge.id} className="border rounded-lg p-4">
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
-                        <input
-                          type="time"
-                          value={surcharge.start}
-                          onChange={(e) => updateSurcharge(surcharge.id, 'start', e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-md w-full"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">終了時間</label>
-                        <input
-                          type="time"
-                          value={surcharge.end}
-                          onChange={(e) => updateSurcharge(surcharge.id, 'end', e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-md w-full"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">種類</label>
-                        <select
-                          value={surcharge.kind}
-                          onChange={(e) => updateSurcharge(surcharge.id, 'kind', e.target.value as 'rate' | 'amount')}
-                          className="px-3 py-2 border border-gray-300 rounded-md w-full"
-                        >
-                          <option value="rate">率(×1.25)</option>
-                          <option value="amount">定額(+3000円)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">値</label>
-                        <input
-                          type="number"
-                          step={surcharge.kind === 'rate' ? 0.01 : 1}
-                          value={surcharge.value}
-                          onChange={(e) => updateSurcharge(surcharge.id, 'value', parseFloat(e.target.value))}
-                          className="px-3 py-2 border border-gray-300 rounded-md w-full"
-                        />
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => removeSurcharge(surcharge.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                    >
-                      削除
-                    </button>
-                  </div>
-                ))}
-                
+              <div className="flex justify-end">
                 <button
-                  onClick={addSurcharge}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  onClick={() => setViewingQuote(null)}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
                 >
-                  時間帯割増を追加
-                </button>
-              </div>
-              
-              <div className="mt-6 flex justify-end space-x-2">
-                <button
-                  onClick={saveQuote}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  保存
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                >
-                  キャンセル
+                  閉じる
                 </button>
               </div>
             </div>
