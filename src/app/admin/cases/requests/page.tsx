@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteRequest, TruckAvailability } from '../types';
 import { SourceType, normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
-import TruckAssignmentModal from '../../../dispatch/components/TruckAssignmentModal';
+import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 type ResponseStep = 'content' | 'truck' | 'complete';
