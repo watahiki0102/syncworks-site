@@ -288,7 +288,7 @@ export default function AdminDashboard() {
 
             {/* 案件管理 */}
             <div className="lg:col-start-1">
-              <Link href="/admin/case-management" className="block h-full">
+              <Link href="/admin/cases" className="block h-full">
                 <div className="bg-gradient-to-br from-orange-50 to-white border-2 border-orange-400 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-102 h-full min-h-[120px]">
                   <div className="p-3 flex items-center gap-2 h-full">
                     <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center text-lg">📋</div>

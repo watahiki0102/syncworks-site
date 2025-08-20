@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteHistory, TimeBandSurcharge, QuoteStatus } from '../types';
 import { SourceType, normalizeSourceType, getSourceTypeLabel, isSourceTypeEditable } from '../lib/normalize';
+import { generateTestQuote } from '@/constants/testData';
 
 export default function QuoteHistoryPage() {
   const [quotes, setQuotes] = useState<QuoteHistory[]>([]);
@@ -15,26 +16,13 @@ export default function QuoteHistoryPage() {
   const [viewingQuote, setViewingQuote] = useState<QuoteHistory | null>(null);
 
   useEffect(() => {
+    // 共通テストデータから見積もりデータを生成
     const demoQuotes: QuoteHistory[] = [
-      {
-        id: '1',
-        customerName: '田中太郎',
-        requestDate: '2025-01-15',
-        responseDate: '2025-01-16',
-        amount: 45000,
-        amountWithTax: 49500,
-        status: '成約',
-        items: ['シングルベッド', '冷蔵庫', 'テレビ'],
-        fromAddress: '東京都渋谷区',
-        toAddress: '東京都新宿区',
-        moveDate: '2025-02-01',
-        sourceType: 'syncmoving',
-        isContracted: true,
-        isReQuote: false,
-        timeBandSurcharges: [
-          { id: '1', start: '22:00', end: '05:00', kind: 'rate', value: 1.25 }
-        ]
-      }
+      generateTestQuote(0, 0, 0, 0),
+      generateTestQuote(1, 1, 1, 1),
+      generateTestQuote(2, 2, 2, 2),
+      generateTestQuote(3, 3, 3, 3),
+      generateTestQuote(4, 4, 4, 4)
     ];
 
     const normalizedQuotes = demoQuotes.map(quote => ({
@@ -235,7 +223,7 @@ export default function QuoteHistoryPage() {
                   
                   {isSourceTypeEditable(quote.sourceType) && (
                     <button
-                      onClick={() => window.location.href = `/admin/case-management/edit/${quote.id}`}
+                      onClick={() => window.location.href = `/admin/cases/edit/${quote.id}`}
                       className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
                     >
                       編集

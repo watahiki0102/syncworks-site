@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import { generateTestContract } from '@/constants/testData';
 
 /**
  * 成約データの型定義
@@ -55,31 +56,10 @@ export default function AdminContracts() {
    * 実際のアプリケーションではAPIから取得
    */
   useEffect(() => {
+    // 共通テストデータから契約データを生成
     const demoContracts: Contract[] = [
-      {
-        id: '1',
-        customerName: '田中太郎',
-        contractDate: '2025-01-15',
-        moveDate: '2025-02-01',
-        contractAmount: 45000,
-        commission: 6750,
-        revenue: 38250,
-        items: ['シングルベッド', '冷蔵庫', 'テレビ'],
-        fromAddress: '東京都渋谷区',
-        toAddress: '東京都新宿区'
-      },
-      {
-        id: '2',
-        customerName: '高橋美咲',
-        contractDate: '2025-01-13',
-        moveDate: '2025-01-28',
-        contractAmount: 42000,
-        commission: 6300,
-        revenue: 35700,
-        items: ['セミダブルベッド', '電子レンジ', '本棚'],
-        fromAddress: '東京都中野区',
-        toAddress: '東京都杉並区'
-      }
+      generateTestContract(0, 0, 0), // 田中太郎
+      generateTestContract(3, 1, 1), // 高橋美咲
     ];
     setContracts(demoContracts);
     setFilteredContracts(demoContracts);

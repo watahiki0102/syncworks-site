@@ -11,6 +11,8 @@ interface TruckColumnProps {
   workers: WorkerRef[];
   onSlotSelect: (scheduleId: ScheduleId, truckId: string, truckName: string, startTime: string, endTime: string) => void;
   onUnassignEmployee: (payload: { scheduleId: ScheduleId; employeeId: string }) => void;
+  onDragDrop?: (workerId: string, scheduleId: ScheduleId, startTime: string, endTime: string) => void;
+  draggedWorker?: WorkerRef | null;
 }
 
 export default function TruckColumn({
@@ -19,7 +21,9 @@ export default function TruckColumn({
   selectedDate,
   workers,
   onSlotSelect,
-  onUnassignEmployee
+  onUnassignEmployee,
+  onDragDrop,
+  draggedWorker
 }: TruckColumnProps) {
   // トラックのスケジュールを時間スロットにマッピング
   const scheduleMap = useMemo(() => {
@@ -95,6 +99,8 @@ export default function TruckColumn({
                   schedule.endTime
                 )}
                 onUnassignEmployee={onUnassignEmployee}
+                onDragDrop={onDragDrop}
+                draggedWorker={draggedWorker}
               />
             </div>
           );

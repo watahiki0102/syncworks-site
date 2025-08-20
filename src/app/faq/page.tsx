@@ -6,68 +6,16 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Layout } from '@/components/layout';
+import Layout from '@/components/layout/Layout';
+import { TEST_FAQ } from '@/constants/testData';
 
 interface FAQItem {
   id: number;
   question: string;
   answer: string;
 }
-
-const faqData: FAQItem[] = [
-  {
-    id: 1,
-    question: '見積もりは無料ですか？',
-    answer: 'はい、見積もりは完全無料です。複数の引越し業者から見積もりを取得でき、追加料金は一切発生しません。'
-  },
-  {
-    id: 2,
-    question: '見積もりにはどのくらい時間がかかりますか？',
-    answer: '基本情報の入力は約3分で完了します。見積もり結果は入力完了後、最短で当日中にお受け取りいただけます。'
-  },
-  {
-    id: 3,
-    question: '土日や祝日の引越しも対応していますか？',
-    answer: 'はい、土日祝日の引越しにも対応しています。ただし、業者や時期によって料金が異なる場合がありますので、詳細は見積もり時にご確認ください。'
-  },
-  {
-    id: 4,
-    question: 'キャンセル料は発生しますか？',
-    answer: '原則として発生するものとお考えください。'
-  },
-  {
-    id: 5,
-    question: '梱包材は提供してもらえますか？',
-    answer: 'はい、多くの業者でダンボールや梱包材を提供しています。詳細な内容や料金については、各業者の見積もり時にご確認ください。'
-  },
-  {
-    id: 6,
-    question: 'エアコンの取り外し・取り付けはできますか？',
-    answer: '対応可否は業者によって異なります。事前に業者ごとにご確認ください。'
-  },
-  {
-    id: 7,
-    question: '荷物の破損が心配です。保険はありますか？',
-    answer: '補償内容に関しては、各業者にお問い合わせください。'
-  },
-  {
-    id: 8,
-    question: '引越し当日に立ち会いは必要ですか？',
-    answer: 'はい、引越し当日はお客様の立ち会いが必要です。荷物の確認や新居での配置指示など、重要な作業がありますので、可能な限りご同席をお願いします。'
-  },
-  {
-    id: 9,
-    question: 'ペットの運搬はできますか？',
-    answer: 'ペットの運搬は専門業者への依頼が必要な場合があります。一般的な引越し業者では対応できない場合が多いため、事前にご相談ください。'
-  },
-  {
-    id: 10,
-    question: '支払い方法はどのようなものがありますか？',
-    answer: '現金払い、銀行振込、クレジットカード決済など、業者によって対応可能な支払い方法が異なります。詳細は各業者にご確認ください。'
-  }
-];
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<number[]>([]);
@@ -99,7 +47,7 @@ export default function FAQPage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-4">
-            {faqData.map((item) => (
+            {TEST_FAQ.map((item) => (
               <div key={item.id} className="bg-white rounded-lg shadow-md">
                 <button
                   className="w-full text-left p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"

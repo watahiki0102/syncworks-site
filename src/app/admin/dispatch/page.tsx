@@ -8,9 +8,11 @@ import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
+import WorkerAssignmentView from './views/WorkerAssignmentView';
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
 import { Truck, Schedule } from '@/types/dispatch';
 import { ContractStatus } from '@/types/case';
+import { TEST_TRUCKS, generateTestFormSubmission } from '@/constants/testData';
 
 interface FormSubmission {
   id: string;
@@ -51,63 +53,16 @@ interface TruckAssignment {
 function DispatchManagementContent() {
   const searchParams = useSearchParams();
   const [trucks, setTrucks] = useState<Truck[]>([]);
-  const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([
-    {
-      id: '1',
-      customerName: '山田 太郎',
-      customerEmail: 'taro@example.com',
-      customerPhone: '090-1234-5678',
-      moveDate: '2025-08-15',
-      originAddress: '東京都新宿区西新宿1-1-1',
-      destinationAddress: '東京都渋谷区渋谷2-2-2',
-      totalPoints: 100,
-      totalCapacity: 500,
-      itemList: ['ソファ', 'テーブル', '椅子'],
-      additionalServices: ['梱包', '開梱'],
-      status: 'pending',
-      truckAssignments: [],
-      createdAt: '2025-08-01T10:00:00Z',
-      contractStatus: 'estimate',
-    },
-    {
-      id: '2',
-      customerName: '鈴木 花子',
-      customerEmail: 'hanako@example.com',
-      customerPhone: '080-9876-5432',
-      moveDate: '2025-08-20',
-      originAddress: '大阪府大阪市北区梅田3-3-3',
-      destinationAddress: '大阪府大阪市中央区難波4-4-4',
-      totalPoints: 150,
-      totalCapacity: 750,
-      itemList: ['ベッド', 'ワードローブ', '机'],
-      additionalServices: ['保険'],
-      status: 'assigned',
-      truckAssignments: [],
-      createdAt: '2025-08-02T11:00:00Z',
-      contractStatus: 'estimate',
-    },
-    {
-      id: '3',
-      customerName: '佐藤 次郎',
-      customerEmail: 'jiro@example.com',
-      customerPhone: '070-5555-6666',
-      moveDate: '2025-08-25',
-      originAddress: '福岡県福岡市博多区博多駅前5-5-5',
-      destinationAddress: '福岡県福岡市中央区天神6-6-6',
-      totalPoints: 200,
-      totalCapacity: 1000,
-      itemList: ['冷蔵庫', '洗濯機', '乾燥機'],
-      additionalServices: ['保管'],
-      status: 'completed',
-      truckAssignments: [],
-      createdAt: '2025-08-03T12:00:00Z',
-      contractStatus: 'confirmed',
-      contractDate: '2025-08-10T12:00:00Z',
-    },
-  ]);
+  const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'registration' | 'truck-management'>('calendar');
+  const [activeView, setActiveView] = useState<'unified' | 'worker-assignment'>('unified');
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [bulkAssignData, setBulkAssignData] = useState<{
+    selectedSubmissions: string[];
+    templateSettings: any;
+  }>({ selectedSubmissions: [], templateSettings: {} });
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
@@ -116,7 +71,142 @@ function DispatchManagementContent() {
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
+  
+  // 使用不能期間設定関連のstate
+  const [showUnavailablePeriodModal, setShowUnavailablePeriodModal] = useState(false);
+  const [selectedTruckForUnavailable, setSelectedTruckForUnavailable] = useState<Truck | null>(null);
+  const [unavailablePeriod, setUnavailablePeriod] = useState({ startDate: '', endDate: '', reason: '' });
+  
   const router = useRouter();
+
+  // 配車テンプレート定義
+  const dispatchTemplates = [
+    {
+      id: 'standard-single',
+      name: '標準単発配車',
+      description: '1台のトラックで完結する標準的な配車',
+      settings: {
+        truckCount: 1,
+        workerCount: 2,
+        timeBuffer: 30, // 分
+        autoAssignWorkers: true,
+        preferredTruckTypes: ['2tショート', '2tロング']
+      }
+    },
+    {
+      id: 'large-scale',
+      name: '大規模配車',
+      description: '複数台のトラックが必要な大規模な引越し',
+      settings: {
+        truckCount: 2,
+        workerCount: 4,
+        timeBuffer: 60,
+        autoAssignWorkers: true,
+        preferredTruckTypes: ['3t', '4t']
+      }
+    },
+    {
+      id: 'quick-delivery',
+      name: '急行配送',
+      description: '時間を重視した迅速な配送',
+      settings: {
+        truckCount: 1,
+        workerCount: 3,
+        timeBuffer: 15,
+        autoAssignWorkers: true,
+        preferredTruckTypes: ['軽トラ', '2tショート']
+      }
+    },
+    {
+      id: 'custom',
+      name: 'カスタム設定',
+      description: '個別にカスタマイズした配車設定',
+      settings: {
+        truckCount: 1,
+        workerCount: 2,
+        timeBuffer: 30,
+        autoAssignWorkers: false,
+        preferredTruckTypes: []
+      }
+    }
+  ];
+
+  // 一括割り当て機能
+  const handleBulkAssign = async (submissionIds: string[], templateId: string) => {
+    const template = dispatchTemplates.find(t => t.id === templateId);
+    if (!template) {
+      alert('テンプレートが見つかりません');
+      return;
+    }
+
+    const submissionsToAssign = submissions.filter(s => submissionIds.includes(s.id));
+    
+    for (const submission of submissionsToAssign) {
+      // テンプレート設定に基づいてトラック選択
+      const availableTrucks = trucks.filter(truck => 
+        truck.status === 'available' && 
+        (template.settings.preferredTruckTypes.length === 0 || 
+         template.settings.preferredTruckTypes.includes(truck.truckType))
+      );
+
+      if (availableTrucks.length === 0) {
+        alert(`${submission.customerName}の案件に適用可能なトラックがありません`);
+        continue;
+      }
+
+      // 自動トラック割り当て
+      const selectedTruck = availableTrucks[0];
+      const startTime = new Date(submission.moveDate);
+      startTime.setHours(9, 0, 0, 0); // デフォルト開始時間
+
+      const endTime = new Date(startTime);
+      endTime.setHours(startTime.getHours() + 4); // 4時間の作業時間
+
+      const truckAssignment = {
+        truckId: selectedTruck.id,
+        truckName: selectedTruck.name,
+        capacity: submission.totalCapacity || 1000,
+        startTime: startTime.toTimeString().substring(0, 5),
+        endTime: endTime.toTimeString().substring(0, 5),
+        workType: 'moving' as const
+      };
+
+      // 提出データを更新
+      const updatedSubmission = {
+        ...submission,
+        status: 'assigned' as const,
+        truckAssignments: [truckAssignment]
+      };
+
+      // トラックのスケジュールを更新
+      const newSchedule = {
+        id: `schedule-${Date.now()}-${Math.random()}`,
+        date: submission.moveDate,
+        startTime: truckAssignment.startTime,
+        endTime: truckAssignment.endTime,
+        status: 'assigned' as const,
+        customerName: submission.customerName,
+        workType: truckAssignment.workType,
+        description: `${submission.originAddress} → ${submission.destinationAddress}`,
+        capacity: truckAssignment.capacity,
+        origin: submission.originAddress,
+        destination: submission.destinationAddress
+      };
+
+      const updatedTruck = {
+        ...selectedTruck,
+        schedules: [...selectedTruck.schedules, newSchedule]
+      };
+
+      // 状態を更新
+      setSubmissions(prev => prev.map(s => s.id === submission.id ? updatedSubmission : s));
+      updateTruck(updatedTruck);
+    }
+
+    setShowBulkAssignModal(false);
+    setBulkAssignData({ selectedSubmissions: [], templateSettings: {} });
+    alert(`${submissionsToAssign.length}件の案件を一括割り当てしました`);
+  };
 
   // URLパラメータから選択された案件を取得
   const selectedCaseId = searchParams.get('selectedCase');
@@ -922,43 +1012,48 @@ function DispatchManagementContent() {
         </div>
       </header>
 
-      {/* タブナビゲーション */}
+      {/* 統合ナビゲーション */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'calendar'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              配車カレンダー
-            </button>
+          <div className="flex justify-between items-center py-4">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveView('unified')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeView === 'unified'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📊 統合配車管理
+              </button>
 
-            <button
-              onClick={() => setActiveTab('registration')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'registration'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              トラック登録
-            </button>
-
-            <button
-              onClick={() => setActiveTab('truck-management')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'truck-management'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              トラック管理
-            </button>
-          </nav>
+              <button
+                onClick={() => setActiveView('worker-assignment')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeView === 'worker-assignment'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👷 作業者割り当て
+              </button>
+            </nav>
+            
+            {/* 一括操作ボタン */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowBulkAssignModal(true)}
+                disabled={filteredSubmissions.filter(s => s.status === 'pending').length === 0}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                🚚 一括配車割り当て
+              </button>
+              <div className="text-sm text-gray-500">
+                未割当: {filteredSubmissions.filter(s => s.status === 'pending').length}件
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -966,64 +1061,550 @@ function DispatchManagementContent() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
 
-          {/* タブコンテンツ */}
-          {activeTab === 'calendar' && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <DispatchCalendar 
-                  trucks={trucks as any}
-                  onUpdateTruck={updateTruck}
-                  statusFilter={statusFilter}
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'truck-management' && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <TruckManagement 
-                  trucks={trucks as any}
-                  onTrucksChange={setTrucks}
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'registration' && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-purple-600">トラック登録・編集</h3>
-                    <p className="text-sm text-gray-900">車両情報の管理・更新</p>
+          {/* 統合ビューコンテンツ */}
+          {activeView === 'unified' && (
+            <div className="space-y-6">
+              {/* 統合ダッシュボード */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+                <h2 className="text-2xl font-bold mb-4">📊 配車管理統合ダッシュボード</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div className="text-sm opacity-90">総案件数</div>
+                    <div className="text-2xl font-bold">{submissions.length}</div>
+                  </div>
+                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div className="text-sm opacity-90">未割当案件</div>
+                    <div className="text-2xl font-bold text-orange-200">
+                      {submissions.filter(s => s.status === 'pending').length}
+                    </div>
+                  </div>
+                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div className="text-sm opacity-90">稼働中トラック</div>
+                    <div className="text-2xl font-bold text-green-200">
+                      {trucks.filter(t => t.status === 'busy').length}
+                    </div>
+                  </div>
+                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div className="text-sm opacity-90">利用可能トラック</div>
+                    <div className="text-2xl font-bold text-blue-200">
+                      {trucks.filter(t => t.status === 'available').length}
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="px-4 py-5 sm:p-6">
-                <TruckRegistration
-                  trucks={trucks}
-                  selectedTruck={selectedTruck}
-                  onAddTruck={addTruck}
-                  onUpdateTruck={updateTruck}
-                  onDeleteTruck={deleteTruck}
-                  onSelectTruck={setSelectedTruck}
-                  availableTruckTypes={availableTruckTypes}
-                  pricingRules={pricingRules}
-                />
+
+              {/* カレンダービューとトラック管理を統合 */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 配車カレンダー（拡張） */}
+                <div className="lg:col-span-2 bg-white shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">配車カレンダー</h3>
+                      <StatusFilter onFilterChange={setStatusFilter} currentFilter={statusFilter} />
+                    </div>
+                    <DispatchCalendar 
+                      trucks={trucks as any}
+                      onUpdateTruck={updateTruck}
+                      statusFilter={statusFilter}
+                    />
+                  </div>
+                </div>
+
+                {/* トラック・案件管理パネル */}
+                <div className="space-y-4">
+                  {/* トラック状況 */}
+                  <div className="bg-white shadow rounded-lg">
+                    <div className="px-4 py-5 sm:p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">🚚 トラック状況</h3>
+                      <TruckManagement 
+                        trucks={trucks as any}
+                        onTrucksChange={setTrucks}
+                        compact={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 新規案件登録 */}
+                  <div className="bg-white shadow rounded-lg">
+                    <div className="px-4 py-5 sm:p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 クイック操作</h3>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => router.push('/admin/cases/register')}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          + 新規案件登録
+                        </button>
+                        <TruckRegistration
+                          trucks={trucks}
+                          selectedTruck={selectedTruck}
+                          onAddTruck={addTruck}
+                          onUpdateTruck={updateTruck}
+                          onDeleteTruck={deleteTruck}
+                          onSelectTruck={setSelectedTruck}
+                          availableTruckTypes={availableTruckTypes}
+                          pricingRules={pricingRules}
+                          compact={true}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* 案件一覧（テンプレート統合） */}
+              <UnifiedCaseManagement
+                submissions={filteredSubmissions}
+                trucks={trucks}
+                onAssignTruck={assignTruckToSubmission}
+                onRemoveTruck={removeTruckFromSubmission}
+                expandedSubmissions={expandedSubmissions}
+                onToggleExpand={(id) => {
+                  setExpandedSubmissions(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(id)) {
+                      newSet.delete(id);
+                    } else {
+                      newSet.add(id);
+                    }
+                    return newSet;
+                  });
+                }}
+                dispatchTemplates={dispatchTemplates}
+                onBulkAssign={handleBulkAssign}
+              />
             </div>
           )}
 
-          {/* トラック一覧と案件一覧（calendarタブで表示） */}
-          {activeTab === 'calendar' && (
-            <>
-              {/* トラック一覧 */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center text-3xl">🚚</div>
+          {/* 作業者割り当てビュー */}
+          {activeView === 'worker-assignment' && (
+            <WorkerAssignmentView
+              trucks={trucks}
+              selectedDate={new Date().toISOString().split('T')[0]}
+              onUpdateTruck={updateTruck}
+            />
+          )}
+        </div>
+      </main>
+
+      {/* 一括割り当てモーダル */}
+      {showBulkAssignModal && (
+        <BulkAssignModal
+          submissions={submissions.filter(s => s.status === 'pending')}
+          templates={dispatchTemplates}
+          onAssign={handleBulkAssign}
+          onClose={() => setShowBulkAssignModal(false)}
+        />
+      )}
+
+      {/* トラック割り当てモーダル */}
+      {showTruckModal && (
+        <TruckAssignmentModal
+          selectedSubmission={selectedSubmission}
+          trucks={trucks}
+          pricingTrucks={pricingTrucks}
+          setShowTruckModal={setShowTruckModal}
+          assignTruckToSubmission={assignTruckToSubmission}
+          calculateRecommendedTrucks={calculateRecommendedTrucks}
+          calculateEstimatedPrice={calculateEstimatedPrice}
+        />
+      )}
+
+      {/* 車両使用不能期間設定モーダル */}
+      {showUnavailablePeriodModal && (
+        <UnavailablePeriodModal
+          truck={selectedTruckForUnavailable}
+          onClose={() => {
+            setShowUnavailablePeriodModal(false);
+            setSelectedTruckForUnavailable(null);
+            setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });
+          }}
+          onSave={(period) => {
+            if (!selectedTruckForUnavailable) return;
+            
+            // 指定期間に使用不能スケジュールを作成
+            const startDate = new Date(period.startDate);
+            const endDate = new Date(period.endDate);
+            const newSchedules: Schedule[] = [];
+            
+            for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+              newSchedules.push({
+                id: `unavailable-${crypto.randomUUID()}`,
+                date: toLocalDateString(date),
+                startTime: '00:00',
+                endTime: '23:59',
+                status: 'maintenance',
+                customerName: '',
+                workType: 'maintenance',
+                description: `使用不能期間: ${period.reason}`,
+                capacity: 0,
+                origin: '',
+                destination: '',
+              });
+            }
+            
+            const updatedTruck = {
+              ...selectedTruckForUnavailable,
+              schedules: [...selectedTruckForUnavailable.schedules, ...newSchedules]
+            };
+            
+            updateTruck(updatedTruck);
+            setShowUnavailablePeriodModal(false);
+            setSelectedTruckForUnavailable(null);
+            setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });
+          }}
+          initialPeriod={unavailablePeriod}
+          onPeriodChange={setUnavailablePeriod}
+        />
+      )}
+    </div>
+  );
+}
+
+// 一括割り当てモーダルコンポーネント
+interface BulkAssignModalProps {
+  submissions: FormSubmission[];
+  templates: typeof dispatchTemplates;
+  onAssign: (submissionIds: string[], templateId: string) => void;
+  onClose: () => void;
+}
+
+const BulkAssignModal = ({ submissions, templates, onAssign, onClose }: BulkAssignModalProps) => {
+  const [selectedSubmissions, setSelectedSubmissions] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedSubmissions.length === 0 || !selectedTemplate) {
+      alert('案件とテンプレートを選択してください');
+      return;
+    }
+    onAssign(selectedSubmissions, selectedTemplate);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">一括配車割り当て</h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 案件選択 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              対象案件を選択
+            </label>
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-3">
+              {submissions.map(submission => (
+                <label key={submission.id} className="flex items-center space-x-2 py-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedSubmissions.includes(submission.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedSubmissions(prev => [...prev, submission.id]);
+                      } else {
+                        setSelectedSubmissions(prev => prev.filter(id => id !== submission.id));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm">
+                    {submission.customerName} - {submission.moveDate}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* テンプレート選択 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              配車テンプレート
+            </label>
+            <div className="space-y-2">
+              {templates.map(template => (
+                <label key={template.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="template"
+                    value={template.id}
+                    checked={selectedTemplate === template.id}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">{template.name}</div>
+                    <div className="text-sm text-gray-500">{template.description}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      トラック{template.settings.truckCount}台・作業者{template.settings.workerCount}名・
+                      時間バッファ{template.settings.timeBuffer}分
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              一括割り当て実行
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// 統合案件管理コンポーネント  
+interface UnifiedCaseManagementProps {
+  submissions: FormSubmission[];
+  trucks: Truck[];
+  onAssignTruck: (submissionId: string, truckId: string) => void;
+  onRemoveTruck: (submissionId: string, truckId: string) => void;
+  expandedSubmissions: Set<string>;
+  onToggleExpand: (id: string) => void;
+  dispatchTemplates: any[];
+  onBulkAssign: (submissionIds: string[], templateId: string) => void;
+}
+
+const UnifiedCaseManagement = ({ 
+  submissions, 
+  trucks, 
+  onAssignTruck, 
+  onRemoveTruck, 
+  expandedSubmissions, 
+  onToggleExpand,
+  dispatchTemplates,
+  onBulkAssign
+}: UnifiedCaseManagementProps) => {
+  const [showTruckModal, setShowTruckModal] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
+
+  return (
+    <div className="bg-white shadow rounded-lg">
+      <div className="px-4 py-5 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">📋 案件管理</h3>
+          <div className="text-sm text-gray-500">
+            総案件数: {submissions.length}件
+          </div>
+        </div>
+
+        {submissions.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <p>表示する案件がありません</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {submissions.map(submission => (
+              <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{submission.customerName}</h4>
+                      <p className="text-sm text-gray-600">{submission.moveDate}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      submission.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                      submission.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {submission.status === 'pending' ? '未割当' :
+                       submission.status === 'assigned' ? '割当済' : '完了'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {submission.status === 'pending' && (
+                      <button
+                        onClick={() => {
+                          setSelectedSubmission(submission);
+                          setShowTruckModal(true);
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        トラック割当
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onToggleExpand(submission.id)}
+                      className="px-3 py-1 text-gray-600 text-sm border rounded hover:bg-gray-50"
+                    >
+                      {expandedSubmissions.has(submission.id) ? '詳細を隠す' : '詳細を表示'}
+                    </button>
+                  </div>
+                </div>
+
+                {expandedSubmissions.has(submission.id) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">引越し元:</span> {submission.originAddress}
+                      </div>
+                      <div>
+                        <span className="font-medium">引越し先:</span> {submission.destinationAddress}
+                      </div>
+                      <div>
+                        <span className="font-medium">総ポイント:</span> {submission.totalPoints}pt
+                      </div>
+                      <div>
+                        <span className="font-medium">総容量:</span> {submission.totalCapacity}kg
+                      </div>
+                    </div>
+                    
+                    {submission.truckAssignments.length > 0 && (
+                      <div className="mt-3">
+                        <span className="text-sm font-medium text-gray-700">割り当て済みトラック:</span>
+                        <div className="mt-1 space-y-1">
+                          {submission.truckAssignments.map((assignment, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                              <span className="text-sm">
+                                {assignment.truckName} ({assignment.startTime}-{assignment.endTime})
+                              </span>
+                              <button
+                                onClick={() => onRemoveTruck(submission.id, assignment.truckId)}
+                                className="text-red-600 hover:text-red-800 text-xs"
+                              >
+                                削除
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 車両使用不能期間設定モーダルコンポーネント
+interface UnavailablePeriodModalProps {
+  truck: Truck | null;
+  onClose: () => void;
+  onSave: (period: { startDate: string; endDate: string; reason: string }) => void;
+  initialPeriod: { startDate: string; endDate: string; reason: string };
+  onPeriodChange: (period: { startDate: string; endDate: string; reason: string }) => void;
+}
+
+const UnavailablePeriodModal = ({ truck, onClose, onSave, initialPeriod, onPeriodChange }: UnavailablePeriodModalProps) => {
+  if (!truck) return null;
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!initialPeriod.startDate || !initialPeriod.endDate) {
+      alert('開始日と終了日を入力してください');
+      return;
+    }
+    
+    if (new Date(initialPeriod.startDate) > new Date(initialPeriod.endDate)) {
+      alert('開始日は終了日より前の日付を選択してください');
+      return;
+    }
+    
+    onSave(initialPeriod);
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">車両使用不能期間設定</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          対象車両: {truck.name} ({truck.plateNumber})
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              開始日 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={initialPeriod.startDate}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, startDate: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              終了日 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={initialPeriod.endDate}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, endDate: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              理由
+            </label>
+            <select
+              value={initialPeriod.reason}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, reason: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">選択してください</option>
+              <option value="車検">車検</option>
+              <option value="定期点検">定期点検</option>
+              <option value="修理">修理</option>
+              <option value="清掃・メンテナンス">清掃・メンテナンス</option>
+              <option value="休車">休車</option>
+              <option value="その他">その他</option>
+            </select>
+            {initialPeriod.reason === 'その他' && (
+              <input
+                type="text"
+                placeholder="詳細を入力してください"
+                className="w-full mt-2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => onPeriodChange({ ...initialPeriod, reason: `その他: ${e.target.value}` })}
+              />
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              使用不能期間を設定
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+// 車両使用不能期間設定モーダルコンポーネント
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">トラック稼働状況</h3>
                       <p className="text-sm text-gray-600">
@@ -1065,9 +1646,21 @@ function DispatchManagementContent() {
                                 <p className="text-sm text-gray-600">{truck.plateNumber}</p>
                               </div>
                               <div className="text-right">
-                                <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusConfig('truck', truck.status).color}`}>
-                                  {getStatusConfig('truck', truck.status).icon} {getStatusConfig('truck', truck.status).text}
-                                </span>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTruckForUnavailable(truck);
+                                      setShowUnavailablePeriodModal(true);
+                                    }}
+                                    className="px-2 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 transition-colors"
+                                    title="使用不能期間を設定"
+                                  >
+                                    🚫 使用不能
+                                  </button>
+                                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusConfig('truck', truck.status).color}`}>
+                                    {getStatusConfig('truck', truck.status).icon} {getStatusConfig('truck', truck.status).text}
+                                  </span>
+                                </div>
                                 {todaySchedules > 0 && (
                                   <p className="text-xs text-gray-600 mt-1">本日: {todaySchedules}件</p>
                                 )}
@@ -1437,9 +2030,168 @@ function DispatchManagementContent() {
           calculateEstimatedPrice={calculateEstimatedPrice}
         />
       )}
+
+      {/* 車両使用不能期間設定モーダル */}
+      {showUnavailablePeriodModal && (
+        <UnavailablePeriodModal
+          truck={selectedTruckForUnavailable}
+          onClose={() => {
+            setShowUnavailablePeriodModal(false);
+            setSelectedTruckForUnavailable(null);
+            setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });
+          }}
+          onSave={(period) => {
+            if (!selectedTruckForUnavailable) return;
+            
+            // 指定期間に使用不能スケジュールを作成
+            const startDate = new Date(period.startDate);
+            const endDate = new Date(period.endDate);
+            const newSchedules: Schedule[] = [];
+            
+            for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+              newSchedules.push({
+                id: `unavailable-${crypto.randomUUID()}`,
+                date: toLocalDateString(date),
+                startTime: '00:00',
+                endTime: '23:59',
+                status: 'maintenance',
+                customerName: '',
+                workType: 'maintenance',
+                description: `使用不能期間: ${period.reason}`,
+                capacity: 0,
+                origin: '',
+                destination: '',
+              });
+            }
+            
+            const updatedTruck = {
+              ...selectedTruckForUnavailable,
+              schedules: [...selectedTruckForUnavailable.schedules, ...newSchedules]
+            };
+            
+            updateTruck(updatedTruck);
+            setShowUnavailablePeriodModal(false);
+            setSelectedTruckForUnavailable(null);
+            setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });
+          }}
+          initialPeriod={unavailablePeriod}
+          onPeriodChange={setUnavailablePeriod}
+        />
+      )}
     </div>
   );
 }
+
+// 車両使用不能期間設定モーダルコンポーネント
+interface UnavailablePeriodModalProps {
+  truck: Truck | null;
+  onClose: () => void;
+  onSave: (period: { startDate: string; endDate: string; reason: string }) => void;
+  initialPeriod: { startDate: string; endDate: string; reason: string };
+  onPeriodChange: (period: { startDate: string; endDate: string; reason: string }) => void;
+}
+
+const UnavailablePeriodModal = ({ truck, onClose, onSave, initialPeriod, onPeriodChange }: UnavailablePeriodModalProps) => {
+  if (!truck) return null;
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!initialPeriod.startDate || !initialPeriod.endDate) {
+      alert('開始日と終了日を入力してください');
+      return;
+    }
+    
+    if (new Date(initialPeriod.startDate) > new Date(initialPeriod.endDate)) {
+      alert('開始日は終了日より前の日付を選択してください');
+      return;
+    }
+    
+    onSave(initialPeriod);
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">車両使用不能期間設定</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          対象車両: {truck.name} ({truck.plateNumber})
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              開始日 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={initialPeriod.startDate}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, startDate: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              終了日 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={initialPeriod.endDate}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, endDate: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              理由
+            </label>
+            <select
+              value={initialPeriod.reason}
+              onChange={(e) => onPeriodChange({ ...initialPeriod, reason: e.target.value })}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">選択してください</option>
+              <option value="車検">車検</option>
+              <option value="定期点検">定期点検</option>
+              <option value="修理">修理</option>
+              <option value="清掃・メンテナンス">清掃・メンテナンス</option>
+              <option value="休車">休車</option>
+              <option value="その他">その他</option>
+            </select>
+            {initialPeriod.reason === 'その他' && (
+              <input
+                type="text"
+                placeholder="詳細を入力してください"
+                className="w-full mt-2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => onPeriodChange({ ...initialPeriod, reason: `その他: ${e.target.value}` })}
+              />
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              使用不能期間を設定
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export default function DispatchManagement() {
   return (

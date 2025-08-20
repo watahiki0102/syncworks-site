@@ -6,54 +6,64 @@ import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
 import { ContactRow } from '@/types/internal';
+import { TEST_CUSTOMERS } from '@/constants/testData';
 
-// モックデータ
-const mockData: ContactRow[] = [
-  {
-    id: '1',
-    createdAt: '2024-01-15T10:00:00Z',
-    name: '田中太郎',
-    email: 'tanaka@example.com',
-    tel: '090-1234-5678',
-    message: '引越しの見積もりについて詳しく知りたいです。',
-    source: 'お問い合わせフォーム',
-    status: '未完了',
-  },
-  {
-    id: '2',
-    createdAt: '2024-01-16T14:30:00Z',
-    name: '佐藤花子',
-    email: 'sato@example.com',
-    tel: '080-9876-5432',
-    message: '不動産の売却について相談したいです。',
-    source: 'お問い合わせフォーム',
-    status: '対応中',
-  },
-  {
-    id: '3',
-    createdAt: '2024-01-17T09:15:00Z',
-    name: '鈴木次郎',
-    email: 'suzuki@example.com',
-    message: 'サービスについて質問があります。',
-    source: 'メール',
-    status: '完了',
-  },
-  {
-    id: '4',
-    createdAt: '2024-01-18T16:45:00Z',
-    name: '高橋美咲',
-    email: 'takahashi@example.com',
-    tel: '070-5555-1234',
-    message: '引越しの料金体系について教えてください。',
-    source: 'お問い合わせフォーム',
-    status: '未完了',
-  },
-];
+// 共通データからお問い合わせデータを生成するヘルパー関数
+const generateTestContacts = (): ContactRow[] => {
+  return [
+    {
+      id: '1',
+      createdAt: '2024-01-15T10:00:00Z',
+      name: TEST_CUSTOMERS[0].name, // 田中太郎
+      email: TEST_CUSTOMERS[0].email,
+      tel: TEST_CUSTOMERS[0].phone,
+      message: '引越しの見積もりについて詳しく知りたいです。',
+      source: 'お問い合わせフォーム',
+      status: '未完了',
+    },
+    {
+      id: '2',
+      createdAt: '2024-01-16T14:30:00Z',
+      name: TEST_CUSTOMERS[1].name, // 佐藤花子
+      email: TEST_CUSTOMERS[1].email,
+      tel: TEST_CUSTOMERS[1].phone,
+      message: '不動産の売却について相談したいです。',
+      source: 'お問い合わせフォーム',
+      status: '対応中',
+    },
+    {
+      id: '3',
+      createdAt: '2024-01-17T09:15:00Z',
+      name: TEST_CUSTOMERS[2].name, // 鈴木一郎（修正）
+      email: TEST_CUSTOMERS[2].email,
+      tel: TEST_CUSTOMERS[2].phone,
+      message: 'サービスについて質問があります。',
+      source: 'メール',
+      status: '完了',
+    },
+    {
+      id: '4',
+      createdAt: '2024-01-18T16:45:00Z',
+      name: TEST_CUSTOMERS[3].name, // 高橋美咲
+      email: TEST_CUSTOMERS[3].email,
+      tel: TEST_CUSTOMERS[3].phone,
+      message: '引越しの料金体系について教えてください。',
+      source: 'お問い合わせフォーム',
+      status: '未完了',
+    },
+  ];
+};
 
 export default function ContactsPage() {
-  const [data, setData] = useState<ContactRow[]>(mockData);
+  const [data, setData] = useState<ContactRow[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'全て' | '未完了' | '対応中' | '完了'>('全て');
+
+  // 初期データの読み込み
+  useEffect(() => {
+    // 共通テストデータからお問い合わせデータを生成
+    setData(generateTestContacts());
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ja-JP', {

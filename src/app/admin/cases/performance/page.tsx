@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { Contract } from '../types';
+import { generateTestContract } from '@/constants/testData';
 
 export default function PerformancePage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -13,59 +14,13 @@ export default function PerformancePage() {
   const [serviceFilter, setServiceFilter] = useState<'all' | 'internal' | 'external'>('all');
 
   useEffect(() => {
+    // 共通テストデータから契約データを生成
     const demoContracts: Contract[] = [
-      {
-        id: '1',
-        customerName: '田中太郎',
-        contractDate: '2025-01-16',
-        moveDate: '2025-02-01',
-        contractAmount: 45000,
-        commission: 4500,
-        revenue: 40500,
-        items: ['シングルベッド', '冷蔵庫', 'テレビ'],
-        fromAddress: '東京都渋谷区',
-        toAddress: '東京都新宿区',
-        serviceType: 'internal' as const
-      },
-      {
-        id: '2',
-        customerName: '高橋美咲',
-        contractDate: '2025-01-14',
-        moveDate: '2025-01-28',
-        contractAmount: 42000,
-        commission: 4200,
-        revenue: 37800,
-        items: ['セミダブルベッド', '電子レンジ', '本棚'],
-        fromAddress: '東京都中野区',
-        toAddress: '東京都杉並区',
-        serviceType: 'external' as const
-      },
-      {
-        id: '3',
-        customerName: '佐藤花子',
-        contractDate: '2025-01-12',
-        moveDate: '2025-01-25',
-        contractAmount: 52000,
-        commission: 5200,
-        revenue: 46800,
-        items: ['ダブルベッド', '洗濯機', 'ソファ'],
-        fromAddress: '東京都世田谷区',
-        toAddress: '神奈川県横浜市',
-        serviceType: 'internal' as const
-      },
-      {
-        id: '4',
-        customerName: '鈴木一郎',
-        contractDate: '2025-01-10',
-        moveDate: '2025-01-22',
-        contractAmount: 38000,
-        commission: 3800,
-        revenue: 34200,
-        items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
-        fromAddress: '東京都港区',
-        toAddress: '東京都品川区',
-        serviceType: 'external' as const
-      }
+      generateTestContract(0, 0, 0),
+      generateTestContract(1, 1, 1),
+      generateTestContract(2, 2, 2),
+      generateTestContract(3, 3, 3),
+      generateTestContract(4, 4, 4)
     ];
 
     setContracts(demoContracts);

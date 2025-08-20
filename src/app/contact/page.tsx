@@ -97,7 +97,7 @@ export default function ContactPage() {
                   </h3>
                   <p className="text-gray-700">
                     お問い合わせありがとうございます。<br />
-                    数営業日かかる場合があります。
+                    担当者より数営業日以内にご回答いたします。
                   </p>
                   <button
                     className="mt-4 text-blue-600 hover:text-blue-700"

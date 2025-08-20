@@ -160,7 +160,7 @@ function TruckAssignmentPage() {
   };
 
   const handleEdit = (caseId: string) => {
-    router.push(`/admin/case-management/edit/${caseId}?from=assignment&caseId=${caseId}`);
+    router.push(`/admin/cases/edit/${caseId}?from=assignment&caseId=${caseId}`);
   };
 
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {

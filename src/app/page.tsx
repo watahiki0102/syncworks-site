@@ -20,10 +20,14 @@ import {
   Truck,
   Shield,
   Clock,
-  Zap
+  Zap,
+  Phone,
+  Mail,
+  MapPin
 } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { AnimatedText, AnimatedCard, ParticleBackground } from '@/components/animations';
+import { TEST_STATS, TEST_FEATURES } from '@/constants/testData';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -35,48 +39,44 @@ export default function Home() {
     setIsLoaded(true);
   }, []);
 
-  const features = [
-    {
-      icon: Handshake,
-      title: "引越しマッチング",
-      description: "地域の信頼できる引越し業者から、条件に合った業者を自動でご案内します。",
-      color: "from-blue-500 to-blue-600",
-      bgColor: "bg-blue-100",
-      iconColor: "text-blue-600"
-    },
-    {
-      icon: Calculator,
-      title: "安心の料金体系",
-      description: "提示金額のままご契約いただける安心設計。あとからの価格交渉はありません。※入力内容に誤りがない場合に限る",
-      color: "from-green-500 to-green-600",
-      bgColor: "bg-green-100",
-      iconColor: "text-green-600"
-    },
+  const features = TEST_FEATURES.map((feature, index) => {
+    const icons = [Handshake, Calculator, Shield, Star];
+    const colors = [
+      "from-blue-500 to-blue-600",
+      "from-green-500 to-green-600", 
+      "from-indigo-500 to-indigo-600",
+      "from-yellow-500 to-yellow-600"
+    ];
+    const bgColors = [
+      "bg-blue-100",
+      "bg-green-100",
+      "bg-indigo-100", 
+      "bg-yellow-100"
+    ];
+    const iconColors = [
+      "text-blue-600",
+      "text-green-600",
+      "text-indigo-600",
+      "text-yellow-600"
+    ];
 
-    {
-      icon: Shield,
-      title: "信頼性の高いサービス",
-      description: "厳選された引越し業者から、条件に合ったサービスをご提供いたします。",
-      color: "from-indigo-500 to-indigo-600",
-      bgColor: "bg-indigo-100",
-      iconColor: "text-indigo-600"
-    },
-    {
-      icon: Star,
-      title: "実績と信頼",
-      description: "多くのお客様にご利用いただき、高い満足度をいただいているサービスです。",
-      color: "from-yellow-500 to-yellow-600",
-      bgColor: "bg-yellow-100",
-      iconColor: "text-yellow-600"
-    }
-  ];
+    return {
+      icon: icons[index],
+      title: feature.title,
+      description: feature.description,
+      color: colors[index],
+      bgColor: bgColors[index],
+      iconColor: iconColors[index]
+    };
+  });
 
-  const stats = [
-    { number: "1000+", label: "成功事例", icon: CheckCircle },
-    { number: "50+", label: "提携業者", icon: Truck },
-    { number: "99%", label: "顧客満足度", icon: Star },
-    { number: "24/7", label: "サポート", icon: Clock }
-  ];
+  const stats = TEST_STATS.map((stat, index) => {
+    const icons = [CheckCircle, Truck, Star, Clock];
+    return {
+      ...stat,
+      icon: icons[index]
+    };
+  });
 
   return (
     <Layout>
@@ -280,7 +280,7 @@ export default function Home() {
               選ばれる理由
             </h2>
             <p className="text-blue-700 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl">
-              SyncMovigが多くのお客様に選ばれる理由をご紹介します
+              SyncMovingが多くのお客様に選ばれる理由をご紹介します
             </p>
           </motion.div>
 

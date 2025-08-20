@@ -50,7 +50,7 @@ const defaultSections: FooterSection[] = [
   {
     title: 'サポート',
     links: [
-      { label: 'お客様の声', href: '/vendors' },
+      { label: 'お客様の声', href: '/reviews' },
       { label: 'よくあるご質問', href: '/faq' },
       { label: 'お問い合わせ', href: '/contact' },
     ]

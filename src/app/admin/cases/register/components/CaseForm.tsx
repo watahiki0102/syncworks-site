@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { EstimateInputMode, MoveDateKind, PaymentMethod, PaymentStatus } from '@/types/case';
+import { ITEM_CATEGORIES } from '@/constants/items';
 
 interface CaseFormProps {
   estimateMode: EstimateInputMode;
@@ -36,8 +37,7 @@ interface FormData {
   priceTaxIncluded: number;
   
   // 契約情報
-  contractStatus: 'estimate' | 'confirmed' | 'canceled' | 'completed';
-  isContracted: boolean;
+  contractStatus: 'estimate' | 'canceled' | 'completed';
   
   // 支払情報
   paymentMethod: PaymentMethod;
@@ -87,11 +87,16 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
     taxRate: 10,
     priceTaxIncluded: 0,
     contractStatus: 'estimate',
-    isContracted: false,
     paymentMethod: '銀行振込',
     paymentStatus: '未請求',
     notes: ''
   });
+
+  const [customService, setCustomService] = useState<string>('');
+  const [showEstimateModal, setShowEstimateModal] = useState<boolean>(false);
+  const [modalItems, setModalItems] = useState<Record<string, number>>({});
+  const [modalBoxOption, setModalBoxOption] = useState<string>('');
+  const [modalBoxCount, setModalBoxCount] = useState<number>(0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -101,12 +106,14 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
     }
   }, [initialData]);
 
-  useEffect(() => {
-    // 契約済みトグルがONの場合、ステータスをconfirmedに固定
-    if (formData.isContracted) {
-      setFormData(prev => ({ ...prev, contractStatus: 'confirmed' }));
+  // 追加サービスに手書き項目を追加
+  const addCustomService = () => {
+    if (customService.trim()) {
+      const newServices = [...formData.additionalServices, customService.trim()];
+      updateFormData('additionalServices', newServices);
+      setCustomService('');
     }
-  }, [formData.isContracted]);
+  };
 
   useEffect(() => {
     // 税込金額の自動計算
@@ -361,29 +368,62 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
         </div>
       </div>
 
-      {/* 荷量・作業オプション */}
+      {/* 荷量・作業オプションと見積金額 */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">荷量・作業オプション</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">荷量・作業オプションと見積金額</h3>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              荷物ポイント数
-            </label>
-            <input
-              type="number"
-              value={formData.totalPoints || ''}
-              onChange={(e) => updateFormData('totalPoints', parseFloat(e.target.value) || 0)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="10.5"
-              step="0.5"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowEstimateModal(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium transition-colors"
+              >
+                荷物を入力して算出
+              </button>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                荷物情報を入力して見積もりを計算します
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                荷物ポイント数
+              </label>
+              <input
+                type="number"
+                value={formData.totalPoints || ''}
+                onChange={(e) => updateFormData('totalPoints', parseFloat(e.target.value) || 0)}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="10.5"
+                step="0.5"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                見積金額（税抜）
+              </label>
+              <input
+                type="number"
+                value={formData.estimatedPrice || ''}
+                onChange={(e) => updateFormData('estimatedPrice', parseInt(e.target.value) || 0)}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.estimatedPrice ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="50000"
+                min="0"
+              />
+              {errors.estimatedPrice && (
+                <p className="mt-1 text-sm text-red-600">{errors.estimatedPrice}</p>
+              )}
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               追加サービス
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
               {ADDITIONAL_SERVICES.map((service) => (
                 <label key={service} className="flex items-center text-sm">
                   <input
@@ -402,69 +442,62 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
                 </label>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 見積金額 */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">見積金額</h3>
-        <div className="space-y-4">
-          {estimateMode === 'calc' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  距離（km）
-                </label>
+            
+            {/* カスタムサービス追加機能 */}
+            <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                カスタムサービスを追加
+              </label>
+              <div className="flex gap-2">
                 <input
-                  type="number"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="10"
-                  step="0.1"
+                  type="text"
+                  value={customService}
+                  onChange={(e) => setCustomService(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="サービス名を入力してください"
+                  onKeyPress={(e) => e.key === 'Enter' && addCustomService()}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  作業時間（時間）
-                </label>
-                <input
-                  type="number"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="2"
-                  step="0.5"
-                />
-              </div>
-              <div className="flex items-end">
                 <button
                   type="button"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  onClick={addCustomService}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  見積もり計算
+                  追加
                 </button>
               </div>
             </div>
-          ) : null}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                税抜金額
-              </label>
-              <input
-                type="number"
-                value={formData.estimatedPrice || ''}
-                onChange={(e) => updateFormData('estimatedPrice', parseInt(e.target.value) || 0)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.estimatedPrice ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="50000"
-                min="0"
-              />
-              {errors.estimatedPrice && (
-                <p className="mt-1 text-sm text-red-600">{errors.estimatedPrice}</p>
-              )}
-            </div>
-
+            {/* 追加されたサービス一覧 */}
+            {formData.additionalServices.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">選択されたサービス:</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.additionalServices.map((service, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                    >
+                      {service}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newServices = formData.additionalServices.filter(s => s !== service);
+                          updateFormData('additionalServices', newServices);
+                        }}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+          
+          {/* 税率と税込金額の表示 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 税率（%）
@@ -478,7 +511,6 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
                 max="100"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 税込金額
@@ -496,29 +528,15 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
         <h3 className="text-lg font-medium text-gray-900 mb-4">契約情報</h3>
         <div className="space-y-4">
           <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isContracted}
-                onChange={(e) => updateFormData('isContracted', e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">契約済み</span>
-            </label>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               契約ステータス
             </label>
             <select
               value={formData.contractStatus}
               onChange={(e) => updateFormData('contractStatus', e.target.value as any)}
-              disabled={formData.isContracted}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="estimate">見積もり</option>
-              <option value="confirmed">契約済み</option>
               <option value="canceled">キャンセル</option>
               <option value="completed">完了</option>
             </select>
@@ -587,6 +605,231 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
           案件を登録
         </button>
       </div>
+
+      {/* 見積もりモーダル */}
+      {showEstimateModal && (
+        <EstimateModal
+          isOpen={showEstimateModal}
+          onClose={() => setShowEstimateModal(false)}
+          onCalculate={(result) => {
+            updateFormData('totalPoints', result.totalPoints);
+            updateFormData('estimatedPrice', result.estimatedPrice);
+            setShowEstimateModal(false);
+          }}
+        />
+      )}
     </form>
   );
+}
+
+// 見積もり計算モーダルコンポーネント
+interface EstimateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCalculate: (result: { totalPoints: number; estimatedPrice: number }) => void;
+}
+
+function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
+  const [items, setItems] = useState<Record<string, number>>({});
+  const [boxOption, setBoxOption] = useState<string>('');
+  const [boxCount, setBoxCount] = useState<number>(0);
+
+  const boxSizeOptions = [
+    "🏠 10箱未満（荷物が少ない）",
+    "🏠 10〜20箱（1R / 1K の目安）",
+    "🏠 21〜30箱（1LDK / 2K の目安）",
+    "🏠 31〜50箱（2LDK / 3K の目安）",
+    "🏠 51箱以上（3LDK / 4K以上の目安）"
+  ];
+
+  const handleQuantityChange = (itemName: string, increment: boolean) => {
+    setItems(prev => {
+      const current = prev[itemName] || 0;
+      return {
+        ...prev,
+        [itemName]: increment ? current + 1 : Math.max(0, current - 1)
+      };
+    });
+  };
+
+  const getItemPoints = (itemName: string): number => {
+    for (const category of ITEM_CATEGORIES) {
+      for (const item of category.items) {
+        if (item.name === itemName) {
+          return item.defaultPoints;
+        }
+      }
+    }
+    return 2; // デフォルト
+  };
+
+  const getDanballPoints = (danballOption: string): number => {
+    if (danballOption.includes('10箱未満')) return 5;
+    if (danballOption.includes('10〜20箱')) return 10;
+    if (danballOption.includes('21〜30箱')) return 15;
+    if (danballOption.includes('31〜50箱')) return 25;
+    if (danballOption.includes('51箱以上')) return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
+    return 0;
+  };
+
+  const calculateEstimate = () => {
+    let totalPoints = 0;
+    
+    // アイテムポイントの計算
+    Object.entries(items).forEach(([itemName, quantity]) => {
+      if (quantity > 0) {
+        totalPoints += getItemPoints(itemName) * quantity;
+      }
+    });
+    
+    // 段ボールポイントの追加
+    if (boxOption) {
+      totalPoints += getDanballPoints(boxOption);
+    }
+    
+    // 基本料金の計算
+    let estimatedPrice = 25000; // 基本料金
+    
+    if (totalPoints <= 50) {
+      estimatedPrice = 25000;
+    } else if (totalPoints <= 75) {
+      estimatedPrice = 35000;
+    } else if (totalPoints <= 100) {
+      estimatedPrice = 45000;
+    } else if (totalPoints <= 150) {
+      estimatedPrice = 60000;
+    } else {
+      estimatedPrice = 80000;
+    }
+    
+    // ポイント数による追加料金
+    estimatedPrice += totalPoints * 500;
+    
+    return { totalPoints, estimatedPrice };
+  };
+
+  const handleCalculateAndApply = () => {
+    const result = calculateEstimate();
+    onCalculate(result);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">荷物情報入力</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        
+        {/* 家具・家電の数量入力 */}
+        {ITEM_CATEGORIES.map((category) => (
+          <div key={category.category} className="mb-6 bg-gray-50 p-4 rounded-lg">
+            <h4 className="text-lg font-medium mb-3">{category.category}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {category.items.map((item) => (
+                <div key={item.name} className="flex items-center justify-between bg-white p-2 rounded border">
+                  <label className="flex-1 text-sm">{item.name}</label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(item.name, false)}
+                      className="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium">
+                      {items[item.name] || 0}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(item.name, true)}
+                      className="px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                    >
+                      ＋
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        
+        {/* 段ボール目安 */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+          <h4 className="text-lg font-medium mb-3">段ボール目安</h4>
+          <div className="space-y-2">
+            {boxSizeOptions.map((option) => (
+              <label key={option} className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="boxOption"
+                  value={option}
+                  checked={boxOption === option}
+                  onChange={(e) => setBoxOption(e.target.value)}
+                  className="form-radio text-blue-600"
+                />
+                <span className="text-sm">{option}</span>
+              </label>
+            ))}
+            {boxOption?.includes('51箱以上') && (
+              <div className="mt-2 ml-6">
+                <label className="block text-sm font-medium text-gray-700">
+                  必要箱数を入力
+                </label>
+                <input
+                  type="number"
+                  value={boxCount}
+                  onChange={(e) => setBoxCount(Number(e.target.value))}
+                  min={50}
+                  className="mt-1 w-32 px-3 py-1 border border-gray-300 rounded text-sm"
+                  placeholder="例：60"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* 計算結果プレビュー */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">計算結果プレビュー</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-blue-700">総ポイント数: </span>
+              <span className="font-medium">{calculateEstimate().totalPoints}pt</span>
+            </div>
+            <div>
+              <span className="text-blue-700">見積金額: </span>
+              <span className="font-medium">
+                {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(calculateEstimate().estimatedPrice)}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* ボタン */}
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleCalculateAndApply}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            算出結果を適用
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 }

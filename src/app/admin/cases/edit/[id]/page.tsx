@@ -70,9 +70,9 @@ function CaseEditPage() {
       
       // 保存成功後、戻り先に遷移
       if (fromPage === 'assignment' && returnCaseId) {
-        router.push(`/admin/dispatch-assignment`);
+        router.push(`/admin/dispatch/assignment`);
       } else {
-        router.push('/admin/case-management');
+        router.push('/admin/cases');
       }
     } catch (error) {
       console.error('保存エラー:', error);
@@ -83,9 +83,9 @@ function CaseEditPage() {
 
   const handleCancel = () => {
     if (fromPage === 'assignment' && returnCaseId) {
-      router.push(`/admin/dispatch-assignment`);
+      router.push(`/admin/dispatch/assignment`);
     } else {
-      router.push('/admin/case-management');
+      router.push('/admin/cases');
     }
   };
 
@@ -133,7 +133,7 @@ function CaseEditPage() {
               </div>
               <div className="flex items-center gap-3">
                 <a
-                  href={fromPage === 'assignment' ? '/admin/dispatch-assignment' : '/admin/case-management'}
+                  href={fromPage === 'assignment' ? '/admin/dispatch/assignment' : '/admin/cases'}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   ← {fromPage === 'assignment' ? '案件割り当てに戻る' : '案件管理に戻る'}

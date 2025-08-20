@@ -1,118 +1,51 @@
 /**
- * 事業者レビューページコンポーネント
- * - 事業者情報と口コミの表示
- * - タブ切り替え機能
- * - 口コミの展開/折りたたみ機能
+ * お客様の声ページ
+ * - 実際のお客様からのレビューと評価の表示
+ * - サービス利用体験談
  */
 'use client';
 
-import { useParams } from 'next/navigation';
-import StarRating from '@/components/StarRating';
 import { useState, useRef, useEffect } from 'react';
+import { Star, Quote, Users, ThumbsUp, Clock } from 'lucide-react';
+import Layout from '@/components/layout/Layout';
+import { TEST_REVIEWS } from '@/constants/testData';
 
 /**
- * レビューデータの型定義
+ * お客様レビューの型定義
  */
-interface Review {
-  id: number;              // レビューID
-  priceSatisfaction: number; // 価格満足度
-  workQuality: number;     // 作業品質
-  responseQuality: number; // 対応品質
-  comment: string;         // コメント
-  workDate: string;        // 作業日
+interface CustomerReview {
+  id: number;
+  customerName: string;
+  location: string;
+  rating: number;
+  comment: string;
+  serviceDate: string;
+  serviceType: string;
+  verified: boolean;
 }
 
-/**
- * 事業者データの型定義
- */
-interface VendorReview {
-  vendorName: string;      // 事業者名
-  totalRating: number;     // 総合評価
-  totalReviews: number;    // レビュー総数
-  description: string;     // 事業者説明
-  features: string[];      // アピールポイント
-  experienceYears: number; // 経験年数
-  staffCount: number;      // 従業員数
-  reviews: Review[];       // レビュー一覧
-}
+export default function ReviewsPage() {
+    const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);
+    const [overflowingReviews, setOverflowingReviews] = useState<{ [id: number]: boolean }>({});
+    const commentRefs = useRef<{ [id: number]: HTMLQuoteElement | null }>({});
 
-export default function VendorReviewsPage() {
-    const params = useParams<{ vendorId: string }>();
-    const vendorId = params.vendorId;
-
-    const [introExpanded, setIntroExpanded] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'reviews'>('profile');
-
-    /**
-     * ダミー事業者データ
-     * 実際のアプリケーションではAPIから取得
-     */
-    const vendorReview: VendorReview = {
-        vendorName: 'ABC引越し',
-        totalRating: 4.3,
-        totalReviews: 3,
-        description: `
-私たちは、年間700件以上の引越しを手がけるプロ集団です。
-お客様の大切なお荷物を、安全・確実にお届けすることを最優先に考え、保険完備で万が一のトラブルにも備えています。
-土日祝や深夜でも追加料金なしで柔軟に対応し、急なご依頼にもスピーディーにお応えします。
-「安心・安全・柔軟」をモットーに、これからもお客様の新生活を全力でサポートします。`,
-
-        features: [
-            '年間実績700件超',
-            '土日祝・深夜問わず料金変わらず',
-            '安心の保険完備',
-            '関東全域、長距離もお任せ下さい',
-            '急なご依頼もご相談下さい'
-        ],
-
-        experienceYears: 6,
-        staffCount: 1,
-
-        reviews: [
-            {
-                id: 1,
-                priceSatisfaction: 4,
-                workQuality: 5,
-                responseQuality: 4,
-                comment:
-                    '価格も手頃で、スタッフの対応がとても良かったです。おすすめです！また利用したいと思います！',
-                workDate: '2024-06-05'
-            },
-            {
-                id: 2,
-                priceSatisfaction: 3,
-                workQuality: 4,
-                responseQuality: 5,
-                comment:
-                    '作業は丁寧でしたが、見積もり時の説明が少し足りなかったです。問い合わせにもすぐに対応してくれて助かりました！',
-                workDate: '2024-06-07'
-            },
-            {
-                id: 3,
-                priceSatisfaction: 5,
-                workQuality: 5,
-                responseQuality: 5,
-                comment: '対応も早く、作業もスムーズで満足しています。',
-                workDate: '2024-06-10'
-            }
-        ]
+    // 統計情報
+    const stats = {
+        totalReviews: TEST_REVIEWS.length,
+        averageRating: TEST_REVIEWS.reduce((acc, review) => acc + review.rating, 0) / TEST_REVIEWS.length,
+        satisfactionRate: Math.round((TEST_REVIEWS.filter(r => r.rating >= 4).length / TEST_REVIEWS.length) * 100),
+        verifiedReviews: TEST_REVIEWS.filter(r => r.verified).length
     };
 
     /**
-     * 口コミを新しい日付順でソート
+     * レビューを新しい日付順でソート
      */
-    const sortedReviews = vendorReview.reviews
+    const sortedReviews = TEST_REVIEWS
         .slice()
-        .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime());
-
-    /**
-     * 展開されているレビューのID管理
-     */
-    const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);
+        .sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime());
     
     /**
      * レビューの展開/折りたたみを切り替え
-     * @param id - 切り替えるレビューのID
      */
     const toggleExpand = (id: number) => {
         if (expandedReviewIds.includes(id)) {
@@ -123,219 +56,144 @@ export default function VendorReviewsPage() {
     };
 
     /**
-     * オーバーフローしているレビューの管理
+     * 星評価コンポーネント
      */
-    const [overflowingReviews, setOverflowingReviews] = useState<{ [id: number]: boolean }>({});
-    const commentRefs = useRef<{ [id: number]: HTMLQuoteElement | null }>({});
-
-    /**
-     * レビューコメントのオーバーフロー状態をチェック
-     * - DOMレンダリング完了後に実行
-     */
-    useEffect(() => {
-        // setTimeoutでDOMレンダリング完了後に実行
-        setTimeout(() => {
-            const newOverflowingReviews: { [id: number]: boolean } = {};
-            vendorReview.reviews.forEach((review) => {
-                const el = commentRefs.current[review.id];
-                if (el) {
-                    const isOverflowing = el.scrollHeight > el.clientHeight + 1;
-                    newOverflowingReviews[review.id] = isOverflowing;
-                }
-            });
-            setOverflowingReviews(newOverflowingReviews);
-        }, 0);
-    }, [activeTab]);
+    const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) => {
+        return (
+            <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                        key={star}
+                        className={`w-${size === 16 ? '4' : '5'} h-${size === 16 ? '4' : '5'} ${
+                            star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        }`}
+                    />
+                ))}
+            </div>
+        );
+    };
 
     return (
-        <main className="bg-gray-50 text-gray-800">
-            {/* ヘッダー */}
-            <header className="bg-white shadow">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="text-xl font-bold text-gray-800">SyncWorks</div>
-                    <nav className="space-x-6 text-sm text-gray-700">
-                        <a href="/" className="hover:text-blue-600">
-                            ホーム
-                        </a>
-                    </nav>
+        <Layout currentPath="/reviews">
+            {/* ヒーローセクション */}
+            <section className="bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white py-16">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+                        お客様の声
+                    </h1>
+                    <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto">
+                        SyncWorksをご利用いただいたお客様から
+                        いただいた貴重なご意見をご紹介します
+                    </p>
                 </div>
-            </header>
+            </section>
 
-            {/* メインコンテンツ */}
-            <section className="pt-16 max-w-4xl mx-auto">
-                {/* タブメニュー */}
-                <div className="flex border-b mb-6">
-                    <button
-                        className={`flex-1 text-center py-2 font-semibold ${activeTab === 'profile'
-                            ? 'text-green-600 border-b-2 border-green-600'
-                            : 'text-gray-400'
-                            }`}
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        事業者情報
-                    </button>
-                    <button
-                        className={`flex-1 text-center py-2 font-semibold ${activeTab === 'reviews'
-                            ? 'text-green-600 border-b-2 border-green-600'
-                            : 'text-gray-400'
-                            }`}
-                        onClick={() => setActiveTab('reviews')}
-                    >
-                        口コミ（{vendorReview.totalReviews}件）
-                    </button>
-                </div>
-
-                {/* タブ切り替え */}
-                {activeTab === 'profile' && (
-                    <div className="bg-white rounded-lg shadow-lg p-6 mb-10">
-                        <div className="flex flex-col items-start">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                {vendorReview.vendorName}
-                            </h2>
-                            <div className="flex items-center space-x-2 mb-4">
-                                <p className="text-sm font-bold text-gray-800">
-                                    総合満足度
-                                </p>
-                                <p className="text-3xl font-bold text-gray-800">
-                                    {vendorReview.totalRating.toFixed(1)}
-                                </p>
-                                <div className="text-2xl">
-                                    <StarRating rating={vendorReview.totalRating} size={32} />
+            <div className="py-16 bg-gray-50">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* 統計情報 */}
+                    <div className="mb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                                <div className="flex items-center justify-center mb-3">
+                                    <Users className="w-8 h-8 text-blue-600" />
                                 </div>
+                                <div className="text-2xl font-bold text-gray-900 mb-1">{stats.totalReviews}</div>
+                                <div className="text-sm text-gray-600">総レビュー数</div>
                             </div>
-
-                            <div className="flex items-center justify-center w-full">
-                                <img src="/truck-icon.png" alt="アイコン" className="w-30 h-30" />
-                            </div>
-                            <div className="mt-4 mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">事業コンセプト</h3>
-                                <p className="list-disc list-inside space-y-1">{vendorReview.description}</p>
-                            </div>
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">アピールポイント</h3>
-                                <ul className="list-disc list-inside space-y-1">
-                                    {vendorReview.features.map((feature, index) => (
-                                        <li key={index} className="text-gray-700">{feature}</li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">経験年数</h3>
-                                <p className="text-gray-700">{vendorReview.experienceYears}年</p>
-                            </div>
-
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">従業員数</h3>
-                                <p className="text-gray-700">{vendorReview.staffCount}人</p>
-                            </div>
-
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">追加可能なオプション</h3>
-
-                                {/* 無料オプション */}
-                                <div className="mb-2">
-                                    <h4 className="font-semibold text-green-600 mb-1">無料オプション</h4>
-                                    <ul className="list-disc list-inside space-y-1">
-                                        <li className="text-gray-700">ハンガーボックス貸出し</li>
-                                    </ul>
+                            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                                <div className="flex items-center justify-center mb-3">
+                                    <Star className="w-8 h-8 text-yellow-400 fill-current" />
                                 </div>
-
-                                {/* 有料オプション */}
-                                <div>
-                                    <h4 className="font-semibold text-green-600 mb-1">有料オプション（税込）</h4>
-                                    <ul className="list-disc list-inside space-y-1">
-                                        <li className="text-gray-700">ベッドマットカバー貸出し（800円/枚）</li>
-                                        <li className="text-gray-700">洗濯機の取外し（固定）2000円/台</li>
-                                        <li className="text-gray-700">照明の取外し（500円/個）</li>
-                                        <li className="text-gray-700">家具の養生（500円/個）</li>
-                                    </ul>
-                                </div>
+                                <div className="text-2xl font-bold text-gray-900 mb-1">{stats.averageRating.toFixed(1)}</div>
+                                <div className="text-sm text-gray-600">平均評価</div>
                             </div>
-
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-green-700 mb-2">対応不可</h3>
-                                <ul className="list-disc list-inside space-y-1">
-                                    <li className="text-gray-700">段ボールの事前お届け・初回のみのお引き取り時のみ有料</li>
-                                    <li className="text-gray-700">大型金庫・金庫類の運搬</li>
-                                    <li className="text-gray-700">仏壇（大きいもの）</li>
-                                    <li className="text-gray-700">ガムテープ</li>
-                                    <li className="text-gray-700">洗濯機の設置（ドラム式）</li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-green-700 mb-2">お支払い対応情報</h3>
-                                    <ul className="list-none space-y-1">
-                                        <li className="text-gray-700">❌ クレジットカード（対応不可）</li>
-                                        <li className="text-gray-700">❌ 電子決済（QRコード）（対応不可）</li>
-                                        <li className="text-gray-700">❌ 銀行振込（対応不可）</li>
-                                        <li className="text-gray-700">✅ 当日現金支払い（対応可）</li>
-                                    </ul>
+                            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                                <div className="flex items-center justify-center mb-3">
+                                    <ThumbsUp className="w-8 h-8 text-green-600" />
                                 </div>
+                                <div className="text-2xl font-bold text-gray-900 mb-1">{stats.satisfactionRate}%</div>
+                                <div className="text-sm text-gray-600">満足度</div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                                <div className="flex items-center justify-center mb-3">
+                                    <Clock className="w-8 h-8 text-purple-600" />
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 mb-1">{stats.verifiedReviews}</div>
+                                <div className="text-sm text-gray-600">認証済みレビュー</div>
                             </div>
                         </div>
                     </div>
-                )}
 
-                {activeTab === 'reviews' && (
-                    <div className="space-y-6 text-sm">
-                        {vendorReview.reviews.slice()
-                            .sort((a, b) => new Date(b.workDate).getTime() - new Date(a.workDate).getTime())
-                            .map((review) => (
+                    {/* レビュー一覧 */}
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+                            実際にご利用いただいたお客様からの声
+                        </h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {sortedReviews.map((review) => (
                                 <div key={review.id} className="bg-white rounded-lg shadow-md p-6 relative">
-                                    <p className="text-xs text-gray-400 mb-2">
-                                        作業日: {review.workDate}
-                                    </p>
-
-                                    <div className="mb-4 flex space-x-4">
-                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                            <p className="text-gray-500 text-xs">価格満足</p>
-                                            <div className="text-lg">
-                                                <span className="font-semibold">⭐ {review.priceSatisfaction}</span>
-                                                <span className="font-normal text-xs"> / 5</span>
-                                            </div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Quote className="w-5 h-5 text-blue-600" />
+                                            <span className="font-semibold text-gray-900">{review.customerName}</span>
+                                            {review.verified && (
+                                                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                                    認証済み
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                            <p className="text-gray-500 text-xs">作業品質</p>
-                                            <div className="text-lg">
-                                                <span className="font-semibold">⭐ {review.workQuality}</span>
-                                                <span className="font-normal text-xs"> / 5</span>
-                                            </div>
+                                        <StarRating rating={review.rating} />
+                                    </div>
+                                    
+                                    <div className="mb-3">
+                                        <div className="text-sm text-gray-600">
+                                            <span>{review.location}</span> • <span>{review.serviceType}</span>
                                         </div>
-                                        <div className="flex flex-col items-center bg-gray-100 rounded p-2 w-24">
-                                            <p className="text-gray-500 text-xs">応対品質</p>
-                                            <div className="text-lg">
-                                                <span className="font-semibold">⭐ {review.responseQuality}</span>
-                                                <span className="font-normal text-xs"> / 5</span>
-                                            </div>
+                                        <div className="text-xs text-gray-400">
+                                            利用日: {review.serviceDate}
                                         </div>
                                     </div>
 
-                                    <blockquote
-                                        ref={(el) => {
-                                            commentRefs.current[review.id] = el
-                                        }}
-                                        className={`border-l-4 border-blue-500 pl-4 text-gray-700 italic bg-gray-100 p-2 overflow-hidden ${expandedReviewIds.includes(review.id) ? '' : 'line-clamp-2'
-                                            }`}
+                                    <blockquote 
+                                        className={`text-gray-700 leading-relaxed ${expandedReviewIds.includes(review.id) ? '' : 'line-clamp-4'}`}
                                     >
                                         {review.comment}
                                     </blockquote>
 
-                                    {overflowingReviews[review.id] && (
+                                    {review.comment.length > 150 && (
                                         <button
                                             onClick={() => toggleExpand(review.id)}
-                                            className="text-blue-500 text-xs mt-2 hover:underline"
+                                            className="text-blue-600 text-sm mt-2 hover:underline"
                                         >
                                             {expandedReviewIds.includes(review.id) ? '閉じる' : '続きを読む'}
                                         </button>
                                     )}
                                 </div>
                             ))}
+                        </div>
                     </div>
-                )}
-            </section>
-        </main>
+
+                    {/* CTA セクション */}
+                    <div className="mt-16 text-center">
+                        <div className="bg-white rounded-lg shadow-md p-8">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                                あなたも SyncWorks で理想の引越しを
+                            </h3>
+                            <p className="text-gray-700 mb-6">
+                                信頼できる引越し業者をお探しですか？
+                                無料で複数の業者から見積もりを取得できます。
+                            </p>
+                            <a
+                                href="/form/step1"
+                                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                                無料見積もりを依頼する
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Layout>
     );
 }

@@ -231,11 +231,11 @@ export default function VendorsPage() {
       <section className="bg-gradient-to-r from-[#2d3f50] to-[#3498db] text-white py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            お客様の声
+            引越し業者一覧
           </h1>
           <p className="text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto mb-8">
-            実際にサービスをご利用いただいたお客様の声をご紹介します。<br className="hidden md:block" />
-            信頼できる引越し業者をお選びください。
+            全国の信頼できる引越し業者が揃っています。<br className="hidden md:block" />
+            お客様のニーズに合った業者をお選びください。
           </p>
           <Link
             href="/form/step1"
@@ -432,7 +432,7 @@ export default function VendorsPage() {
               {filteredAndSortedVendors.map((vendor) => (
                 <Link
                   key={vendor.id}
-                  href={`/reviews/${vendor.id}`}
+                  href={`/form/step1?vendor=${vendor.id}`}
                   className="block bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
                 >
                   <div className="p-6">
@@ -490,7 +490,7 @@ export default function VendorsPage() {
                     {/* 詳細ボタンのみ表示 */}
                     <div className="flex justify-end pt-4 border-t border-gray-200">
                       <div className="flex items-center gap-1 text-blue-600 font-medium">
-                        口コミを見る
+                        見積もり依頼
                         <ArrowRight className="w-4 h-4" />
                       </div>
                     </div>

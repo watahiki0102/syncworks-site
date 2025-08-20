@@ -45,7 +45,7 @@ export default function CaseManagement() {
               </div>
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => router.push('/admin/case-management/register')}
+                  onClick={() => router.push('/admin/cases/register')}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
                   ＋案件登録

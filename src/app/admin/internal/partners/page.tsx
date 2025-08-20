@@ -6,31 +6,34 @@ import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
 import { PartnerRow } from '@/types/internal';
+import { TEST_VENDORS } from '@/constants/testData';
 
-// モックデータ
-const mockData: PartnerRow[] = [
-  {
-    id: '1',
-    name: '株式会社引越しプロ',
-    type: '引越し業者',
-    contact: 'contact@hikkoshi-pro.co.jp',
-    active: true,
-  },
-  {
-    id: '2',
-    name: '不動産サービスA',
-    type: '不動産会社',
-    contact: 'info@fudosan-a.co.jp',
-    active: true,
-  },
-  {
-    id: '3',
-    name: '引越しサポート',
-    type: '引越し業者',
-    contact: 'support@hikkoshi-support.co.jp',
-    active: false,
-  },
-];
+// 共通データからパートナーデータを生成するヘルパー関数
+const generateTestPartners = (): PartnerRow[] => {
+  return [
+    {
+      id: '1',
+      name: TEST_VENDORS[0].name, // ABC引越し
+      type: '引越し業者',
+      contact: 'contact@abc-hikkoshi.co.jp',
+      active: true,
+    },
+    {
+      id: '2',
+      name: TEST_VENDORS[3].name, // 不動産サービスA
+      type: '不動産会社',
+      contact: 'info@fudosan-a.co.jp',
+      active: true,
+    },
+    {
+      id: '3',
+      name: TEST_VENDORS[2].name, // QuickMove
+      type: '引越し業者',
+      contact: 'support@quickmove.co.jp',
+      active: false,
+    },
+  ];
+};
 
 interface PartnerFormData {
   name: string;
@@ -40,7 +43,7 @@ interface PartnerFormData {
 }
 
 export default function PartnersPage() {
-  const [data, setData] = useState<PartnerRow[]>(mockData);
+  const [data, setData] = useState<PartnerRow[]>(generateTestPartners());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<PartnerRow | null>(null);
   const [formData, setFormData] = useState<PartnerFormData>({

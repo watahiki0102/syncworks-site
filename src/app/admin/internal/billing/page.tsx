@@ -6,6 +6,7 @@ import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
 import { BillingStatusRow, InvoiceRow } from '@/types/internal';
+import { TEST_VENDORS } from '@/constants/testData';
 
 // 統合された請求データの型
 interface BillingData {
@@ -20,56 +21,64 @@ interface BillingData {
   updatedAt: string;
 }
 
-// モックデータ
-const mockData: BillingData[] = [
-  {
-    id: '1',
-    partnerName: '引越し会社A',
-    month: '2024-12',
-    amountInclTax: 150000,
-    status: '未請求',
-    issued: false,
-    updatedAt: '2024-12-20T10:00:00Z',
-  },
-  {
-    id: '2',
-    partnerName: '不動産会社B',
-    month: '2024-12',
-    amountInclTax: 89000,
-    status: '請求済',
-    issued: true,
-    invoiceId: 'INV-2024-001',
-    issuedAt: '2024-12-25T14:30:00Z',
-    updatedAt: '2024-12-25T14:30:00Z',
-  },
-  {
-    id: '3',
-    partnerName: '引越し会社C',
-    month: '2024-11',
-    amountInclTax: 203000,
-    status: '入金済',
-    issued: true,
-    invoiceId: 'INV-2024-002',
-    issuedAt: '2024-11-30T16:45:00Z',
-    updatedAt: '2024-12-15T09:20:00Z',
-  },
-  {
-    id: '4',
-    partnerName: '不動産会社D',
-    month: '2024-12',
-    amountInclTax: 67000,
-    status: '入金待ち',
-    issued: true,
-    invoiceId: 'INV-2024-003',
-    issuedAt: '2024-12-20T11:15:00Z',
-    updatedAt: '2024-12-20T11:15:00Z',
-  },
-];
+// 共通データから請求データを生成するヘルパー関数
+const generateTestBillingData = (): BillingData[] => {
+  return [
+    {
+      id: '1',
+      partnerName: TEST_VENDORS[0].name, // ABC引越し
+      month: '2024-12',
+      amountInclTax: 150000,
+      status: '未請求',
+      issued: false,
+      updatedAt: '2024-12-20T10:00:00Z',
+    },
+    {
+      id: '2',
+      partnerName: TEST_VENDORS[1].name, // XYZ運送
+      month: '2024-12',
+      amountInclTax: 89000,
+      status: '請求済',
+      issued: true,
+      invoiceId: 'INV-2024-001',
+      issuedAt: '2024-12-25T14:30:00Z',
+      updatedAt: '2024-12-25T14:30:00Z',
+    },
+    {
+      id: '3',
+      partnerName: TEST_VENDORS[2].name, // QuickMove
+      month: '2024-11',
+      amountInclTax: 203000,
+      status: '入金済',
+      issued: true,
+      invoiceId: 'INV-2024-002',
+      issuedAt: '2024-11-30T16:45:00Z',
+      updatedAt: '2024-12-15T09:20:00Z',
+    },
+    {
+      id: '4',
+      partnerName: TEST_VENDORS[3].name, // 不動産サービスA
+      month: '2024-12',
+      amountInclTax: 67000,
+      status: '入金待ち',
+      issued: true,
+      invoiceId: 'INV-2024-003',
+      issuedAt: '2024-12-20T11:15:00Z',
+      updatedAt: '2024-12-20T11:15:00Z',
+    },
+  ];
+};
 
 export default function BillingPage() {
-  const [data, setData] = useState<BillingData[]>(mockData);
+  const [data, setData] = useState<BillingData[]>([]);
   const [statusFilter, setStatusFilter] = useState<'全て' | '未請求' | '請求済' | '入金待ち' | '入金済' | '保留'>('全て');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 初期データの読み込み
+  useEffect(() => {
+    // 共通テストデータから請求データを生成
+    setData(generateTestBillingData());
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ja-JP', {

@@ -21,15 +21,16 @@ interface LayoutProps {
 
 const defaultNavigation: NavigationItem[] = [
   {
-    label: 'サービス',
-    href: '/services',
-    children: [
-      { label: 'SyncMoving', href: '#service' },
-    ]
+    label: 'サービス内容',
+    href: '/#service'
+  },
+  {
+    label: 'ご利用の流れ',
+    href: '/#flow'
   },
   {
     label: 'お客様の声',
-    href: '/vendors'
+    href: '/reviews'
   },
   {
     label: '事業者の方へ',

@@ -6,30 +6,33 @@ import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
 import { NewsItem } from '@/types/internal';
+import { TEST_NEWS } from '@/constants/testData';
 
-// モックデータ
-const mockData: NewsItem[] = [
-  {
-    id: '1',
-    title: '引越し料金の改定について',
-    body: '2024年4月より引越し料金を改定いたします。詳細は各店舗にお問い合わせください。',
-    published: true,
-    publishedAt: '2024-01-15T10:00:00Z',
-  },
-  {
-    id: '2',
-    title: '新サービス「引越しサポート」開始',
-    body: '引越し前後のサポートサービスを開始いたします。荷物の梱包から搬入後の片付けまで、専門スタッフがサポートいたします。',
-    published: true,
-    publishedAt: '2024-01-10T14:30:00Z',
-  },
-  {
-    id: '3',
-    title: '年末年始の営業時間について',
-    body: '12月30日〜1月3日は休業とさせていただきます。ご不便をおかけしますが、ご了承ください。',
-    published: false,
-  },
-];
+// 共通データからニュースデータを生成するヘルパー関数
+const generateTestNews = (): NewsItem[] => {
+  return [
+    {
+      id: '1',
+      title: TEST_NEWS[0].title, // 案件管理システムUI刷新
+      body: TEST_NEWS[0].content,
+      published: true,
+      publishedAt: '2024-01-15T10:00:00Z',
+    },
+    {
+      id: '2',
+      title: TEST_NEWS[1].title, // 配車効率20%向上を達成
+      body: TEST_NEWS[1].content,
+      published: true,
+      publishedAt: '2024-01-10T14:30:00Z',
+    },
+    {
+      id: '3',
+      title: TEST_NEWS[2].title, // シフト自動調整機能を追加
+      body: TEST_NEWS[2].content,
+      published: false,
+    },
+  ];
+};
 
 interface NewsFormData {
   title: string;
@@ -38,7 +41,7 @@ interface NewsFormData {
 }
 
 export default function NewsPage() {
-  const [data, setData] = useState<NewsItem[]>(mockData);
+  const [data, setData] = useState<NewsItem[]>(generateTestNews());
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [formData, setFormData] = useState<NewsFormData>({
     title: '',

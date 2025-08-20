@@ -5,6 +5,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteRequest, TruckAvailability } from '../types';
 import { SourceType, normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
 import TruckAssignmentModal from '../../../dispatch/components/TruckAssignmentModal';
+import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 type ResponseStep = 'content' | 'truck' | 'complete';
 
@@ -28,19 +29,20 @@ export default function QuoteRequestsPage() {
   ]);
 
   useEffect(() => {
+    // 共通テストデータから依頼データを生成
     const demoRequests: QuoteRequest[] = [
       {
         id: '1',
-        customerName: '田中太郎',
+        customerName: TEST_CUSTOMERS[0].name,
         requestDate: '2025-01-15',
         deadline: '2025-01-17',
         summary: {
           moveDate: '2025-02-01',
           moveTime: '午前中',
-          fromAddress: '東京都渋谷区神南1-1-1',
-          toAddress: '東京都新宿区西新宿2-2-2',
-          items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
-          totalPoints: 12
+          fromAddress: TEST_ADDRESSES[0].from,
+          toAddress: TEST_ADDRESSES[0].to,
+          items: TEST_ITEMS[0],
+          totalPoints: TEST_ITEMS[0].length * 3
         },
         status: 'pending',
         priority: 'high',
@@ -48,16 +50,16 @@ export default function QuoteRequestsPage() {
       },
       {
         id: '2',
-        customerName: '佐藤花子',
+        customerName: TEST_CUSTOMERS[1].name,
         requestDate: '2025-01-14',
         deadline: '2025-01-16',
         summary: {
           moveDate: '2025-01-30',
           moveTime: '午後',
-          fromAddress: '東京都世田谷区三軒茶屋3-3-3',
-          toAddress: '神奈川県横浜市西区みなとみらい4-4-4',
-          items: ['ダブルベッド', 'ソファ', '食器棚', '本棚'],
-          totalPoints: 15
+          fromAddress: TEST_ADDRESSES[1].from,
+          toAddress: TEST_ADDRESSES[1].to,
+          items: TEST_ITEMS[1],
+          totalPoints: TEST_ITEMS[1].length * 3
         },
         status: 'pending',
         priority: 'medium',
@@ -65,16 +67,16 @@ export default function QuoteRequestsPage() {
       },
       {
         id: '3',
-        customerName: '鈴木一郎',
+        customerName: TEST_CUSTOMERS[2].name,
         requestDate: '2025-01-13',
         deadline: '2025-01-15',
         summary: {
           moveDate: '2025-01-28',
           moveTime: '夜間',
-          fromAddress: '東京都港区六本木5-5-5',
-          toAddress: '東京都品川区大井6-6-6',
-          items: ['キングベッド', 'ピアノ', '大型冷蔵庫'],
-          totalPoints: 20
+          fromAddress: TEST_ADDRESSES[2].from,
+          toAddress: TEST_ADDRESSES[2].to,
+          items: TEST_ITEMS[2],
+          totalPoints: TEST_ITEMS[2].length * 3
         },
         status: 'pending',
         priority: 'low',

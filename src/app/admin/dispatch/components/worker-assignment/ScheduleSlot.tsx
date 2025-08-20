@@ -1,5 +1,6 @@
 'use client';
 
+import { useDrop } from 'react-dnd';
 import { Schedule, WorkerRef, WorkerAssignment } from '@/types/dispatch';
 import EmployeePill from './EmployeePill';
 
@@ -8,13 +9,17 @@ interface ScheduleSlotProps {
   workers: WorkerRef[];
   onSelect: () => void;
   onUnassignEmployee: (payload: { scheduleId: string; employeeId: string }) => void;
+  onDragDrop?: (workerId: string, scheduleId: string, startTime: string, endTime: string) => void;
+  draggedWorker?: WorkerRef | null;
 }
 
 export default function ScheduleSlot({
   schedule,
   workers,
   onSelect,
-  onUnassignEmployee
+  onUnassignEmployee,
+  onDragDrop,
+  draggedWorker
 }: ScheduleSlotProps) {
   // このスケジュールに割り当てられている作業者を取得
   const assignedWorkers = schedule.workerAssignments || [];
@@ -34,9 +39,27 @@ export default function ScheduleSlot({
 
   const slotHeight = getSlotHeight(schedule.startTime, schedule.endTime);
 
+  // ドロップゾーン設定
+  const [{ isOver }, drop] = useDrop({
+    accept: 'worker',
+    drop: (item: { workerId: string }) => {
+      if (onDragDrop) {
+        onDragDrop(item.workerId, schedule.id, schedule.startTime, schedule.endTime);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver()
+    })
+  });
+
   return (
     <div
-      className="w-full h-full p-2 cursor-pointer hover:bg-blue-50 transition-colors border-l-4 border-blue-500 bg-blue-50"
+      ref={drop}
+      className={`w-full h-full p-2 cursor-pointer transition-colors border-l-4 ${
+        isOver 
+          ? 'border-green-500 bg-green-100' 
+          : 'border-blue-500 bg-blue-50 hover:bg-blue-100'
+      }`}
       style={{ minHeight: `${slotHeight}px` }}
       onClick={onSelect}
       onKeyDown={(e) => {

@@ -40,7 +40,7 @@ export default function CaseRegistrationPage() {
 引越し元: ${data.fromAddress}
 引越し先: ${data.toAddress}
 見積金額: ${new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(data.priceTaxIncluded)}
-契約ステータス: ${data.isContracted ? '契約済み' : data.contractStatus}
+契約ステータス: ${data.contractStatus}
 支払方法: ${data.paymentMethod}
 支払状況: ${data.paymentStatus}`;
 
@@ -68,7 +68,6 @@ export default function CaseRegistrationPage() {
         taxRate: data.taxRate,
         priceTaxIncluded: data.priceTaxIncluded,
         contractStatus: data.contractStatus,
-        isContracted: data.isContracted,
         paymentMethod: data.paymentMethod,
         paymentStatus: data.paymentStatus,
         notes: data.notes,
@@ -112,7 +111,7 @@ export default function CaseRegistrationPage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/admin/case-management')}
+                onClick={() => router.push('/admin/cases')}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 ← 案件管理に戻る

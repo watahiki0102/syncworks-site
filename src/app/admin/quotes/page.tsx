@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 /**
  * 見積もり履歴の型定義
@@ -40,53 +41,54 @@ export default function AdminQuotes() {
    * 実際のアプリケーションではAPIから取得
    */
   useEffect(() => {
+    // 共通テストデータから見積もりデータを生成
     const demoQuotes: QuoteHistory[] = [
       {
         id: '1',
-        customerName: '田中太郎',
+        customerName: TEST_CUSTOMERS[0].name,
         requestDate: '2025-01-15',
         responseDate: '2025-01-16',
         amount: 45000,
         status: 'contracted',
-        items: ['シングルベッド', '冷蔵庫', 'テレビ'],
-        fromAddress: '東京都渋谷区',
-        toAddress: '東京都新宿区',
+        items: TEST_ITEMS[0],
+        fromAddress: TEST_ADDRESSES[0].from,
+        toAddress: TEST_ADDRESSES[0].to,
         moveDate: '2025-02-01'
       },
       {
         id: '2',
-        customerName: '佐藤花子',
+        customerName: TEST_CUSTOMERS[1].name,
         requestDate: '2025-01-14',
         responseDate: '2025-01-15',
         amount: 38000,
         status: 'pending',
-        items: ['ダブルベッド', '洗濯機', 'ソファ'],
-        fromAddress: '東京都世田谷区',
-        toAddress: '神奈川県横浜市',
+        items: TEST_ITEMS[1],
+        fromAddress: TEST_ADDRESSES[1].from,
+        toAddress: TEST_ADDRESSES[1].to,
         moveDate: '2025-01-30'
       },
       {
         id: '3',
-        customerName: '鈴木一郎',
+        customerName: TEST_CUSTOMERS[2].name,
         requestDate: '2025-01-10',
         responseDate: '2025-01-12',
         amount: 52000,
         status: 'expired',
-        items: ['キングベッド', 'ピアノ', '大型冷蔵庫'],
-        fromAddress: '東京都港区',
-        toAddress: '東京都品川区',
+        items: TEST_ITEMS[2],
+        fromAddress: TEST_ADDRESSES[2].from,
+        toAddress: TEST_ADDRESSES[2].to,
         moveDate: '2025-01-25'
       },
       {
         id: '4',
-        customerName: '高橋美咲',
+        customerName: TEST_CUSTOMERS[3].name,
         requestDate: '2025-01-13',
         responseDate: '2025-01-14',
         amount: 42000,
         status: 'contracted',
-        items: ['セミダブルベッド', '電子レンジ', '本棚'],
-        fromAddress: '東京都中野区',
-        toAddress: '東京都杉並区',
+        items: TEST_ITEMS[3],
+        fromAddress: TEST_ADDRESSES[3].from,
+        toAddress: TEST_ADDRESSES[3].to,
         moveDate: '2025-01-28'
       }
     ];
