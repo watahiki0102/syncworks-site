@@ -832,4 +832,3 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
     </div>
   );
 }
-}
