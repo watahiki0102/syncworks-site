@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Schedule, WorkerRef, WorkerAssignment } from '@/types/dispatch';
 import EmployeePill from './EmployeePill';
@@ -40,7 +41,7 @@ export default function ScheduleSlot({
   const slotHeight = getSlotHeight(schedule.startTime, schedule.endTime);
 
   // ドロップゾーン設定
-  const [{ isOver }, drop] = useDrop({
+  const [{ isOver }, drop] = useDrop<{ workerId: string }, void, { isOver: boolean }>({
     accept: 'worker',
     drop: (item: { workerId: string }) => {
       if (onDragDrop) {
@@ -54,7 +55,7 @@ export default function ScheduleSlot({
 
   return (
     <div
-      ref={drop}
+      ref={drop as unknown as React.RefObject<HTMLDivElement>}
       className={`w-full h-full p-2 cursor-pointer transition-colors border-l-4 ${
         isOver 
           ? 'border-green-500 bg-green-100' 

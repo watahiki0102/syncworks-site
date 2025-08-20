@@ -100,15 +100,15 @@ export default function WorkerAssignmentView({
             schedule.id === payload.scheduleId
               ? {
                   ...schedule,
-                  workerAssignments: [
-                    ...(schedule.workerAssignments || []),
-                    ...payload.employeeIds.map(empId => ({
+                  workerAssignments: payload.employeeIds.map(empId => {
+                    const worker = mockWorkers.find(w => w.id === empId);
+                    return {
                       scheduleId: payload.scheduleId,
                       employeeId: empId,
                       start: payload.start,
                       end: payload.end
-                    }))
-                  ]
+                    } as WorkerAssignment;
+                  })
                 }
               : schedule
           )
@@ -118,85 +118,41 @@ export default function WorkerAssignmentView({
       }
       
       setShowAssignDrawer(false);
-      setSelectedSchedule(null);
     } catch (error) {
       console.error('作業者割り当てエラー:', error);
-      alert('作業者の割り当てに失敗しました');
     }
   };
 
-  // 作業者割り当て解除処理
-  const handleUnassignEmployee = async (payload: {
-    scheduleId: ScheduleId;
-    employeeId: string;
-  }) => {
+  // 作業者の割り当て解除
+  const handleUnassignEmployee = useCallback((payload: { scheduleId: string; employeeId: string }) => {
     try {
-      console.log('作業者割り当て解除:', payload);
-      
-      const truck = trucks.find(t => 
-        t.schedules.some(s => s.id === payload.scheduleId)
+      const updatedTruck = trucks.find(truck => 
+        truck.schedules.some(schedule => schedule.id === payload.scheduleId)
       );
       
-      if (truck) {
-        const updatedTruck = {
-          ...truck,
-          schedules: truck.schedules.map(schedule => 
+      if (updatedTruck) {
+        const newTruck = {
+          ...updatedTruck,
+          schedules: updatedTruck.schedules.map(schedule => 
             schedule.id === payload.scheduleId
               ? {
                   ...schedule,
-                  workerAssignments: (schedule.workerAssignments || []).filter(
+                  workerAssignments: schedule.workerAssignments?.filter(
                     wa => wa.employeeId !== payload.employeeId
-                  )
+                  ) || []
                 }
               : schedule
           )
         };
         
-        onUpdateTruck(updatedTruck);
+        onUpdateTruck(newTruck);
       }
     } catch (error) {
       console.error('作業者割り当て解除エラー:', error);
-      alert('作業者の割り当て解除に失敗しました');
     }
-  };
+  }, [trucks, onUpdateTruck]);
 
-  // ドラッグアンドドロップによる作業者割り当て
-  const handleDragDrop = useCallback(async (workerId: string, scheduleId: ScheduleId, startTime: string, endTime: string) => {
-    const worker = mockWorkers.find(w => w.id === workerId);
-    if (!worker || !worker.active) {
-      alert('この作業者は現在利用できません');
-      return;
-    }
-
-    // 時間の重複チェック
-    const hasConflict = trucks.some(truck => 
-      truck.schedules.some(schedule => 
-        schedule.date === selectedDate &&
-        schedule.workerAssignments &&
-        schedule.workerAssignments.some(wa => 
-          wa.employeeId === workerId &&
-          (
-            (wa.start < endTime && wa.end > startTime) ||
-            (startTime < wa.end && endTime > wa.start)
-          )
-        )
-      )
-    );
-
-    if (hasConflict) {
-      alert('この作業者は指定時間帯に別の作業が割り当てられています');
-      return;
-    }
-
-    await handleAssignEmployees({
-      scheduleId,
-      employeeIds: [workerId],
-      start: startTime,
-      end: endTime
-    });
-  }, [trucks, selectedDate, handleAssignEmployees]);
-
-  // 時間スロットの生成（30分間隔）
+  // 時間スロットの生成
   const timeSlots = useMemo(() => {
     const slots = [];
     for (let hour = 6; hour <= 22; hour++) {
@@ -306,242 +262,92 @@ export default function WorkerAssignmentView({
                   <div className="w-48 border-r border-gray-200 bg-gray-50 p-3">
                     <span className="text-sm font-medium text-gray-700">トラック</span>
                   </div>
-                  {timeSlots.map((time, index) => (
+                  {timeSlots.map((time) => (
                     <div
-                      key={index}
-                      className="w-20 border-r border-gray-200 bg-gray-50 p-2 text-center"
+                      key={time}
+                      className="w-20 border-r border-gray-200 bg-gray-50 p-2 text-center text-xs text-gray-600"
                     >
-                      <span className="text-xs font-medium text-gray-600">{time}</span>
+                      {time}
                     </div>
                   ))}
                 </div>
 
-                {/* トラック列 */}
+                {/* トラック行 */}
                 {filteredTrucks.map((truck) => (
                   <TruckColumn
                     key={truck.id}
                     truck={truck}
                     timeSlots={timeSlots}
                     selectedDate={selectedDate}
-                    workers={filteredWorkers}
+                    workers={mockWorkers}
                     onSlotSelect={handleSlotSelect}
                     onUnassignEmployee={handleUnassignEmployee}
-                    onDragDrop={handleDragDrop}
                     draggedWorker={draggedWorker}
                   />
                 ))}
               </>
             ) : (
-              /* 日ビュー - 統合されたタイムライン表示 */
-              <DayTimelineView 
-                trucks={filteredTrucks}
-                selectedDate={selectedDate}
-                workers={filteredWorkers}
-                onDragDrop={handleDragDrop}
-                onSlotSelect={handleSlotSelect}
-                onUnassignEmployee={handleUnassignEmployee}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 割り当てドロワー */}
-      {showAssignDrawer && selectedSchedule && (
-        <AssignDrawer
-          isOpen={showAssignDrawer}
-          onClose={() => {
-            setShowAssignDrawer(false);
-            setSelectedSchedule(null);
-          }}
-          schedule={selectedSchedule}
-          workers={filteredWorkers}
-          onAssign={handleAssignEmployees}
-        />
-      )}
-      </div>
-    </DndProvider>
-  );
-}
-
-// 日ビューコンポーネント - タイムライン統合表示
-interface DayTimelineViewProps {
-  trucks: Truck[];
-  selectedDate: string;
-  workers: WorkerRef[];
-  onDragDrop: (workerId: string, scheduleId: ScheduleId, startTime: string, endTime: string) => void;
-  onSlotSelect: (scheduleId: ScheduleId, truckId: string, truckName: string, startTime: string, endTime: string) => void;
-  onUnassignEmployee: (payload: { scheduleId: ScheduleId; employeeId: string }) => void;
-}
-
-const DayTimelineView = ({ 
-  trucks, 
-  selectedDate, 
-  workers, 
-  onDragDrop, 
-  onSlotSelect, 
-  onUnassignEmployee 
-}: DayTimelineViewProps) => {
-  // 全スケジュールを時系列でソート
-  const allSchedules = useMemo(() => {
-    return trucks.flatMap(truck => 
-      truck.schedules.map(schedule => ({
-        ...schedule,
-        truckId: truck.id,
-        truckName: truck.name,
-        truckPlateNumber: truck.plateNumber
-      }))
-    ).sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [trucks]);
-
-  return (
-    <div className="space-y-4 p-4">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">日ビュー - タイムライン統合表示</h3>
-        <p className="text-sm text-blue-700">
-          全トラックのスケジュールを時系列で表示。作業者をドラッグして割り当てできます。
-        </p>
-      </div>
-      
-      {allSchedules.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p>選択された日付にスケジュールがありません</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {allSchedules.map((schedule) => (
-            <TimelineScheduleCard
-              key={`${schedule.truckId}-${schedule.id}`}
-              schedule={schedule}
-              workers={workers}
-              onDragDrop={onDragDrop}
-              onSlotSelect={onSlotSelect}
-              onUnassignEmployee={onUnassignEmployee}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// タイムラインスケジュールカード
-interface TimelineScheduleCardProps {
-  schedule: Schedule & { truckId: string; truckName: string; truckPlateNumber: string };
-  workers: WorkerRef[];
-  onDragDrop: (workerId: string, scheduleId: ScheduleId, startTime: string, endTime: string) => void;
-  onSlotSelect: (scheduleId: ScheduleId, truckId: string, truckName: string, startTime: string, endTime: string) => void;
-  onUnassignEmployee: (payload: { scheduleId: ScheduleId; employeeId: string }) => void;
-}
-
-const TimelineScheduleCard = ({ 
-  schedule, 
-  workers, 
-  onDragDrop, 
-  onSlotSelect, 
-  onUnassignEmployee 
-}: TimelineScheduleCardProps) => {
-  const assignedWorkers = schedule.workerAssignments || [];
-  
-  const getWorkerDetails = (employeeId: string) => {
-    return workers.find(w => w.id === employeeId);
-  };
-
-  const getRoleConfig = (role: string) => {
-    switch (role) {
-      case 'driver':
-        return { color: 'bg-blue-100 text-blue-800', icon: '🚗' };
-      case 'staff':
-        return { color: 'bg-green-100 text-green-800', icon: '👷' };
-      case 'leader':
-        return { color: 'bg-purple-100 text-purple-800', icon: '👑' };
-      default:
-        return { color: 'bg-gray-100 text-gray-800', icon: '👤' };
-    }
-  };
-
-  const [{ isOver }, drop] = useDrop({
-    accept: 'worker',
-    drop: (item: { workerId: string }) => {
-      onDragDrop(item.workerId, schedule.id, schedule.startTime, schedule.endTime);
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver()
-    })
-  });
-
-  return (
-    <div 
-      ref={drop}
-      className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
-        isOver ? 'border-blue-500 bg-blue-50' : 'bg-white'
-      }`}
-      onClick={() => onSlotSelect(schedule.id, schedule.truckId, schedule.truckName, schedule.startTime, schedule.endTime)}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="text-lg font-semibold text-blue-600">
-            {schedule.startTime} - {schedule.endTime}
-          </div>
-          <div className="text-sm text-gray-600">
-            🚛 {schedule.truckName} ({schedule.truckPlateNumber})
-          </div>
-        </div>
-        <div className="text-sm text-gray-500">
-          {schedule.workType === 'loading' ? '📦 積込' :
-           schedule.workType === 'unloading' ? '📥 積卸' :
-           schedule.workType === 'moving' ? '🚚 移動' : '🔧 整備'}
-        </div>
-      </div>
-      
-      {schedule.customerName && (
-        <div className="mb-3">
-          <span className="text-sm font-medium text-gray-700">顧客: </span>
-          <span className="text-sm text-gray-900">{schedule.customerName}</span>
-        </div>
-      )}
-      
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <span className="text-sm font-medium text-gray-700 mb-2 block">
-            割り当て作業者 ({assignedWorkers.length}人)
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {assignedWorkers.map((assignment) => {
-              const worker = getWorkerDetails(assignment.employeeId);
-              if (!worker) return null;
-              
-              const roleConfig = getRoleConfig(worker.role);
-              
-              return (
-                <div
-                  key={assignment.employeeId}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm border ${roleConfig.color}`}
-                >
-                  <span>{roleConfig.icon}</span>
-                  <span className="font-medium">{worker.name}</span>
-                  <span className="text-xs opacity-75">({assignment.start}-{assignment.end})</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUnassignEmployee({ scheduleId: schedule.id, employeeId: assignment.employeeId });
-                    }}
-                    className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
-                  >
-                    ×
-                  </button>
+              // 日別ビュー
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">日別スケジュール</h3>
+                <div className="space-y-4">
+                  {filteredTrucks.map((truck) => (
+                    <div key={truck.id} className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {truck.name} ({truck.truckType})
+                      </h4>
+                      {truck.schedules.length > 0 ? (
+                        <div className="space-y-2">
+                          {truck.schedules.map((schedule) => (
+                            <div
+                              key={schedule.id}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                            >
+                              <div>
+                                <span className="text-sm font-medium">
+                                  {schedule.startTime} - {schedule.endTime}
+                                </span>
+                                <span className="text-sm text-gray-600 ml-2">
+                                  {schedule.customerName || '未割り当て案件'}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleSlotSelect(
+                                  schedule.id,
+                                  truck.id,
+                                  truck.name,
+                                  schedule.startTime,
+                                  schedule.endTime
+                                )}
+                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                              >
+                                作業者割り当て
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">スケジュールがありません</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-            
-            {assignedWorkers.length === 0 && (
-              <div className="text-sm text-gray-400 italic">
-                作業者が割り当てられていません - ここに作業者をドラッグしてください
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+
+      {/* 作業者割り当てドロワー */}
+      {showAssignDrawer && selectedSchedule && (
+        <AssignDrawer
+          isOpen={showAssignDrawer}
+          onClose={() => setShowAssignDrawer(false)}
+          schedule={selectedSchedule}
+          workers={filteredWorkers}
+          onAssign={handleAssignEmployees}
+        />
+      )}
+    </DndProvider>
   );
-};
+}

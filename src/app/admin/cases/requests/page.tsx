@@ -23,9 +23,36 @@ export default function QuoteRequestsPage() {
   const [contentConfirmed, setContentConfirmed] = useState<boolean>(false);
   const [showTruckAssignmentModal, setShowTruckAssignmentModal] = useState<boolean>(false);
   const [trucks] = useState([
-    { id: '1', name: 'トラック1', plateNumber: '品川500あ1234', capacityKg: 2000, status: 'available' as const },
-    { id: '2', name: 'トラック2', plateNumber: '品川500あ1235', capacityKg: 3000, status: 'available' as const },
-    { id: '3', name: 'トラック3', plateNumber: '品川500あ1236', capacityKg: 4000, status: 'available' as const },
+    { 
+      id: '1', 
+      name: 'トラック1', 
+      plateNumber: '品川500あ1234', 
+      capacityKg: 2000, 
+      status: 'available' as const,
+      inspectionExpiry: '2025-12-31',
+      truckType: '軽トラ',
+      schedules: []
+    },
+    { 
+      id: '2', 
+      name: 'トラック2', 
+      plateNumber: '品川500あ1235', 
+      capacityKg: 3000, 
+      status: 'available' as const,
+      inspectionExpiry: '2025-12-31',
+      truckType: '2t',
+      schedules: []
+    },
+    { 
+      id: '3', 
+      name: 'トラック3', 
+      plateNumber: '品川500あ1236', 
+      capacityKg: 4000, 
+      status: 'available' as const,
+      inspectionExpiry: '2025-12-31',
+      truckType: '3t',
+      schedules: []
+    },
   ]);
 
   useEffect(() => {
@@ -236,7 +263,7 @@ export default function QuoteRequestsPage() {
       status: 'pending' as const,
       truckAssignments: [],
       createdAt: request.requestDate,
-      contractStatus: 'pending' as const
+      contractStatus: 'estimate' as const
     };
   };
 

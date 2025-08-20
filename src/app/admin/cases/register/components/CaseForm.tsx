@@ -496,28 +496,27 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
           </div>
         </div>
           
-          {/* 税率と税込金額の表示 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                税率（%）
-              </label>
-              <input
-                type="number"
-                value={formData.taxRate}
-                onChange={(e) => updateFormData('taxRate', parseFloat(e.target.value) || 0)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                min="0"
-                max="100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                税込金額
-              </label>
-              <div className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-lg font-semibold text-gray-900">
-                {formatCurrency(formData.priceTaxIncluded)}
-              </div>
+        {/* 税率と税込金額の表示 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              税率（%）
+            </label>
+            <input
+              type="number"
+              value={formData.taxRate}
+              onChange={(e) => updateFormData('taxRate', parseFloat(e.target.value) || 0)}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              min="0"
+              max="100"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              税込金額
+            </label>
+            <div className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-lg font-semibold text-gray-900">
+              {formatCurrency(formData.priceTaxIncluded)}
             </div>
           </div>
         </div>

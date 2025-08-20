@@ -9,7 +9,7 @@ import TruckAssignmentModal from './components/TruckAssignmentModal';
 import UnavailablePeriodModal from './components/UnavailablePeriodModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
-import WorkerAssignmentView from './views/WorkerAssignmentView';
+
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
 import { Truck, Schedule } from '@/types/dispatch';
 import { ContractStatus } from '@/types/case';
@@ -140,7 +140,7 @@ function DispatchManagementContent() {
       return;
     }
 
-    const submissionsToAssign = submissions.filter(s => submissionIds.includes(s.id));
+    const submissionsToAssign = formSubmissions.filter(s => submissionIds.includes(s.id));
     
     for (const submission of submissionsToAssign) {
       // テンプレート設定に基づいてトラック選択
@@ -185,7 +185,7 @@ function DispatchManagementContent() {
         date: submission.moveDate,
         startTime: truckAssignment.startTime,
         endTime: truckAssignment.endTime,
-        status: 'assigned' as const,
+        status: 'booked' as const,
         customerName: submission.customerName,
         workType: truckAssignment.workType,
         description: `${submission.originAddress} → ${submission.destinationAddress}`,
@@ -200,7 +200,7 @@ function DispatchManagementContent() {
       };
 
       // 状態を更新
-      setSubmissions(prev => prev.map(s => s.id === submission.id ? updatedSubmission : s));
+      setFormSubmissions(prev => prev.map(s => s.id === submission.id ? updatedSubmission : s));
       updateTruck(updatedTruck);
     }
 
@@ -676,7 +676,6 @@ function DispatchManagementContent() {
   useEffect(() => {
     if (selectedCaseId && registrationMode === 'registration') {
       // 配車登録モードで遷移した場合
-      setActiveTab('registration');
       
       // 該当案件を自動的に展開状態にする
       setExpandedSubmissions(prev => new Set([...prev, selectedCaseId]));
@@ -826,6 +825,24 @@ function DispatchManagementContent() {
     
     saveFormSubmissions(updatedSubmissions);
     alert(`案件ステータスを「${newStatus === 'cancelled' ? 'キャンセル' : newStatus}」に変更しました。`);
+  };
+
+  // 簡易版の割り当て関数（IDのみ）
+  const assignTruckByIdToSubmission = (submissionId: string, truckId: string) => {
+    const truck = trucks.find(t => t.id === truckId);
+    if (!truck) return;
+
+    // デフォルトの時間設定でTruckAssignmentを作成
+    const defaultAssignment: TruckAssignment = {
+      truckId: truckId,
+      truckName: truck.name,
+      capacity: 1000, // デフォルト容量
+      startTime: '09:00',
+      endTime: '13:00',
+      workType: 'moving'
+    };
+
+    assignTruckToSubmission(submissionId, defaultAssignment);
   };
 
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
@@ -1045,13 +1062,13 @@ function DispatchManagementContent() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowBulkAssignModal(true)}
-                disabled={filteredSubmissions.filter(s => s.status === 'pending').length === 0}
+                disabled={formSubmissions.filter(s => s.status === 'pending').length === 0}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 🚚 一括配車割り当て
               </button>
               <div className="text-sm text-gray-500">
-                未割当: {filteredSubmissions.filter(s => s.status === 'pending').length}件
+                未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
               </div>
             </div>
           </div>
@@ -1071,18 +1088,18 @@ function DispatchManagementContent() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white bg-opacity-20 rounded-lg p-4">
                     <div className="text-sm opacity-90">総案件数</div>
-                    <div className="text-2xl font-bold">{submissions.length}</div>
+                    <div className="text-2xl font-bold">{formSubmissions.length}</div>
                   </div>
                   <div className="bg-white bg-opacity-20 rounded-lg p-4">
                     <div className="text-sm opacity-90">未割当案件</div>
                     <div className="text-2xl font-bold text-orange-200">
-                      {submissions.filter(s => s.status === 'pending').length}
+                      {formSubmissions.filter(s => s.status === 'pending').length}
                     </div>
                   </div>
                   <div className="bg-white bg-opacity-20 rounded-lg p-4">
                     <div className="text-sm opacity-90">稼働中トラック</div>
                     <div className="text-2xl font-bold text-green-200">
-                      {trucks.filter(t => t.status === 'busy').length}
+                      {trucks.filter(t => t.status === 'available').length}
                     </div>
                   </div>
                   <div className="bg-white bg-opacity-20 rounded-lg p-4">
@@ -1101,7 +1118,7 @@ function DispatchManagementContent() {
                   <div className="px-4 py-5 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">配車カレンダー</h3>
-                      <StatusFilter onFilterChange={setStatusFilter} currentFilter={statusFilter} />
+                      <StatusFilter value={statusFilter} onChange={setStatusFilter} />
                     </div>
                     <DispatchCalendar 
                       trucks={trucks as any}
@@ -1120,7 +1137,6 @@ function DispatchManagementContent() {
                       <TruckManagement 
                         trucks={trucks as any}
                         onTrucksChange={setTrucks}
-                        compact={true}
                       />
                     </div>
                   </div>
@@ -1145,7 +1161,6 @@ function DispatchManagementContent() {
                           onSelectTruck={setSelectedTruck}
                           availableTruckTypes={availableTruckTypes}
                           pricingRules={pricingRules}
-                          compact={true}
                         />
                       </div>
                     </div>
@@ -1155,9 +1170,9 @@ function DispatchManagementContent() {
 
               {/* 案件一覧（テンプレート統合） */}
               <UnifiedCaseManagement
-                submissions={filteredSubmissions}
+                submissions={formSubmissions}
                 trucks={trucks}
-                onAssignTruck={assignTruckToSubmission}
+                onAssignTruck={assignTruckByIdToSubmission}
                 onRemoveTruck={removeTruckFromSubmission}
                 expandedSubmissions={expandedSubmissions}
                 onToggleExpand={(id) => {
@@ -1177,13 +1192,12 @@ function DispatchManagementContent() {
             </div>
           )}
 
-          {/* 作業者割り当てビュー */}
+          {/* 作業者割り当てビュー - 現在未実装 */}
           {activeView === 'worker-assignment' && (
-            <WorkerAssignmentView
-              trucks={trucks}
-              selectedDate={new Date().toISOString().split('T')[0]}
-              onUpdateTruck={updateTruck}
-            />
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">作業者割り当て</h2>
+              <p className="text-gray-600">作業者割り当て機能は現在開発中です。</p>
+            </div>
           )}
         </div>
       </main>
@@ -1191,7 +1205,7 @@ function DispatchManagementContent() {
       {/* 一括割り当てモーダル */}
       {showBulkAssignModal && (
         <BulkAssignModal
-          submissions={submissions.filter(s => s.status === 'pending')}
+          submissions={formSubmissions.filter(s => s.status === 'pending')}
           templates={dispatchTemplates}
           onAssign={handleBulkAssign}
           onClose={() => setShowBulkAssignModal(false)}
@@ -1265,7 +1279,7 @@ function DispatchManagementContent() {
 // 一括割り当てモーダルコンポーネント
 interface BulkAssignModalProps {
   submissions: FormSubmission[];
-  templates: typeof dispatchTemplates;
+  templates: any[];
   onAssign: (submissionIds: string[], templateId: string) => void;
   onClose: () => void;
 }

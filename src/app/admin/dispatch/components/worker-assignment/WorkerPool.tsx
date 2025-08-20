@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useMemo } from 'react';
 import { useDrag } from 'react-dnd';
 import { Truck, WorkerRef } from '@/types/dispatch';
@@ -53,7 +54,7 @@ const DraggableWorker = ({ worker, isAvailable, currentAssignments, onDragStart,
 
   return (
     <div
-      ref={drag}
+      ref={drag as unknown as React.RefObject<HTMLDivElement>}
       className={`p-3 border rounded-lg cursor-move transition-all ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${
