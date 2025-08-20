@@ -59,7 +59,7 @@ export default function AdminAnalytics() {
   const [plotInterval, setPlotInterval] = useState<PlotInterval>('month');
 
   // 生データ（実際のアプリケーションではAPIから取得）
-  const rawContractsData = [
+  const rawContractsData = useMemo(() => [
     // 2024年8月のデータ
     { id: 'SY-2024-0001', customerName: '田中様', contractDate: '2024-08-05', amount: 95000, truckType: '2tショート', status: '成約' },
     { id: 'SY-2024-0002', customerName: '佐藤様', contractDate: '2024-08-12', amount: 110000, truckType: '3t', status: '成約' },
@@ -125,7 +125,7 @@ export default function AdminAnalytics() {
     { id: 'SY-2025-0023', customerName: '永田様', contractDate: '2025-08-16', amount: 88000, truckType: '2t', status: '成約' },
     { id: 'SY-2025-0024', customerName: '宮本様', contractDate: '2025-08-23', amount: 112000, truckType: '3t', status: '成約' },
     { id: 'SY-2025-0025', customerName: '武田様', contractDate: '2025-08-30', amount: 98000, truckType: '2tショート', status: '成約' },
-  ];
+  ], []);
 
   // シンプルなKPI計算
   const calculatedKPIs = useMemo(() => {

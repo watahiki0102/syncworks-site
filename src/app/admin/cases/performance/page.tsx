@@ -16,11 +16,11 @@ export default function PerformancePage() {
   useEffect(() => {
     // 共通テストデータから契約データを生成
     const demoContracts: Contract[] = [
-      generateTestContract(0, 0, 0),
-      generateTestContract(1, 1, 1),
-      generateTestContract(2, 2, 2),
-      generateTestContract(3, 3, 3),
-      generateTestContract(4, 4, 4)
+      generateTestContract(0, 0, 0) as Contract,
+      generateTestContract(1, 1, 1) as Contract,
+      generateTestContract(2, 2, 2) as Contract,
+      generateTestContract(3, 3, 3) as Contract,
+      generateTestContract(4, 4, 4) as Contract
     ];
 
     setContracts(demoContracts);

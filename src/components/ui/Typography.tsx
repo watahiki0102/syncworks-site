@@ -203,4 +203,5 @@ Text.displayName = 'Text';
 
 export { Heading, Text };
 export type { HeadingProps, TextProps };
-export default { Heading, Text }; 
+const Typography = { Heading, Text };
+export default Typography; 

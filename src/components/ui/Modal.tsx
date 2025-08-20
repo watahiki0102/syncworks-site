@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 import { Heading } from './Typography';
-import { createFocusTrap, useEscapeKey, generateAccessibilityProps } from '@/utils/accessibility';
+import { createFocusTrap, generateAccessibilityProps } from '@/utils/accessibility';
 
 interface ModalProps {
   isOpen: boolean;
@@ -66,8 +66,16 @@ const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const cleanup = useEscapeKey(onClose);
-    return cleanup;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [isOpen, onClose]);
 
   // フォーカストラップの設定

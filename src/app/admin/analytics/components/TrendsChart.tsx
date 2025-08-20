@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   ComposedChart
 } from 'recharts';
-import { formatCurrencyJPY, formatLaborHours } from '@/utils/format';
+
 
 interface ChartData {
   label: string;
@@ -34,7 +34,7 @@ export default function TrendsChart({
   title, 
   data, 
   type, 
-  yAxisLabel = '値',
+
   valueFormatter,
   height = 300 
 }: TrendsChartProps) {
@@ -62,8 +62,7 @@ export default function TrendsChart({
   // カスタムツールチップ
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
-      const formattedValue = valueFormatter ? valueFormatter(value) : defaultFormatter(value);
+      const formattedValue = valueFormatter ? valueFormatter(payload[0].value) : defaultFormatter(payload[0].value);
       
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">

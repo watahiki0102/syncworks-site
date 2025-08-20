@@ -288,7 +288,6 @@ export const generateTestFormSubmission = (customerIndex: number, addressIndex: 
   const totalPoints = items.length * 10 + services.length * 5;
   const totalCapacity = totalPoints * 8;
   const distance = Math.floor(Math.random() * 20) + 1;
-  const estimatedPrice = totalPoints * 100 + distance * 50;
   
   return {
     id: `submission-${customerIndex + 1}`,
