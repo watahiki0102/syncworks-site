@@ -10,10 +10,9 @@ import UnavailablePeriodModal from './components/UnavailablePeriodModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
-import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
 import { Truck, Schedule } from '@/types/dispatch';
 import { ContractStatus } from '@/types/case';
-import { TEST_TRUCKS, generateTestFormSubmission } from '@/constants/testData';
 
 interface FormSubmission {
   id: string;
@@ -56,18 +55,12 @@ function DispatchManagementContent() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [activeView, setActiveView] = useState<'unified' | 'worker-assignment'>('unified');
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [bulkAssignData, setBulkAssignData] = useState<{
-    selectedSubmissions: string[];
-    templateSettings: any;
-  }>({ selectedSubmissions: [], templateSettings: {} });
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
-  const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
+  // const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
@@ -205,7 +198,7 @@ function DispatchManagementContent() {
     }
 
     setShowBulkAssignModal(false);
-    setBulkAssignData({ selectedSubmissions: [], templateSettings: {} });
+    // setBulkAssignData({ selectedSubmissions: [], templateSettings: {} });
     alert(`${submissionsToAssign.length}件の案件を一括割り当てしました`);
   };
 
@@ -654,7 +647,7 @@ function DispatchManagementContent() {
     const savedCoefficients = localStorage.getItem('truckCoefficients');
     if (savedCoefficients) {
       const coefficients = JSON.parse(savedCoefficients);
-      setTruckCoefficients(coefficients);
+      // setTruckCoefficients(coefficients);
       const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
       setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
     }
@@ -802,13 +795,15 @@ function DispatchManagementContent() {
 
   /**
    * 案件ステータス変更（手動変更可能なもののみ）
+   * 現在未使用のため、コメントアウト
    */
+  /*
   const changeCaseStatus = (submissionId: string, newStatus: 'cancelled') => {
     const submission = formSubmissions.find(s => s.id === submissionId);
     if (!submission) return;
 
     // 受注案件からキャンセルへの変更のみ許可
-            if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'confirmed') {
+    if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'confirmed') {
       alert('受注済み案件のみキャンセルに変更できます。');
       return;
     }
@@ -826,6 +821,7 @@ function DispatchManagementContent() {
     saveFormSubmissions(updatedSubmissions);
     alert(`案件ステータスを「${newStatus === 'cancelled' ? 'キャンセル' : newStatus}」に変更しました。`);
   };
+  */
 
   // 簡易版の割り当て関数（IDのみ）
   const assignTruckByIdToSubmission = (submissionId: string, truckId: string) => {
@@ -945,13 +941,13 @@ function DispatchManagementContent() {
     saveFormSubmissions(updatedSubmissions);
   };
 
-  const getStatusColor = (status: string) => {
-    return getStatusConfig('submission', status).color;
-  };
+  // const getStatusColor = (status: string) => {
+  //   return getStatusConfig('submission', status).color;
+  // };
 
-  const getStatusText = (status: string) => {
-    return getStatusConfig('submission', status).text;
-  };
+  // const getStatusText = (status: string) => {
+  //   return getStatusConfig('submission', status).text;
+  // };
 
   // formatDate と formatTime は utils/dateTimeUtils.ts からインポート
 
@@ -996,13 +992,13 @@ function DispatchManagementContent() {
     return basePrice + distancePrice;
   };
 
-  // トラック種別に基づいて利用可能なトラックをフィルタリング
-  const getAvailableTrucksByType = (truckType: string): Truck[] => {
-    return trucks.filter(truck => 
-      truck.truckType === truckType && 
-      truck.status === 'available'
-    );
-  };
+  // // トラック種別に基づいて利用可能なトラックをフィルタリング
+  // const getAvailableTrucksByType = (truckType: string): Truck[] => {
+  //   return trucks.filter(truck => 
+  //     truck.truckType === truckType && 
+  //     truck.status === 'available'
+  //   );
+  // };
 
 
 

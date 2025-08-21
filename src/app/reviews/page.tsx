@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Star, Quote, Users, ThumbsUp, Clock } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { TEST_REVIEWS } from '@/constants/testData';
@@ -26,8 +26,8 @@ interface CustomerReview {
 
 export default function ReviewsPage() {
     const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);
-    const [overflowingReviews, setOverflowingReviews] = useState<{ [id: number]: boolean }>({});
-    const commentRefs = useRef<{ [id: number]: HTMLQuoteElement | null }>({});
+    // const [overflowingReviews, setOverflowingReviews] = useState<{ [id: number]: boolean }>({});
+    // const commentRefs = useRef<{ [id: number]: HTMLQuoteElement | null }>({});
 
     // 統計情報
     const stats = {
