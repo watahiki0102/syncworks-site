@@ -1,0 +1,303 @@
+# TDD品質チェックワークフロー
+# - テスト実行とカバレッジ測定
+# - パフォーマンステスト
+# - コード品質評価
+# - 品質基準の検証
+
+name: TDD Quality Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 毎日午前2時に実行（性能回帰検出用）
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    name: テスト実行とカバレッジ測定
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+
+    - name: Node.jsセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 依存関係のインストール
+      run: npm ci
+
+    - name: TypeScript型チェック
+      run: npx tsc --noEmit
+
+    - name: ESLintによる静的解析
+      run: npm run lint
+
+    - name: ユニットテスト実行
+      run: npm test
+      continue-on-error: true
+
+    - name: カバレッジレポート生成
+      run: npm run test:coverage
+      continue-on-error: true
+
+    - name: カバレッジをコメントとして投稿
+      if: github.event_name == 'pull_request'
+      uses: romeovs/lcov-reporter-action@v0.3.1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        lcov-file: ./coverage/lcov.info
+        delete-old-comments: true
+
+    - name: カバレッジバッジの更新
+      if: github.ref == 'refs/heads/main'
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: テスト結果の保存
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          coverage/
+          test-results.xml
+
+  performance-testing:
+    runs-on: ubuntu-latest
+    name: パフォーマンステスト
+    needs: test-and-coverage
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+
+    - name: Node.jsセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 依存関係のインストール
+      run: npm ci
+
+    - name: パフォーマンスベンチマーク実行
+      run: npm test -- --testNamePattern="benchmark" --verbose
+      continue-on-error: true
+
+    - name: パフォーマンス結果の保存
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: performance-results.json
+
+    - name: パフォーマンス回帰検出
+      run: |
+        if [ -f "performance-baseline.json" ]; then
+          node scripts/check-performance-regression.js
+        else
+          echo "ベースラインファイルが存在しません。初回実行として記録します。"
+          cp performance-results.json performance-baseline.json
+        fi
+
+  code-quality-analysis:
+    runs-on: ubuntu-latest
+    name: コード品質分析
+    needs: test-and-coverage
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # SonarQubeのために履歴を取得
+
+    - name: Node.jsセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 依存関係のインストール
+      run: npm ci
+
+    - name: SonarQube分析
+      uses: sonarqube-quality-gate-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    - name: コード複雑度チェック
+      run: |
+        npx complexity-report src/ \
+          --format json \
+          --output complexity-report.json
+
+    - name: 重複コード検出
+      run: |
+        npx jscpd src/ \
+          --min-lines 5 \
+          --min-tokens 70 \
+          --format "json" \
+          --output "./duplication-report.json"
+
+    - name: 品質レポートの生成
+      run: |
+        node scripts/generate-quality-report.js
+
+    - name: 品質レポートの保存
+      uses: actions/upload-artifact@v3
+      with:
+        name: quality-reports
+        path: |
+          complexity-report.json
+          duplication-report.json
+          quality-summary.json
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: セキュリティスキャン
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+
+    - name: Node.jsセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 依存関係のインストール
+      run: npm ci
+
+    - name: npm auditによる脆弱性チェック
+      run: npm audit --audit-level high
+      continue-on-error: true
+
+    - name: ESLintセキュリティルール
+      run: npx eslint src/ --ext .ts,.tsx --config .eslintrc.security.js
+      continue-on-error: true
+
+    - name: Secretsスキャン
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+
+  quality-gate:
+    runs-on: ubuntu-latest
+    name: 品質ゲート判定
+    needs: [test-and-coverage, performance-testing, code-quality-analysis]
+    if: always()
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+
+    - name: アーティファクトのダウンロード
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: 品質基準の評価
+      run: |
+        node scripts/evaluate-quality-gates.js
+      env:
+        MIN_COVERAGE: 80
+        MAX_COMPLEXITY: 10
+        MAX_DUPLICATION: 5
+        MAX_PERFORMANCE_REGRESSION: 10
+
+    - name: 品質ゲート結果の通知
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: '🚨 品質ゲートが失敗しました'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+    - name: PRコメントで結果通知
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const qualitySummary = fs.readFileSync('./artifacts/quality-reports/quality-summary.json', 'utf8');
+            const summary = JSON.parse(qualitySummary);
+            
+            const comment = `
+            ## 🔍 TDD品質チェック結果
+            
+            ### 📊 品質スコア: ${summary.overallScore}/100
+            
+            | メトリクス | 現在値 | 目標値 | 状態 |
+            |-----------|-------|-------|------|
+            | テストカバレッジ | ${summary.coverage}% | 80% | ${summary.coverage >= 80 ? '✅' : '❌'} |
+            | 循環的複雑度 | ${summary.complexity} | ≤10 | ${summary.complexity <= 10 ? '✅' : '❌'} |
+            | 重複率 | ${summary.duplication}% | ≤5% | ${summary.duplication <= 5 ? '✅' : '❌'} |
+            | パフォーマンス | ${summary.performance}ms | ≤100ms | ${summary.performance <= 100 ? '✅' : '❌'} |
+            
+            ### 💡 推奨事項
+            ${summary.recommendations.map(rec => `- ${rec}`).join('\n')}
+            
+            詳細な結果は[Actions](${context.payload.pull_request.html_url}/checks)で確認できます。
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.error('品質レポートの読み込みに失敗:', error);
+          }
+
+  deploy-quality-dashboard:
+    runs-on: ubuntu-latest
+    name: 品質ダッシュボードのデプロイ
+    needs: quality-gate
+    if: github.ref == 'refs/heads/main' && success()
+
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v4
+
+    - name: アーティファクトのダウンロード
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: 品質ダッシュボードの更新
+      run: |
+        node scripts/update-quality-dashboard.js
+
+    - name: GitHub Pagesにデプロイ
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./quality-dashboard
+        destination_dir: quality-dashboard
+
+    - name: デプロイ完了通知
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: '✅ 品質ダッシュボードが更新されました: https://your-org.github.io/syncworks-site/quality-dashboard'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}

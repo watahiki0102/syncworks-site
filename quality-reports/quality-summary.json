@@ -1,0 +1,12 @@
+{
+  "timestamp": 1755840695476,
+  "overallScore": 36,
+  "coverage": 0,
+  "complexity": 5.63,
+  "duplication": 11.44,
+  "performance": 0,
+  "recommendations": [
+    "テストカバレッジを80%以上に向上させてください",
+    "コードの重複を削減してください"
+  ]
+}

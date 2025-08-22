@@ -6,9 +6,10 @@
  */
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { Menu, X, ChevronDown } from 'lucide-react';
+import { useModal, useSelection, useOutsideClick } from '@/hooks';
 // import { Button } from '@/components/ui';
 
 interface NavigationItem {
@@ -24,50 +25,47 @@ interface HeaderProps {
   currentPath?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({
+const Header = memo<HeaderProps>(({
   navigation,
   showBusinessLogin = true,
   showVendorReviews = true,
   currentPath = ''
 }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
+  // モバイルメニューの状態管理
+  const mobileMenu = useModal();
+  
+  // ドロップダウンメニューの状態管理
+  const { selectedItem: openDropdown, selectItem: setOpenDropdown, clearSelection: clearDropdown } = useSelection<string>();
+  
+  // ヘッダー外クリックでドロップダウンを閉じる
+  const headerRef = useOutsideClick<HTMLDivElement>(
+    () => clearDropdown(), 
+    !!openDropdown // ドロップダウンが開いている時のみ有効
+  );
 
-  // メニュー外クリックでドロップダウンを閉じる
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
+  // メニュー操作のコールバック関数（メモ化）
+  const toggleMobileMenu = useCallback(() => {
+    mobileMenu.toggleModal();
+    clearDropdown(); // ドロップダウンを閉じる
+  }, [mobileMenu, clearDropdown]);
 
-    if (openDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
+  const toggleDropdown = useCallback((label: string) => {
+    if (openDropdown === label) {
+      clearDropdown();
+    } else {
+      setOpenDropdown(label);
     }
+  }, [openDropdown, setOpenDropdown, clearDropdown]);
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [openDropdown]);
+  const closeAllMenus = useCallback(() => {
+    mobileMenu.closeModal();
+    clearDropdown();
+  }, [mobileMenu, clearDropdown]);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    setOpenDropdown(null);
-  };
-
-  const toggleDropdown = (label: string) => {
-    setOpenDropdown(openDropdown === label ? null : label);
-  };
-
-  const closeMenu = () => {
-    setIsMobileMenuOpen(false);
-    setOpenDropdown(null);
-  };
-
-  const isActiveLink = (href: string) => {
+  // アクティブリンクの判定（メモ化）
+  const isActiveLink = useCallback((href: string) => {
     return currentPath === href || currentPath.startsWith(href + '/');
-  };
+  }, [currentPath]);
 
   return (
     <header ref={headerRef} className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -78,7 +76,7 @@ const Header: React.FC<HeaderProps> = ({
             <Link 
               href="/" 
               className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
-              onClick={closeMenu}
+              onClick={closeAllMenus}
             >
               SyncWorks
             </Link>
@@ -114,7 +112,7 @@ const Header: React.FC<HeaderProps> = ({
                                 ? 'text-blue-600 bg-blue-50'
                                 : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                             }`}
-                            onClick={closeMenu}
+                            onClick={closeAllMenus}
                           >
                             {child.label}
                           </Link>
@@ -130,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({
                         ? 'text-blue-600 bg-blue-50'
                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                     }`}
-                    onClick={closeMenu}
+                    onClick={closeAllMenus}
                   >
                     {item.label}
                   </Link>
@@ -156,10 +154,10 @@ const Header: React.FC<HeaderProps> = ({
             <button
               className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               onClick={toggleMobileMenu}
-              aria-label={isMobileMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
-              aria-expanded={isMobileMenuOpen}
+              aria-label={mobileMenu.isOpen ? 'メニューを閉じる' : 'メニューを開く'}
+              aria-expanded={mobileMenu.isOpen}
             >
-              {isMobileMenuOpen ? (
+              {mobileMenu.isOpen ? (
                 <X className="w-6 h-6" />
               ) : (
                 <Menu className="w-6 h-6" />
@@ -169,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* モバイルメニュー */}
-        {isMobileMenuOpen && (
+        {mobileMenu.isOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white py-4">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => (
@@ -203,7 +201,7 @@ const Header: React.FC<HeaderProps> = ({
                                   ? 'text-blue-600 bg-blue-50'
                                   : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                               }`}
-                              onClick={closeMenu}
+                              onClick={closeAllMenus}
                             >
                               {child.label}
                             </Link>
@@ -219,7 +217,7 @@ const Header: React.FC<HeaderProps> = ({
                           ? 'text-blue-600 bg-blue-50'
                           : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                       }`}
-                      onClick={closeMenu}
+                      onClick={closeAllMenus}
                     >
                       {item.label}
                     </Link>
@@ -234,7 +232,7 @@ const Header: React.FC<HeaderProps> = ({
                     <Link
                       href="/admin/login"
                       className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
-                      onClick={closeMenu}
+                      onClick={closeAllMenus}
                     >
                       事業者ログイン
                     </Link>
@@ -247,7 +245,9 @@ const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export { Header };
 export type { HeaderProps, NavigationItem };

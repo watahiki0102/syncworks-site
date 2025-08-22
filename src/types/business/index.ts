@@ -239,7 +239,7 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   isRead: boolean;
   priority: NotificationPriority;
   createdAt: Date;

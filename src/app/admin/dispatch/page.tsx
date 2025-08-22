@@ -1209,7 +1209,7 @@ function DispatchManagementContent() {
       )}
 
       {/* トラック割り当てモーダル */}
-      {showTruckModal && (
+      {/*showTruckModal && (
         <TruckAssignmentModal
           selectedSubmission={selectedSubmission}
           trucks={trucks}
@@ -1219,7 +1219,7 @@ function DispatchManagementContent() {
           calculateRecommendedTrucks={calculateRecommendedTrucks}
           calculateEstimatedPrice={calculateEstimatedPrice}
         />
-      )}
+      )*/}
 
       {/* 車両使用不能期間設定モーダル */}
       {showUnavailablePeriodModal && (

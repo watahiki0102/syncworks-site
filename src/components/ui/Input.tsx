@@ -5,7 +5,7 @@
  * - アイコン対応
  * - ヘルプテキスト対応
  */
-import React, { forwardRef, InputHTMLAttributes } from 'react';
+import React, { forwardRef, InputHTMLAttributes, useMemo } from 'react';
 
 type InputVariant = 'default' | 'filled';
 type InputSize = 'sm' | 'default' | 'lg';
@@ -37,7 +37,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     id,
     ...props
   }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const inputId = useMemo(() => id || `input-${Math.random().toString(36).substr(2, 9)}`, [id]);
 
     const getVariantClasses = (variant: InputVariant): string => {
       switch (variant) {
@@ -59,7 +59,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       }
     };
 
-    const inputClasses = [
+    const inputClasses = useMemo(() => [
       'form-input',
       getVariantClasses(variant),
       getSizeClasses(inputSize),
@@ -68,7 +68,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       error && 'border-red-500 focus:border-red-500 focus:ring-red-200',
       fullWidth && 'w-full',
       className
-    ].filter(Boolean).join(' ');
+    ].filter(Boolean).join(' '), [variant, inputSize, leftIcon, rightIcon, error, fullWidth, className]);
 
     return (
       <div className={`form-group ${fullWidth ? 'w-full' : ''}`}>

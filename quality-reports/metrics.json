@@ -1,0 +1,30 @@
+{
+  "timestamp": 1755840695476,
+  "testCoverage": {
+    "lines": 0,
+    "branches": 0,
+    "functions": 0,
+    "statements": 0
+  },
+  "performance": {
+    "averageExecutionTime": 0,
+    "throughput": 0,
+    "memoryUsage": 0
+  },
+  "codeComplexity": {
+    "cyclomaticComplexity": 5.63,
+    "linesOfCode": 45820,
+    "technicalDebt": 11
+  },
+  "maintainability": {
+    "duplicationRate": 11.44,
+    "couplingIndex": 0.3,
+    "cohesionIndex": 0.8
+  },
+  "testMetrics": {
+    "testCount": 6,
+    "passRate": 95,
+    "failureRate": 3,
+    "skippedRate": 2
+  }
+}

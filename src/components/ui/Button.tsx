@@ -5,7 +5,7 @@
  * - アクセシビリティ対応
  * - ローディング状態対応
  */
-import React, { forwardRef, ButtonHTMLAttributes } from 'react';
+import React, { forwardRef, ButtonHTMLAttributes, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
@@ -63,14 +63,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       }
     };
 
-    const classes = [
+    const classes = useMemo(() => [
       'btn',
       getVariantClasses(variant),
       getSizeClasses(size),
       fullWidth && 'w-full',
       isLoading && 'opacity-75 cursor-not-allowed',
       className
-    ].filter(Boolean).join(' ');
+    ].filter(Boolean).join(' '), [variant, size, fullWidth, isLoading, className]);
 
     return (
       <button

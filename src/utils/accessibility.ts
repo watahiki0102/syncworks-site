@@ -134,7 +134,7 @@ export function generateAccessibilityProps(options: {
   live?: 'off' | 'polite' | 'assertive';
   atomic?: boolean;
 }) {
-  const props: Record<string, any> = {};
+  const props: Record<string, string | boolean> = {};
 
   if (options.label) props['aria-label'] = options.label;
   if (options.labelledBy) props['aria-labelledby'] = options.labelledBy;

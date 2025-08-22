@@ -83,12 +83,12 @@ export interface ValidationRule {
     value: number;
     message: string;
   };
-  validate?: (value: any) => string | boolean;
+  validate?: <T>(value: T) => string | boolean;
 }
 
-export interface FormField extends BaseFormField {
+export interface FormField<T = unknown> extends BaseFormField {
   validation?: ValidationRule;
-  defaultValue?: any;
+  defaultValue?: T;
 }
 
 // フォーム全体の状態
@@ -97,7 +97,7 @@ export interface FormState {
   isValid: boolean;
   isDirty: boolean;
   errors: Record<string, string>;
-  values: Record<string, any>;
+  values: Record<string, unknown>;
 }
 
 // 引越しフォーム特有の型定義
@@ -169,10 +169,10 @@ export interface FormProgress {
 }
 
 // フォーム保存状態
-export interface FormSaveState {
+export interface FormSaveState<T = Record<string, unknown>> {
   lastSaved: Date | null;
   autoSaveEnabled: boolean;
-  saveToLocalStorage: (data: any) => void;
-  loadFromLocalStorage: () => any;
+  saveToLocalStorage: (data: T) => void;
+  loadFromLocalStorage: () => T | null;
   clearSavedData: () => void;
 } 
