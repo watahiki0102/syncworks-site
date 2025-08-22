@@ -129,12 +129,16 @@ export class MovingDataGenerators {
     const timeSlots = ['normal', 'early_morning', 'night', 'afternoon'];
     const options = ['packing', 'cleaning', 'storage', 'disposal'];
     
+    // 将来の日付を生成（7-37日後）
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + DataGenerators.randomInt(7, 37));
+    
     return {
       distance: DataGenerators.randomInt(10, 200),
       items: this.generateMovingItems(DataGenerators.randomInt(3, 8)),
       timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
       selectedOptions: options.slice(0, DataGenerators.randomInt(0, 3)),
-      moveDate: DataGenerators.randomDate(2024, 2024),
+      moveDate: futureDate,
       taxRate: 0.1,
       ...overrides,
     };

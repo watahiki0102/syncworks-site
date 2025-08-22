@@ -5,6 +5,9 @@
  * - テストユーティリティの設定
  */
 
+// テスト環境変数を読み込み
+require('dotenv').config({ path: '.env.test' })
+
 // テストに必要なグローバル設定
 global.console = {
   ...console,
