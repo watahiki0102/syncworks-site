@@ -3,8 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import AdminTabs from '@/components/admin/AdminTabs';
 import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
@@ -58,7 +56,7 @@ function DispatchManagementContent() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [activeView, setActiveView] = useState<'unified' | 'worker-assignment'>('unified');
+  const [activeView, setActiveView] = useState<'calendar' | 'trucks' | 'cases'>('calendar');
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
@@ -1006,62 +1004,66 @@ function DispatchManagementContent() {
 
 
   const tabs = [
-    { id: 'unified', label: '統合配車管理' },
-    { id: 'worker-assignment', label: '作業者割り当て' }
+    { id: 'calendar', label: '配車カレンダー', icon: '📅' },
+    { id: 'trucks', label: 'トラック管理', icon: '🚚' },
+    { id: 'cases', label: '案件管理', icon: '📋' }
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminPageHeader 
-        title="配車管理"
-        subtitle="トラックの稼働スケジュール管理"
-        breadcrumbs={[
-          { label: '配車管理' }
-        ]}
-      />
-
-      {/* 統合ナビゲーション */}
-      <div className="bg-white border-b">
+      {/* シンプルなヘッダー */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveView('unified')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeView === 'unified'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                📊 統合配車管理
-              </button>
-
-              <button
-                onClick={() => setActiveView('worker-assignment')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeView === 'worker-assignment'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                👷 作業者割り当て
-              </button>
-            </nav>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🚚</span>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">配車管理</h1>
+                <p className="text-sm text-gray-600">トラックの稼働スケジュール管理</p>
+              </div>
+            </div>
             
-            {/* 一括操作ボタン */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowBulkAssignModal(true)}
                 disabled={formSubmissions.filter(s => s.status === 'pending').length === 0}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                🚚 一括配車割り当て
+                一括割り当て
               </button>
               <div className="text-sm text-gray-500">
                 未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
               </div>
+              <button
+                onClick={() => router.push('/admin/dashboard')}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                戻る
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* タブナビゲーション */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id as any)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 ${
+                  activeView === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
@@ -1069,96 +1071,75 @@ function DispatchManagementContent() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
 
-          {/* 統合ビューコンテンツ */}
-          {activeView === 'unified' && (
+          {/* 配車カレンダータブ */}
+          {activeView === 'calendar' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">配車カレンダー</h3>
+                  <StatusFilter value={statusFilter} onChange={setStatusFilter} />
+                </div>
+                <DispatchCalendar 
+                  trucks={trucks as any}
+                  onUpdateTruck={updateTruck}
+                  statusFilter={statusFilter}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* トラック管理タブ */}
+          {activeView === 'trucks' && (
             <div className="space-y-6">
-              {/* 事業者管理情報 */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-                <h2 className="text-2xl font-bold mb-4">📊 配車管理情報</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <div className="text-sm opacity-90">総案件数</div>
-                    <div className="text-2xl font-bold">{formSubmissions.length}</div>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <div className="text-sm opacity-90">未割当案件</div>
-                    <div className="text-2xl font-bold text-orange-200">
-                      {formSubmissions.filter(s => s.status === 'pending').length}
-                    </div>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <div className="text-sm opacity-90">稼働中トラック</div>
-                    <div className="text-2xl font-bold text-green-200">
-                      {trucks.filter(t => t.status === 'available').length}
-                    </div>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <div className="text-sm opacity-90">利用可能トラック</div>
-                    <div className="text-2xl font-bold text-blue-200">
-                      {trucks.filter(t => t.status === 'available').length}
-                    </div>
+              {/* トラック状況 */}
+              <div className="bg-white shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">トラック状況</h3>
+                  <TruckManagement 
+                    trucks={trucks as any}
+                    onTrucksChange={setTrucks}
+                  />
+                </div>
+              </div>
+
+              {/* トラック登録 */}
+              <div className="bg-white shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">新規トラック登録</h3>
+                  <TruckRegistration
+                    trucks={trucks}
+                    selectedTruck={selectedTruck}
+                    onAddTruck={addTruck}
+                    onUpdateTruck={updateTruck}
+                    onDeleteTruck={deleteTruck}
+                    onSelectTruck={setSelectedTruck}
+                    availableTruckTypes={availableTruckTypes}
+                    pricingRules={pricingRules}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 案件管理タブ */}
+          {activeView === 'cases' && (
+            <div className="space-y-6">
+              {/* 新規案件登録 */}
+              <div className="bg-white shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">新規案件登録</h3>
+                    <button
+                      onClick={() => router.push('/admin/cases/register')}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      + 新規案件登録
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* カレンダービューとトラック管理を統合 */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 配車カレンダー（拡張） */}
-                <div className="lg:col-span-2 bg-white shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">配車カレンダー</h3>
-                      <StatusFilter value={statusFilter} onChange={setStatusFilter} />
-                    </div>
-                    <DispatchCalendar 
-                      trucks={trucks as any}
-                      onUpdateTruck={updateTruck}
-                      statusFilter={statusFilter}
-                    />
-                  </div>
-                </div>
-
-                {/* トラック・案件管理パネル */}
-                <div className="space-y-4">
-                  {/* トラック状況 */}
-                  <div className="bg-white shadow rounded-lg">
-                    <div className="px-4 py-5 sm:p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">🚚 トラック状況</h3>
-                      <TruckManagement 
-                        trucks={trucks as any}
-                        onTrucksChange={setTrucks}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 新規案件登録 */}
-                  <div className="bg-white shadow rounded-lg">
-                    <div className="px-4 py-5 sm:p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 クイック操作</h3>
-                      <div className="space-y-3">
-                        <button
-                          onClick={() => router.push('/admin/cases/register')}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          + 新規案件登録
-                        </button>
-                        <TruckRegistration
-                          trucks={trucks}
-                          selectedTruck={selectedTruck}
-                          onAddTruck={addTruck}
-                          onUpdateTruck={updateTruck}
-                          onDeleteTruck={deleteTruck}
-                          onSelectTruck={setSelectedTruck}
-                          availableTruckTypes={availableTruckTypes}
-                          pricingRules={pricingRules}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 案件一覧（テンプレート統合） */}
+              {/* 案件一覧 */}
               <UnifiedCaseManagement
                 submissions={formSubmissions}
                 trucks={trucks}
@@ -1182,13 +1163,6 @@ function DispatchManagementContent() {
             </div>
           )}
 
-          {/* 作業者割り当てビュー - 現在未実装 */}
-          {activeView === 'worker-assignment' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">作業者割り当て</h2>
-              <p className="text-gray-600">作業者割り当て機能は現在開発中です。</p>
-            </div>
-          )}
         </div>
       </main>
 
