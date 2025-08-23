@@ -490,7 +490,7 @@ export class ErrorHandler {
    * エラーを統一的に処理
    */
   async handleError(
-    error: AppError | Error,
+    error: AppError | Error | unknown,
     context?: {
       userId?: string;
       component?: string;
@@ -502,12 +502,23 @@ export class ErrorHandler {
     
     if (error instanceof AppError) {
       appError = error;
-    } else {
+    } else if (error instanceof Error) {
       // 通常のErrorをAppErrorに変換
       const type = ErrorClassifier.classifyJsError(error);
       const userMessage = ErrorMessageGenerator.generateUserMessage(type);
       appError = this.createAppError(type, error.message, userMessage, {
         cause: error,
+      });
+    } else {
+      // null、undefined、文字列などの場合
+      const errorMessage = error === null ? 'Null error occurred' :
+                          error === undefined ? 'Undefined error occurred' :
+                          typeof error === 'string' ? error : 
+                          error?.toString?.() || 'Unknown error occurred';
+      const type = ErrorType.UNKNOWN;
+      const userMessage = ErrorMessageGenerator.generateUserMessage(type);
+      appError = this.createAppError(type, errorMessage, userMessage, {
+        cause: new Error(errorMessage),
       });
     }
 

@@ -2,7 +2,7 @@
 
 interface DayViewToggleProps {
   viewMode: 'schedule' | 'day';
-  onViewModeChange: (mode: 'schedule' | 'day') => void;
+  onViewModeChange: (_mode: 'schedule' | 'day') => void;
 }
 
 export default function DayViewToggle({ viewMode, onViewModeChange }: DayViewToggleProps) {

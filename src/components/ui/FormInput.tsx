@@ -434,7 +434,7 @@ export const DateInput: React.FC<Omit<TextInputProps, 'type'>> = (props) => {
   return <TextInput {...props} type="text" />;
 };
 
-export default {
+const FormInputComponents = {
   TextInput,
   NumberInput,
   TextArea,
@@ -443,3 +443,5 @@ export default {
   Radio,
   DateInput
 };
+
+export default FormInputComponents;

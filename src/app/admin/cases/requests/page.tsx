@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteRequest, TruckAvailability } from '../types';
-import { SourceType, normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
+import { normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
 import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
@@ -120,7 +120,7 @@ export default function QuoteRequestsPage() {
   }, []);
 
   useEffect(() => {
-    let filtered = requests.filter(request => {
+    const filtered = requests.filter(request => {
       if (statusFilter !== 'all' && request.status !== statusFilter) {
         return false;
       }

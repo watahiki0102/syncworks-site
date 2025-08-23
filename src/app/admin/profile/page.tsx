@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 
@@ -422,7 +423,7 @@ export default function AdminProfile() {
                     <div className="mt-1 flex items-center space-x-4">
                       <div className="w-24 h-24 border-2 border-gray-300 border-dashed rounded-lg flex items-center justify-center">
                         {logoPreview ? (
-                          <img src={logoPreview} alt="ロゴプレビュー" className="w-20 h-20 object-contain" />
+                          <Image src={logoPreview} alt="ロゴプレビュー" width={80} height={80} className="object-contain" />
                         ) : (
                           <div className="text-gray-400">
                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

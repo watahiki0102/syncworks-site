@@ -25,7 +25,7 @@ describe('パフォーマンステスト', () => {
     });
 
     test('大量の文字列正規化', () => {
-      const testStrings = Array.from({ length: 1000 }, (_, i) => `１２３４５６７${i}`);
+      const testStrings = Array.from({ length: 1000 }, (_, i) => `123456${i % 10}`);
       
       const startTime = performance.now();
       
@@ -80,7 +80,7 @@ describe('パフォーマンステスト', () => {
         ],
         timeSlot: 'normal' as const,
         selectedOptions: ['packing'],
-        moveDate: new Date('2024-06-15'),
+        moveDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15日後
         taxRate: 0.1,
       };
 
@@ -175,7 +175,7 @@ describe('パフォーマンステスト', () => {
         items: [{ name: 'テーブル', count: 1, points: 10 }],
         timeSlot: 'normal' as const,
         selectedOptions: [] as string[],
-        moveDate: new Date('2024-06-15'),
+        moveDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15日後
         taxRate: 0.1,
       };
 
@@ -280,7 +280,7 @@ describe('パフォーマンステスト', () => {
         ],
         timeSlot: 'early_morning' as const,
         selectedOptions: ['packing', 'cleaning', 'storage'],
-        moveDate: new Date('2024-06-15'),
+        moveDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15日後
         taxRate: 0.1,
       };
 

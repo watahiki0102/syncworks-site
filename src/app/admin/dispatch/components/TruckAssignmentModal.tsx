@@ -8,9 +8,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatTime } from '@/utils/dateTimeUtils';
+// import { formatTime } from '@/utils/dateTimeUtils'; // Currently unused
 import { ContractStatus } from '@/types/case';
-import { Truck, Schedule } from '@/types/dispatch';
+import { Truck } from '@/types/dispatch';
 
 interface FormSubmission {
   id: string;
@@ -68,20 +68,20 @@ interface TruckAssignmentModalProps {
   selectedSubmission: FormSubmission | null;
   trucks: Truck[];
   pricingTrucks: any[];
-  setShowTruckModal: (show: boolean) => void;
-  assignTruckToSubmission: (submissionId: string, truckAssignment: TruckAssignment) => void;
-  calculateRecommendedTrucks: (points: number) => any[];
-  calculateEstimatedPrice: (points: number, distance?: number) => number;
+  setShowTruckModal: (_show: boolean) => void;
+  assignTruckToSubmission: (_submissionId: string, _truckAssignment: TruckAssignment) => void;
+  calculateRecommendedTrucks: (_points: number) => any[];
+  calculateEstimatedPrice: (_points: number, _distance?: number) => number;
 }
 
 export default function TruckAssignmentModal({
   selectedSubmission,
   trucks,
-  pricingTrucks,
+  // pricingTrucks, // Currently unused
   setShowTruckModal,
   assignTruckToSubmission,
   calculateRecommendedTrucks,
-  calculateEstimatedPrice,
+  // calculateEstimatedPrice, // Currently unused
 }: TruckAssignmentModalProps) {
   const [formData, setFormData] = useState({
     truckId: '',
@@ -93,7 +93,7 @@ export default function TruckAssignmentModal({
   });
 
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [_selectedEmployee, _setSelectedEmployee] = useState<Employee | null>(null);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export default function TruckAssignmentModal({
   };
 
   const handleEmployeeSelect = (employee: Employee) => {
-    setSelectedEmployee(employee);
+    _setSelectedEmployee(employee);
     setFormData(prev => ({ ...prev, employeeId: employee.id }));
     setShowEmployeeModal(false);
   };

@@ -429,7 +429,7 @@ export class BenchmarkSuite {
       try {
         const result = await BenchmarkRunner.benchmark(
           benchmark.name,
-          benchmark.fn,
+          benchmark.fn as (...args: any[]) => unknown,
           benchmark.args,
           options
         );

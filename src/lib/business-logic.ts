@@ -28,7 +28,9 @@ export const movingEstimateLogic = {
 
     // バリデーション
     if (distance <= 0) throw new Error('移動距離は0より大きい必要があります');
-    if (!dateUtils.isDateInRange(moveDate, new Date(), dateUtils.addBusinessDays(new Date(), 60))) {
+    const today = new Date();
+    const maxDate = dateUtils.addBusinessDays(today, 60);
+    if (!dateUtils.isDateInRange(moveDate, today, maxDate)) {
       throw new Error('引越し日は今日から60営業日以内で選択してください');
     }
 

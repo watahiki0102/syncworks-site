@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { WorkerRef, WorkerAssignment, ScheduleId } from '@/types/dispatch';
+import { WorkerRef, ScheduleId } from '@/types/dispatch';
 
 interface AssignDrawerProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface AssignDrawerProps {
     endTime: string;
   };
   workers: WorkerRef[];
-  onAssign: (payload: {
+  onAssign: (_payload: {
     scheduleId: ScheduleId;
     employeeIds: string[];
     start: string;
@@ -33,7 +33,7 @@ export default function AssignDrawer({
   const [startTime, setStartTime] = useState(schedule.startTime);
   const [endTime, setEndTime] = useState(schedule.endTime);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showConflicts, setShowConflicts] = useState(false);
+  const [_showConflicts, _setShowConflicts] = useState(false);
 
   // 時間スロットの生成（30分間隔）
   const timeSlots = useMemo(() => {
@@ -83,7 +83,7 @@ export default function AssignDrawer({
     });
     
     return conflicts;
-  }, [selectedEmployees, startTime, endTime, workers]);
+  }, [selectedEmployees, startTime, workers]);
 
   // バリデーション
   const isValid = useMemo(() => {
@@ -124,7 +124,7 @@ export default function AssignDrawer({
       setEndTime(schedule.endTime);
       setSelectedEmployees([]);
       setSearchTerm('');
-      setShowConflicts(false);
+      _setShowConflicts(false);
     }
   }, [isOpen, schedule]);
 

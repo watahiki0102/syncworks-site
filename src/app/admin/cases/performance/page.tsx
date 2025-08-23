@@ -27,7 +27,7 @@ export default function PerformancePage() {
   }, []);
 
   useEffect(() => {
-    let filtered = contracts.filter(contract => {
+    const filtered = contracts.filter(contract => {
       // 検索条件
       if (searchTerm && !contract.customerName.includes(searchTerm)) {
         return false;

@@ -404,8 +404,8 @@ export class CodeQualityMonitor {
   generateReport(): {
     summary: string;
     metrics: QualityMetrics | null;
-    trends: ReturnType<typeof this.analyzeTrends>;
-    qualityScore: ReturnType<typeof this.calculateQualityScore>;
+    trends: ReturnType<CodeQualityMonitor['analyzeTrends']>;
+    qualityScore: ReturnType<CodeQualityMonitor['calculateQualityScore']>;
     recentAlerts: QualityAlert[];
     recommendations: string[];
   } {
@@ -622,7 +622,9 @@ export class QualityDashboard {
   }
 }
 
-export default {
+const QualityMonitorComponents = {
   CodeQualityMonitor,
   QualityDashboard,
 };
+
+export default QualityMonitorComponents;

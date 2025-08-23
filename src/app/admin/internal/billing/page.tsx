@@ -5,7 +5,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
-import { BillingStatusRow, InvoiceRow } from '@/types/internal';
+// import { BillingStatusRow, InvoiceRow } from '@/types/internal'; // Currently unused
 import { TEST_VENDORS } from '@/constants/testData';
 
 // 統合された請求データの型
@@ -135,7 +135,7 @@ export default function BillingPage() {
     );
   });
 
-  const getStatusBadge = (status: BillingData['status']) => {
+  const _getStatusBadge = (status: BillingData['status']) => {
     const statusConfig = {
       '未請求': 'bg-red-100 text-red-800',
       '請求済': 'bg-blue-100 text-blue-800',

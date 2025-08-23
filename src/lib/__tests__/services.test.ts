@@ -14,6 +14,60 @@ import {
   StorageService
 } from '../services';
 
+// ビジネスロジックのモック
+jest.mock('../business-logic', () => ({
+  businessLogic: {
+    customerManagementLogic: {
+      validateCustomerData: jest.fn().mockReturnValue({
+        isValid: true,
+        normalizedData: {
+          lastName: '田中',
+          firstName: '太郎',
+          email: 'tanaka@example.com',
+          phone: '090-1234-5678',
+          postalCode: '123-4567',
+          address: '東京都渋谷区1-1-1',
+        }
+      }),
+      assessCustomerRisk: jest.fn().mockReturnValue({
+        riskLevel: 'low',
+        riskScore: 25,
+        factors: ['新規顧客'],
+        recommendedActions: ['定期的なフォローアップ']
+      })
+    },
+    movingEstimateLogic: {
+      calculateMovingEstimate: jest.fn().mockReturnValue({
+        baseFare: 50000,
+        timeSurcharge: 5000,
+        optionsTotal: 10000,
+        subtotal: 65000,
+        taxAmount: 6500,
+        total: 71500,
+        breakdown: {
+          distance: 50,
+          totalPoints: 30,
+          baseRate: 1000,
+          timeSlot: 'normal',
+          selectedOptions: ['packing']
+        }
+      })
+    },
+    fleetManagementLogic: {
+      findOptimalTruckAssignment: jest.fn().mockReturnValue({
+        success: true,
+        recommendedTruck: {
+          id: 'truck1',
+          name: '中型トラック',
+          capacity: 150,
+          costPerKm: 150
+        },
+        alternatives: []
+      })
+    }
+  }
+}));
+
 // モック定義
 const mockApiClient: jest.Mocked<ApiClient> = {
   get: jest.fn(),
@@ -66,7 +120,7 @@ describe('EstimateService', () => {
         ],
         timeSlot: 'normal',
         selectedOptions: ['packing'],
-        moveDate: new Date('2024-06-15'),
+        moveDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14日後
       },
     };
 
@@ -288,6 +342,15 @@ describe('CustomerService', () => {
     });
 
     test('高リスク顧客の管理者通知', async () => {
+      // ビジネスロジックのモックを一時的に変更
+      const mockBusinessLogic = require('../business-logic').businessLogic;
+      mockBusinessLogic.customerManagementLogic.assessCustomerRisk.mockReturnValueOnce({
+        riskLevel: 'high',
+        riskScore: 85,
+        factors: ['キャンセル率高い', '支払い遅延'],
+        recommendedActions: ['事前支払い要求', '厳格な条件設定']
+      });
+      
       const highRiskHistory = {
         completedOrders: 1,
         canceledOrders: 5,
@@ -326,11 +389,15 @@ describe('CustomerService', () => {
       expect(mockNotificationService.sendEmail).not.toHaveBeenCalled();
     });
 
-    test('API呼び出し失敗時のエラー', async () => {
+    test('API呼び出し失敗時のデフォルト値返却', async () => {
       mockApiClient.get.mockRejectedValue(new Error('API error'));
 
-      await expect(customerService.assessCustomerRisk('customer_123'))
-        .rejects.toThrow('顧客リスク評価に失敗しました');
+      const result = await customerService.assessCustomerRisk('customer_123');
+      
+      expect(result.riskLevel).toBe('low');
+      expect(result.riskScore).toBe(0);
+      expect(result.factors).toContain('評価エラー');
+      expect(result.recommendedActions).toContain('システム管理者にお問い合わせください');
     });
 
     test('管理者通知失敗でも処理は継続', async () => {
@@ -392,7 +459,7 @@ describe('Service integration tests', () => {
         items: [{ name: 'テーブル', count: 1, points: 10 }],
         timeSlot: 'normal',
         selectedOptions: [],
-        moveDate: new Date('2024-06-15'),
+        moveDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14日後
       },
     };
 

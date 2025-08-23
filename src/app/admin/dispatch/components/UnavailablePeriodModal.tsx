@@ -4,9 +4,9 @@ import { Truck } from '@/types/dispatch';
 interface UnavailablePeriodModalProps {
   truck: Truck | null;
   onClose: () => void;
-  onSave: (period: { startDate: string; endDate: string; reason: string }) => void;
+  onSave: (_period: { startDate: string; endDate: string; reason: string }) => void;
   initialPeriod: { startDate: string; endDate: string; reason: string };
-  onPeriodChange: (period: { startDate: string; endDate: string; reason: string }) => void;
+  onPeriodChange: (_period: { startDate: string; endDate: string; reason: string }) => void;
 }
 
 const UnavailablePeriodModal = ({

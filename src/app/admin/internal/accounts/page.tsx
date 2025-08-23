@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
@@ -58,7 +58,7 @@ const mockData: AccountRow[] = [
 
 export default function AccountsPage() {
   const [data, setData] = useState<AccountRow[]>(mockData);
-  const [currentUserEmail, setCurrentUserEmail] = useState('admin@example.com'); // 実際は認証情報から取得
+  const [currentUserEmail, _setCurrentUserEmail] = useState('admin@example.com'); // 実際は認証情報から取得
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ja-JP');

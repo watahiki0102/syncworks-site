@@ -6,7 +6,7 @@ import { ITEM_CATEGORIES } from '@/constants/items';
 
 interface CaseFormProps {
   estimateMode: EstimateInputMode;
-  onSubmit: (formData: any) => void;
+  onSubmit: (_formData: any) => void;
   initialData?: any;
 }
 
@@ -69,7 +69,7 @@ const TIME_SLOTS = [
 const PAYMENT_METHODS: PaymentMethod[] = ['銀行振込', '現金', 'クレジットカード', '請求書'];
 const PAYMENT_STATUSES: PaymentStatus[] = ['未請求', '請求済', '入金待ち', '入金済', '保留'];
 
-export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFormProps) {
+export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   const [formData, setFormData] = useState<FormData>({
     customerName: '',
     customerPhone: '',
@@ -94,9 +94,9 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
 
   const [customService, setCustomService] = useState<string>('');
   const [showEstimateModal, setShowEstimateModal] = useState<boolean>(false);
-  const [modalItems, setModalItems] = useState<Record<string, number>>({});
-  const [modalBoxOption, setModalBoxOption] = useState<string>('');
-  const [modalBoxCount, setModalBoxCount] = useState<number>(0);
+  const [_modalItems, _setModalItems] = useState<Record<string, number>>({});
+  const [_modalBoxOption, _setModalBoxOption] = useState<string>('');
+  const [_modalBoxCount, _setModalBoxCount] = useState<number>(0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -610,9 +610,9 @@ export default function CaseForm({ estimateMode, onSubmit, initialData }: CaseFo
         <EstimateModal
           isOpen={showEstimateModal}
           onClose={() => setShowEstimateModal(false)}
-          onCalculate={(result) => {
-            updateFormData('totalPoints', result.totalPoints);
-            updateFormData('estimatedPrice', result.estimatedPrice);
+          onCalculate={(_result) => {
+            updateFormData('totalPoints', _result.totalPoints);
+            updateFormData('estimatedPrice', _result.estimatedPrice);
             setShowEstimateModal(false);
           }}
         />

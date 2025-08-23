@@ -4,7 +4,7 @@ import { EstimateInputMode } from '@/types/case';
 
 interface EstimateModeSelectorProps {
   selectedMode: EstimateInputMode | null;
-  onModeChange: (mode: EstimateInputMode) => void;
+  onModeChange: (_mode: EstimateInputMode) => void;
 }
 
 export default function EstimateModeSelector({ selectedMode, onModeChange }: EstimateModeSelectorProps) {

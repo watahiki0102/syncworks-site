@@ -9,7 +9,7 @@ interface WorkerPoolProps {
   workers: WorkerRef[];
   selectedDate: string;
   trucks: Truck[];
-  onDragStart: (worker: WorkerRef) => void;
+  onDragStart: (_worker: WorkerRef) => void;
   onDragEnd: () => void;
 }
 
@@ -17,7 +17,7 @@ interface DraggableWorkerProps {
   worker: WorkerRef;
   isAvailable: boolean;
   currentAssignments: string[];
-  onDragStart: (worker: WorkerRef) => void;
+  onDragStart: (_worker: WorkerRef) => void;
   onDragEnd: () => void;
 }
 

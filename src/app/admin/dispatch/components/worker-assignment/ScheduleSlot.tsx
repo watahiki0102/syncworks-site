@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { useDrop } from 'react-dnd';
-import { Schedule, WorkerRef, WorkerAssignment } from '@/types/dispatch';
+import { Schedule, WorkerRef } from '@/types/dispatch';
 import EmployeePill from './EmployeePill';
 
 interface ScheduleSlotProps {
   schedule: Schedule;
   workers: WorkerRef[];
   onSelect: () => void;
-  onUnassignEmployee: (payload: { scheduleId: string; employeeId: string }) => void;
-  onDragDrop?: (workerId: string, scheduleId: string, startTime: string, endTime: string) => void;
+  onUnassignEmployee: (_payload: { scheduleId: string; employeeId: string }) => void;
+  onDragDrop?: (_workerId: string, _scheduleId: string, _startTime: string, _endTime: string) => void;
   draggedWorker?: WorkerRef | null;
 }
 
@@ -20,7 +20,7 @@ export default function ScheduleSlot({
   onSelect,
   onUnassignEmployee,
   onDragDrop,
-  draggedWorker
+  // draggedWorker // Currently unused
 }: ScheduleSlotProps) {
   // このスケジュールに割り当てられている作業者を取得
   const assignedWorkers = schedule.workerAssignments || [];

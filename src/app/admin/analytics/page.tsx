@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TrendsChart from './components/TrendsChart';
 import PieRatio from './components/PieRatio';
 import { formatCurrencyJPY } from '@/utils/format';
+
 
 // プロット間隔の型定義
 type PlotInterval = 'month' | 'year';

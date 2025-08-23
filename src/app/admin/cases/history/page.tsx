@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteHistory, TimeBandSurcharge, QuoteStatus } from '../types';
-import { SourceType, normalizeSourceType, getSourceTypeLabel, isSourceTypeEditable } from '../lib/normalize';
+import { normalizeSourceType, getSourceTypeLabel, isSourceTypeEditable } from '../lib/normalize';
 import { generateTestQuote } from '@/constants/testData';
 
 export default function QuoteHistoryPage() {
@@ -46,7 +46,7 @@ export default function QuoteHistoryPage() {
   }, []);
 
   useEffect(() => {
-    let filtered = quotes.filter(quote => {
+    const filtered = quotes.filter(quote => {
       if (!showCompleted && ['完了', '完了(自動)', 'キャンセル', '不成約'].includes(quote.status)) {
         return false;
       }
@@ -61,7 +61,7 @@ export default function QuoteHistoryPage() {
     setFilteredQuotes(filtered);
   }, [quotes, showCompleted, searchTerm]);
 
-  const addSurcharge = () => {
+  const _addSurcharge = () => {
     const newSurcharge: TimeBandSurcharge = {
       id: Date.now().toString(),
       start: '22:00',
@@ -72,11 +72,11 @@ export default function QuoteHistoryPage() {
     setEditingSurcharges([...editingSurcharges, newSurcharge]);
   };
 
-  const removeSurcharge = (id: string) => {
+  const _removeSurcharge = (id: string) => {
     setEditingSurcharges(editingSurcharges.filter(s => s.id !== id));
   };
 
-  const updateSurcharge = (id: string, field: keyof TimeBandSurcharge, value: any) => {
+  const _updateSurcharge = (id: string, field: keyof TimeBandSurcharge, value: any) => {
     setEditingSurcharges(editingSurcharges.map(s => 
       s.id === id ? { ...s, [field]: value } : s
     ));
@@ -98,12 +98,12 @@ export default function QuoteHistoryPage() {
     return Math.round(total);
   };
 
-  const startEditing = (quote: QuoteHistory) => {
+  const _startEditing = (quote: QuoteHistory) => {
     setEditingQuote(quote);
     setEditingSurcharges([...quote.timeBandSurcharges]);
   };
 
-  const saveQuote = () => {
+  const _saveQuote = () => {
     if (!editingQuote) return;
     
     const updatedQuote = {
@@ -117,7 +117,7 @@ export default function QuoteHistoryPage() {
     setEditingSurcharges([]);
   };
 
-  const cancelEditing = () => {
+  const _cancelEditing = () => {
     setEditingQuote(null);
     setEditingSurcharges([]);
   };

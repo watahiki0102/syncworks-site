@@ -34,7 +34,6 @@ export default function TrendsChart({
   title, 
   data, 
   type, 
-
   valueFormatter,
   height = 300 
 }: TrendsChartProps) {

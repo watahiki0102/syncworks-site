@@ -355,7 +355,7 @@ export default function PricingStep2Page() {
    * - バリデーション後、新しい料金ルールを追加
    */
   const addPricingRule = () => {
-    let errors: string[] = [];
+    const errors: string[] = [];
     if (!newTruckType) errors.push('トラック種別を選択してください');
     if (newPricingMaxPoint === undefined) errors.push('ポイント最大値は必須です');
     if (newPricingPrice === undefined) errors.push('料金は必須です');
@@ -732,8 +732,8 @@ export default function PricingStep2Page() {
   // ソート機能
   const sortPricingRules = (rules: PricingRule[]) => {
     return [...rules].sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      const aValue: any = a[sortField];
+      const bValue: any = b[sortField];
       
       // undefinedの場合は最後に配置
       if (aValue === undefined && bValue === undefined) return 0;

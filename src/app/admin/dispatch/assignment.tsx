@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckAssignmentModal from '../dispatch/components/TruckAssignmentModal';
 import AssignmentStatusFilter, { AssignmentStatusFilterValue } from '@/components/dispatch/AssignmentStatusFilter';
-import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
-import { Truck, Schedule } from '@/types/dispatch';
+import { formatDate, formatTime } from '@/utils/dateTimeUtils';
+import { Truck } from '@/types/dispatch';
 import { ContractStatus } from '@/types/case';
 
 interface FormSubmission {

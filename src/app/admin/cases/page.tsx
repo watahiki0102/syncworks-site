@@ -7,7 +7,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import QuoteHistoryPage from './history/page';
@@ -26,7 +26,7 @@ export default function CaseManagement() {
   };
 
   // 緊急依頼数の取得（デモデータ）
-  const getUrgentCount = () => {
+  const _getUrgentCount = () => {
     return 1; // デモ用の固定値
   };
 

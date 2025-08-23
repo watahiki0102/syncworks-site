@@ -12,6 +12,7 @@ import {
   validationUtils,
   pricingCalculations,
 } from '../pure-functions';
+import { commonValidations } from '@/utils/validation';
 
 describe('mathUtils', () => {
   describe('calculateTaxIncluded', () => {
@@ -298,6 +299,42 @@ describe('validationUtils', () => {
       expect(validationUtils.validateRequired('', 'フィールド')).toBe('フィールドは必須です');
       expect(validationUtils.validateRequired('  ', 'フィールド')).toBe('フィールドは必須です');
       expect(validationUtils.validateRequired([], 'フィールド')).toBe('フィールドを少なくとも1つ選択してください');
+    });
+  });
+
+  describe('日付バリデーション', () => {
+    test('日付形式のバリデーション', () => {
+      const dateRule = commonValidations.date();
+      
+      // 正常な日付
+      expect(dateRule('2024-01-15').isValid).toBe(true);
+      expect(dateRule('2024/01/15').isValid).toBe(true);
+      expect(dateRule('2024.01.15').isValid).toBe(true);
+      
+      // 不正な日付
+      expect(dateRule('invalid-date').isValid).toBe(false);
+      expect(dateRule('2024-13-45').isValid).toBe(false);
+      expect(dateRule('').isValid).toBe(false);
+    });
+
+    test('未来日付のバリデーション', () => {
+      const futureDateRule = commonValidations.futureDate();
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      // 未来の日付
+      expect(futureDateRule(tomorrow.toISOString().split('T')[0]).isValid).toBe(true);
+      expect(futureDateRule('2025-12-31').isValid).toBe(true);
+      
+      // 過去の日付
+      expect(futureDateRule(yesterday.toISOString().split('T')[0]).isValid).toBe(false);
+      expect(futureDateRule('2020-01-01').isValid).toBe(false);
+      
+      // 今日の日付
+      expect(futureDateRule(today.toISOString().split('T')[0]).isValid).toBe(true);
     });
   });
 });

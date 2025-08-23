@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Truck, Schedule, WorkerRef, WorkerAssignment, ScheduleId } from '@/types/dispatch';
+import { Truck, Schedule, WorkerRef, ScheduleId } from '@/types/dispatch';
 import ScheduleSlot from './ScheduleSlot';
 
 interface TruckColumnProps {
@@ -9,9 +9,9 @@ interface TruckColumnProps {
   timeSlots: string[];
   selectedDate: string;
   workers: WorkerRef[];
-  onSlotSelect: (scheduleId: ScheduleId, truckId: string, truckName: string, startTime: string, endTime: string) => void;
-  onUnassignEmployee: (payload: { scheduleId: ScheduleId; employeeId: string }) => void;
-  onDragDrop?: (workerId: string, scheduleId: ScheduleId, startTime: string, endTime: string) => void;
+  onSlotSelect: (_scheduleId: ScheduleId, _truckId: string, _truckName: string, _startTime: string, _endTime: string) => void;
+  onUnassignEmployee: (_payload: { scheduleId: ScheduleId; employeeId: string }) => void;
+  onDragDrop?: (_workerId: string, _scheduleId: ScheduleId, _startTime: string, _endTime: string) => void;
   draggedWorker?: WorkerRef | null;
 }
 
@@ -23,10 +23,10 @@ export default function TruckColumn({
   onSlotSelect,
   onUnassignEmployee,
   onDragDrop,
-  draggedWorker
+  // draggedWorker // Currently unused
 }: TruckColumnProps) {
   // トラックのスケジュールを時間スロットにマッピング
-  const scheduleMap = useMemo(() => {
+  const _scheduleMap = useMemo(() => {
     const map = new Map<string, Schedule>();
     truck.schedules.forEach(schedule => {
       map.set(schedule.id, schedule);
@@ -100,7 +100,7 @@ export default function TruckColumn({
                 )}
                 onUnassignEmployee={onUnassignEmployee}
                 onDragDrop={onDragDrop}
-                draggedWorker={draggedWorker}
+                draggedWorker={undefined}
               />
             </div>
           );

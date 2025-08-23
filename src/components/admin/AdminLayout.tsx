@@ -104,7 +104,7 @@ export default function AdminLayout({
     if (pathSegments.length > 2) {
       // /admin/dashboard以外の場合
       const currentPage = getCurrentPageInfo();
-      crumbs.push({ label: currentPage.title });
+      crumbs.push({ label: currentPage.title, href: pathname });
     }
 
     return crumbs;
