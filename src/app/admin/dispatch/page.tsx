@@ -3,6 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabs from '@/components/admin/AdminTabs';
+import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
@@ -1002,29 +1005,20 @@ function DispatchManagementContent() {
 
 
 
+  const tabs = [
+    { id: 'unified', label: '統合配車管理' },
+    { id: 'worker-assignment', label: '作業者割り当て' }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ヘッダー */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">配車管理</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                トラックの稼働スケジュール管理
-              </p>
-            </div>
-            <div className="flex items-center gap-4 min-h-[44px]">
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                トップに戻る
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminPageHeader 
+        title="配車管理"
+        subtitle="トラックの稼働スケジュール管理"
+        breadcrumbs={[
+          { label: '配車管理' }
+        ]}
+      />
 
       {/* 統合ナビゲーション */}
       <div className="bg-white border-b">
@@ -1078,9 +1072,9 @@ function DispatchManagementContent() {
           {/* 統合ビューコンテンツ */}
           {activeView === 'unified' && (
             <div className="space-y-6">
-              {/* 統合ダッシュボード */}
+              {/* 事業者管理情報 */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-                <h2 className="text-2xl font-bold mb-4">📊 配車管理統合ダッシュボード</h2>
+                <h2 className="text-2xl font-bold mb-4">📊 配車管理情報</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white bg-opacity-20 rounded-lg p-4">
                     <div className="text-sm opacity-90">総案件数</div>

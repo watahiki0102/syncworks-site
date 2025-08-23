@@ -8,8 +8,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminCard from '@/components/admin/AdminCard';
+import AdminBadge from '@/components/admin/AdminBadge';
 
 /**
  * 見積もり依頼データの型定義
@@ -37,7 +39,6 @@ export default function AdminNotifications() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const router = useRouter();
 
   /**
    * デモデータの初期化
@@ -127,13 +128,13 @@ export default function AdminNotifications() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">未回答</span>;
+        return <AdminBadge variant="danger">未回答</AdminBadge>;
       case 'answered':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">回答済</span>;
+        return <AdminBadge variant="success">回答済</AdminBadge>;
       case 'expired':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">期限切れ</span>;
+        return <AdminBadge variant="default">期限切れ</AdminBadge>;
       default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">不明</span>;
+        return <AdminBadge variant="default">不明</AdminBadge>;
     }
   };
 
@@ -145,13 +146,13 @@ export default function AdminNotifications() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">高</span>;
+        return <AdminBadge variant="danger">高</AdminBadge>;
       case 'medium':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">中</span>;
+        return <AdminBadge variant="warning">中</AdminBadge>;
       case 'low':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">低</span>;
+        return <AdminBadge variant="success">低</AdminBadge>;
       default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">不明</span>;
+        return <AdminBadge variant="default">不明</AdminBadge>;
     }
   };
 
@@ -205,156 +206,105 @@ export default function AdminNotifications() {
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  見積もり回答依頼通知
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  お客様からの見積もり依頼の管理
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                トップに戻る
-              </button>
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader 
+          title="見積もり回答依頼通知"
+          subtitle="お客様からの見積もり依頼の管理"
+          breadcrumbs={[
+            { label: '通知管理' }
+          ]}
+        />
 
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">📋</span>
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          未回答依頼
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {getPendingCount()}件
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
+              <AdminCard 
+                title="未回答依頼"
+                icon="📋"
+                padding="md"
+              >
+                <div className="text-2xl font-bold text-gray-900">
+                  {getPendingCount()}件
                 </div>
-              </div>
+              </AdminCard>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">⚠️</span>
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          緊急依頼
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {getUrgentCount()}件
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
+              <AdminCard 
+                title="緊急依頼"
+                icon="⚠️"
+                padding="md"
+              >
+                <div className="text-2xl font-bold text-orange-600">
+                  {getUrgentCount()}件
                 </div>
-              </div>
+              </AdminCard>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">📊</span>
-                      </div>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          総依頼数
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {requests.length}件
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
+              <AdminCard 
+                title="総依頼数"
+                icon="📊"
+                padding="md"
+              >
+                <div className="text-2xl font-bold text-blue-600">
+                  {requests.length}件
                 </div>
-              </div>
+              </AdminCard>
             </div>
 
-            <div className="bg-white shadow rounded-lg mb-6">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ステータス
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="all">すべて</option>
-                      <option value="pending">未回答</option>
-                      <option value="answered">回答済</option>
-                      <option value="expired">期限切れ</option>
-                    </select>
-                  </div>
+            <AdminCard title="検索・フィルタ" padding="lg" className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ステータス
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="pending">未回答</option>
+                    <option value="answered">回答済</option>
+                    <option value="expired">期限切れ</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      優先度
-                    </label>
-                    <select
-                      value={priorityFilter}
-                      onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="all">すべて</option>
-                      <option value="high">高</option>
-                      <option value="medium">中</option>
-                      <option value="low">低</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    優先度
+                  </label>
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="high">高</option>
+                    <option value="medium">中</option>
+                    <option value="low">低</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      検索
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="顧客名・住所"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    検索
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="顧客名・住所"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
 
-                  <div className="flex items-end">
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                    >
-                      更新
-                    </button>
-                  </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    更新
+                  </button>
                 </div>
               </div>
-            </div>
+            </AdminCard>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
@@ -379,9 +329,7 @@ export default function AdminNotifications() {
                             {getStatusBadge(request.status)}
                             {getPriorityBadge(request.priority)}
                             {request.status === 'pending' && isUrgent(request.deadline) && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                緊急
-                              </span>
+                              <AdminBadge variant="danger" icon="⚠️">緊急</AdminBadge>
                             )}
                           </div>
 

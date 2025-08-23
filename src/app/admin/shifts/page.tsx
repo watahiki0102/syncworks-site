@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabs from '@/components/admin/AdminTabs';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import ShiftTemplateManager from '@/components/ShiftTemplateManager';
@@ -500,38 +502,44 @@ export default function ShiftManagement() {
     });
   };
 
+  const tabs = [
+    { id: 'calendar', label: 'シフト表' },
+    { id: 'employees', label: '従業員管理' },
+    { id: 'templates', label: 'テンプレート' },
+    { id: 'bulk', label: '一括設定' },
+    { id: 'overview', label: '全体概要' }
+  ];
+
+  const actions = (
+    <a
+      href="/admin/dispatch"
+      className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+    >
+      🚚 配車管理
+    </a>
+  );
+
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* ヘッダー */}
-        <header className="bg-white shadow-md">
+        <AdminPageHeader 
+          title="シフト管理"
+          subtitle="従業員の稼働スケジュール管理"
+          actions={actions}
+          breadcrumbs={[
+            { label: 'シフト管理' }
+          ]}
+        />
+
+        <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  シフト管理
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  従業員の稼働スケジュール管理
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <a
-                  href="/admin/dispatch"
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                >
-                  🚚 配車管理
-                </a>
-                <button
-                  onClick={() => router.push('/admin/dashboard')}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  トップに戻る
-                </button>
-              </div>
-            </div>
+            <AdminTabs 
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={(tabId) => setActiveTab(tabId as 'calendar' | 'employees' | 'templates' | 'bulk' | 'overview')}
+            />
           </div>
-        </header>
+        </div>
 
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

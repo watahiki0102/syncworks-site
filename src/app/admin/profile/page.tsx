@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 /**
  * オプションタイプの定義
@@ -386,31 +387,11 @@ export default function AdminProfile() {
 
   return (
     <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-50">
-        {/* ヘッダー */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  基本情報編集
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  事業者情報の編集・更新
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                トップに戻る
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* メインコンテンツ */}
-        <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+      <AdminLayout
+        title="基本情報設定" 
+        subtitle="事業者情報の編集・更新"
+      >
+        <div className="max-w-4xl mx-auto">
           <div className="px-4 py-6 sm:px-0">
             <div className="bg-white shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
@@ -851,9 +832,9 @@ export default function AdminProfile() {
                     <button
                       type="button"
                       onClick={() => router.push('/admin/dashboard')}
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
-                      キャンセル
+                      戻る
                     </button>
                     <button
                       type="submit"
@@ -867,8 +848,8 @@ export default function AdminProfile() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </AdminLayout>
     </AdminAuthGuard>
   );
 } 

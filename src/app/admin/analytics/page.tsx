@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminCard from '@/components/admin/AdminCard';
 import TrendsChart from './components/TrendsChart';
 import PieRatio from './components/PieRatio';
 import { formatCurrencyJPY } from '@/utils/format';
@@ -19,17 +21,11 @@ function KPICard({ title, value, unit, icon }: {
   icon: string;
 }) {
   return (
-    <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
-      <div className="flex items-center gap-3">
-        <div className="text-3xl">{icon}</div>
-        <div>
-          <div className="text-sm text-gray-600 font-medium">{title}</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {value}{unit && <span className="text-sm font-medium text-gray-600 ml-1">{unit}</span>}
-          </div>
-        </div>
+    <AdminCard title={title} icon={icon} padding="md">
+      <div className="text-2xl font-bold text-gray-900">
+        {value}{unit && <span className="text-sm font-medium text-gray-600 ml-1">{unit}</span>}
       </div>
-    </div>
+    </AdminCard>
   );
 }
 
@@ -39,8 +35,7 @@ function ContractSummary({ totalContracts, totalSales }: {
   totalSales: number; 
 }) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 成約実績概要</h3>
+    <AdminCard title="成約実績概要" icon="📋" padding="lg">
       <div className="grid grid-cols-2 gap-4">
         <div className="text-center p-4 bg-blue-50 rounded-lg">
           <div className="text-2xl font-bold text-blue-600">{totalContracts}</div>
@@ -51,7 +46,7 @@ function ContractSummary({ totalContracts, totalSales }: {
           <div className="text-sm text-gray-600">総売上金額</div>
         </div>
       </div>
-    </div>
+    </AdminCard>
   );
 }
 
@@ -240,27 +235,13 @@ export default function AdminAnalytics() {
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* ヘッダー */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">📊 成約実績管理</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  引越し成約件数と売上実績の確認
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push('/admin/dashboard')}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  ダッシュボードに戻る
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader 
+          title="成約実績管理"
+          subtitle="引越し成約件数と売上実績の確認"
+          breadcrumbs={[
+            { label: '成約実績管理' }
+          ]}
+        />
 
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

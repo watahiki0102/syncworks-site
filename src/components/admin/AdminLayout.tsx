@@ -99,7 +99,7 @@ export default function AdminLayout({
     if (breadcrumbs) return breadcrumbs;
 
     const pathSegments = pathname.split('/').filter(Boolean);
-    const crumbs = [{ label: 'ダッシュボード', href: '/admin/dashboard' }];
+    const crumbs = [{ label: '事業者管理画面', href: '/admin/dashboard' }];
 
     if (pathSegments.length > 2) {
       // /admin/dashboard以外の場合
@@ -116,22 +116,29 @@ export default function AdminLayout({
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            {/* 左側：タイトル */}
+            {/* 左側：タイトルとログイン情報 */}
             <div className="flex items-center gap-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-xl">{getCurrentPageInfo().icon}</span>
-                  <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                    {subtitle && (
+                      <p className="text-sm text-gray-600">{subtitle}</p>
+                    )}
+                  </div>
                 </div>
-                {subtitle && (
-                  <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">ログイン中: {adminEmail}</p>
               </div>
             </div>
             
-            {/* 右側：アクション・メニュー */}
-            <div className="flex items-center space-x-3">
+            {/* 右側：ログイン情報・アクション・メニュー */}
+            <div className="flex items-center space-x-4">
+              {/* ログイン情報 */}
+              <div className="hidden sm:block text-right">
+                <div className="text-xs text-gray-500">ログイン中</div>
+                <div className="text-sm font-medium text-gray-900">{adminEmail}</div>
+              </div>
+
               {/* カスタムアクション */}
               {actions}
               
@@ -176,13 +183,13 @@ export default function AdminLayout({
                 )}
               </div>
 
-              {/* ダッシュボードに戻るボタン */}
+              {/* 事業者管理画面トップに戻るボタン */}
               {pathname !== '/admin/dashboard' && (
                 <button
                   onClick={() => router.push('/admin/dashboard')}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
-                  ダッシュボード
+                  戻る
                 </button>
               )}
               

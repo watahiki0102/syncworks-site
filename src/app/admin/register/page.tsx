@@ -118,7 +118,7 @@ export default function AdminRegister() {
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminEmail', formData.email);
 
-      // 登録成功後、ダッシュボードに遷移
+      // 登録成功後、事業者管理画面に遷移
       router.push('/admin/dashboard');
     } catch (err) {
       setErrors({ submit: '登録に失敗しました。もう一度お試しください。' });

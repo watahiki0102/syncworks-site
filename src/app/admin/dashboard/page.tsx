@@ -1,5 +1,5 @@
 /**
- * 管理者ダッシュボードページコンポーネント（改善版）
+ * 管理者事業者管理画面ページコンポーネント（改善版）
  * - シンプルなヘッダーレイアウト
  * - 縦並びメニュー配置
  * - 設定機能の統合
@@ -209,108 +209,79 @@ export default function AdminDashboard() {
   const todayApplications = 5; // 本日の申し込み数
   const monthlyContracts = 10; // 今月の成約数
 
-  const settingsActions = (
-    <div className="flex items-center gap-2">
-      <Link href="/pricing/step1">
-        <AdminButton variant="ghost" size="sm" icon="💰">
-          料金設定
-        </AdminButton>
-      </Link>
-      <Link href="/admin/profile">
-        <AdminButton variant="ghost" size="sm" icon="📝">
-          基本情報設定
-        </AdminButton>
-      </Link>
-      <AdminButton variant="danger" size="sm" onClick={handleLogout}>
-        ログアウト
-      </AdminButton>
-    </div>
-  );
+  const settingsActions = null; // AdminLayoutの設定メニューに統一
 
   return (
     <AdminAuthGuard>
       <AdminLayout
-        title="ダッシュボード"
-        subtitle={`ログイン中: ${adminEmail}`}
+        title="事業者管理画面"
         actions={settingsActions}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 最新ニュース - 2列分の幅を取る */}
-          <div className="lg:col-span-2">
+        {/* 13インチPC最適化：3列レイアウトを2列に調整 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左列：ニュースと主要メニュー */}
+          <div className="space-y-6">
+            {/* 最新ニュース */}
             <NewsPanel />
-          </div>
-
-          {/* メニューカード群 */}
-          <div className="lg:col-start-1 space-y-4">
-            {/* 案件管理 */}
-            <Link href="/admin/cases" className="block">
-              <AdminCard
-                title="案件管理"
-                subtitle="見積もり履歴・通知・成約実績の統合管理"
-                icon="📋"
-                className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-white border-orange-200"
-                padding="md"
-              >
-                <div className="flex items-center justify-between">
+            
+            {/* メニューカード群を2列で配置 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 案件管理 */}
+              <Link href="/admin/cases" className="block">
+                <AdminCard
+                  title="案件管理"
+                  subtitle="見積もり・成約管理"
+                  icon="📋"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-white border-orange-200"
+                  padding="md"
+                >
                   <AdminBadge variant="warning" size="sm">{unansweredCount > 0 ? `${unansweredCount}件未対応` : '対応済み'}</AdminBadge>
-                  <AdminButton variant="ghost" size="sm">開く →</AdminButton>
-                </div>
-              </AdminCard>
-            </Link>
+                </AdminCard>
+              </Link>
 
-            {/* シフト管理 */}
-            <Link href="/admin/shifts" className="block">
-              <AdminCard
-                title="シフト管理"
-                subtitle="従業員の稼働スケジュール管理"
-                icon="👥"
-                className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white border-teal-200"
-                padding="md"
-              >
-                <div className="flex items-center justify-between">
+              {/* シフト管理 */}
+              <Link href="/admin/shifts" className="block">
+                <AdminCard
+                  title="シフト管理"
+                  subtitle="従業員スケジュール"
+                  icon="👥"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white border-teal-200"
+                  padding="md"
+                >
                   <AdminBadge variant="info" size="sm">5人稼働中</AdminBadge>
-                  <AdminButton variant="ghost" size="sm">開く →</AdminButton>
-                </div>
-              </AdminCard>
-            </Link>
-          </div>
+                </AdminCard>
+              </Link>
 
-          <div className="lg:col-start-2 space-y-4">
-            {/* 配車管理 */}
-            <Link href="/admin/dispatch" className="block">
-              <AdminCard
-                title="配車管理"
-                subtitle="トラックの稼働スケジュール管理"
-                icon="🚚"
-                className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200"
-                padding="md"
-              >
-                <div className="flex items-center justify-between">
+              {/* 配車管理 */}
+              <Link href="/admin/dispatch" className="block">
+                <AdminCard
+                  title="配車管理"
+                  subtitle="トラック配車・稼働"
+                  icon="🚚"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200"
+                  padding="md"
+                >
                   <AdminBadge variant="primary" size="sm">3台稼働中</AdminBadge>
-                  <AdminButton variant="ghost" size="sm">開く →</AdminButton>
-                </div>
-              </AdminCard>
-            </Link>
+                </AdminCard>
+              </Link>
 
-            {/* 集計管理 */}
-            <Link href="/admin/analytics" className="block">
-              <AdminCard
-                title="集計管理"
-                subtitle="成約率・売上などのKPI分析"
-                icon="📊"
-                className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200"
-                padding="md"
-              >
-                <div className="flex items-center justify-between">
+              {/* 集計管理 */}
+              <Link href="/admin/analytics" className="block">
+                <AdminCard
+                  title="集計管理"
+                  subtitle="売上・成約率分析"
+                  icon="📊"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200"
+                  padding="md"
+                >
                   <AdminBadge variant="success" size="sm">{contractRate}% 成約率</AdminBadge>
-                  <AdminButton variant="ghost" size="sm">開く →</AdminButton>
-                </div>
-              </AdminCard>
-            </Link>
+                </AdminCard>
+              </Link>
+            </div>
           </div>
 
-          {/* トレンド情報 - 右列に配置 */}
-          <div className="lg:col-start-3 lg:row-start-1 lg:row-end-4">
+          {/* 右列：トレンド情報 */}
+          <div>
             <TrendPanel
               unansweredCount={unansweredCount}
               todayApplications={todayApplications}

@@ -9,6 +9,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminCard from '@/components/admin/AdminCard';
+import AdminBadge from '@/components/admin/AdminBadge';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 /**
@@ -189,35 +192,19 @@ export default function AdminQuotes() {
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* ヘッダー */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  見積もり回答履歴
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  お客様への見積もり回答履歴の管理
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                トップに戻る
-              </button>
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader 
+          title="見積もり回答履歴"
+          subtitle="お客様への見積もり回答履歴の管理"
+          breadcrumbs={[
+            { label: '見積もり管理' }
+          ]}
+        />
 
-        {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             {/* フィルター・検索 */}
-            <div className="bg-white shadow rounded-lg mb-6">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <AdminCard title="検索・フィルタ" icon="🔍" padding="lg" className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* 検索 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
