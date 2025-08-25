@@ -532,7 +532,7 @@ export default function ShiftManagement() {
         />
 
         <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
             <AdminTabs 
               tabs={tabs}
               activeTab={activeTab}
@@ -542,12 +542,12 @@ export default function ShiftManagement() {
         </div>
 
         {/* メインコンテンツ */}
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="px-4 py-6 sm:px-0">
             {/* タブ切り替え */}
             <div className="mb-6">
               <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
+                <nav className="-mb-px flex flex-wrap gap-2 sm:space-x-8 sm:gap-0">
                   <button
                     onClick={() => setActiveTab('calendar')}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${

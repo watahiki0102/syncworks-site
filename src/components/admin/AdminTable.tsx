@@ -121,7 +121,7 @@ export default function AdminTable<T extends Record<string, any>>({
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t">
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-3 bg-gray-50 border-t gap-3">
         <div className="text-sm text-gray-700">
           {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, total)} / {total}件
         </div>
@@ -131,6 +131,7 @@ export default function AdminTable<T extends Record<string, any>>({
             size="sm"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
             前へ
           </AdminButton>
@@ -145,6 +146,7 @@ export default function AdminTable<T extends Record<string, any>>({
                 variant={page === pageNum ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => onPageChange(pageNum)}
+                className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
               >
                 {pageNum}
               </AdminButton>
@@ -156,6 +158,7 @@ export default function AdminTable<T extends Record<string, any>>({
             size="sm"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
             次へ
           </AdminButton>
@@ -187,7 +190,7 @@ export default function AdminTable<T extends Record<string, any>>({
                 <th
                   key={index}
                   scope="col"
-                  className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                  className={`px-2 sm:px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${
                     column.align === 'center' ? 'text-center' :
                     column.align === 'right' ? 'text-right' : 'text-left'
                   } ${column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
@@ -207,7 +210,7 @@ export default function AdminTable<T extends Record<string, any>>({
                 </th>
               ))}
               {actions && actions.length > 0 && (
-                <th scope="col" className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
+                <th scope="col" className="px-2 sm:px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
                   操作
                 </th>
               )}
@@ -220,7 +223,7 @@ export default function AdminTable<T extends Record<string, any>>({
               <tr>
                 <td
                   colSpan={columns.length + (actions ? 1 : 0)}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-2 sm:px-6 py-12 text-center text-gray-500"
                 >
                   {emptyMessage}
                 </td>
@@ -235,7 +238,7 @@ export default function AdminTable<T extends Record<string, any>>({
                   {columns.map((column, colIndex) => (
                     <td
                       key={colIndex}
-                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                      className={`px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
                         column.align === 'center' ? 'text-center' :
                         column.align === 'right' ? 'text-right' : 'text-left'
                       }`}
@@ -246,7 +249,7 @@ export default function AdminTable<T extends Record<string, any>>({
                   
                   {/* アクション列 */}
                   {actions && actions.length > 0 && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
                       <div className="flex items-center justify-end gap-2">
                         {actions.map((action, actionIndex) => {
                           if (action.show && !action.show(row)) return null;

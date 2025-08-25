@@ -189,15 +189,15 @@ export const DataTable = memo(<T extends Record<string, any>>({
   }
 
   return (
-    <div className="data-table-wrapper">
-      <div className="data-table-container">
-        <table className={tableClasses}>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-md overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className={`min-w-full divide-y divide-gray-200 ${tableClasses}`}>
           {/* ヘッダー */}
-          <thead className="data-table__header">
+          <thead className="bg-gray-50">
             <tr>
               {/* 選択チェックボックスカラム */}
               {selectable && (
-                <th className="data-table__header-cell data-table__select-cell">
+                <th className="px-2 sm:px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   <input
                     type="checkbox"
                     checked={selectAllState === 'all'}
@@ -214,10 +214,8 @@ export const DataTable = memo(<T extends Record<string, any>>({
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className={`data-table__header-cell ${
-                    column.align ? `text-${column.align}` : ''
-                  } ${
-                    column.sticky ? 'sticky' : ''
+                  className={`px-2 sm:px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                    column.align ? `text-${column.align}` : 'text-left'
                   }`}
                   style={{ width: column.width }}
                 >
@@ -245,7 +243,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
               <tr>
                 <td 
                   colSpan={columns.length + (selectable ? 1 : 0)}
-                  className="data-table__loading-cell"
+                  className="px-2 sm:px-4 py-8 text-center text-gray-500"
                 >
                   <div className="data-table__loading">
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -257,7 +255,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
               <tr>
                 <td 
                   colSpan={columns.length + (selectable ? 1 : 0)}
-                  className="data-table__empty-cell"
+                  className="px-2 sm:px-4 py-8 text-center text-gray-500"
                 >
                   <div className="data-table__empty">
                     {emptyMessage}
@@ -281,7 +279,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
                   >
                     {/* 選択チェックボックス */}
                     {selectable && (
-                      <td className="data-table__cell data-table__select-cell">
+                      <td className="px-2 sm:px-4 py-4 whitespace-nowrap text-sm">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -296,7 +294,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
                     {columns.map((column) => (
                       <td
                         key={String(column.key)}
-                        className={`data-table__cell ${
+                        className={`px-2 sm:px-4 py-4 whitespace-nowrap text-sm text-gray-900 ${
                           column.align ? `text-${column.align}` : ''
                         } ${
                           column.sticky ? 'sticky' : ''
@@ -315,8 +313,8 @@ export const DataTable = memo(<T extends Record<string, any>>({
 
       {/* ページネーション */}
       {pagination && (
-        <div className="data-table__pagination">
-          <div className="data-table__pagination-info">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-gray-50 border-t gap-3">
+          <div className="text-sm text-gray-700">
             {pagination.totalItems > 0 && (
               <span>
                 {((pagination.currentPage - 1) * pagination.pageSize) + 1} - {' '}
@@ -326,7 +324,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
             )}
           </div>
           
-          <div className="data-table__pagination-controls">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -336,7 +334,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
               前へ
             </Button>
             
-            <span className="data-table__page-info">
+            <span className="text-sm text-gray-700 px-2">
               {pagination.currentPage} / {pagination.totalPages}
             </span>
             

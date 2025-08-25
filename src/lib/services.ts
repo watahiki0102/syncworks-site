@@ -5,7 +5,7 @@
  * - テスト時にモック化しやすい構造
  */
 
-import businessLogic from './business-logic';
+import * as businessLogic from './business-logic';
 import { logger } from './logger';
 
 /**
@@ -86,7 +86,7 @@ export class EstimateService {
 
       // データベースに保存（副作用）
       const savedEstimate = await this.apiClient.post<{ id: string }>('/api/estimates', {
-        customerInfo: customerValidation.normalizedData,
+        customerInfo: customerValidation.normalizedData || estimateData.customerInfo,
         movingDetails: estimateData.movingDetails,
         estimate,
         createdAt: new Date().toISOString(),
@@ -137,6 +137,14 @@ export class EstimateService {
       logger.error('見積もり作成中にエラーが発生しました', error as Error, {
         customerEmail: estimateData.customerInfo.email,
       });
+
+      // バリデーションエラーの場合は詳細なエラーメッセージを返す
+      if (error instanceof Error && error.message.includes('必須')) {
+        return {
+          success: false,
+          errors: [error.message],
+        };
+      }
 
       return {
         success: false,
@@ -199,7 +207,7 @@ export class FleetManagementService {
     preferredDate: Date;
   }): Promise<{
     success: boolean;
-    assignment?: unknown;
+    recommendedTruck?: unknown;
     alternatives?: unknown[];
     message?: string;
   }> {

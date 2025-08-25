@@ -117,7 +117,7 @@ function FormCompleteContent() {
     return (
       <main className="bg-gray-50 min-h-screen py-10 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl font-bold text-red-600 mb-4">エラー</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-red-600 mb-4">エラー</h1>
           <p className="text-gray-600 mb-6">送信データが見つかりませんでした。</p>
           <Link href="/form/step1" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
             フォームに戻る
@@ -133,7 +133,7 @@ function FormCompleteContent() {
         {/* 完了メッセージ */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-8 text-center">
           <div className="text-6xl mb-4">✅</div>
-          <h1 className="text-3xl font-bold text-green-600 mb-4">送信完了</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-green-600 mb-4">送信完了</h1>
           <p className="text-lg text-gray-700 mb-2">
             {completeData.customerName} 様
           </p>
@@ -145,7 +145,7 @@ function FormCompleteContent() {
         {/* 連絡手段選択 */}
         {!completeData.contactPreference && (
           <div className="bg-blue-50 rounded-lg p-8 mb-8 text-center">
-            <h2 className="text-2xl font-bold text-blue-800 mb-4">📞 ご連絡方法をお選びください</h2>
+            <h2 className="text-lg md:text-2xl font-bold text-blue-800 mb-4">📞 ご連絡方法をお選びください</h2>
             <p className="text-gray-600 mb-6">
               見積もりの受付が完了しました。ご連絡方法をお選びください。
             </p>
@@ -171,7 +171,7 @@ function FormCompleteContent() {
         {/* 連絡手段選択完了メッセージ */}
         {completeData.contactPreference && (
           <div className="bg-green-50 rounded-lg p-8 mb-8 text-center">
-            <h2 className="text-2xl font-bold text-green-800 mb-4">✅ 連絡方法が選択されました</h2>
+            <h2 className="text-lg md:text-2xl font-bold text-green-800 mb-4">✅ 連絡方法が選択されました</h2>
             <p className="text-gray-600 mb-4">
               {completeData.contactPreference === 'line' 
                 ? 'LINEでの連絡を承りました。担当者からのメッセージをお待ちください。'
@@ -183,7 +183,7 @@ function FormCompleteContent() {
 
         {/* 見積もり結果 */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-          <h2 className="text-2xl font-bold text-blue-800 mb-6">📋 見積もり結果</h2>
+          <h2 className="text-lg md:text-2xl font-bold text-blue-800 mb-6">📋 見積もり結果</h2>
           
           <div className="grid md:grid-cols-2 gap-6">
             {/* 基本情報 */}
@@ -234,7 +234,7 @@ function FormCompleteContent() {
 
         {/* 次のステップ */}
         <div className="bg-blue-50 rounded-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-blue-800 mb-4">📞 次のステップ</h2>
+          <h2 className="text-lg md:text-2xl font-bold text-blue-800 mb-4">📞 次のステップ</h2>
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
               <div className="text-2xl">1️⃣</div>
@@ -273,7 +273,7 @@ function FormCompleteContent() {
 
         {/* お問い合わせ */}
         <div className="bg-gray-100 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">❓ ご不明な点がございましたら</h2>
+          <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">❓ ご不明な点がございましたら</h2>
           <p className="text-gray-600 mb-4">
             見積もりについてご質問やご相談がございましたら、お気軽にお問い合わせください。
           </p>

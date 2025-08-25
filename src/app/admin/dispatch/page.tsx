@@ -1013,7 +1013,7 @@ function DispatchManagementContent() {
     <div className="min-h-screen bg-gray-50">
       {/* シンプルなヘッダー */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
               <span className="text-xl">🚚</span>
@@ -1047,7 +1047,7 @@ function DispatchManagementContent() {
 
       {/* タブナビゲーション */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
           <nav className="flex space-x-8" aria-label="Tabs">
             {tabs.map((tab) => (
               <button

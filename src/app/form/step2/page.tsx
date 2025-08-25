@@ -35,8 +35,8 @@ const styles = {
   button: {
     back: "bg-gray-400 text-white font-semibold py-2 px-6 rounded hover:bg-gray-500",
     next: "bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700",
-    minus: "px-2 py-1 bg-gray-200 rounded",
-    plus: "px-2 py-1 bg-green-500 text-white rounded"
+    minus: "px-3 py-2 sm:px-2 sm:py-1 bg-gray-200 rounded min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center",
+    plus: "px-3 py-2 sm:px-2 sm:py-1 bg-green-500 text-white rounded min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
   }
 };
 
@@ -129,7 +129,7 @@ export default function Step2FormPage() {
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-        <h1 className="text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
+        <h1 className="text-xl md:text-3xl font-bold text-center text-blue-800">📦 荷物の数量を入力</h1>
         <ProgressBar current={2} total={3} />
         <div>
           <p className="text-center text-sm text-gray-600">必要なものをすべて入力してください（0でもOK）</p>

@@ -114,8 +114,8 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 sm:gap-0">
             {/* 左側：タイトルとログイン情報 */}
             <div className="flex items-center gap-4">
               <div>
@@ -134,7 +134,7 @@ export default function AdminLayout({
             {/* 右側：ログイン情報・アクション・メニュー */}
             <div className="flex items-center space-x-4">
               {/* ログイン情報 */}
-              <div className="hidden sm:block text-right">
+              <div className="hidden md:block text-right">
                 <div className="text-xs text-gray-500">ログイン中</div>
                 <div className="text-sm font-medium text-gray-900">{adminEmail}</div>
               </div>
@@ -146,10 +146,10 @@ export default function AdminLayout({
               <div className="relative" ref={settingsRef}>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
                 >
                   <span className="text-base">⚙️</span>
-                  <span>設定</span>
+                  <span className="hidden sm:inline">設定</span>
                 </button>
                 
                 {/* 設定ドロップダウン */}
@@ -187,18 +187,20 @@ export default function AdminLayout({
               {pathname !== '/admin/dashboard' && (
                 <button
                   onClick={() => router.push('/admin/dashboard')}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
                 >
-                  戻る
+                  <span className="sm:hidden">←</span>
+                  <span className="hidden sm:inline">戻る</span>
                 </button>
               )}
               
               {/* ログアウトボタン */}
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
               >
-                ログアウト
+                <span className="sm:hidden">🚪</span>
+                <span className="hidden sm:inline">ログアウト</span>
               </button>
             </div>
           </div>
@@ -208,7 +210,7 @@ export default function AdminLayout({
       {/* ブレッドクラム */}
       {generateBreadcrumbs().length > 1 && (
         <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
             <nav className="flex py-3" aria-label="Breadcrumb">
               <ol className="flex items-center space-x-2">
                 {generateBreadcrumbs().map((crumb, index) => (
@@ -237,7 +239,7 @@ export default function AdminLayout({
       {/* タブナビゲーション */}
       {tabs && tabs.length > 0 && (
         <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
             <nav className="flex space-x-8" aria-label="Tabs">
               {tabs.map((tab) => (
                 <button
@@ -264,7 +266,7 @@ export default function AdminLayout({
       )}
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
         {children}
       </main>
     </div>

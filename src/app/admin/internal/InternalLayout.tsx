@@ -22,10 +22,10 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900">
                 内部管理画面
               </h1>
             </div>
@@ -38,8 +38,8 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
 
       {/* ナビゲーションタブ */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+          <nav className="flex flex-wrap gap-2 sm:space-x-8 sm:gap-0">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -61,7 +61,7 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
         <div className="px-4 py-6 sm:px-0">
           {children}
         </div>

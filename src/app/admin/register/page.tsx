@@ -148,10 +148,10 @@ export default function AdminRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900">
             事業者新規登録
           </h2>
           <p className="mt-2 text-sm text-gray-600">

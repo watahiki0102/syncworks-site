@@ -244,7 +244,7 @@ export default function AdminAnalytics() {
         />
 
         {/* メインコンテンツ */}
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="space-y-6">
             {/* 表示間隔選択 */}
             <div className="bg-white rounded-lg shadow p-6">
@@ -273,7 +273,7 @@ export default function AdminAnalytics() {
             </div>
 
             {/* KPIカード */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KPICard
                 title="総成約件数"
                 value={calculatedKPIs.contracts}

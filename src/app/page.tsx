@@ -131,7 +131,7 @@ export default function Home() {
 
                          <AnimatedText
                text="引越しを、シンプルに"
-               className="text-gray-900 mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
+               className="text-gray-900 mb-6 text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight"
                delay={0.3}
                type="word"
              />
@@ -140,7 +140,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-gray-700 mb-12 leading-relaxed text-lg sm:text-xl md:text-2xl lg:text-3xl px-2 sm:px-4 md:px-0 max-w-3xl mx-auto"
+              className="text-gray-700 mb-12 leading-relaxed text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl px-2 sm:px-4 md:px-0 max-w-3xl mx-auto"
             >
               SyncWorksは、引越しのマッチングを通じて、<br className="hidden md:block" />
               スムーズな住まいの移転をサポートします。
@@ -228,10 +228,10 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="mb-6 text-blue-900 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
+            <h2 className="mb-6 text-blue-900 text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold">
               引越しマッチングサービス「SyncMoving」
             </h2>
-            <p className="text-blue-700 max-w-4xl mx-auto mb-12 text-lg sm:text-xl md:text-2xl leading-relaxed">
+            <p className="text-blue-700 max-w-4xl mx-auto mb-12 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
               SyncMovingは、不動産契約後のお客様と地域の引越し業者をつなぐ、<br className="hidden md:block" />
               相見積もり支援サービスです。<br className="hidden md:block" />
               条件入力は一度だけ、上位3社から自動で見積もりが届き、<br className="hidden md:block" />
@@ -276,10 +276,10 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16 lg:mb-20"
           >
-            <h2 className="mb-6 text-blue-900 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
+            <h2 className="mb-6 text-blue-900 text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold">
               選ばれる理由
             </h2>
-            <p className="text-blue-700 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl">
+            <p className="text-blue-700 max-w-3xl mx-auto text-base sm:text-lg md:text-xl lg:text-2xl">
               SyncMovingが多くのお客様に選ばれる理由をご紹介します
             </p>
           </motion.div>
@@ -341,10 +341,10 @@ export default function Home() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
                 <Settings className="w-10 h-10 text-white" />
               </div>
-              <h2 className="mb-6 text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold">
+              <h2 className="mb-6 text-gray-900 text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
                 事業者の皆様へ
               </h2>
-              <p className="text-gray-700 mb-8 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto">
+              <p className="text-gray-700 mb-8 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed max-w-2xl mx-auto">
                 引越し事業者として、私たちのサービスに参加し、<br className="hidden md:block" />
                 より多くのお客様との出会いを創出しませんか？
               </p>
@@ -423,10 +423,10 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-white mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
+            <h2 className="text-white mb-6 text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold">
               今すぐ無料見積もりを始めませんか？
             </h2>
-            <p className="text-blue-100 mb-8 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl leading-relaxed">
+            <p className="text-blue-100 mb-8 max-w-3xl mx-auto text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
               簡単3ステップで、あなたに最適な引越し業者が見つかります。<br className="hidden md:block" />
               まずは無料見積もりからお気軽にお試しください。
             </p>

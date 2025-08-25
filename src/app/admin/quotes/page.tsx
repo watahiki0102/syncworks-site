@@ -200,11 +200,11 @@ export default function AdminQuotes() {
           ]}
         />
 
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="px-4 py-6 sm:px-0">
             {/* フィルター・検索 */}
             <AdminCard title="検索・フィルタ" icon="🔍" padding="lg" className="mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* 検索 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -267,8 +267,7 @@ export default function AdminQuotes() {
                     </select>
                   </div>
                 </div>
-              </div>
-            </div>
+            </AdminCard>
 
             {/* 見積もり履歴テーブル */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -277,22 +276,22 @@ export default function AdminQuotes() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           顧客名
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           依頼日
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           回答日
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           金額
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           ステータス
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作
                         </th>
                       </tr>
@@ -300,22 +299,22 @@ export default function AdminQuotes() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredQuotes.map((quote) => (
                         <tr key={quote.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {quote.customerName}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(quote.requestDate).toLocaleDateString('ja-JP')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {quote.responseDate ? new Date(quote.responseDate).toLocaleDateString('ja-JP') : '-'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {'¥' + quote.amount.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(quote.status)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                          <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                             <button
                               onClick={() => handleViewDetails(quote.id)}
                               className="text-blue-600 hover:text-blue-900"

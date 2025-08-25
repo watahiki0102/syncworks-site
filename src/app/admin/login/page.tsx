@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
                     <div className="flex space-x-2 mb-4">
                         <span className="text-xl font-bold text-blue-700">事業者管理画面</span>
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900 mb-2">事業者アカウントをお持ちの方</h2>
+                    <h2 className="text-base md:text-lg font-bold text-gray-900 mb-2">事業者アカウントをお持ちの方</h2>
                     <p className="text-sm text-gray-800 mb-6 text-center">アカウントをお持ちの方はログインしてください。</p>
                     <form onSubmit={handleSubmit} className="w-full space-y-4">
                         <div>
@@ -129,7 +129,7 @@ export default function AdminLoginPage() {
                                     type="button"
                                     tabIndex={-1}
                                     onClick={togglePasswordVisibility}
-                                    className="absolute inset-y-0 right-2 flex items-center text-xl text-gray-500 focus:outline-none"
+                                    className="absolute inset-y-0 right-2 flex items-center text-xl text-gray-500 focus:outline-none min-w-[44px] min-h-[44px]"
                                     aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                                 >
                                     {showPassword ? '👁️' : ' 🙈'}
@@ -162,7 +162,7 @@ export default function AdminLoginPage() {
                 </div>
                 {/* 新規登録用 */}
                 <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center">
-                    <h2 className="text-lg font-bold text-gray-900 mb-2">アカウントをお持ちでない方</h2>
+                    <h2 className="text-base md:text-lg font-bold text-gray-900 mb-2">アカウントをお持ちでない方</h2>
                     <p className="text-sm text-gray-800 mb-6 text-center">ご利用にはアカウント登録が必要です。お持ちでない方は新規登録（無料）をしてください。</p>
                     <button
                         className="w-full bg-orange-600 text-white font-semibold py-3 rounded-lg shadow-sm hover:bg-orange-700 transition text-lg"

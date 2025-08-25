@@ -16,55 +16,55 @@ import {
 
 // ビジネスロジックのモック
 jest.mock('../business-logic', () => ({
-  businessLogic: {
-    customerManagementLogic: {
-      validateCustomerData: jest.fn().mockReturnValue({
-        isValid: true,
-        normalizedData: {
-          lastName: '田中',
-          firstName: '太郎',
-          email: 'tanaka@example.com',
-          phone: '090-1234-5678',
-          postalCode: '123-4567',
-          address: '東京都渋谷区1-1-1',
-        }
-      }),
-      assessCustomerRisk: jest.fn().mockReturnValue({
-        riskLevel: 'low',
-        riskScore: 25,
-        factors: ['新規顧客'],
-        recommendedActions: ['定期的なフォローアップ']
-      })
-    },
-    movingEstimateLogic: {
-      calculateMovingEstimate: jest.fn().mockReturnValue({
-        baseFare: 50000,
-        timeSurcharge: 5000,
-        optionsTotal: 10000,
-        subtotal: 65000,
-        taxAmount: 6500,
-        total: 71500,
-        breakdown: {
-          distance: 50,
-          totalPoints: 30,
-          baseRate: 1000,
-          timeSlot: 'normal',
-          selectedOptions: ['packing']
-        }
-      })
-    },
-    fleetManagementLogic: {
-      findOptimalTruckAssignment: jest.fn().mockReturnValue({
-        success: true,
-        recommendedTruck: {
-          id: 'truck1',
-          name: '中型トラック',
-          capacity: 150,
-          costPerKm: 150
-        },
-        alternatives: []
-      })
-    }
+  customerManagementLogic: {
+    validateCustomerData: jest.fn().mockReturnValue({
+      isValid: true,
+      normalizedData: {
+        lastName: '田中',
+        firstName: '太郎',
+        email: 'tanaka@example.com',
+        phone: '090-1234-5678',
+        postalCode: '123-4567',
+        address: '東京都渋谷区1-1-1',
+      }
+    }),
+    assessCustomerRisk: jest.fn().mockReturnValue({
+      riskLevel: 'low',
+      riskScore: 1,
+      factors: ['新規顧客'],
+      recommendedActions: ['通常対応で問題ありません']
+    })
+  },
+  movingEstimateLogic: {
+    calculateMovingEstimate: jest.fn().mockReturnValue({
+      baseFare: 50000,
+      timeSurcharge: 5000,
+      optionsTotal: 10000,
+      subtotal: 65000,
+      taxAmount: 6500,
+      total: 71500,
+      breakdown: {
+        distance: 50,
+        totalPoints: 30,
+        baseRate: 1000,
+        timeSlot: 'normal',
+        selectedOptions: ['packing']
+      }
+    })
+  },
+  fleetManagementLogic: {
+    findOptimalTruckAssignment: jest.fn().mockReturnValue({
+      success: true,
+      recommendedTruck: {
+        id: 'truck1',
+        name: '中型トラック',
+        capacity: 150,
+        costPerKm: 150,
+        totalCost: 7500,
+        efficiency: 0.02
+      },
+      alternatives: []
+    })
   }
 }));
 
@@ -162,6 +162,14 @@ describe('EstimateService', () => {
     });
 
     test('不正な顧客データでエラー', async () => {
+      // バリデーション失敗のモックを設定
+      const mockBusinessLogic = require('../business-logic');
+      mockBusinessLogic.customerManagementLogic.validateCustomerData.mockReturnValueOnce({
+        isValid: false,
+        errors: ['姓は必須です'],
+        normalizedData: null
+      });
+
       const invalidData = {
         ...validEstimateData,
         customerInfo: {
@@ -277,7 +285,7 @@ describe('FleetManagementService', () => {
       const result = await fleetService.findOptimalTruck(requirements);
 
       expect(result.success).toBe(true);
-      expect(result.assignment).toBeTruthy();
+      expect(result.recommendedTruck).toBeTruthy();
       expect(mockApiClient.get).toHaveBeenCalledWith('/api/trucks/available');
       expect(mockStorageService.save).toHaveBeenCalled();
     });
@@ -343,12 +351,12 @@ describe('CustomerService', () => {
 
     test('高リスク顧客の管理者通知', async () => {
       // ビジネスロジックのモックを一時的に変更
-      const mockBusinessLogic = require('../business-logic').businessLogic;
+      const mockBusinessLogic = require('../business-logic');
       mockBusinessLogic.customerManagementLogic.assessCustomerRisk.mockReturnValueOnce({
         riskLevel: 'high',
-        riskScore: 85,
-        factors: ['キャンセル率高い', '支払い遅延'],
-        recommendedActions: ['事前支払い要求', '厳格な条件設定']
+        riskScore: 6,
+        factors: ['キャンセル率が高い', '支払い遅延の履歴あり', '新規顧客'],
+        recommendedActions: ['事前入金を必須としてください', '詳細な契約書を作成してください', '管理者承認を得てください']
       });
       
       const highRiskHistory = {
@@ -401,6 +409,15 @@ describe('CustomerService', () => {
     });
 
     test('管理者通知失敗でも処理は継続', async () => {
+      // ビジネスロジックのモックを一時的に変更
+      const mockBusinessLogic = require('../business-logic');
+      mockBusinessLogic.customerManagementLogic.assessCustomerRisk.mockReturnValueOnce({
+        riskLevel: 'high',
+        riskScore: 6,
+        factors: ['キャンセル率が高い', '支払い遅延の履歴あり', '新規顧客'],
+        recommendedActions: ['事前入金を必須としてください', '詳細な契約書を作成してください', '管理者承認を得てください']
+      });
+
       const highRiskHistory = {
         completedOrders: 1,
         canceledOrders: 5,

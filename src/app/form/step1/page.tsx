@@ -486,7 +486,7 @@ function Step1FormContent() {
   return (
     <main className="bg-gray-50 min-h-screen py-10 px-4">
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-10 text-gray-800">
-        <h1 className="text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
+        <h1 className="text-xl md:text-3xl font-bold text-center text-blue-800">📦 引越し相見積もりフォーム</h1>
         <ProgressBar current={1} total={3} />
         <div className="text-center text-sm text-gray-600 mb-4">
           <p className="mb-1">📝 入力項目：<span className="font-semibold">全3ページ</span></p>
@@ -535,7 +535,7 @@ function Step1FormContent() {
             </div>
 
             {/* 姓＋名 */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={STYLES.label}>📛 姓<span className="text-red-600">＊</span></label>
                 <input
@@ -557,7 +557,7 @@ function Step1FormContent() {
             </div>
 
             {/* セイ＋メイ */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={STYLES.label}>📛 セイ（カタカナ）<span className="text-red-600">＊</span></label>
                 <input

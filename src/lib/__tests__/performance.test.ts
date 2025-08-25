@@ -297,7 +297,7 @@ describe('パフォーマンステスト', () => {
       expect(results).toHaveLength(100);
       expect(results.every(result => {
         return result.total > result.subtotal && 
-               result.breakdown.totalPoints === 153 &&
+               result.breakdown.totalPoints === 215 && // 正しい計算値: 1*20 + 2*15 + 6*5 + 1*30 + 1*25 + 2*18 + 3*12 + 1*8 = 215
                result.timeSurcharge > 0;
       })).toBe(true);
       

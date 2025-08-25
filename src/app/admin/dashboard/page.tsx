@@ -225,7 +225,7 @@ export default function AdminDashboard() {
             <NewsPanel />
             
             {/* メニューカード群を2列で配置 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {/* 案件管理 */}
               <Link href="/admin/cases" className="block">
                 <AdminCard
