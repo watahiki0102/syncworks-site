@@ -6,7 +6,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import TruckAssignmentModal from '../dispatch/components/TruckAssignmentModal';
 import AssignmentStatusFilter, { AssignmentStatusFilterValue } from '@/components/dispatch/AssignmentStatusFilter';
 import { formatDate, formatTime } from '@/utils/dateTimeUtils';
-import { Truck } from '@/types/dispatch';
+import { Truck } from '@/types/shared';
 import { ContractStatus } from '@/types/case';
 
 interface FormSubmission {

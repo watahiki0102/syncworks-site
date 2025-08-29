@@ -7,7 +7,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
 import TruckManagementModal from './components/TruckManagementModal';
 import { useRouter } from 'next/navigation';
 
@@ -164,14 +164,66 @@ export default function PricingStep2Page() {
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [options, setOptions] = useState<OptionItem[]>(DEFAULT_OPTIONS);
-  const [newOptionLabel, setNewOptionLabel] = useState('');
-  const [newOptionType, setNewOptionType] = useState<OptionType>('free');
-  const [newOptionPrice, setNewOptionPrice] = useState<number>(0);
-  const [newOptionUnit, setNewOptionUnit] = useState<string>('');
-  const [newOptionMinPoint, setNewOptionMinPoint] = useState<number | undefined>(undefined);
-  const [newOptionMaxPoint, setNewOptionMaxPoint] = useState<number | undefined>(undefined);
-  const [optionErrors, setOptionErrors] = useState<{ [optionId: string]: string }>({});
-  const [optionAddError, setOptionAddError] = useState('');
+  // オプション追加フォーム用のreducer
+  interface OptionFormState {
+    newOptionLabel: string;
+    newOptionType: OptionType;
+    newOptionPrice: number;
+    newOptionUnit: string;
+    newOptionMinPoint: number | undefined;
+    newOptionMaxPoint: number | undefined;
+    optionErrors: { [optionId: string]: string };
+    optionAddError: string;
+  }
+
+  type OptionFormAction = 
+    | { type: 'SET_LABEL'; payload: string }
+    | { type: 'SET_TYPE'; payload: OptionType }
+    | { type: 'SET_PRICE'; payload: number }
+    | { type: 'SET_UNIT'; payload: string }
+    | { type: 'SET_MIN_POINT'; payload: number | undefined }
+    | { type: 'SET_MAX_POINT'; payload: number | undefined }
+    | { type: 'SET_ERRORS'; payload: { [optionId: string]: string } }
+    | { type: 'SET_ADD_ERROR'; payload: string }
+    | { type: 'RESET_FORM' };
+
+  const initialOptionFormState: OptionFormState = {
+    newOptionLabel: '',
+    newOptionType: 'free',
+    newOptionPrice: 0,
+    newOptionUnit: '',
+    newOptionMinPoint: undefined,
+    newOptionMaxPoint: undefined,
+    optionErrors: {},
+    optionAddError: ''
+  };
+
+  function optionFormReducer(state: OptionFormState, action: OptionFormAction): OptionFormState {
+    switch (action.type) {
+      case 'SET_LABEL':
+        return { ...state, newOptionLabel: action.payload };
+      case 'SET_TYPE':
+        return { ...state, newOptionType: action.payload };
+      case 'SET_PRICE':
+        return { ...state, newOptionPrice: action.payload };
+      case 'SET_UNIT':
+        return { ...state, newOptionUnit: action.payload };
+      case 'SET_MIN_POINT':
+        return { ...state, newOptionMinPoint: action.payload };
+      case 'SET_MAX_POINT':
+        return { ...state, newOptionMaxPoint: action.payload };
+      case 'SET_ERRORS':
+        return { ...state, optionErrors: action.payload };
+      case 'SET_ADD_ERROR':
+        return { ...state, optionAddError: action.payload };
+      case 'RESET_FORM':
+        return initialOptionFormState;
+      default:
+        return state;
+    }
+  }
+
+  const [optionFormState, optionFormDispatch] = useReducer(optionFormReducer, initialOptionFormState);
   const [newPricingMaxPoint, setNewPricingMaxPoint] = useState<number | undefined>(undefined);
   const [newPricingPrice, setNewPricingPrice] = useState<number | undefined>(undefined);
   
@@ -680,12 +732,7 @@ export default function PricingStep2Page() {
         maxPoint: newOptionMaxPoint,
       }
     ]);
-    setNewOptionLabel('');
-    setNewOptionType('free');
-    setNewOptionPrice(0);
-    setNewOptionUnit('');
-    setNewOptionMinPoint(undefined);
-    setNewOptionMaxPoint(undefined);
+    optionFormDispatch({ type: 'RESET_FORM' });
     setOptionAddError('');
   };
 

@@ -5,6 +5,9 @@
  * - テストユーティリティの設定
  */
 
+// Testing Library のカスタムマッチャーをインポート
+require('@testing-library/jest-dom')
+
 // テスト環境変数を読み込み
 require('dotenv').config({ path: '.env.test' })
 
@@ -24,15 +27,17 @@ const mockDate = new Date('2024-01-01T00:00:00.000Z')
 Date.now = jest.fn(() => mockDate.getTime())
 
 // Windowオブジェクトのモック（必要に応じて）
-Object.defineProperty(window, 'location', {
-  value: {
-    href: 'http://localhost:3000',
-    pathname: '/',
-    search: '',
-    hash: '',
-  },
-  writable: true,
-})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'location', {
+    value: {
+      href: 'http://localhost:3000',
+      pathname: '/',
+      search: '',
+      hash: '',
+    },
+    writable: true,
+  });
+}
 
 // IntersectionObserver のモック
 global.IntersectionObserver = class IntersectionObserver {
@@ -50,39 +55,50 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 }
 
+// PerformanceObserver のモック
+const mockPerformanceObserver = {
+  observe: jest.fn(),
+  disconnect: jest.fn(),
+};
+global.PerformanceObserver = jest.fn().mockImplementation((callback) => mockPerformanceObserver);
+
 // matchMedia のモック
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
 
 // localStorage のモック
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-}
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
-})
+if (typeof window !== 'undefined') {
+  const localStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  }
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock
+  })
 
-// sessionStorage のモック
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  // sessionStorage のモック
+  const sessionStorageMock = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  }
+  Object.defineProperty(window, 'sessionStorage', {
+    value: sessionStorageMock
+  })
 }
-Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock
-})

@@ -11,9 +11,14 @@
       "Bash(npm test:*)",
       "Bash(npm run build:*)",
       "Bash(timeout 30s npm run dev)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx --max_old_space_size=8192 jest --coverage --watchAll=false --maxWorkers=2)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\d C:\\Users\\81902\\Documents"
+    ]
   }
 }

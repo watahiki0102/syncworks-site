@@ -40,7 +40,7 @@ export const useAsyncOperation = <T>(
       abortControllerRef.current.abort();
     }
 
-    abortControllerRef.current = new AbortController();
+    abortControllerRef.current = typeof AbortController !== 'undefined' ? new AbortController() : null;
     
     setState(prev => ({
       ...prev,

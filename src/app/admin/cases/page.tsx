@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
-import AdminButton from '@/components/admin/AdminButton';
+import { Button } from '@/components/ui/Button';
 import QuoteHistoryPage from './history/page';
 import QuoteRequestsPage from './requests/page';
 import PerformancePage from './performance/page';

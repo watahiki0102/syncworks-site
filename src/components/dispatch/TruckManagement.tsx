@@ -1,19 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
+import { FormModal } from '@/components/ui/SimpleModal';
 import { Input } from '@/components/ui/Input';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 
-export interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
-  truckType: string;
-  schedules: any[];
-}
+import { Truck } from '@/types/shared';
 
 interface TruckManagementProps {
   trucks: Truck[];
@@ -27,113 +18,169 @@ const truckStatuses = [
   { value: 'inactive', label: '非稼働' }
 ];
 
-export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTruck, setEditingTruck] = useState<Truck | null>(null);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [formData, setFormData] = useState({
+interface FormState {
+  isModalOpen: boolean;
+  editingTruck: Truck | null;
+  modalMode: 'create' | 'edit';
+  formData: {
+    name: string;
+    plateNumber: string;
+    capacityKg: string;
+    truckType: string;
+    inspectionExpiry: string;
+    status: Truck['status'];
+  };
+  errors: Record<string, string>;
+}
+
+type FormAction = 
+  | { type: 'OPEN_CREATE_MODAL' }
+  | { type: 'OPEN_EDIT_MODAL'; payload: Truck }
+  | { type: 'CLOSE_MODAL' }
+  | { type: 'UPDATE_FORM_DATA'; payload: Partial<FormState['formData']> }
+  | { type: 'SET_ERRORS'; payload: Record<string, string> }
+  | { type: 'RESET_FORM' };
+
+const initialFormState: FormState = {
+  isModalOpen: false,
+  editingTruck: null,
+  modalMode: 'create',
+  formData: {
     name: '',
     plateNumber: '',
     capacityKg: '',
     truckType: '',
     inspectionExpiry: '',
-    status: 'available' as Truck['status']
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+    status: 'available'
+  },
+  errors: {}
+};
 
-  useEffect(() => {
-    if (editingTruck && modalMode === 'edit') {
-      setFormData({
-        name: editingTruck.name,
-        plateNumber: editingTruck.plateNumber,
-        capacityKg: editingTruck.capacityKg.toString(),
-        truckType: editingTruck.truckType,
-        inspectionExpiry: editingTruck.inspectionExpiry,
-        status: editingTruck.status
-      });
-    } else {
-      setFormData({
-        name: '',
-        plateNumber: '',
-        capacityKg: '',
-        truckType: '',
-        inspectionExpiry: '',
-        status: 'available'
-      });
-    }
-    setErrors({});
-  }, [editingTruck, modalMode]);
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'OPEN_CREATE_MODAL':
+      return {
+        ...initialFormState,
+        isModalOpen: true,
+        modalMode: 'create'
+      };
+    case 'OPEN_EDIT_MODAL':
+      return {
+        ...state,
+        isModalOpen: true,
+        editingTruck: action.payload,
+        modalMode: 'edit',
+        formData: {
+          name: action.payload.name,
+          plateNumber: action.payload.plateNumber,
+          capacityKg: action.payload.capacityKg.toString(),
+          truckType: action.payload.truckType,
+          inspectionExpiry: action.payload.inspectionExpiry,
+          status: action.payload.status
+        },
+        errors: {}
+      };
+    case 'CLOSE_MODAL':
+      return {
+        ...initialFormState
+      };
+    case 'UPDATE_FORM_DATA':
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          ...action.payload
+        }
+      };
+    case 'SET_ERRORS':
+      return {
+        ...state,
+        errors: action.payload
+      };
+    case 'RESET_FORM':
+      return {
+        ...state,
+        formData: initialFormState.formData,
+        errors: {}
+      };
+    default:
+      return state;
+  }
+}
+
+export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps) {
+  const [formState, dispatch] = useReducer(formReducer, initialFormState);
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    if (!formState.formData.name.trim()) {
       newErrors.name = 'トラック名は必須です';
     }
 
-    if (!formData.plateNumber.trim()) {
+    if (!formState.formData.plateNumber.trim()) {
       newErrors.plateNumber = 'ナンバーは必須です';
     }
 
-    if (!formData.capacityKg.trim()) {
+    if (!formState.formData.capacityKg.trim()) {
       newErrors.capacityKg = '容量は必須です';
-    } else if (isNaN(Number(formData.capacityKg)) || Number(formData.capacityKg) <= 0) {
+    } else if (isNaN(Number(formState.formData.capacityKg)) || Number(formState.formData.capacityKg) <= 0) {
       newErrors.capacityKg = '有効な容量を入力してください';
     }
 
-    if (!formData.truckType) {
+    if (!formState.formData.truckType) {
       newErrors.truckType = '車種は必須です';
     }
 
-    setErrors(newErrors);
+    dispatch({ type: 'SET_ERRORS', payload: newErrors });
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {    
     if (!validateForm()) {
       return;
     }
 
     const truckData = {
-      name: formData.name.trim(),
-      plateNumber: formData.plateNumber.trim(),
-      capacityKg: Number(formData.capacityKg),
-      truckType: formData.truckType,
-      inspectionExpiry: formData.inspectionExpiry,
-      status: formData.status
+      name: formState.formData.name.trim(),
+      plateNumber: formState.formData.plateNumber.trim(),
+      capacityKg: Number(formState.formData.capacityKg),
+      truckType: formState.formData.truckType,
+      inspectionExpiry: formState.formData.inspectionExpiry,
+      status: formState.formData.status
     };
 
-    if (modalMode === 'create') {
+    if (formState.modalMode === 'create') {
       const newTruck: Truck = {
         ...truckData,
         id: Date.now().toString(),
         schedules: []
       };
       onTrucksChange([...trucks, newTruck]);
-    } else if (modalMode === 'edit' && editingTruck) {
+    } else if (formState.modalMode === 'edit' && formState.editingTruck) {
       const updatedTruck: Truck = {
-        ...editingTruck,
+        ...formState.editingTruck,
         ...truckData
       };
-      onTrucksChange(trucks.map(t => t.id === editingTruck.id ? updatedTruck : t));
+      onTrucksChange(trucks.map(t => t.id === formState.editingTruck!.id ? updatedTruck : t));
     }
 
-    setIsModalOpen(false);
-    setEditingTruck(null);
+    closeModal();
   };
+  
+  const closeModal = () => {
+    dispatch({ type: 'CLOSE_MODAL' });
+  };
+  
+  const isFormValid = formState.formData.name.trim() && formState.formData.plateNumber.trim() && formState.formData.capacityKg && formState.formData.truckType;
 
   const handleCreateTruck = () => {
-    setModalMode('create');
-    setEditingTruck(null);
-    setIsModalOpen(true);
+    dispatch({ type: 'OPEN_CREATE_MODAL' });
   };
 
   const handleEditTruck = (truck: Truck) => {
-    setModalMode('edit');
-    setEditingTruck(truck);
-    setIsModalOpen(true);
+    dispatch({ type: 'OPEN_EDIT_MODAL', payload: truck });
   };
 
   const handleDeleteTruck = (id: string) => {
@@ -263,16 +310,17 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
       )}
 
       {/* トラック登録・編集モーダル */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              {modalMode === 'create' ? 'トラック新規登録' : 'トラック編集'}
-            </h3>
-          </div>
-
-          <form onSubmit={handleSubmit} className="px-6 py-4">
-            <div className="space-y-4">
+      <FormModal
+        isOpen={formState.isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        title={formState.modalMode === 'create' ? 'トラック新規登録' : 'トラック編集'}
+        submitText={formState.modalMode === 'create' ? '登録' : '更新'}
+        cancelText="キャンセル"
+        isValid={isFormValid}
+        size="md"
+      >
+        <div className="space-y-4">
               {/* トラック名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -281,12 +329,12 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 <Input
                   id="name"
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className={errors.name ? 'border-red-500' : ''}
+                  value={formState.formData.name}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { name: e.target.value } })}
+                  className={formState.errors.name ? 'border-red-500' : ''}
                   placeholder="例: トラックA"
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                {formState.errors.name && <p className="text-red-500 text-sm mt-1">{formState.errors.name}</p>}
               </div>
 
               {/* ナンバー */}
@@ -297,12 +345,12 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 <Input
                   id="plateNumber"
                   type="text"
-                  value={formData.plateNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, plateNumber: e.target.value }))}
-                  className={errors.plateNumber ? 'border-red-500' : ''}
+                  value={formState.formData.plateNumber}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { plateNumber: e.target.value } })}
+                  className={formState.errors.plateNumber ? 'border-red-500' : ''}
                   placeholder="例: 品川500 あ 1234"
                 />
-                {errors.plateNumber && <p className="text-red-500 text-sm mt-1">{errors.plateNumber}</p>}
+                {formState.errors.plateNumber && <p className="text-red-500 text-sm mt-1">{formState.errors.plateNumber}</p>}
               </div>
 
               {/* 容量 */}
@@ -313,13 +361,13 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 <Input
                   id="capacityKg"
                   type="number"
-                  value={formData.capacityKg}
-                  onChange={(e) => setFormData(prev => ({ ...prev, capacityKg: e.target.value }))}
-                  className={errors.capacityKg ? 'border-red-500' : ''}
+                  value={formState.formData.capacityKg}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { capacityKg: e.target.value } })}
+                  className={formState.errors.capacityKg ? 'border-red-500' : ''}
                   placeholder="例: 4000"
                   min="1"
                 />
-                {errors.capacityKg && <p className="text-red-500 text-sm mt-1">{errors.capacityKg}</p>}
+                {formState.errors.capacityKg && <p className="text-red-500 text-sm mt-1">{formState.errors.capacityKg}</p>}
               </div>
 
               {/* 車種 */}
@@ -329,10 +377,10 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 </label>
                 <select
                   id="truckType"
-                  value={formData.truckType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, truckType: e.target.value }))}
+                  value={formState.formData.truckType}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { truckType: e.target.value } })}
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.truckType ? 'border-red-500' : 'border-gray-300'
+                    formState.errors.truckType ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
                   <option value="">車種を選択</option>
@@ -340,7 +388,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
-                {errors.truckType && <p className="text-red-500 text-sm mt-1">{errors.truckType}</p>}
+                {formState.errors.truckType && <p className="text-red-500 text-sm mt-1">{formState.errors.truckType}</p>}
               </div>
 
               {/* 車検有効期限 */}
@@ -351,8 +399,8 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 <Input
                   id="inspectionExpiry"
                   type="date"
-                  value={formData.inspectionExpiry}
-                  onChange={(e) => setFormData(prev => ({ ...prev, inspectionExpiry: e.target.value }))}
+                  value={formState.formData.inspectionExpiry}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { inspectionExpiry: e.target.value } })}
                 />
               </div>
 
@@ -363,8 +411,8 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                 </label>
                 <select
                   id="status"
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Truck['status'] }))}
+                  value={formState.formData.status}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { status: e.target.value as Truck['status'] } })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   {truckStatuses.map(status => (
@@ -372,27 +420,8 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                variant="outline"
-                className="px-4 py-2"
-              >
-                キャンセル
-              </Button>
-              <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-              >
-                {modalMode === 'create' ? '登録' : '更新'}
-              </Button>
-            </div>
-          </form>
         </div>
-      </Modal>
+      </FormModal>
     </div>
   );
 }

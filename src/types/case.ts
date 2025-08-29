@@ -16,11 +16,8 @@ export interface CompanyProfile {
   logoUrl?: string;
 }
 
-export interface EmployeeRef {
-  id: string;
-  name: string;
-  role?: string;
-}
+// 共通型定義から再エクスポート
+export { type Employee as EmployeeRef } from './shared';
 
 export interface CaseCore {
   id: string;

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import AdminButton from '@/components/admin/AdminButton';
+import { Button } from '@/components/ui/Button';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
@@ -12,7 +12,7 @@ import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
 import { toLocalDateString } from '@/utils/dateTimeUtils';
-import { Truck, Schedule } from '@/types/dispatch';
+import { Truck, Schedule } from '@/types/shared';
 import { ContractStatus } from '@/types/case';
 
 interface FormSubmission {

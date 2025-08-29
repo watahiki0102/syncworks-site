@@ -9,7 +9,9 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:memory": "node --max-old-space-size=8192 node_modules/jest/bin/jest.js --coverage --watchAll=false --maxWorkers=1 --forceExit",
+    "test:components": "node --max-old-space-size=6144 node_modules/jest/bin/jest.js --coverage --watchAll=false --maxWorkers=1 --testPathPattern=\"components.*test\" --forceExit"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.83",
@@ -34,6 +36,9 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^20",
     "@types/react": "^19",

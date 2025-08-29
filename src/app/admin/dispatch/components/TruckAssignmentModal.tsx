@@ -10,7 +10,8 @@
 import { useState, useEffect } from 'react';
 // import { formatTime } from '@/utils/dateTimeUtils'; // Currently unused
 import { ContractStatus } from '@/types/case';
-import { Truck } from '@/types/dispatch';
+import { Truck, Employee, EmployeeShift } from '@/types/shared';
+import { FormModal, SimpleModal } from '@/components/ui/SimpleModal';
 
 interface FormSubmission {
   id: string;
@@ -44,25 +45,7 @@ interface TruckAssignment {
   employeeId?: string; // 従業員IDを追加
 }
 
-interface Employee {
-  id: string;
-  name: string;
-  position: string;
-  status: 'active' | 'inactive';
-  shifts: EmployeeShift[];
-}
-
-interface EmployeeShift {
-  id: string;
-  employeeId: string;
-  date: string;
-  timeSlot: string;
-  status: 'available' | 'booked' | 'unavailable' | 'overtime' | 'provisional';
-  truckScheduleId?: string;
-  customerName?: string;
-  workType?: string;
-  notes?: string;
-}
+// Employee と EmployeeShift は共通型から import済み
 
 interface TruckAssignmentModalProps {
   selectedSubmission: FormSubmission | null;
@@ -118,9 +101,7 @@ export default function TruckAssignmentModal({
     }
   }, [selectedSubmission, calculateRecommendedTrucks]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {
     if (!selectedSubmission || !formData.truckId) return;
 
     const selectedTruck = trucks.find(t => t.id === formData.truckId);
@@ -139,6 +120,12 @@ export default function TruckAssignmentModal({
     assignTruckToSubmission(selectedSubmission.id, truckAssignment);
     setShowTruckModal(false);
   };
+  
+  const handleClose = () => {
+    setShowTruckModal(false);
+  };
+  
+  const isFormValid = formData.truckId && formData.startTime && formData.endTime;
 
   const getAvailableEmployees = (date: string, startTime: string, endTime: string) => {
     return employees.filter(emp => {
@@ -188,10 +175,17 @@ export default function TruckAssignmentModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">トラック割り当て</h3>
-        
+    <>
+      <FormModal
+        isOpen={!!selectedSubmission}
+        onClose={handleClose}
+        onSubmit={handleSubmit}
+        title="トラック割り当て"
+        submitText="割り当て"
+        cancelText="キャンセル"
+        isValid={isFormValid}
+        size="lg"
+      >
         <div className="mb-4 p-4 bg-blue-50 rounded">
           <h4 className="font-medium text-gray-900 mb-2">案件情報</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -199,7 +193,7 @@ export default function TruckAssignmentModal({
               <span className="font-medium">顧客名:</span> {selectedSubmission.customerName}
             </div>
             <div>
-                               <span className="font-medium">引越し日:</span> {selectedSubmission.moveDate}
+              <span className="font-medium">引越し日:</span> {selectedSubmission.moveDate}
             </div>
             <div>
               <span className="font-medium">総容量:</span> {selectedSubmission.totalCapacity.toLocaleString()}kg
@@ -210,7 +204,7 @@ export default function TruckAssignmentModal({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">トラック選択</label>
             <select
@@ -323,65 +317,47 @@ export default function TruckAssignmentModal({
               )}
             </div>
           </div>
+        </div>
+      </FormModal>
 
-          <div className="flex gap-2 pt-4">
+        {/* 従業員選択モーダル */}
+        <SimpleModal
+          isOpen={showEmployeeModal}
+          onClose={() => setShowEmployeeModal(false)}
+          title="従業員選択"
+          size="sm"
+          footer={
             <button
-              type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            >
-              割り当て
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTruckModal(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              onClick={() => setShowEmployeeModal(false)}
+              className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
             >
               キャンセル
             </button>
-          </div>
-        </form>
-
-        {/* 従業員選択モーダル */}
-        {showEmployeeModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h4 className="text-lg font-semibold mb-4">従業員選択</h4>
-              
-              {availableEmployees.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 mb-2">利用可能な従業員がいません</p>
-                  <p className="text-sm text-gray-400">
-                    指定された時間帯にシフトが空いている従業員を確認してください
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {availableEmployees.map(employee => (
-                    <div
-                      key={employee.id}
-                      className="p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleEmployeeSelect(employee)}
-                    >
-                      <div className="font-medium text-gray-900">{employee.name}</div>
-                      <div className="text-sm text-gray-600">{employee.position}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="mt-4">
-                <button
-                  onClick={() => setShowEmployeeModal(false)}
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  キャンセル
-                </button>
-              </div>
+          }
+        >
+          {availableEmployees.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-2">利用可能な従業員がいません</p>
+              <p className="text-sm text-gray-400">
+                指定された時間帯にシフトが空いている従業員を確認してください
+              </p>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {availableEmployees.map(employee => (
+                <div
+                  key={employee.id}
+                  className="p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleEmployeeSelect(employee)}
+                >
+                  <div className="font-medium text-gray-900">{employee.name}</div>
+                  <div className="text-sm text-gray-600">{employee.position}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SimpleModal>
+    </>
   );
 }
 
