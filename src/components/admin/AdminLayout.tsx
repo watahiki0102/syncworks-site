@@ -113,8 +113,8 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+      <header className="bg-white shadow-sm border-b border-gray-200 w-full">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 sm:gap-0">
             {/* 左側：タイトルとログイン情報 */}
             <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ export default function AdminLayout({
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{getCurrentPageInfo().icon}</span>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h1>
                     {subtitle && (
                       <p className="text-sm text-gray-600">{subtitle}</p>
                     )}
@@ -132,7 +132,7 @@ export default function AdminLayout({
             </div>
             
             {/* 右側：ログイン情報・アクション・メニュー */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {/* ログイン情報 */}
               <div className="hidden md:block text-right">
                 <div className="text-xs text-gray-500">ログイン中</div>
@@ -146,7 +146,7 @@ export default function AdminLayout({
               <div className="relative" ref={settingsRef}>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
+                  className="flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
                 >
                   <span className="text-base">⚙️</span>
                   <span className="hidden sm:inline">設定</span>
@@ -187,7 +187,7 @@ export default function AdminLayout({
               {pathname !== '/admin/dashboard' && (
                 <button
                   onClick={() => router.push('/admin/dashboard')}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
                 >
                   <span className="sm:hidden">←</span>
                   <span className="hidden sm:inline">戻る</span>
@@ -197,7 +197,7 @@ export default function AdminLayout({
               {/* ログアウトボタン */}
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+                className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
               >
                 <span className="sm:hidden">🚪</span>
                 <span className="hidden sm:inline">ログアウト</span>
@@ -209,8 +209,8 @@ export default function AdminLayout({
 
       {/* ブレッドクラム */}
       {generateBreadcrumbs().length > 1 && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="bg-white border-b border-gray-200 w-full">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <nav className="flex py-3" aria-label="Breadcrumb">
               <ol className="flex items-center space-x-2">
                 {generateBreadcrumbs().map((crumb, index) => (
@@ -238,8 +238,8 @@ export default function AdminLayout({
 
       {/* タブナビゲーション */}
       {tabs && tabs.length > 0 && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="bg-white border-b border-gray-200 w-full">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <nav className="flex space-x-8" aria-label="Tabs">
               {tabs.map((tab) => (
                 <button
@@ -266,8 +266,10 @@ export default function AdminLayout({
       )}
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
-        {children}
+      <main className="w-full py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-120px)]">
+          {children}
+        </div>
       </main>
     </div>
   );

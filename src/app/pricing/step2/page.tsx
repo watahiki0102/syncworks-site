@@ -185,6 +185,10 @@ export default function PricingStep2Page() {
     | { type: 'SET_MAX_POINT'; payload: number | undefined }
     | { type: 'SET_ERRORS'; payload: { [optionId: string]: string } }
     | { type: 'SET_ADD_ERROR'; payload: string }
+    | { type: 'SET_NEW_OPTION_LABEL'; payload: string }
+    | { type: 'SET_NEW_OPTION_TYPE'; payload: OptionType }
+    | { type: 'SET_NEW_OPTION_PRICE'; payload: number }
+    | { type: 'SET_NEW_OPTION_UNIT'; payload: string }
     | { type: 'RESET_FORM' };
 
   const initialOptionFormState: OptionFormState = {
@@ -1287,8 +1291,8 @@ export default function PricingStep2Page() {
                         className={`w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right ${opt.type === 'individual' || opt.type === 'free' ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                         disabled={opt.type === 'individual' || opt.type === 'free'}
                       />
-                      {optionErrors[opt.id] && (
-                        <div className="text-red-600 text-xs mt-1">{optionErrors[opt.id]}</div>
+                      {optionFormState.optionErrors[opt.id] && (
+                        <div className="text-red-600 text-xs mt-1">{optionFormState.optionErrors[opt.id]}</div>
                       )}
                     </td>
                     <td className="border border-gray-200 px-2 py-2">
@@ -1332,42 +1336,42 @@ export default function PricingStep2Page() {
           <div className="flex flex-wrap gap-2 mt-4 items-end">
             <input
               type="text"
-              value={newOptionLabel}
-              onChange={e => setNewOptionLabel(e.target.value)}
+              value={optionFormState.newOptionLabel}
+              onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_LABEL', payload: e.target.value })}
               className="border rounded px-3 py-1 flex-1 min-w-[180px]"
               placeholder="新しいオプション名"
             />
             <select
-              value={newOptionType}
-              onChange={e => setNewOptionType(e.target.value as OptionType)}
+              value={optionFormState.newOptionType}
+              onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_TYPE', payload: e.target.value as OptionType })}
               className="border rounded px-2 py-1 min-w-[120px]"
             >
               {OPTION_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            {newOptionType === 'paid' && (
+            {optionFormState.newOptionType === 'paid' && (
               <input
                 type="text"
                 min="0"
-                value={newOptionPrice}
-                onChange={e => setNewOptionPrice(parseInt(e.target.value) || 0)}
+                value={optionFormState.newOptionPrice}
+                onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_PRICE', payload: parseInt(e.target.value) || 0 })}
                 className="border rounded px-2 py-1 min-w-[80px]"
                 placeholder="金額"
               />
             )}
             <input
               type="text"
-              value={newOptionUnit}
-              onChange={e => setNewOptionUnit(e.target.value)}
+              value={optionFormState.newOptionUnit}
+              onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_UNIT', payload: e.target.value })}
               className="border rounded px-2 py-1 min-w-[80px]"
               placeholder="単位数量"
             />
             <input
               type="number"
               min="0"
-              value={newOptionPrice}
-              onChange={e => setNewOptionPrice(parseInt(e.target.value) || 0)}
+              value={optionFormState.newOptionPrice}
+              onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_PRICE', payload: parseInt(e.target.value) || 0 })}
               className="border rounded px-2 py-1 min-w-[60px] max-w-[100px] text-right"
               placeholder="料金"
             />

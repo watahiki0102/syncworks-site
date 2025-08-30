@@ -143,7 +143,7 @@ export default function BillingPage() {
         <DevelopmentAuthGuard>
           <InternalGate>
             <InternalLayout>
-              <div className="mb-8 w-full max-w-none px-4">
+              <div className="mb-8 w-full max-w-none px-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   請求管理
                 </h2>
@@ -153,7 +153,7 @@ export default function BillingPage() {
               </div>
 
               {/* 検索・フィルタ */}
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 w-full max-w-none mx-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4 w-full">
                   <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -190,7 +190,7 @@ export default function BillingPage() {
               </div>
 
               {/* 統計情報 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 mb-6 w-full max-w-none mx-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 mb-6 w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <div className="text-sm font-medium text-gray-500">総件数</div>
                   <div className="text-2xl font-bold text-gray-900">{data.length}</div>
@@ -222,7 +222,7 @@ export default function BillingPage() {
               </div>
 
               {/* テーブル */}
-              <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden w-full max-w-none mx-4">
+              <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="overflow-x-auto w-full">
                   <table className="min-w-full divide-y divide-gray-200 w-full">
                     <thead className="bg-gray-50">
@@ -318,7 +318,7 @@ export default function BillingPage() {
         <AdminAuthGuard>
           <InternalGate>
             <InternalLayout>
-              <div className="mb-8 w-full max-w-none px-4">
+              <div className="mb-8 w-full max-w-none px-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   請求管理
                 </h2>
@@ -328,7 +328,7 @@ export default function BillingPage() {
               </div>
 
               {/* 検索・フィルタ */}
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 w-full max-w-none mx-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4 w-full">
                   <div>
                     <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -365,7 +365,7 @@ export default function BillingPage() {
               </div>
 
               {/* 統計情報 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 mb-6 w-full max-w-none mx-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 mb-6 w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <div className="text-sm font-medium text-gray-500">総件数</div>
                   <div className="text-2xl font-bold text-gray-900">{data.length}</div>
@@ -397,7 +397,7 @@ export default function BillingPage() {
               </div>
 
               {/* テーブル */}
-              <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden w-full max-w-none mx-4">
+              <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden w-full max-w-none mx-4" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
                 <div className="overflow-x-auto w-full">
                   <table className="min-w-full divide-y divide-gray-200 w-full">
                     <thead className="bg-gray-50">

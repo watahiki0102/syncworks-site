@@ -31,6 +31,7 @@ export interface CaseCore {
   priceTaxIncluded?: number | null; // 税込金額
 }
 
+
 export interface CaseAssignment {
   truckId?: string | null;
   truckName?: string | null;

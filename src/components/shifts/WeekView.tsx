@@ -125,16 +125,16 @@ export default function WeekView({
                   <div key={`${employee.id}-${day.date}`} className="flex-1 min-w-[180px] border-r border-gray-200">
                     <div className="grid grid-cols-1 gap-px">
                       {TIME_SLOTS.map((timeSlot) => {
-                        const shift = getShiftForSlot(employee, day.date, timeSlot.time);
+                        const shift = getShiftForSlot(employee, day.date, timeSlot.id);
                         const workType = shift?.workType ? getWorkTypeDisplay(shift.workType) : null;
                         
                         return (
                           <div
-                            key={`${employee.id}-${day.date}-${timeSlot.time}`}
+                            key={`${employee.id}-${day.date}-${timeSlot.id}`}
                             className={`h-16 p-1 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
                               shift ? getShiftColor(shift.status) : 'bg-white'
                             }`}
-                            onClick={() => onShiftClick(employee, day.date, timeSlot.time)}
+                            onClick={() => onShiftClick(employee, day.date, timeSlot.id)}
                             title={shift ? `${shift.customerName || '作業'} (${timeSlot.label})` : `${timeSlot.label} - 空き`}
                           >
                             {shift && (

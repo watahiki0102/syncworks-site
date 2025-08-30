@@ -317,8 +317,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
         title={formState.modalMode === 'create' ? 'トラック新規登録' : 'トラック編集'}
         submitText={formState.modalMode === 'create' ? '登録' : '更新'}
         cancelText="キャンセル"
-        isValid={isFormValid}
-        size="md"
+        isValid={!!isFormValid}
       >
         <div className="space-y-4">
               {/* トラック名 */}

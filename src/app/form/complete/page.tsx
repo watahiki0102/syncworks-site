@@ -93,7 +93,7 @@ function FormCompleteContent() {
         alert('受付メールを送信しました。届かない場合は迷惑メールをご確認ください。');
       }
       
-      setShowContactSelection(false);
+      // 連絡手段設定完了
     } catch (error) {
       console.error('連絡手段の保存に失敗しました:', error);
       alert('連絡手段の保存に失敗しました。');

@@ -67,6 +67,7 @@ export default function ShiftManagement() {
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
 
   const [overviewDate, setOverviewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'calendar' | 'employees' | 'templates' | 'bulk' | 'overview'>('calendar');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
