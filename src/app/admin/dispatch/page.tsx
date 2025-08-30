@@ -3,10 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { Button } from '@/components/ui/Button';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
-import TruckAssignmentModal from './components/TruckAssignmentModal';
 import UnavailablePeriodModal from './components/UnavailablePeriodModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
@@ -207,43 +205,7 @@ function DispatchManagementContent() {
   const selectedCaseId = searchParams.get('selectedCase');
   const registrationMode = searchParams.get('mode');
 
-  // 統一されたステータス表示システム
-  const getStatusConfig = (type: string, status: string) => {
-    const configs: Record<string, Record<string, { color: string; text: string; icon: string }>> = {
-      // 案件ステータス
-      submission: {
-        pending: { color: 'bg-orange-100 text-orange-800 border-orange-200', text: '未割り当て', icon: '⏳' },
-        assigned: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '割り当て済み', icon: '🚚' },
-        completed: { color: 'bg-green-100 text-green-800 border-green-200', text: '完了', icon: '✅' },
-      },
-      // 案件ステータス（新規追加）
-      caseStatus: {
-        unanswered: { color: 'bg-gray-100 text-gray-800 border-gray-200', text: '未回答', icon: '📝' },
-        answered: { color: 'bg-blue-100 text-blue-800 border-blue-200', text: '回答済み', icon: '✉️' },
-        contracted: { color: 'bg-green-100 text-green-800 border-green-200', text: '受注', icon: '✅' },
-        lost: { color: 'bg-red-100 text-red-800 border-red-200', text: '失注', icon: '❌' },
-        cancelled: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', text: 'キャンセル', icon: '🚫' },
-      },
-      // トラックステータス
-      truck: {
-        available: { color: 'bg-green-600 text-white', text: '稼働中', icon: '🟢' },
-        maintenance: { color: 'bg-yellow-600 text-white', text: '整備中', icon: '🔧' },
-        inactive: { color: 'bg-red-600 text-white', text: '停止中', icon: '🔴' },
-      },
-      // 契約ステータス
-      contract: {
-        estimate: { color: 'bg-amber-100 text-amber-800 border-amber-200', text: '仮案件', icon: '📋' },
-        contracted: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: '本案件', icon: '📝' },
-      },
-      // スケジュールステータス
-      schedule: {
-        confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200', text: '確定', icon: '✅' },
-        estimate: { color: 'bg-orange-100 text-orange-700 border-orange-200', text: '仮予定', icon: '⏳' },
-      }
-    };
 
-    return configs[type]?.[status] || { color: 'bg-gray-100 text-gray-800 border-gray-200', text: '不明', icon: '❓' };
-  };
 
   useEffect(() => {
     // テスト用：ローカルストレージをクリアしてテストデータを確実に読み込む

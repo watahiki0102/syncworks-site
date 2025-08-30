@@ -67,7 +67,7 @@ const REGIONS = [
 /**
  * 全都道府県のリスト
  */
-const ALL_PREFS = REGIONS.flatMap(r => r.prefectures);
+
 
 /**
  * フォームデータの型定義
@@ -350,17 +350,6 @@ export default function AdminProfile() {
     }
   };
 
-  const handleRemoveServiceArea = (area: string) => {
-    setServiceAreas(prev => prev.filter(a => a !== area));
-  };
-
-  const handleServiceAreaInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddServiceArea();
-    }
-  };
-
   // New functions to handle area selection
   const handleRemoveArea = (area: string) => {
     setSelectedAreas(prev => prev.filter(a => a !== area));
@@ -379,10 +368,6 @@ export default function AdminProfile() {
   // タグ削除
   const handleRemovePrefTag = (pref: string) => {
     setSelectedPrefectures(prev => prev.filter(p => p !== pref));
-  };
-  // 地図クリック（地方名でregion選択）
-  const handleMapRegionClick = (region: string) => {
-    setSelectedRegion(region);
   };
 
   return (

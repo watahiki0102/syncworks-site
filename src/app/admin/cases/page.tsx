@@ -9,11 +9,9 @@
 
 import { useState } from 'react';
 import AdminButton from '@/components/admin/AdminButton';
-import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
-import { Button } from '@/components/ui/Button';
 import QuoteHistoryPage from './history/page';
 import QuoteRequestsPage from './requests/page';
 import PerformancePage from './performance/page';
@@ -22,16 +20,10 @@ type TabType = 'history' | 'notifications' | 'contracts';
 
 export default function CaseManagement() {
   const [activeTab, setActiveTab] = useState<TabType>('history');
-  const router = useRouter();
 
   // 未回答依頼数の取得（デモデータ）
   const getPendingCount = () => {
     return 2; // デモ用の固定値
-  };
-
-  // 緊急依頼数の取得（デモデータ）
-  const _getUrgentCount = () => {
-    return 1; // デモ用の固定値
   };
 
   const tabs = [
@@ -45,7 +37,7 @@ export default function CaseManagement() {
       <AdminButton 
         variant="primary" 
         icon="+" 
-        onClick={() => router.push('/admin/cases/register')}
+        onClick={() => window.location.href = '/admin/cases/register'}
       >
         案件登録
       </AdminButton>

@@ -11,33 +11,23 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { 
   Handshake, 
   Calculator, 
-  HomeIcon, 
   Settings, 
   ArrowRight, 
   Star, 
   CheckCircle, 
-  Users,
   Truck,
   Shield,
   Clock,
-  Zap,
-  Phone,
-  Mail,
-  MapPin
+  Zap
 } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { AnimatedText, AnimatedCard, ParticleBackground } from '@/components/animations';
 import { TEST_STATS, TEST_FEATURES } from '@/constants/testData';
 
 export default function Home() {
-  const [isLoaded, setIsLoaded] = useState(false);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 1000], [0, -200]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
 
   const features = TEST_FEATURES.map((feature, index) => {
     const icons = [Handshake, Calculator, Shield, Star];
@@ -70,13 +60,7 @@ export default function Home() {
     };
   });
 
-  const stats = TEST_STATS.map((stat, index) => {
-    const icons = [CheckCircle, Truck, Star, Clock];
-    return {
-      ...stat,
-      icon: icons[index]
-    };
-  });
+
 
   return (
     <Layout>

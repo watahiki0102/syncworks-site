@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { AdminLayout, AdminCard, AdminButton, AdminBadge } from '@/components/admin';
+import { AdminLayout, AdminCard, AdminBadge } from '@/components/admin';
 import React from 'react';
 
 /**
@@ -194,14 +194,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const handleLogout = () => {
-    if (!window.confirm('本当にログアウトしますか？')) return;
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminAutoLoginExpiry');
-    localStorage.removeItem('adminRememberMe');
-    router.push('/admin/login');
-  };
+
 
   const sales = 450000;
   const contractRate = 70;

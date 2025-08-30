@@ -10,7 +10,7 @@ import EmployeeManagement from '@/components/EmployeeManagement';
 import ShiftTemplateManager from '@/components/ShiftTemplateManager';
 import ShiftBulkAssignment from '@/components/ShiftBulkAssignment';
 import ShiftOverview from '@/components/ShiftOverview';
-import { TIME_SLOTS, SHIFT_STATUS, EMPLOYEE_POSITIONS } from '@/constants/calendar';
+import { TIME_SLOTS } from '@/constants/calendar';
 
 interface Employee {
   id: string;
@@ -65,7 +65,7 @@ export default function ShiftManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [truckSchedules, setTruckSchedules] = useState<TruckSchedule[]>([]);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+
   const [overviewDate, setOverviewDate] = useState(new Date().toISOString().split('T')[0]);
   const [activeTab, setActiveTab] = useState<'calendar' | 'employees' | 'templates' | 'bulk' | 'overview'>('calendar');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);

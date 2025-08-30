@@ -9,7 +9,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Filter, MapPin, Star, Users, Calendar, ArrowRight } from 'lucide-react';
+import { Search, Filter, MapPin, Users, Calendar, ArrowRight } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import StarRating from '@/components/StarRating';
 

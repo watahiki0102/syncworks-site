@@ -27,7 +27,7 @@ const TRUCK_TYPES = [
 /**
  * 作業人数の定義
  */
-const WORKER_COUNTS = [1, 2, 3, 4, 5, 6];
+
 
 /**
  * ポイント範囲の定義（1～9999、1刻みで詳細設定可能）
@@ -247,8 +247,7 @@ export default function PricingStep2Page() {
    */
   const [truckCoefficients, setTruckCoefficients] = useState<TruckCoefficient[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<DistanceRange[]>([]);
-  const [coefficientErrors, setCoefficientErrors] = useState<string[]>([]);
-  const [distanceErrors, setDistanceErrors] = useState<string[]>([]);
+
 
   /**
    * トラック管理用state
@@ -499,10 +498,7 @@ export default function PricingStep2Page() {
     setOptionAddError('');
   };
 
-  // 料金計算
-  const calculateTotalPrice = (rule: PricingRule) => {
-    return rule.price ?? 0;
-  };
+
 
   // 車種係数更新
   const updateTruckCoefficient = (id: string, coefficient: number) => {
@@ -699,9 +695,7 @@ export default function PricingStep2Page() {
     return { isValid: errors.length === 0, errors, errorIds };
   };
 
-  // 追加フォームのバリデーション
-  const isAddOptionMinMaxError =
-    optionFormState.newOptionMinPoint === undefined || optionFormState.newOptionMaxPoint === undefined || optionFormState.newOptionMinPoint >= optionFormState.newOptionMaxPoint;
+
 
   // オプション追加
   const handleAddOption = () => {
@@ -768,15 +762,7 @@ export default function PricingStep2Page() {
     setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, remarks } : opt));
   };
 
-  // オプション最大値変更
-  const handleOptionMaxPointChange = (id: string, maxPoint: number) => {
-    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, maxPoint } : opt));
-  };
 
-  // オプション最小値変更
-  const handleOptionMinPointChange = (id: string, minPoint: number) => {
-    setOptions(prev => prev.map(opt => opt.id === id ? { ...opt, minPoint } : opt));
-  };
 
   // ソート機能
   const sortPricingRules = (rules: PricingRule[]) => {

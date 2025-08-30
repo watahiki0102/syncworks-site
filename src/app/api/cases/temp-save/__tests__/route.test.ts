@@ -28,8 +28,8 @@ describe('/api/cases/temp-save', () => {
 
   beforeAll(async () => {
     // POST関数を動的にインポート
-    const module = await import('../route');
-    POST = module.POST;
+    const routeModule = await import('../route');
+    POST = routeModule.POST;
   });
 
   beforeEach(() => {

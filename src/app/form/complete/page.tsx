@@ -32,7 +32,7 @@ function FormCompleteContent() {
   const submissionId = searchParams.get('ticket');
   const [completeData, setCompleteData] = useState<CompleteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showContactSelection, setShowContactSelection] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {

@@ -194,20 +194,7 @@ export default function AdminContracts() {
    * 月次サマリーの再計算
    * 成約データから月次サマリーを動的に計算
    */
-  const handleRecalculate = () => {
-    const newSummaries = contracts.reduce((acc, contract) => {
-      const month = contract.contractDate.slice(0, 7);
-      if (!acc[month]) {
-        acc[month] = { month, totalRevenue: 0, totalContracts: 0, totalAmount: 0 };
-      }
-      acc[month].totalRevenue += contract.revenue;
-      acc[month].totalContracts += 1;
-      acc[month].totalAmount += contract.contractAmount;
-      return acc;
-    }, {} as Record<string, MonthlySummary>);
 
-    setMonthlySummaries(Object.values(newSummaries));
-  };
 
   return (
     <AdminAuthGuard>

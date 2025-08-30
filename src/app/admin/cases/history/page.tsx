@@ -61,26 +61,7 @@ export default function QuoteHistoryPage() {
     setFilteredQuotes(filtered);
   }, [quotes, showCompleted, searchTerm]);
 
-  const _addSurcharge = () => {
-    const newSurcharge: TimeBandSurcharge = {
-      id: Date.now().toString(),
-      start: '22:00',
-      end: '05:00',
-      kind: 'rate',
-      value: 1.25
-    };
-    setEditingSurcharges([...editingSurcharges, newSurcharge]);
-  };
 
-  const _removeSurcharge = (id: string) => {
-    setEditingSurcharges(editingSurcharges.filter(s => s.id !== id));
-  };
-
-  const _updateSurcharge = (id: string, field: keyof TimeBandSurcharge, value: any) => {
-    setEditingSurcharges(editingSurcharges.map(s => 
-      s.id === id ? { ...s, [field]: value } : s
-    ));
-  };
 
   const calculateTotalWithTax = (baseAmount: number, surcharges: TimeBandSurcharge[]) => {
     let total = baseAmount;
@@ -98,29 +79,7 @@ export default function QuoteHistoryPage() {
     return Math.round(total);
   };
 
-  const _startEditing = (quote: QuoteHistory) => {
-    setEditingQuote(quote);
-    setEditingSurcharges([...quote.timeBandSurcharges]);
-  };
 
-  const _saveQuote = () => {
-    if (!editingQuote) return;
-    
-    const updatedQuote = {
-      ...editingQuote,
-      timeBandSurcharges: editingSurcharges,
-      amountWithTax: calculateTotalWithTax(editingQuote.amount, editingSurcharges)
-    };
-    
-    setQuotes(quotes.map(q => q.id === updatedQuote.id ? updatedQuote : q));
-    setEditingQuote(null);
-    setEditingSurcharges([]);
-  };
-
-  const _cancelEditing = () => {
-    setEditingQuote(null);
-    setEditingSurcharges([]);
-  };
 
   const updateStatus = (quoteId: string, newStatus: QuoteStatus) => {
     setQuotes(quotes.map(q => 

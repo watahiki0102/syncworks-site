@@ -102,19 +102,7 @@ const loadSavedData = (): Partial<FormData> => {
   return JSON.parse(saved);
 };
 
-/**
- * 日付の妥当性を検証
- * @param value - 検証する日付文字列
- * @param index - 希望日の番号
- * @returns 検証結果
- */
-const validateDate = (value: string, index: number): string | true => {
-  const selected = new Date(value);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  selected.setHours(0, 0, 0, 0);
-  return selected > today || `※ 第${index}希望日に過去日が設定されています`;
-};
+
 
 /**
  * エラーメッセージ表示コンポーネント
@@ -144,7 +132,6 @@ const DateTimeSection = ({
   const dateField = `date${index}` as keyof FormData;
   const timeField = `timeSlot${index}` as keyof FormData;
   const selectedDate = watch(dateField);
-  const selectedTime = watch(timeField);
   const dateError = errors[dateField];
   const timeSlotError = errors[timeField];
 

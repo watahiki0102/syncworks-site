@@ -51,7 +51,6 @@ function ContractSummary({ totalContracts, totalSales }: {
 }
 
 export default function AdminAnalytics() {
-  const router = useRouter();
   const [plotInterval, setPlotInterval] = useState<PlotInterval>('month');
 
   // 生データ（実際のアプリケーションではAPIから取得）

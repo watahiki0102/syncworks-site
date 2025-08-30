@@ -94,9 +94,6 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
 
   const [customService, setCustomService] = useState<string>('');
   const [showEstimateModal, setShowEstimateModal] = useState<boolean>(false);
-  const [_modalItems, _setModalItems] = useState<Record<string, number>>({});
-  const [_modalBoxOption, _setModalBoxOption] = useState<string>('');
-  const [_modalBoxCount, _setModalBoxCount] = useState<number>(0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 

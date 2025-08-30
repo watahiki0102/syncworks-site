@@ -10,19 +10,7 @@ import { Star, Quote, Users, ThumbsUp, Clock } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { TEST_REVIEWS } from '@/constants/testData';
 
-/**
- * お客様レビューの型定義
- */
-interface CustomerReview {
-  id: number;
-  customerName: string;
-  location: string;
-  rating: number;
-  comment: string;
-  serviceDate: string;
-  serviceType: string;
-  verified: boolean;
-}
+
 
 export default function ReviewsPage() {
     const [expandedReviewIds, setExpandedReviewIds] = useState<number[]>([]);

@@ -19,11 +19,11 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ width: '100vw', maxWidth: '100vw' }}>
       {/* ヘッダー */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-          <div className="flex justify-between items-center h-16">
+      <div className="bg-white shadow-sm border-b w-full" style={{ width: '100vw', maxWidth: '100vw' }}>
+        <div className="w-full" style={{ width: '100%', maxWidth: '100%' }}>
+          <div className="flex justify-between items-center h-16 px-4">
             <div className="flex items-center">
               <h1 className="text-lg md:text-xl font-semibold text-gray-900">
                 内部管理画面
@@ -37,9 +37,9 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
       </div>
 
       {/* ナビゲーションタブ */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-          <nav className="flex flex-wrap gap-2 sm:space-x-8 sm:gap-0">
+      <div className="bg-white border-b w-full" style={{ width: '100vw', maxWidth: '100vw' }}>
+        <div className="w-full" style={{ width: '100%', maxWidth: '100%' }}>
+          <nav className="flex flex-wrap gap-2 sm:space-x-8 sm:gap-0 px-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -61,8 +61,8 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="w-full py-6" style={{ width: '100vw', maxWidth: '100vw' }}>
+        <div className="w-full" style={{ width: '100%', maxWidth: '100%' }}>
           {children}
         </div>
       </main>

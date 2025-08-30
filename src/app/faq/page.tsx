@@ -11,11 +11,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { TEST_FAQ } from '@/constants/testData';
 
-interface FAQItem {
-  id: number;
-  question: string;
-  answer: string;
-}
+
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<number[]>([]);
