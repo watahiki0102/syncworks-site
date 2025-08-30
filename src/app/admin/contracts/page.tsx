@@ -49,8 +49,7 @@ export default function AdminContracts() {
   const [monthValue, setMonthValue] = useState('');
   const [yearMonthValue, setYearMonthValue] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<string>('contractDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortOption, setSortOption] = useState<string>('contractDate-asc');
   const router = useRouter();
 
   /**
@@ -108,8 +107,9 @@ export default function AdminContracts() {
 
     filtered.sort((a, b) => {
       let aValue: any, bValue: any;
+      const [field, order] = sortOption.split('-');
 
-      switch (sortBy) {
+      switch (field) {
         case 'customerName':
           aValue = a.customerName;
           bValue = b.customerName;
@@ -127,7 +127,7 @@ export default function AdminContracts() {
           bValue = new Date(b.contractDate);
       }
 
-      if (sortOrder === 'asc') {
+      if (order === 'asc') {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
@@ -135,7 +135,7 @@ export default function AdminContracts() {
     });
 
     setFilteredContracts(filtered);
-  }, [contracts, periodOption, yearValue, monthValue, yearMonthValue, searchTerm, sortBy, sortOrder]);
+  }, [contracts, periodOption, yearValue, monthValue, yearMonthValue, searchTerm, sortOption]);
 
   /**
    * CSVエクスポート機能
@@ -373,26 +373,18 @@ export default function AdminContracts() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">並び順</label>
+                  <label className="block text-sm font-medium text-gray-700">並び替え</label>
                   <select
                     className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
                   >
-                    <option value="asc">昇順</option>
-                    <option value="desc">降順</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">並び替え項目</label>
-                  <select
-                    className="mt-1 px-2 py-1 border border-gray-300 rounded-md"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="contractDate">成約日</option>
-                    <option value="customerName">顧客名</option>
-                    <option value="revenue">売上</option>
+                    <option value="contractDate-asc">成約日（昇順）</option>
+                    <option value="contractDate-desc">成約日（降順）</option>
+                    <option value="customerName-asc">顧客名（昇順）</option>
+                    <option value="customerName-desc">顧客名（降順）</option>
+                    <option value="revenue-asc">売上（昇順）</option>
+                    <option value="revenue-desc">売上（降順）</option>
                   </select>
                 </div>
                 <div className="ml-auto">
