@@ -17,7 +17,7 @@ jest.mock('../business-logic', () => ({
     validateCustomerData: jest.fn()
   },
   movingEstimateLogic: {
-    calculateMovingEstimate: jest.fn()
+    calculateEstimate: jest.fn()
   }
 }));
 
@@ -92,7 +92,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000,
           breakdown: { basic: 100000, options: 50000 }
         });
@@ -108,7 +108,7 @@ describe('Services Module', () => {
         expect(businessLogic.customerManagementLogic.validateCustomerData).toHaveBeenCalledWith(
           mockEstimateData.customerInfo
         );
-        expect(businessLogic.movingEstimateLogic.calculateMovingEstimate).toHaveBeenCalledWith({
+        expect(businessLogic.movingEstimateLogic.calculateEstimate).toHaveBeenCalledWith({
           ...mockEstimateData.movingDetails,
           taxRate: 0.1
         });
@@ -153,7 +153,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -170,7 +170,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -187,7 +187,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -203,7 +203,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -225,7 +225,7 @@ describe('Services Module', () => {
           normalizedData
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -246,7 +246,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 
@@ -256,7 +256,7 @@ describe('Services Module', () => {
 
         await estimateService.createEstimate(mockEstimateData);
 
-        expect(businessLogic.movingEstimateLogic.calculateMovingEstimate).toHaveBeenCalledWith({
+        expect(businessLogic.movingEstimateLogic.calculateEstimate).toHaveBeenCalledWith({
           ...mockEstimateData.movingDetails,
           taxRate: 0.1
         });
@@ -271,7 +271,7 @@ describe('Services Module', () => {
           normalizedData: mockEstimateData.customerInfo
         });
 
-        (businessLogic.movingEstimateLogic.calculateMovingEstimate as jest.Mock).mockReturnValue({
+        (businessLogic.movingEstimateLogic.calculateEstimate as jest.Mock).mockReturnValue({
           totalAmount: 150000
         });
 

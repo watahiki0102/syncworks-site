@@ -79,7 +79,7 @@ export class EstimateService {
       }
 
       // 見積もり計算（純粋関数）
-      const estimate = businessLogic.movingEstimateLogic.calculateMovingEstimate({
+      const estimate = businessLogic.movingEstimateLogic.calculateEstimate({
         ...estimateData.movingDetails,
         taxRate: 0.1, // 10%
       });

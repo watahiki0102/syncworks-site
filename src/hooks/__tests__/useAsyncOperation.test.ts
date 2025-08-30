@@ -27,8 +27,6 @@ describe('useAsyncOperation', () => {
 
   afterEach(() => {
     jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-    jest.useFakeTimers();
   });
 
   it('初期状態が正しく設定される', () => {

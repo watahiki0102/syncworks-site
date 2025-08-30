@@ -2,7 +2,7 @@
  * 非同期操作の状態管理用カスタムフック
  * ローディング状態、エラー処理、データキャッシュなどを統一管理
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface AsyncState<T> {
   data: T | null;
@@ -33,14 +33,24 @@ export const useAsyncOperation = <T>(
 
   const retryCountRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutIdsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const isMountedRef = useRef(true);
 
   const execute = useCallback(async (...args: any[]) => {
-    // 前回のリクエストをキャンセル
+    // 前回のリクエストを適切にクリーンアップ
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
 
-    abortControllerRef.current = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    // 既存のタイムアウトをクリア
+    timeoutIdsRef.current.forEach(id => clearTimeout(id));
+    timeoutIdsRef.current.clear();
+
+    // ブラウザ互換性の確実なチェック
+    if (typeof window !== 'undefined' && 'AbortController' in window) {
+      abortControllerRef.current = new AbortController();
+    }
     
     setState(prev => ({
       ...prev,
@@ -75,11 +85,17 @@ export const useAsyncOperation = <T>(
 
         const errorObj = error instanceof Error ? error : new Error(String(error));
 
-        if (attempt < retryCount) {
+        // リトライ制限の確実な実装
+        if (attempt < retryCount && retryCountRef.current < retryCount && isMountedRef.current) {
           retryCountRef.current = attempt + 1;
-          setTimeout(() => {
-            attemptExecution(attempt + 1);
-          }, retryDelay * Math.pow(2, attempt)); // 指数バックオフ
+          const delay = Math.min(retryDelay * Math.pow(2, attempt), 10000); // 最大10秒
+          const timeoutId = setTimeout(() => {
+            timeoutIdsRef.current.delete(timeoutId);
+            if (isMountedRef.current && !abortControllerRef.current?.signal.aborted) {
+              attemptExecution(attempt + 1);
+            }
+          }, delay);
+          timeoutIdsRef.current.add(timeoutId);
         } else {
           setState({
             data: null,
@@ -98,9 +114,15 @@ export const useAsyncOperation = <T>(
   }, [asyncFunction, onSuccess, onError, retryCount, retryDelay]);
 
   const reset = useCallback(() => {
+    // AbortControllerのクリーンアップ
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
+    
+    // タイムアウトのクリーンアップ
+    timeoutIdsRef.current.forEach(id => clearTimeout(id));
+    timeoutIdsRef.current.clear();
     
     setState({
       data: null,
@@ -113,14 +135,37 @@ export const useAsyncOperation = <T>(
   }, []);
 
   const cancel = useCallback(() => {
+    // AbortControllerのクリーンアップ
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
+    
+    // タイムアウトのクリーンアップ
+    timeoutIdsRef.current.forEach(id => clearTimeout(id));
+    timeoutIdsRef.current.clear();
     
     setState(prev => ({
       ...prev,
       isLoading: false
     }));
+  }, []);
+
+  // コンポーネントアンマウント時のクリーンアップ
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      
+      // AbortControllerのクリーンアップ
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // タイムアウトのクリーンアップ
+      timeoutIdsRef.current.forEach(id => clearTimeout(id));
+      timeoutIdsRef.current.clear();
+    };
   }, []);
 
   return {

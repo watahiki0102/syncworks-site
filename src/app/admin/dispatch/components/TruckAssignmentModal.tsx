@@ -125,14 +125,14 @@ export default function TruckAssignmentModal({
     setShowTruckModal(false);
   };
   
-  const isFormValid = formData.truckId && formData.startTime && formData.endTime;
+  const isFormValid = !!(formData.truckId && formData.startTime && formData.endTime);
 
   const getAvailableEmployees = (date: string, startTime: string, endTime: string) => {
     return employees.filter(emp => {
       if (emp.status !== 'active') return false;
       
       // 指定された時間帯にシフトがあるかチェック
-      const hasShift = emp.shifts.some(shift => {
+      const hasShift = emp.shifts?.some(shift => {
         if (shift.date !== date) return false;
         
         // 時間帯の重複チェック
@@ -184,7 +184,6 @@ export default function TruckAssignmentModal({
         submitText="割り当て"
         cancelText="キャンセル"
         isValid={isFormValid}
-        size="lg"
       >
         <div className="mb-4 p-4 bg-blue-50 rounded">
           <h4 className="font-medium text-gray-900 mb-2">案件情報</h4>

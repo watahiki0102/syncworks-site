@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import AdminButton from '@/components/admin/AdminButton';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';

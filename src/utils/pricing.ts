@@ -4,6 +4,7 @@
  */
 
 import { TAX_RATES } from '@/constants';
+import { UNIFIED_PRICING_CONFIG, UNIFIED_TRUCK_BASE_PRICES, PRICING_ERROR_MESSAGES } from '@/config/pricing';
 
 /**
  * 荷物アイテムの型定義
@@ -82,31 +83,30 @@ export interface EstimateResult {
 }
 
 /**
- * トラック種別別の基本料金設定
+ * 統一設定を使用（重複定数を削除）
+ * 価格設定は /src/config/pricing.ts で統一管理
  */
-const TRUCK_BASE_PRICES = {
-  '軽トラック': 15000,
-  '2tショート': 25000,
-  '2t': 30000,
-  '3t': 40000,
-  '4t': 50000
-} as const;
-
-/**
- * ポイント単価設定
- */
-const POINT_UNIT_PRICE = 500; // 1ポイントあたり500円
-
-/**
- * 距離料金設定（1kmあたり）
- */
-const DISTANCE_PRICE_PER_KM = 50;
 
 /**
  * 基本料金を取得
+ * @param truckType トラック種別（null/undefinedの場合は0を返す）
+ * @returns 基本料金（円）
  */
-export const getBasePrice = (truckType: string): number => {
-  return TRUCK_BASE_PRICES[truckType as keyof typeof TRUCK_BASE_PRICES] || 0;
+export const getBasePrice = (truckType: string | null | undefined): number => {
+  if (!truckType || typeof truckType !== 'string') {
+    console.warn(PRICING_ERROR_MESSAGES.INVALID_TRUCK_TYPE + ':', truckType);
+    return 0;
+  }
+  
+  const normalizedType = truckType.trim();
+  const basePrice = UNIFIED_TRUCK_BASE_PRICES[normalizedType as keyof typeof UNIFIED_TRUCK_BASE_PRICES];
+  
+  if (basePrice === undefined) {
+    console.warn(`${PRICING_ERROR_MESSAGES.INVALID_TRUCK_TYPE}: ${normalizedType}. Available types:`, Object.keys(UNIFIED_TRUCK_BASE_PRICES));
+    return 0;
+  }
+  
+  return basePrice;
 };
 
 /**
@@ -128,7 +128,7 @@ export const calculateTotalWeight = (items: CargoItem[]): number => {
  */
 export const calculateCargoPrice = (items: CargoItem[]): number => {
   const totalPoints = calculateTotalPoints(items);
-  return totalPoints * POINT_UNIT_PRICE;
+  return totalPoints * UNIFIED_PRICING_CONFIG.POINT_UNIT_PRICE;
 };
 
 /**
@@ -143,12 +143,12 @@ export const calculateOptionPrice = (options: WorkOption[]): number => {
 /**
  * 距離料金を計算
  */
-export const calculateDistancePrice = (distance: number, baseDistance: number = 10): number => {
+export const calculateDistancePrice = (distance: number, baseDistance: number = UNIFIED_PRICING_CONFIG.BASE_DISTANCE): number => {
   if (distance <= baseDistance) {
     return 0; // 基本距離内は無料
   }
   const additionalDistance = distance - baseDistance;
-  return Math.ceil(additionalDistance) * DISTANCE_PRICE_PER_KM;
+  return Math.ceil(additionalDistance) * UNIFIED_PRICING_CONFIG.DISTANCE_PRICE_PER_KM;
 };
 
 /**
@@ -176,7 +176,7 @@ export const calculateTimeSurcharge = (
 /**
  * 消費税を計算
  */
-export const calculateTax = (amount: number, taxRate: number = TAX_RATES.CONSUMPTION_TAX): number => {
+export const calculateTax = (amount: number, taxRate: number = UNIFIED_PRICING_CONFIG.TAX_RATE): number => {
   return Math.round(amount * taxRate);
 };
 
@@ -197,7 +197,7 @@ export const calculateEstimate = (params: {
     options,
     distance = 0,
     timeSurcharges = [],
-    taxRate = TAX_RATES.CONSUMPTION_TAX
+    taxRate = UNIFIED_PRICING_CONFIG.TAX_RATE
   } = params;
 
   // 各項目の料金を計算

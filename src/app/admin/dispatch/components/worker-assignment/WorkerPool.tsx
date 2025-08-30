@@ -167,7 +167,7 @@ export default function WorkerPool({ workers, selectedDate, trucks, onDragStart,
                     <DraggableWorker
                       key={worker.id}
                       worker={worker}
-                      isAvailable={isAvailable}
+                      isAvailable={isAvailable || false}
                       currentAssignments={assignments}
                       onDragStart={onDragStart}
                       onDragEnd={onDragEnd}

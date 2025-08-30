@@ -125,9 +125,9 @@ describe('Card', () => {
 
     it('イベントハンドラーが正しく設定される', () => {
       const handleClick = jest.fn();
-      render(<Card onClick={handleClick}>Content</Card>);
+      const { container } = render(<Card onClick={handleClick}>Content</Card>);
       
-      const cardElement = screen.getByText('Content').parentElement!;
+      const cardElement = container.firstChild as HTMLElement;
       cardElement.click();
       
       expect(handleClick).toHaveBeenCalledTimes(1);

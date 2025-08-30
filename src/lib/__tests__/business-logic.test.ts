@@ -8,7 +8,7 @@
 import businessLogic from '../business-logic';
 
 describe('movingEstimateLogic', () => {
-  describe('calculateMovingEstimate', () => {
+  describe('calculateEstimate', () => {
     const validParams = {
       distance: 50,
       items: [
@@ -22,7 +22,7 @@ describe('movingEstimateLogic', () => {
     };
 
     test('正常な見積もり計算', () => {
-      const result = businessLogic.movingEstimateLogic.calculateMovingEstimate(validParams);
+      const result = businessLogic.movingEstimateLogic.calculateEstimate(validParams);
       
       expect(result.baseFare).toBeGreaterThan(0);
       expect(result.total).toBeGreaterThan(result.subtotal);
@@ -35,8 +35,8 @@ describe('movingEstimateLogic', () => {
       const morningParams = { ...validParams, timeSlot: 'early_morning', moveDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) };
       const normalParams = { ...validParams, timeSlot: 'normal', moveDate: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000) };
       
-      const morningResult = businessLogic.movingEstimateLogic.calculateMovingEstimate(morningParams);
-      const normalResult = businessLogic.movingEstimateLogic.calculateMovingEstimate(normalParams);
+      const morningResult = businessLogic.movingEstimateLogic.calculateEstimate(morningParams);
+      const normalResult = businessLogic.movingEstimateLogic.calculateEstimate(normalParams);
       
       expect(morningResult.timeSurcharge).toBeGreaterThan(normalResult.timeSurcharge);
     });
@@ -45,22 +45,22 @@ describe('movingEstimateLogic', () => {
       const withOptionsParams = { ...validParams, selectedOptions: ['packing', 'cleaning'], moveDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000) };
       const withoutOptionsParams = { ...validParams, selectedOptions: [], moveDate: new Date(Date.now() + 13 * 24 * 60 * 60 * 1000) };
       
-      const withOptionsResult = businessLogic.movingEstimateLogic.calculateMovingEstimate(withOptionsParams);
-      const withoutOptionsResult = businessLogic.movingEstimateLogic.calculateMovingEstimate(withoutOptionsParams);
+      const withOptionsResult = businessLogic.movingEstimateLogic.calculateEstimate(withOptionsParams);
+      const withoutOptionsResult = businessLogic.movingEstimateLogic.calculateEstimate(withoutOptionsParams);
       
       expect(withOptionsResult.optionsTotal).toBeGreaterThan(withoutOptionsResult.optionsTotal);
     });
 
     test('不正な距離でエラー', () => {
       const invalidParams = { ...validParams, distance: 0 };
-      expect(() => businessLogic.movingEstimateLogic.calculateMovingEstimate(invalidParams))
+      expect(() => businessLogic.movingEstimateLogic.calculateEstimate(invalidParams))
         .toThrow('移動距離は0より大きい必要があります');
     });
 
     test('不正な日付でエラー', () => {
       // テスト環境では別の方法で日付エラーをテスト（距離エラーをテスト）
       const invalidParams = { ...validParams, distance: -10 };
-      expect(() => businessLogic.movingEstimateLogic.calculateMovingEstimate(invalidParams))
+      expect(() => businessLogic.movingEstimateLogic.calculateEstimate(invalidParams))
         .toThrow('移動距離は0より大きい必要があります');
     });
   });

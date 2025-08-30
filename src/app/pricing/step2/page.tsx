@@ -239,6 +239,8 @@ export default function PricingStep2Page() {
   const [newTruckType, setNewTruckType] = useState<string>('');
   const [pricingErrors, setPricingErrors] = useState<string[]>([]);
   const [rowErrorIds, setRowErrorIds] = useState<Set<string>>(new Set());
+  const [optionAddError, setOptionAddError] = useState<string>('');
+  const [optionErrors, setOptionErrors] = useState<string[]>([]);
 
   /**
    * 車種係数設定用state
@@ -699,23 +701,23 @@ export default function PricingStep2Page() {
 
   // 追加フォームのバリデーション
   const isAddOptionMinMaxError =
-    newOptionMinPoint === undefined || newOptionMaxPoint === undefined || newOptionMinPoint >= newOptionMaxPoint;
+    optionFormState.newOptionMinPoint === undefined || optionFormState.newOptionMaxPoint === undefined || optionFormState.newOptionMinPoint >= optionFormState.newOptionMaxPoint;
 
   // オプション追加
   const handleAddOption = () => {
-    if (!newOptionLabel.trim()) {
+    if (!optionFormState.newOptionLabel.trim()) {
       setOptionAddError('オプション名は必須です');
       return;
     }
-    if (newOptionType === 'paid' && (!newOptionPrice || newOptionPrice < 0)) {
+    if (optionFormState.newOptionType === 'paid' && (!optionFormState.newOptionPrice || optionFormState.newOptionPrice < 0)) {
       setOptionAddError('有料オプションは金額を0円以上で入力してください');
       return;
     }
-    if (newOptionMinPoint === undefined || newOptionMaxPoint === undefined) {
+    if (optionFormState.newOptionMinPoint === undefined || optionFormState.newOptionMaxPoint === undefined) {
       setOptionAddError('ポイント最小値・最大値は必須です');
       return;
     }
-    if (newOptionMinPoint >= newOptionMaxPoint) {
+    if (optionFormState.newOptionMinPoint >= optionFormState.newOptionMaxPoint) {
       setOptionAddError('最大値は最小値より大きい値を入力してください');
       return;
     }
@@ -723,13 +725,13 @@ export default function PricingStep2Page() {
       ...prev,
       {
         id: `opt-${Date.now()}`,
-        label: newOptionLabel.trim(),
-        type: newOptionType,
-        price: newOptionType === 'paid' ? newOptionPrice : undefined,
+        label: optionFormState.newOptionLabel.trim(),
+        type: optionFormState.newOptionType,
+        price: optionFormState.newOptionType === 'paid' ? optionFormState.newOptionPrice : undefined,
         isDefault: false,
-        unit: newOptionUnit,
-        minPoint: newOptionMinPoint,
-        maxPoint: newOptionMaxPoint,
+        unit: optionFormState.newOptionUnit,
+        minPoint: optionFormState.newOptionMinPoint,
+        maxPoint: optionFormState.newOptionMaxPoint,
       }
     ]);
     optionFormDispatch({ type: 'RESET_FORM' });

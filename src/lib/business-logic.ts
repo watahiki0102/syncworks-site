@@ -16,7 +16,7 @@ export const movingEstimateLogic = {
    * @param params 見積もりパラメータ
    * @returns 見積もり結果
    */
-  calculateMovingEstimate: (params: {
+  calculateEstimate: (params: {
     distance: number;
     items: Array<{ name: string; count: number; points: number }>;
     timeSlot: string;

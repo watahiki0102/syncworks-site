@@ -122,7 +122,7 @@ describe('統合パフォーマンスベンチマーク', () => {
 
       const result = await BenchmarkRunner.benchmark(
         '引越し見積もり計算',
-        (params: any) => businessLogic.movingEstimateLogic.calculateMovingEstimate(params),
+        (params: any) => businessLogic.movingEstimateLogic.calculateEstimate(params),
         [estimateParams],
         { iterations: 1000, measureMemory: true }
       );
@@ -175,7 +175,7 @@ describe('統合パフォーマンスベンチマーク', () => {
         '大量見積もり一括処理',
         (estimateList: any[]) => {
           return estimateList.map(params => 
-            businessLogic.movingEstimateLogic.calculateMovingEstimate(params)
+            businessLogic.movingEstimateLogic.calculateEstimate(params)
           );
         },
         [estimates],
@@ -307,7 +307,7 @@ describe('統合パフォーマンスベンチマーク', () => {
       
       const timeSeriesResult = await BenchmarkRunner.timeSeriesBenchmark(
         '見積もり計算_時系列',
-        (params: any) => businessLogic.movingEstimateLogic.calculateMovingEstimate(params),
+        (params: any) => businessLogic.movingEstimateLogic.calculateEstimate(params),
         [estimateParams],
         3000, // 3秒間
         200   // 200ms間隔
@@ -337,7 +337,7 @@ describe('統合パフォーマンスベンチマーク', () => {
       
       benchmarkSuite
         .add('顧客データ検証', businessLogic.customerManagementLogic.validateCustomerData, [customerData], 'business')
-        .add('見積もり計算', businessLogic.movingEstimateLogic.calculateMovingEstimate, [estimateParams], 'business');
+        .add('見積もり計算', businessLogic.movingEstimateLogic.calculateEstimate, [estimateParams], 'business');
 
       // スイートを実行
       await benchmarkSuite.run({ iterations: 1000, measureMemory: true });

@@ -87,7 +87,7 @@ describe('パフォーマンステスト', () => {
       const startTime = performance.now();
       
       for (let i = 0; i < 1000; i++) {
-        businessLogic.movingEstimateLogic.calculateMovingEstimate({
+        businessLogic.movingEstimateLogic.calculateEstimate({
           ...estimateParams,
           distance: 50 + (i % 100), // バリエーションを追加
         });
@@ -180,7 +180,7 @@ describe('パフォーマンステスト', () => {
       };
 
       const estimates = Array.from({ length: 100 }, (_, i) => 
-        Promise.resolve(businessLogic.movingEstimateLogic.calculateMovingEstimate({
+        Promise.resolve(businessLogic.movingEstimateLogic.calculateEstimate({
           ...baseParams,
           distance: 50 + i,
         }))
@@ -288,7 +288,7 @@ describe('パフォーマンステスト', () => {
       
       // 100回の複雑な見積もり計算
       const results = Array.from({ length: 100 }, () => 
-        businessLogic.movingEstimateLogic.calculateMovingEstimate(complexScenario)
+        businessLogic.movingEstimateLogic.calculateEstimate(complexScenario)
       );
       
       const endTime = performance.now();

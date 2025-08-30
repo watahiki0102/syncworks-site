@@ -36,7 +36,7 @@ jest.mock('../business-logic', () => ({
     })
   },
   movingEstimateLogic: {
-    calculateMovingEstimate: jest.fn().mockReturnValue({
+    calculateEstimate: jest.fn().mockReturnValue({
       baseFare: 50000,
       timeSurcharge: 5000,
       optionsTotal: 10000,
