@@ -3,7 +3,7 @@
  * 見積依頼と見積履歴のデータを統合して提供
  */
 
-import { QuoteRequest, QuoteHistory } from '../types';
+import { QuoteRequest, QuoteHistory, QuoteStatus } from '../types';
 import { UnifiedCase, UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
 import { normalizeSourceType, getManagementNumber } from './normalize';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
@@ -28,6 +28,26 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
 }
 
 /**
+ * QuoteStatusをUnifiedCaseStatusに変換
+ */
+function convertQuoteStatusToUnified(status: QuoteStatus): UnifiedCaseStatus {
+  switch (status) {
+    case '見積中':
+      return '回答済'; // 見積中は回答済として扱う
+    case '完了':
+      return '成約'; // 完了は成約として扱う
+    case '回答済':
+    case '再見積':
+    case '成約':
+    case '不成約':
+    case 'キャンセル':
+      return status;
+    default:
+      return '回答済'; // その他は回答済として扱う
+  }
+}
+
+/**
  * 見積履歴データを統合案件データに変換
  */
 export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
@@ -36,7 +56,7 @@ export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
     customerName: history.customerName,
     sourceType: history.sourceType,
     moveDate: history.moveDate,
-    status: history.status as UnifiedCaseStatus,
+    status: convertQuoteStatusToUnified(history.status),
     type: 'history',
     responseDate: history.responseDate,
     amountWithTax: history.amountWithTax,

@@ -68,7 +68,15 @@ export const FormField = memo<FormFieldProps>(({
       )}
       
       <div className="space-y-1">
-        {children}
+        {children ? children : (
+          <Input
+            id={fieldId}
+            name={name}
+            aria-describedby={displayHelperText ? (shouldShowError ? errorId : helpId) : undefined}
+            aria-invalid={shouldShowError ? 'true' : 'false'}
+            {...inputProps}
+          />
+        )}
         
         {displayHelperText && (
           <p 

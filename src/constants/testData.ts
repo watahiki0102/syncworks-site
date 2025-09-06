@@ -244,7 +244,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       fromAddress: '東京都渋谷区神南1-1-1',
       toAddress: '東京都新宿区西新宿2-2-2',
       items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
-      timeBandSurcharges: []
+      timeBandSurcharges: [],
+      summary: {
+        from: '東京都渋谷区神南1-1-1',
+        to: '東京都新宿区西新宿2-2-2',
+        items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
+        totalPoints: 15
+      }
     },
     {
       id: 'quote-2',
@@ -263,7 +269,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       items: ['ダブルベッド', 'ソファ', '食器棚', '本棚'],
       timeBandSurcharges: [
         { id: '1', start: '22:00', end: '05:00', kind: 'rate' as const, value: 1.25 }
-      ]
+      ],
+      summary: {
+        from: '東京都世田谷区三軒茶屋3-3-3',
+        to: '神奈川県横浜市西区みなとみらい4-4-4',
+        items: ['ダブルベッド', 'ソファ', '食器棚', '本棚'],
+        totalPoints: 18
+      }
     },
     {
       id: 'quote-3',
@@ -280,7 +292,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       fromAddress: '大阪府大阪市北区梅田5-5-5',
       toAddress: '大阪府堺市中区深井6-6-6',
       items: ['テーブル', '椅子4脚', 'テレビボード'],
-      timeBandSurcharges: []
+      timeBandSurcharges: [],
+      summary: {
+        from: '大阪府大阪市北区梅田5-5-5',
+        to: '大阪府堺市中区深井6-6-6',
+        items: ['テーブル', '椅子4脚', 'テレビボード'],
+        totalPoints: 12
+      }
     },
     // 外部案件 3つ
     {
@@ -298,7 +316,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       fromAddress: '愛知県名古屋市中区栄7-7-7',
       toAddress: '愛知県豊田市若宮町8-8-8',
       items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル'],
-      timeBandSurcharges: []
+      timeBandSurcharges: [],
+      summary: {
+        from: '愛知県名古屋市中区栄7-7-7',
+        to: '愛知県豊田市若宮町8-8-8',
+        items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル'],
+        totalPoints: 22
+      }
     },
     {
       id: 'quote-5',
@@ -315,7 +339,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       fromAddress: '福岡県福岡市博多区博多駅前9-9-9',
       toAddress: '福岡県久留米市東町10-10-10',
       items: ['シングルベッド', '机', '椅子', '本棚'],
-      timeBandSurcharges: []
+      timeBandSurcharges: [],
+      summary: {
+        from: '福岡県福岡市博多区博多駅前9-9-9',
+        to: '福岡県久留米市東町10-10-10',
+        items: ['シングルベッド', '机', '椅子', '本棚'],
+        totalPoints: 14
+      }
     },
     {
       id: 'quote-6',
@@ -334,7 +364,13 @@ export const generateTestQuote = (customerIndex: number, addressIndex: number, i
       items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル', '食器棚'],
       timeBandSurcharges: [
         { id: '1', start: '22:00', end: '05:00', kind: 'rate' as const, value: 1.25 }
-      ]
+      ],
+      summary: {
+        from: '北海道札幌市中央区大通11-11-11',
+        to: '北海道函館市本町12-12-12',
+        items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル', '食器棚'],
+        totalPoints: 26
+      }
     }
   ];
 

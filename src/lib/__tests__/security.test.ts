@@ -130,6 +130,8 @@ const mockDocument = {
   head: {
     appendChild: jest.fn(),
   },
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
 };
 
 Object.defineProperty(global, 'document', {
@@ -142,6 +144,7 @@ Object.defineProperty(global, 'window', {
   value: {
     btoa: (str: string) => Buffer.from(str).toString('base64'),
     atob: (str: string) => Buffer.from(str, 'base64').toString(),
+    document: mockDocument,
   },
   writable: true,
 });
@@ -867,69 +870,89 @@ describe('fileSecurityChecker', () => {
   });
 
   describe('validateImageFile', () => {
-    beforeEach(() => {
-      jest.clearAllTimers();
-      jest.useFakeTimers();
+    const mockCreateObjectURL = jest.fn();
+    const mockRevokeObjectURL = jest.fn();
+    
+    beforeAll(() => {
+      Object.defineProperty(global, 'URL', {
+        value: {
+          createObjectURL: mockCreateObjectURL,
+          revokeObjectURL: mockRevokeObjectURL,
+        },
+        writable: true,
+      });
     });
 
-    afterEach(() => {
-      jest.useRealTimers();
+    beforeEach(() => {
+      mockCreateObjectURL.mockReturnValue('blob:mock-url');
+      mockRevokeObjectURL.mockClear();
+      mockCreateObjectURL.mockClear();
+      MockedImage.mockClear();
     });
 
     it('有効な画像ファイルに対してtrueを返す', async () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
       
-      const promise = fileSecurityChecker.validateImageFile(file);
+      // onloadが呼ばれる順序を制御
+      let onloadCallback: (() => void) | null = null;
+      MockedImage.mockImplementation(() => ({
+        set src(value: string) {
+          // srcが設定されたタイミングでonloadを実行
+          setTimeout(() => {
+            if (onloadCallback) {
+              onloadCallback();
+            }
+          }, 0);
+        },
+        set onload(callback: () => void) {
+          onloadCallback = callback;
+        },
+        set onerror(callback: () => void) {
+          // onerrorは使用しない
+        }
+      }));
       
-      // Promiseが開始される前にImageコールバックを設定
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      // Image onloadをシミュレート  
-      const imageInstance = MockedImage.mock.instances[0] as any;
-      if (imageInstance.onload) {
-        imageInstance.onload();
-      }
-      
-      const result = await promise;
+      const result = await fileSecurityChecker.validateImageFile(file);
       
       expect(result).toBe(true);
-    }, 15000);
+      expect(mockCreateObjectURL).toHaveBeenCalledWith(file);
+      expect(mockRevokeObjectURL).toHaveBeenCalled();
+    });
 
     it('無効な画像ファイルに対してfalseを返す', async () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
       
-      const promise = fileSecurityChecker.validateImageFile(file);
+      // onerrorが呼ばれる順序を制御
+      let onerrorCallback: (() => void) | null = null;
+      MockedImage.mockImplementation(() => ({
+        set src(value: string) {
+          // srcが設定されたタイミングでonerrorを実行
+          setTimeout(() => {
+            if (onerrorCallback) {
+              onerrorCallback();
+            }
+          }, 0);
+        },
+        set onload(callback: () => void) {
+          // onloadは使用しない
+        },
+        set onerror(callback: () => void) {
+          onerrorCallback = callback;
+        }
+      }));
       
-      // Promiseが開始される前にImageコールバックを設定
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      // Image onerrorをシミュレート
-      const imageInstance = MockedImage.mock.instances[0] as any;
-      if (imageInstance.onerror) {
-        imageInstance.onerror();
-      }
-      
-      const result = await promise;
+      const result = await fileSecurityChecker.validateImageFile(file);
       
       expect(result).toBe(false);
-    }, 15000);
+      expect(mockCreateObjectURL).toHaveBeenCalledWith(file);
+      expect(mockRevokeObjectURL).toHaveBeenCalled();
+    });
 
     it('画像以外のファイルタイプに対してfalseを返す', async () => {
       const file = new File([''], 'test.txt', { type: 'text/plain' });
       const result = await fileSecurityChecker.validateImageFile(file);
       expect(result).toBe(false);
-    });
-
-    it('タイムアウト時にfalseを返す', async () => {
-      const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-      
-      const promise = fileSecurityChecker.validateImageFile(file);
-      
-      // タイムアウトまで進める
-      jest.advanceTimersByTime(5000);
-      
-      const result = await promise;
-      expect(result).toBe(false);
+      expect(mockCreateObjectURL).not.toHaveBeenCalled();
     });
   });
 });

@@ -33,12 +33,12 @@ export default function QuoteHistoryPage() {
   useEffect(() => {
     // 共通テストデータから見積データを生成（6つの固定データ）
     const demoQuotes: QuoteHistory[] = [
-      generateTestQuote(0, 0, 0, 0),
-      generateTestQuote(1, 1, 1, 1),
-      generateTestQuote(2, 2, 2, 2),
-      generateTestQuote(3, 3, 3, 3),
-      generateTestQuote(4, 4, 4, 4),
-      generateTestQuote(5, 5, 5, 5)
+      generateTestQuote(0, 0, 0, 0) as QuoteHistory,
+      generateTestQuote(1, 1, 1, 1) as QuoteHistory,
+      generateTestQuote(2, 2, 2, 2) as QuoteHistory,
+      generateTestQuote(3, 3, 3, 3) as QuoteHistory,
+      generateTestQuote(4, 4, 4, 4) as QuoteHistory,
+      generateTestQuote(5, 5, 5, 5) as QuoteHistory
     ];
 
     const normalizedQuotes = demoQuotes.map(quote => ({

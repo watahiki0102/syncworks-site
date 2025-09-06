@@ -1,7 +1,7 @@
 import { SourceType } from './lib/normalize';
 
 // SourceTypeをエクスポート
-export { SourceType };
+export type { SourceType };
 
 /**
  * 時間帯割増賃金の型定義
