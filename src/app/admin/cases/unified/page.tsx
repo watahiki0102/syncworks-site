@@ -18,7 +18,7 @@ export default function UnifiedCasesPage() {
     searchTerm: ''
   });
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
-    'pending', 'answered', 'expired', '再見積', '成約', '不成約', 'キャンセル'
+    '見積依頼', '再見積'
   ]);
   const [viewingCase, setViewingCase] = useState<UnifiedCase | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -111,7 +111,7 @@ export default function UnifiedCasesPage() {
    * 全選択
    */
   const handleSelectAll = () => {
-    const allStatuses = ['pending', 'answered', '再見積', '成約', '不成約', 'キャンセル'];
+    const allStatuses = ['見積依頼', '見積済', '期限切れ', '再見積', '成約', '不成約', 'キャンセル'];
     setSelectedStatuses(allStatuses);
   };
 
@@ -177,7 +177,7 @@ export default function UnifiedCasesPage() {
    */
   const renderActionButtons = (caseItem: UnifiedCase) => {
     if (caseItem.type === 'request') {
-      if (caseItem.status === 'pending') {
+      if (caseItem.status === '見積依頼') {
         return (
           <button
             onClick={() => handleQuoteResponse(caseItem)}
@@ -218,7 +218,7 @@ export default function UnifiedCasesPage() {
     }
 
     // 依頼データのステータス選択肢
-    const requestStatuses = ['pending', 'answered'];
+    const requestStatuses = ['見積依頼', '見積済'];
     
     // 履歴データのステータス選択肢（成約後のキャンセル修正を考慮）
     let historyStatuses: string[] = [];
@@ -230,7 +230,7 @@ export default function UnifiedCasesPage() {
       historyStatuses = ['成約', 'キャンセル'];
     } else {
       // その他の場合は、キャンセル以外の選択肢
-      historyStatuses = ['answered', '再見積', '成約', '不成約'];
+      historyStatuses = ['見積済', '再見積', '成約', '不成約'];
     }
     
     const availableStatuses = caseItem.type === 'request' ? requestStatuses : historyStatuses;
@@ -238,7 +238,7 @@ export default function UnifiedCasesPage() {
 
     return (
       <div className="flex items-center space-x-1">
-        <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
+        <span className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
           {statusStyle.label}
         </span>
         <div className="relative">
@@ -322,7 +322,7 @@ export default function UnifiedCasesPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
            {[
-             'pending', 'answered', 'expired', '再見積', '成約', '不成約', 'キャンセル'
+             '見積依頼', '見積済', '期限切れ', '再見積', '成約', '不成約', 'キャンセル'
            ].map((statusValue) => {
              const statusStyle = STATUS_STYLES[statusValue as keyof typeof STATUS_STYLES];
              return (
@@ -399,7 +399,7 @@ export default function UnifiedCasesPage() {
               <>
                 <span className="font-medium">{filteredCases.length}件表示</span>
                 <span className="text-gray-500 ml-1">
-                  （全{filteredCases.length}件中）
+                  （全{cases.length}件中）
                 </span>
               </>
             )}

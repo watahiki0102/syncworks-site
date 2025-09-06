@@ -33,17 +33,18 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
 function convertQuoteStatusToUnified(status: QuoteStatus): UnifiedCaseStatus {
   switch (status) {
     case '見積中':
-      return '回答済'; // 見積中は回答済として扱う
+      return '見積済'; // 見積中は見積済として扱う
     case '完了':
       return '成約'; // 完了は成約として扱う
     case '回答済':
+      return '見積済'; // 回答済は見積済として扱う
     case '再見積':
     case '成約':
     case '不成約':
     case 'キャンセル':
       return status;
     default:
-      return '回答済'; // その他は回答済として扱う
+      return '見積済'; // その他は見積済として扱う
   }
 }
 
@@ -117,8 +118,8 @@ export function generateUnifiedTestData(): UnifiedCase[] {
   const sourceTypes = ['syncmoving', 'suumo', '外部'];
   
   // ステータスパターン
-  const requestStatuses = ['pending', 'answered'];
-  const historyStatuses = ['answered', '再見積', '成約', '不成約', 'キャンセル'];
+  const requestStatuses = ['見積依頼', '見積済'];
+  const historyStatuses = ['見積済', '再見積', '成約', '不成約', 'キャンセル'];
   
   // 時間パターン
   const times = ['午前中', '午後', '夜間', '14:00-16:00', '10:00-12:00', '18:00-20:00'];
@@ -250,8 +251,8 @@ export function filterUnifiedCases(
 export function sortUnifiedCases(cases: UnifiedCase[]): UnifiedCase[] {
   return cases.sort((a, b) => {
     // 1. 未回答を最優先
-    if (a.status === 'pending' && b.status !== 'pending') return -1;
-    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    if (a.status === '見積依頼' && b.status !== '見積依頼') return -1;
+    if (a.status !== '見積依頼' && b.status === '見積依頼') return 1;
 
     // 2. 優先度順 (依頼データのみ)
     if (a.type === 'request' && b.type === 'request') {
@@ -277,7 +278,7 @@ export function sortUnifiedCases(cases: UnifiedCase[]): UnifiedCase[] {
  * 未回答件数の計算
  */
 export function getPendingCount(cases: UnifiedCase[]): number {
-  return cases.filter(caseItem => caseItem.status === 'pending').length;
+  return cases.filter(caseItem => caseItem.status === '見積依頼').length;
 }
 
 /**
