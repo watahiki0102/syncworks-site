@@ -226,33 +226,121 @@ export const TEST_EMPLOYEES = [
 
 // 見積もり・契約データ生成ヘルパー
 export const generateTestQuote = (customerIndex: number, addressIndex: number, itemIndex: number, serviceIndex: number) => {
-  const customer = TEST_CUSTOMERS[customerIndex % TEST_CUSTOMERS.length];
-  const address = TEST_ADDRESSES[addressIndex % TEST_ADDRESSES.length];
-  const items = TEST_ITEMS[itemIndex % TEST_ITEMS.length];
-  const services = TEST_ADDITIONAL_SERVICES[serviceIndex % TEST_ADDITIONAL_SERVICES.length];
-  
-  const baseAmount = 30000 + (items.length * 2000) + (services.length * 1000);
-  const amountWithTax = Math.round(baseAmount * 1.1);
-  
-  return {
-    id: `quote-${customerIndex + 1}`,
-    customerName: customer.name,
-    requestDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    responseDate: new Date(Date.now() - Math.random() * 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    amount: baseAmount,
-    amountWithTax,
-    status: ['見積中', '回答済', '成約', '不成約', 'キャンセル'][Math.floor(Math.random() * 5)] as '見積中' | '回答済' | '成約' | '不成約' | 'キャンセル',
-    items,
-    fromAddress: address.from,
-    toAddress: address.to,
-    moveDate: new Date(Date.now() + Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    sourceType: ['syncmoving', 'suumo', '外部'][Math.floor(Math.random() * 3)] as 'syncmoving' | 'suumo' | '外部',
-    isContracted: Math.random() > 0.5,
-    isReQuote: Math.random() > 0.8,
-    timeBandSurcharges: Math.random() > 0.7 ? [
-      { id: '1', start: '22:00', end: '05:00', kind: 'rate' as const, value: 1.25 }
-    ] : []
-  };
+  // 6つの固定テストデータ（SyncMoving 3つ、外部 3つ）
+  const fixedTestData = [
+    // SyncMoving案件 3つ
+    {
+      id: 'quote-1',
+      customerName: '田中太郎',
+      requestDate: '2025-01-10',
+      responseDate: '2025-01-12',
+      moveDate: '2025-02-15',
+      amount: 45000,
+      amountWithTax: 49500,
+      status: '成約' as const,
+      sourceType: 'syncmoving' as const,
+      isContracted: true,
+      isReQuote: false,
+      fromAddress: '東京都渋谷区神南1-1-1',
+      toAddress: '東京都新宿区西新宿2-2-2',
+      items: ['シングルベッド', '冷蔵庫', 'テレビ', '洗濯機'],
+      timeBandSurcharges: []
+    },
+    {
+      id: 'quote-2',
+      customerName: '佐藤花子',
+      requestDate: '2025-01-08',
+      responseDate: '2025-01-10',
+      moveDate: '2025-02-20',
+      amount: 55000,
+      amountWithTax: 60500,
+      status: '回答済' as const,
+      sourceType: 'syncmoving' as const,
+      isContracted: false,
+      isReQuote: false,
+      fromAddress: '東京都世田谷区三軒茶屋3-3-3',
+      toAddress: '神奈川県横浜市西区みなとみらい4-4-4',
+      items: ['ダブルベッド', 'ソファ', '食器棚', '本棚'],
+      timeBandSurcharges: [
+        { id: '1', start: '22:00', end: '05:00', kind: 'rate' as const, value: 1.25 }
+      ]
+    },
+    {
+      id: 'quote-3',
+      customerName: '鈴木一郎',
+      requestDate: '2025-01-05',
+      responseDate: '2025-01-07',
+      moveDate: '2025-02-10',
+      amount: 38000,
+      amountWithTax: 41800,
+      status: '見積中' as const,
+      sourceType: 'syncmoving' as const,
+      isContracted: false,
+      isReQuote: true,
+      fromAddress: '大阪府大阪市北区梅田5-5-5',
+      toAddress: '大阪府堺市中区深井6-6-6',
+      items: ['テーブル', '椅子4脚', 'テレビボード'],
+      timeBandSurcharges: []
+    },
+    // 外部案件 3つ
+    {
+      id: 'quote-4',
+      customerName: '高橋美咲',
+      requestDate: '2025-01-12',
+      responseDate: '2025-01-14',
+      moveDate: '2025-02-25',
+      amount: 65000,
+      amountWithTax: 71500,
+      status: '成約' as const,
+      sourceType: '外部' as const,
+      isContracted: true,
+      isReQuote: false,
+      fromAddress: '愛知県名古屋市中区栄7-7-7',
+      toAddress: '愛知県豊田市若宮町8-8-8',
+      items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル'],
+      timeBandSurcharges: []
+    },
+    {
+      id: 'quote-5',
+      customerName: '伊藤健太',
+      requestDate: '2025-01-15',
+      responseDate: '2025-01-17',
+      moveDate: '2025-03-01',
+      amount: 42000,
+      amountWithTax: 46200,
+      status: '不成約' as const,
+      sourceType: '外部' as const,
+      isContracted: false,
+      isReQuote: false,
+      fromAddress: '福岡県福岡市博多区博多駅前9-9-9',
+      toAddress: '福岡県久留米市東町10-10-10',
+      items: ['シングルベッド', '机', '椅子', '本棚'],
+      timeBandSurcharges: []
+    },
+    {
+      id: 'quote-6',
+      customerName: '山田由美',
+      requestDate: '2025-01-20',
+      responseDate: '2025-01-22',
+      moveDate: '2025-03-05',
+      amount: 75000,
+      amountWithTax: 82500,
+      status: 'キャンセル' as const,
+      sourceType: '外部' as const,
+      isContracted: false,
+      isReQuote: true,
+      fromAddress: '北海道札幌市中央区大通11-11-11',
+      toAddress: '北海道函館市本町12-12-12',
+      items: ['ダブルベッド', '冷蔵庫', '洗濯機', 'ソファ', 'ダイニングテーブル', '食器棚'],
+      timeBandSurcharges: [
+        { id: '1', start: '22:00', end: '05:00', kind: 'rate' as const, value: 1.25 }
+      ]
+    }
+  ];
+
+  // customerIndexに基づいて固定データを返す
+  const dataIndex = customerIndex % fixedTestData.length;
+  return fixedTestData[dataIndex];
 };
 
 export const generateTestContract = (customerIndex: number, addressIndex: number, itemIndex: number) => {

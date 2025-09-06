@@ -35,7 +35,7 @@ export interface QuoteHistory {
 /**
  * 見積もりステータスの型定義
  */
-export type QuoteStatus = '見積中' | '回答済' | '成約' | '不成約' | 'キャンセル' | '完了' | '完了(自動)';
+export type QuoteStatus = '見積中' | '回答済' | '再見積' | '成約' | '不成約' | 'キャンセル' | '完了';
 
 /**
  * 見積もり依頼データの型定義

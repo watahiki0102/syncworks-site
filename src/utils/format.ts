@@ -107,3 +107,12 @@ export function formatCurrencyJPY(value: number): string {
 export function formatLaborHours(hours: number): string {
   return `${hours.toFixed(1)}h`;
 }
+
+/**
+ * 金額をフォーマット（案件一覧用）
+ * @param value 金額（数値）
+ * @returns フォーマットされた文字列（例：¥123,456）
+ */
+export function formatCurrency(value: number): string {
+  return `¥${value.toLocaleString()}`;
+}

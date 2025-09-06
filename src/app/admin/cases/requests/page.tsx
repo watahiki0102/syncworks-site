@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteRequest, TruckAvailability } from '../types';
-import { normalizeSourceType, getSourceTypeLabel } from '../lib/normalize';
+import { normalizeSourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
@@ -105,7 +105,7 @@ export default function QuoteRequestsPage() {
           items: TEST_ITEMS[2],
           totalPoints: TEST_ITEMS[2].length * 3
         },
-        status: 'pending',
+        status: 'answered',
         priority: 'low',
         sourceType: '外部'
       }
@@ -125,8 +125,14 @@ export default function QuoteRequestsPage() {
         return false;
       }
       
-      if (searchTerm && !request.customerName.includes(searchTerm)) {
-        return false;
+      if (searchTerm) {
+        const managementNumber = getManagementNumber(request.sourceType, request.id);
+        const matchesCustomerName = request.customerName.includes(searchTerm);
+        const matchesManagementNumber = managementNumber.includes(searchTerm);
+        
+        if (!matchesCustomerName && !matchesManagementNumber) {
+          return false;
+        }
       }
       
       return true;
@@ -581,7 +587,7 @@ export default function QuoteRequestsPage() {
           <div className="flex flex-wrap gap-4 items-center mb-6">
             <input
               type="text"
-              placeholder="顧客名で検索..."
+              placeholder="顧客名・管理Noで検索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -600,55 +606,114 @@ export default function QuoteRequestsPage() {
           </div>
         </div>
 
-        <div className="grid gap-3">
-          {filteredRequests.map((request) => (
-            <div 
-              key={request.id} 
-              className={`bg-white rounded-lg shadow-sm p-4 border border-gray-200 ${getDeadlineColor(request.deadline).replace('border-', 'border-l-4 border-l-')}`}
-              aria-label={getDeadlineAriaLabel(request.deadline)}
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{request.customerName}</h3>
-                  <div className="flex items-center space-x-3 text-sm text-gray-600">
-                    <span>引越し日: {request.summary.moveDate}</span>
-                    <span>回答期限: {request.deadline}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    request.status === 'answered' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {request.status === 'pending' ? '未回答' :
-                     request.status === 'answered' ? '回答済' : '期限切れ'}
-                  </span>
-                  
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                    request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {request.priority === 'high' ? '高' :
-                     request.priority === 'medium' ? '中' : '低'}
-                  </span>
-
-                  <div className="text-sm font-medium text-gray-600">
-                    {request.summary.totalPoints}ポイント
-                  </div>
-
-                  <button
-                    onClick={() => startResponse(request)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                  >
-                    回答する
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  管理No
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  仲介元
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  顧客名
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  引越し日時
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  回答期限
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ポイント
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ステータス
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  優先度
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  操作
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredRequests.map((request) => (
+                <tr 
+                  key={request.id} 
+                  className="hover:bg-gray-50"
+                  aria-label={getDeadlineAriaLabel(request.deadline)}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {getManagementNumber(request.sourceType, request.id)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span 
+                      className="inline-block w-24 px-2 py-1 text-center text-gray-900"
+                      style={{
+                        fontSize: request.sourceType === '外部' 
+                          ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(request.sourceType).length, 1)}rem, 0.75rem)`
+                          : '0.75rem'
+                      }}
+                    >
+                      {getSourceTypeLabel(request.sourceType)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {request.customerName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {request.summary.moveDate} {request.summary.moveTime}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className={getDeadlineColor(request.deadline)}>
+                      {request.deadline}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {request.summary.totalPoints}pt
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      request.status === 'answered' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {request.status === 'pending' ? '未回答' :
+                       request.status === 'answered' ? '回答済' : '期限切れ'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {request.priority === 'high' ? '高' :
+                       request.priority === 'medium' ? '中' : '低'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => startResponse(request)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      回答する
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredRequests.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                    見積もり依頼がありません
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
         
         {/* トラック割り当てモーダル（一覧画面用） */}

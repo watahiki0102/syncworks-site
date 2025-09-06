@@ -1,6 +1,6 @@
 /**
- * 管理者見積もり回答依頼通知ページコンポーネント
- * - お客様からの見積もり依頼の一覧表示
+ * 管理者見積回答依頼通知ページコンポーネント
+ * - お客様からの見積依頼の一覧表示
  * - 優先度・ステータスによるフィルタリング
  * - 緊急度の判定と表示
  * - 回答機能への誘導
@@ -12,9 +12,10 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminCard from '@/components/admin/AdminCard';
 import AdminBadge from '@/components/admin/AdminBadge';
+import { SourceType, getSourceTypeLabel, getManagementNumber } from '@/app/admin/cases/lib/normalize';
 
 /**
- * 見積もり依頼データの型定義
+ * 見積依頼データの型定義
  */
 interface QuoteRequest {
   id: string;                    // 依頼ID
@@ -31,6 +32,7 @@ interface QuoteRequest {
   };
   status: 'pending' | 'answered' | 'expired';  // ステータス
   priority: 'high' | 'medium' | 'low';         // 優先度
+  sourceType: SourceType;        // 依頼元種別
 }
 
 export default function AdminNotifications() {
@@ -60,7 +62,8 @@ export default function AdminNotifications() {
           totalPoints: 12
         },
         status: 'pending',
-        priority: 'high'
+        priority: 'high',
+        sourceType: 'suumo'
       },
       {
         id: '2',
@@ -76,7 +79,8 @@ export default function AdminNotifications() {
           totalPoints: 15
         },
         status: 'pending',
-        priority: 'medium'
+        priority: 'medium',
+        sourceType: 'syncmoving'
       }
     ];
     setRequests(demoRequests);
@@ -102,11 +106,13 @@ export default function AdminNotifications() {
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(request =>
-        request.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.summary.fromAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.summary.toAddress.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(request => {
+        const managementNumber = getManagementNumber(request.sourceType, request.id);
+        return request.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               request.summary.fromAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               request.summary.toAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               managementNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      });
     }
 
     filtered.sort((a, b) => {
@@ -170,7 +176,7 @@ export default function AdminNotifications() {
   };
 
   /**
-   * 見積もり回答処理
+   * 見積回答処理
    * @param requestId - 依頼ID
    */
   const handleAnswer = (requestId: string) => {
@@ -207,8 +213,8 @@ export default function AdminNotifications() {
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
         <AdminPageHeader 
-          title="見積もり回答依頼通知"
-          subtitle="お客様からの見積もり依頼の管理"
+          title="見積回答依頼通知"
+          subtitle="お客様からの見積依頼の管理"
           breadcrumbs={[
             { label: '通知管理' }
           ]}
@@ -288,7 +294,7 @@ export default function AdminNotifications() {
                   </label>
                   <input
                     type="text"
-                    placeholder="顧客名・住所"
+                    placeholder="顧客名・住所・管理No"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -307,80 +313,121 @@ export default function AdminNotifications() {
             </AdminCard>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="space-y-4">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      管理No
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      仲介元
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      顧客名
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      引越し日時
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      依頼日
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      回答期限
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ポイント
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ステータス
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      優先度
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {filteredRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className={`border rounded-lg p-4 ${
+                    <tr 
+                      key={request.id} 
+                      className={`hover:bg-gray-50 ${
                         request.status === 'pending' && isUrgent(request.deadline)
-                          ? 'border-red-300 bg-red-50'
+                          ? 'bg-red-50'
                           : request.status === 'pending'
-                          ? 'border-yellow-300 bg-yellow-50'
-                          : 'border-gray-200 bg-white'
+                          ? 'bg-yellow-50'
+                          : ''
                       }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {request.customerName}
-                            </h3>
-                            {getStatusBadge(request.status)}
-                            {getPriorityBadge(request.priority)}
-                            {request.status === 'pending' && isUrgent(request.deadline) && (
-                              <AdminBadge variant="danger" icon="⚠️">緊急</AdminBadge>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                            <div>
-                              <p><strong>依頼日:</strong> {new Date(request.requestDate).toLocaleDateString('ja-JP')}</p>
-                              <p><strong>回答期限:</strong> {new Date(request.deadline).toLocaleDateString('ja-JP')}</p>
-                              <p><strong>引越し日:</strong> {new Date(request.summary.moveDate).toLocaleDateString('ja-JP')} {request.summary.moveTime}</p>
-                            </div>
-                            <div>
-                              <p><strong>搬出:</strong> {request.summary.fromAddress}</p>
-                              <p><strong>搬入:</strong> {request.summary.toAddress}</p>
-                              <p><strong>総ポイント:</strong> {request.summary.totalPoints}pt</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3">
-                            <p className="text-sm text-gray-600">
-                              <strong>主な荷物:</strong> {request.summary.items.slice(0, 3).join('、')}
-                              {request.summary.items.length > 3 && ` 他${request.summary.items.length - 3}点`}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col space-y-2 ml-4">
-                          {request.status === 'pending' && (
-                            <button
-                              onClick={() => handleAnswer(request.id)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                            >
-                              回答する
-                            </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {getManagementNumber(request.sourceType, request.id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          className="inline-block w-24 px-2 py-1 text-center text-gray-900"
+                          style={{
+                            fontSize: request.sourceType === '外部' 
+                              ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(request.sourceType).length, 1)}rem, 0.75rem)`
+                              : '0.75rem'
+                          }}
+                        >
+                          {getSourceTypeLabel(request.sourceType)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.customerName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.summary.moveDate).toLocaleDateString('ja-JP')} {request.summary.moveTime}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.requestDate).toLocaleDateString('ja-JP')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          {new Date(request.deadline).toLocaleDateString('ja-JP')}
+                          {request.status === 'pending' && isUrgent(request.deadline) && (
+                            <AdminBadge variant="danger" icon="⚠️" className="ml-2">緊急</AdminBadge>
                           )}
-                          <button
-                            onClick={() => handleViewDetails(request.id)}
-                            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                          >
-                            詳細
-                          </button>
                         </div>
-                      </div>
-                    </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.summary.totalPoints}pt
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(request.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getPriorityBadge(request.priority)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {request.status === 'pending' && (
+                          <button
+                            onClick={() => handleAnswer(request.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            回答する
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleViewDetails(request.id)}
+                          className="text-gray-600 hover:text-gray-900"
+                        >
+                          詳細
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-
                   {filteredRequests.length === 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">見積もり依頼がありません</p>
-                    </div>
+                    <tr>
+                      <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
+                        見積依頼がありません
+                      </td>
+                    </tr>
                   )}
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
           </div>
         </main>

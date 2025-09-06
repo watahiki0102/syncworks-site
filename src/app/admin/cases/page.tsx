@@ -1,34 +1,35 @@
 /**
  * 管理者案件管理ページコンポーネント
- * - 見積もり回答履歴
- * - 見積もり回答依頼通知
+ * - 案件一覧（統合ビュー）
  * - 成約実績管理
  * タブで切り替え可能
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminButton from '@/components/admin/AdminButton';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
-import QuoteHistoryPage from './history/page';
-import QuoteRequestsPage from './requests/page';
+import UnifiedCasesPage from './unified/page';
 import PerformancePage from './performance/page';
+import { generateUnifiedTestData, getPendingCount } from './lib/unifiedData';
 
-type TabType = 'history' | 'notifications' | 'contracts';
+type TabType = 'unified' | 'contracts';
 
 export default function CaseManagement() {
-  const [activeTab, setActiveTab] = useState<TabType>('history');
+  const [activeTab, setActiveTab] = useState<TabType>('unified');
+  const [pendingCount, setPendingCount] = useState<number>(0);
 
-  // 未回答依頼数の取得（デモデータ）
-  const getPendingCount = () => {
-    return 2; // デモ用の固定値
-  };
+  // 未回答依頼数の計算
+  useEffect(() => {
+    const unifiedData = generateUnifiedTestData();
+    const pendingCases = getPendingCount(unifiedData);
+    setPendingCount(pendingCases);
+  }, []);
 
   const tabs = [
-    { id: 'history', label: '見積もり回答履歴' },
-    { id: 'notifications', label: '見積もり回答依頼通知', count: getPendingCount() },
+    { id: 'unified', label: '案件一覧', count: pendingCount },
     { id: 'contracts', label: '成約実績管理' }
   ];
 
@@ -49,7 +50,7 @@ export default function CaseManagement() {
       <div className="min-h-screen bg-gray-50">
         <AdminPageHeader 
           title="案件管理"
-          subtitle="見積もり回答・成約実績の管理"
+          subtitle="案件一覧・成約実績の管理"
           actions={actions}
           breadcrumbs={[
             { label: '案件管理' }
@@ -68,14 +69,9 @@ export default function CaseManagement() {
 
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
-          {/* 見積もり回答履歴タブ */}
-          {activeTab === 'history' && (
-            <QuoteHistoryPage />
-          )}
-
-          {/* 見積もり回答依頼通知タブ */}
-          {activeTab === 'notifications' && (
-            <QuoteRequestsPage />
+          {/* 案件一覧タブ */}
+          {activeTab === 'unified' && (
+            <UnifiedCasesPage />
           )}
 
           {/* 成約実績管理タブ */}
