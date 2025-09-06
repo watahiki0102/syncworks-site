@@ -18,7 +18,7 @@ export default function UnifiedCasesPage() {
     searchTerm: ''
   });
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
-    'pending', 'answered', '再見積', '成約', '不成約', 'キャンセル'
+    'pending', 'answered', 'expired', '再見積', '成約', '不成約', 'キャンセル'
   ]);
   const [viewingCase, setViewingCase] = useState<UnifiedCase | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -322,7 +322,7 @@ export default function UnifiedCasesPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
            {[
-             'pending', 'answered', '再見積', '成約', '不成約', 'キャンセル'
+             'pending', 'answered', 'expired', '再見積', '成約', '不成約', 'キャンセル'
            ].map((statusValue) => {
              const statusStyle = STATUS_STYLES[statusValue as keyof typeof STATUS_STYLES];
              return (

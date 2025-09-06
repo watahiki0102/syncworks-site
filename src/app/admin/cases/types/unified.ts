@@ -45,6 +45,7 @@ export type UnifiedCaseStatus =
   // 依頼ステータス
   | 'pending'      // 未回答
   | 'answered'     // 回答済
+  | 'expired'      // 期限切れ
   // 履歴ステータス  
   | '回答済'       // 回答済
   | '再見積'       // 再見積
@@ -79,7 +80,7 @@ export const STATUS_FILTERS: StatusFilter[] = [
   {
     id: 'all',
     label: '全て',
-    statuses: ['pending', 'answered', '回答済', '再見積', '成約', '不成約', 'キャンセル']
+    statuses: ['pending', 'answered', 'expired', '回答済', '再見積', '成約', '不成約', 'キャンセル']
   },
   {
     id: 'pending',
@@ -118,6 +119,7 @@ export interface StatusStyle {
 export const STATUS_STYLES: Record<UnifiedCaseStatus, StatusStyle> = {
   'pending': { bgColor: 'bg-orange-100', textColor: 'text-orange-800', label: '見積依頼' },
   'answered': { bgColor: 'bg-blue-100', textColor: 'text-blue-800', label: '見積済' },
+  'expired': { bgColor: 'bg-gray-100', textColor: 'text-gray-800', label: '期限切れ' },
   '回答済': { bgColor: 'bg-blue-100', textColor: 'text-blue-800', label: '回答済' },
   '再見積': { bgColor: 'bg-purple-100', textColor: 'text-purple-800', label: '再見積' },
   '成約': { bgColor: 'bg-green-100', textColor: 'text-green-800', label: '成約' },
