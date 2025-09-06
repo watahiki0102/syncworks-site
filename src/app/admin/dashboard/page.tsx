@@ -251,26 +251,29 @@ export default function AdminDashboard() {
 
                {/* 配車管理 */}
                <Link href="/admin/dispatch" className="block">
-                 <AdminCard
-                   title="配車管理"
-                   subtitle="トラック配車・稼働"
-                   icon="🚚"
-                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200 h-24"
-                   padding="sm"
-                 >
-                 </AdminCard>
+                <AdminCard
+                  title="配車管理"
+                  subtitle="トラック配車・稼働"
+                  icon="🚚"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200 h-24"
+                  padding="sm"
+                >
+                  <></>
+                </AdminCard>
+                
                </Link>
 
                {/* 集計管理 */}
                <Link href="/admin/analytics" className="block">
-                 <AdminCard
-                   title="集計管理"
-                   subtitle="売上・成約率分析"
-                   icon="📊"
-                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200 h-24"
-                   padding="sm"
-                 >
-                 </AdminCard>
+                <AdminCard
+                  title="集計管理"
+                  subtitle="売上・成約率分析"
+                  icon="📊"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200 h-24"
+                  padding="sm"
+                >
+                  <></>
+                </AdminCard>
                </Link>
             </div>
           </div>

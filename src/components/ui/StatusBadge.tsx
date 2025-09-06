@@ -38,7 +38,7 @@ export function StatusBadge(props: StatusBadgeProps) {
   // エラーハンドリング
   if (!caseItem || !caseItem.status) {
     return (
-      <span className="inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+      <span className="inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
         -
       </span>
     );
@@ -49,7 +49,7 @@ export function StatusBadge(props: StatusBadgeProps) {
   // ステータススタイルが見つからない場合のフォールバック
   if (!statusStyle) {
     return (
-      <span className="inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+      <span className="inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
         {caseItem.status}
       </span>
     );
@@ -58,7 +58,7 @@ export function StatusBadge(props: StatusBadgeProps) {
   // プルダウンなしの場合（支払対象一覧用）
   if (!showDropdown) {
     return (
-      <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
+      <span className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
         {statusStyle.label}
       </span>
     );
@@ -67,7 +67,7 @@ export function StatusBadge(props: StatusBadgeProps) {
   // SyncMoving の履歴データは編集不可（案件一覧用）
   if (caseItem.type === 'history' && caseItem.sourceType === 'syncmoving') {
     return (
-      <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
+      <span className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
         {statusStyle.label}
       </span>
     );
@@ -81,7 +81,7 @@ export function StatusBadge(props: StatusBadgeProps) {
           e.stopPropagation();
           // ドロップダウン処理は親コンポーネントで実装
         }}
-        className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor} hover:opacity-80 transition-opacity`}
+        className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor} hover:opacity-80 transition-opacity`}
       >
         {statusStyle.label}
       </button>
