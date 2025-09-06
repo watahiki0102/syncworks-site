@@ -227,7 +227,7 @@ export default function AdminDashboard() {
                <Link href="/admin/cases" className="block">
                  <AdminCard
                    title="案件管理"
-                   subtitle="見積もり・成約管理"
+                   subtitle="案件・支払対象一覧"
                    icon="📋"
                    className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-white border-orange-200 h-24"
                    padding="sm"

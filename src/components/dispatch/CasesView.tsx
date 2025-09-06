@@ -240,7 +240,7 @@ interface UnifiedCaseManagementProps {
 const UnifiedCaseManagement = (props: UnifiedCaseManagementProps) => {
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">案件管理</h3>
+      <h3 className="text-lg mb-4">案件管理</h3>
       <p className="text-gray-600">案件一覧と管理機能がここに表示されます</p>
     </div>
   );

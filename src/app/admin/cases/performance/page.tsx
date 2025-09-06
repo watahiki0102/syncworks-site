@@ -2,56 +2,85 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { Contract } from '../types';
-import { generateTestContract } from '@/constants/testData';
+import { UnifiedCase } from '../types/unified';
+import { generateUnifiedTestData } from '../lib/unifiedData';
+import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
+import { formatCurrency } from '@/utils/format';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function PerformancePage() {
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
+  const [cases, setCases] = useState<UnifiedCase[]>([]);
+  const [filteredCases, setFilteredCases] = useState<UnifiedCase[]>([]);
+  // 前月の月初と月末を計算
+  const getPreviousMonthRange = () => {
+    const now = new Date();
+    console.log('現在の日付:', now);
+    
+    // 前月の月初（1日）を直接計算
+    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    // 前月の月末（末日）を直接計算
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    
+    console.log('前月の月初:', firstDay);
+    console.log('前月の月末:', lastDay);
+    
+    const formatDate = (date: Date) => {
+      // タイムゾーンの影響を避けるために手動でフォーマット
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const result = {
+      start: formatDate(firstDay),
+      end: formatDate(lastDay)
+    };
+    
+    console.log('結果:', result);
+    return result;
+  };
+
+  const previousMonthRange = getPreviousMonthRange();
   const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [serviceFilter, setServiceFilter] = useState<'all' | 'internal' | 'external'>('all');
+  const [startDate, setStartDate] = useState(previousMonthRange.start);
+  const [endDate, setEndDate] = useState(previousMonthRange.end);
 
   useEffect(() => {
-    // 共通テストデータから契約データを生成
-    const demoContracts: Contract[] = [
-      generateTestContract(0, 0, 0) as Contract,
-      generateTestContract(1, 1, 1) as Contract,
-      generateTestContract(2, 2, 2) as Contract,
-      generateTestContract(3, 3, 3) as Contract,
-      generateTestContract(4, 4, 4) as Contract
-    ];
-
-    setContracts(demoContracts);
+    // 案件一覧と全く同じデータを使用
+    const unifiedData = generateUnifiedTestData();
+    // 支払対象一覧：ステータスが「成約」または「キャンセル」で仲介元がSyncMovingの場合のみ
+    const paymentTargetCases = unifiedData.filter(c => 
+      (c.status === '成約' || c.status === 'キャンセル') && 
+      c.sourceType === 'syncmoving'
+    );
+    setCases(paymentTargetCases);
   }, []);
 
   useEffect(() => {
-    const filtered = contracts.filter(contract => {
-      // 検索条件
-      if (searchTerm && !contract.customerName.includes(searchTerm)) {
+    const filtered = cases.filter(caseItem => {
+      // 検索条件（顧客名、依頼ID、管理ナンバー）
+      if (searchTerm && 
+          !caseItem.customerName.includes(searchTerm) && 
+          !caseItem.id.includes(searchTerm) &&
+          !getManagementNumber(caseItem.sourceType, caseItem.id).includes(searchTerm)) {
         return false;
       }
       
-      // 期間フィルター
-      if (startDate && contract.contractDate < startDate) {
+      // 期間フィルター（引越し日でフィルタリング）
+      if (startDate && caseItem.moveDate < startDate) {
         return false;
       }
       
-      if (endDate && contract.contractDate > endDate) {
-        return false;
-      }
-      
-      // 業者フィルター
-      if (serviceFilter !== 'all' && contract.serviceType !== serviceFilter) {
+      if (endDate && caseItem.moveDate > endDate) {
         return false;
       }
       
       return true;
     });
 
-    setFilteredContracts(filtered);
-  }, [contracts, searchTerm, startDate, endDate, serviceFilter]);
+    setFilteredCases(filtered);
+  }, [cases, searchTerm, startDate, endDate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -61,36 +90,65 @@ export default function PerformancePage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP');
+    return new Date(dateString).toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  // 手数料を計算（成約金額の10%と仮定）
+  const calculateCommission = (amount: number) => {
+    return Math.round(amount * 0.1);
   };
 
   const calculateTotalRevenue = () => {
-    return contracts.reduce((total, contract) => total + contract.revenue, 0);
+    return filteredCases.reduce((total, caseItem) => {
+      const amount = caseItem.amountWithTax || 0;
+      return total + calculateCommission(amount);
+    }, 0);
   };
 
   const calculateTotalContracts = () => {
-    return contracts.length;
+    return filteredCases.length;
   };
 
   const calculateTotalAmount = () => {
-    return contracts.reduce((total, contract) => total + contract.contractAmount, 0);
+    return filteredCases.reduce((total, caseItem) => total + (caseItem.amountWithTax || 0), 0);
+  };
+
+
+  // 仲介元別集計データを計算
+  const calculateSourceTypeData = () => {
+    const sourceStats: { [key: string]: { contracts: number; amount: number; revenue: number } } = {};
+    
+    filteredCases.forEach(caseItem => {
+      const sourceType = caseItem.sourceType;
+      if (!sourceStats[sourceType]) {
+        sourceStats[sourceType] = { contracts: 0, amount: 0, revenue: 0 };
+      }
+      sourceStats[sourceType].contracts += 1;
+      const amount = caseItem.amountWithTax || 0;
+      sourceStats[sourceType].amount += amount;
+      sourceStats[sourceType].revenue += calculateCommission(amount);
+    });
+    
+    return Object.entries(sourceStats);
   };
 
   return (
     <AdminAuthGuard>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">成約管理実績</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-6">
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                顧客名検索
+                絞込検索
               </label>
               <input
                 id="search"
                 type="text"
-                placeholder="顧客名で検索..."
+                placeholder="顧客名・依頼Noで検索..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -98,153 +156,115 @@ export default function PerformancePage() {
             </div>
             
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                開始日
+              <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 mb-1">
+                期間指定
               </label>
-              <input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-gray-500 text-sm">〜</span>
+                <input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
             
-            <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                終了日
-              </label>
-              <input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="serviceFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                業者種別
-              </label>
-              <select
-                id="serviceFilter"
-                value={serviceFilter}
-                onChange={(e) => setServiceFilter(e.target.value as 'all' | 'internal' | 'external')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">全て</option>
-                <option value="internal">自社サービス</option>
-                <option value="external">他社サービス</option>
-              </select>
-            </div>
           </div>
         </div>
 
         {/* サマリー統計 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">総成約数</h3>
-            <p className="text-3xl font-bold text-blue-600">{calculateTotalContracts()}件</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)' }}>
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">支払対象件数</h3>
+            <p className="text-2xl font-bold text-blue-600">{calculateTotalContracts()}件</p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">総成約金額</h3>
-            <p className="text-3xl font-bold text-green-600">{formatCurrency(calculateTotalAmount())}</p>
-            <p className="text-sm text-gray-500">(税込)</p>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">総手数料差引額</h3>
-            <p className="text-3xl font-bold text-purple-600">{formatCurrency(calculateTotalRevenue())}</p>
-            <p className="text-sm text-gray-500">(税込)</p>
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">仲介手数料</h3>
+            <p className="text-2xl font-bold text-purple-600">{formatCurrency(calculateTotalRevenue())}</p>
           </div>
         </div>
 
-        {/* 運用案内 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-blue-800 text-sm">
-            ※ 詳細な月次集計や期間別分析については、集計管理画面でご確認いただけます。
-          </p>
-        </div>
-
-        {/* 成約一覧 */}
+        {/* 支払対象一覧テーブル */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">成約一覧</h2>
-          </div>
-          
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    管理NO
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    仲介元
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     顧客名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    成約日
+                    引越日
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    金額（税込）
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    引越し日
+                    仲介手数料
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    成約金額
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    手数料
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    手数料差引額
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    業者種別
+                    ステータス
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredContracts.map((contract) => (
-                  <tr key={contract.id} className="hover:bg-gray-50">
+              <tbody className="bg-gray-50 divide-y divide-gray-200">
+                {filteredCases.map((caseItem) => (
+                  <tr key={caseItem.id} className="bg-white hover:bg-gray-100">
+                    <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
+                      {getManagementNumber(caseItem.sourceType, caseItem.id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span 
+                        className="inline-block w-24 px-2 py-1 text-center text-gray-900"
+                        style={{
+                          fontSize: caseItem.sourceType === '外部' 
+                            ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(caseItem.sourceType).length, 1)}rem, 0.75rem)`
+                            : '0.75rem'
+                        }}
+                      >
+                        {getSourceTypeLabel(caseItem.sourceType)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      <span
+                        style={{
+                          fontSize: `clamp(0.625rem, ${32 / Math.max(caseItem.customerName.length, 1)}rem, 0.875rem)`
+                        }}
+                      >
+                        {caseItem.customerName}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(caseItem.moveDate)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {contract.customerName}
+                        {caseItem.amountWithTax ? formatCurrency(caseItem.amountWithTax) : '-'}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(contract.contractDate)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(contract.moveDate)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(contract.contractAmount)}
-                      </div>
-                      <div className="text-xs text-gray-500">(税込)</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatCurrency(contract.commission)}
-                      </div>
-                      <div className="text-xs text-gray-500">(税込)</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-purple-600">
-                        {formatCurrency(contract.revenue)}
+                        {caseItem.amountWithTax ? formatCurrency(calculateCommission(caseItem.amountWithTax)) : '-'}
                       </div>
-                      <div className="text-xs text-gray-500">(税込)</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        contract.serviceType === 'internal' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {contract.serviceType === 'internal' ? '自社サービス' : '他社サービス'}
-                      </span>
+                      <StatusBadge caseItem={caseItem} showDropdown={false} />
                     </td>
                   </tr>
                 ))}
@@ -252,21 +272,6 @@ export default function PerformancePage() {
             </table>
           </div>
         </div>
-
-        {/* 空の状態 */}
-        {filteredContracts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">成約データがありません</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                成約が成立すると、ここに表示されます。
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </AdminAuthGuard>
   );

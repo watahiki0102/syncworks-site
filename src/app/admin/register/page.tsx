@@ -161,7 +161,7 @@ export default function RegisterPage() {
                     </svg>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">案件管理</h3>
-                  <p className="text-sm text-gray-600">見積もり・成約管理</p>
+                  <p className="text-sm text-gray-600">案件・支払対象一覧</p>
                 </div>
               </div>
 

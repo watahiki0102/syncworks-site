@@ -1,7 +1,7 @@
 /**
  * 管理者案件管理ページコンポーネント
  * - 案件一覧（統合ビュー）
- * - 成約実績管理
+ * - 支払対象
  * タブで切り替え可能
  */
 'use client';
@@ -30,7 +30,7 @@ export default function CaseManagement() {
 
   const tabs = [
     { id: 'unified', label: '案件一覧', count: pendingCount },
-    { id: 'contracts', label: '成約実績管理' }
+    { id: 'contracts', label: '支払対象一覧' }
   ];
 
   const actions = (
@@ -50,7 +50,7 @@ export default function CaseManagement() {
       <div className="min-h-screen bg-gray-50">
         <AdminPageHeader 
           title="案件管理"
-          subtitle="案件一覧・成約実績の管理"
+          subtitle="案件・支払対象一覧"
           actions={actions}
           breadcrumbs={[
             { label: '案件管理' }
@@ -74,7 +74,7 @@ export default function CaseManagement() {
             <UnifiedCasesPage />
           )}
 
-          {/* 成約実績管理タブ */}
+          {/* 支払対象一覧タブ */}
           {activeTab === 'contracts' && (
             <PerformancePage />
           )}

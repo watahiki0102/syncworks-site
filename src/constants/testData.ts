@@ -352,6 +352,10 @@ export const generateTestContract = (customerIndex: number, addressIndex: number
   const commission = Math.round(contractAmount * 0.1);
   const revenue = contractAmount - commission;
   
+  // 仲介元の種別をランダムに選択
+  const sourceTypes = ['syncmoving', 'suumo', '外部', '手動'] as const;
+  const sourceType = sourceTypes[customerIndex % sourceTypes.length];
+  
   return {
     id: `contract-${customerIndex + 1}`,
     customerName: customer.name,
@@ -363,7 +367,8 @@ export const generateTestContract = (customerIndex: number, addressIndex: number
     items,
     fromAddress: address.from,
     toAddress: address.to,
-    serviceType: Math.random() > 0.5 ? 'internal' : 'external' as const
+    serviceType: Math.random() > 0.5 ? 'internal' : 'external' as const,
+    sourceType
   };
 };
 

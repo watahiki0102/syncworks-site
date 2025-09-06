@@ -73,6 +73,7 @@ export interface Contract {
   fromAddress: string;     // 引越し元住所
   toAddress: string;       // 引越し先住所
   serviceType: 'internal' | 'external'; // 業者種別（自社 or 他社サービス）
+  sourceType: SourceType;  // 仲介元種別
 }
 
 /**

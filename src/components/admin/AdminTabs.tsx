@@ -64,7 +64,7 @@ export default function AdminTabs({
           )}
           <span>{tab.label}</span>
           {tab.count !== undefined && (
-            <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+            <span className="ml-2 bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs">
               {tab.count}
             </span>
           )}

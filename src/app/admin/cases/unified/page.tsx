@@ -5,7 +5,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase, UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
 import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
-import { getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
+import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
 
 export default function UnifiedCasesPage() {
@@ -156,9 +156,9 @@ export default function UnifiedCasesPage() {
    */
   const getDateDisplay = (caseItem: UnifiedCase) => {
     if (caseItem.type === 'request') {
-      return caseItem.deadline ? `期限: ${caseItem.deadline}` : '';
+      return caseItem.deadline ? `期限: ${formatDate(caseItem.deadline)}` : '';
     } else {
-      return caseItem.responseDate ? `回答: ${caseItem.responseDate}` : '';
+      return caseItem.responseDate ? `回答: ${formatDate(caseItem.responseDate)}` : '';
     }
   };
 
@@ -214,12 +214,7 @@ export default function UnifiedCasesPage() {
   const renderStatusDropdown = (caseItem: UnifiedCase) => {
     // SyncMoving の履歴データは編集不可
     if (caseItem.type === 'history' && caseItem.sourceType === 'syncmoving') {
-      const statusStyle = STATUS_STYLES[caseItem.status];
-      return (
-        <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.textColor}`}>
-          {statusStyle.label}
-        </span>
-      );
+      return <StatusBadge caseItem={caseItem} showDropdown={false} />;
     }
 
     // 依頼データのステータス選択肢
@@ -287,21 +282,27 @@ export default function UnifiedCasesPage() {
     );
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   return (
-    <AdminAuthGuard>
+    <AdminAuthGuard>    
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">案件一覧</h1>
-          
           <div className="space-y-4 mb-6">
             {/* ステータスフィルター（チェックボックス）と検索 */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-start gap-6">
                 {/* 左側：ステータス絞り込み */}
                 <div className="flex-shrink-0">
-                  <div className="mb-3">
+                  <div className="h-6 mb-3 flex items-center">
                     <div className="flex items-center gap-4">
-                      <h3 className="text-sm font-medium text-gray-700">表示ステータス絞込</h3>
+                      <h3 className="text-sm font-medium text-gray-700 leading-6">ステータス</h3>
                       <div className="flex items-center gap-3 text-xs">
                         <button
                           onClick={handleSelectAll}
@@ -344,19 +345,39 @@ export default function UnifiedCasesPage() {
                   </div>
                 </div>
                 
-                {/* 右側：検索絞り込み */}
+                {/* 右側：検索絞り込みと仲介元フィルター */}
                 <div className="flex-1 ml-8 flex flex-col">
-                  <div className="mb-3">
-                    <h3 className="text-sm font-medium text-gray-700">絞込検索</h3>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-gray-700 leading-6">検索</h3>
+                    </div>
+                    <div className="w-40">
+                      <h3 className="text-sm font-medium text-gray-700 leading-6">仲介元</h3>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center flex-1 mt-2">
-                    <input
-                      type="text"
-                      placeholder="顧客名・管理Noで検索..."
-                      value={filter.searchTerm}
-                      onChange={(e) => setFilter(prev => ({ ...prev, searchTerm: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <div className="flex items-center gap-3 mt-6">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="顧客名・管理Noで検索..."
+                        value={filter.searchTerm}
+                        onChange={(e) => setFilter(prev => ({ ...prev, searchTerm: e.target.value }))}
+                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-40">
+                      <select
+                        value={filter.sourceType}
+                        onChange={(e) => setFilter(prev => ({ ...prev, sourceType: e.target.value as 'all' | SourceType }))}
+                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="all">全て</option>
+                        <option value="syncmoving">SyncMoving</option>
+                        <option value="suumo">スーモ</option>
+                        <option value="外部">外部</option>
+                        <option value="手動">手動登録</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -405,7 +426,7 @@ export default function UnifiedCasesPage() {
                   顧客名
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  引越し日時
+                  引越日
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   期限/回答日
@@ -449,7 +470,7 @@ export default function UnifiedCasesPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {caseItem.moveDate} {caseItem.moveTime}
+                    {formatDate(caseItem.moveDate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getDateDisplay(caseItem)}
