@@ -35,7 +35,7 @@ const mockDate = new Date('2024-03-20T10:00:00Z');
 const originalDate = global.Date;
 
 beforeAll(() => {
-  global.Date = jest.fn().mockImplementation((...args: any[]) => {
+  global.Date = jest.fn().mockImplementation((...args: ConstructorParameters<typeof Date>) => {
     if (args.length === 0) {
       return mockDate;
     }

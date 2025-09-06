@@ -8,7 +8,7 @@ import { useFormValidation, useLoading, useErrorHandler } from '../useFormValida
 import { validators } from '@/utils/validation';
 
 // テスト用のフォームデータ型定義
-interface TestFormData {
+interface TestFormData extends Record<string, unknown> {
   name: string;
   email: string;
   age: number;

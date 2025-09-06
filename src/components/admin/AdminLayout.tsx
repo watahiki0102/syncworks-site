@@ -26,6 +26,7 @@ interface AdminLayoutProps {
  * 管理画面のページ情報を定義
  */
 const PAGE_CONFIG = {
+  // 引越し事業者用の画面
   '/admin/dashboard': { title: '事業者管理画面', icon: '🏠' },
   '/admin/cases': { title: '案件管理', icon: '📋' },
   '/admin/shifts': { title: 'シフト管理', icon: '👥' },
@@ -34,6 +35,12 @@ const PAGE_CONFIG = {
   '/admin/profile': { title: '基本情報設定', icon: '📝' },
   '/admin/quotes': { title: '見積もり管理', icon: '💰' },
   '/admin/notifications': { title: '通知管理', icon: '🔔' },
+  
+  // 引越し案件紹介者用の画面
+  '/admin/referrer/dashboard': { title: '紹介者管理画面', icon: '🏠' },
+  '/admin/referrer/referrals': { title: '紹介状況リスト', icon: '📋' },
+  '/admin/referrer/new-referral': { title: '新規紹介案件', icon: '➕' },
+  '/admin/referrer/profile': { title: 'プロフィール管理', icon: '👤' },
 } as const;
 
 export default function AdminLayout({
@@ -99,15 +106,33 @@ export default function AdminLayout({
     if (breadcrumbs) return breadcrumbs;
 
     const pathSegments = pathname.split('/').filter(Boolean);
-    const crumbs = [{ label: '事業者管理画面', href: '/admin/dashboard' }];
-
-    if (pathSegments.length > 2) {
-      // /admin/dashboard以外の場合
-      const currentPage = getCurrentPageInfo();
-      crumbs.push({ label: currentPage.title, href: pathname });
+    
+    // 引越し案件紹介者用の画面かどうかを判定
+    const isReferrerPage = pathname.includes('/admin/referrer/');
+    
+    if (isReferrerPage) {
+      // 引越し案件紹介者用の画面の場合
+      const crumbs = [];
+      
+      if (pathSegments.length > 3) {
+        // /admin/referrer/dashboard以外の場合
+        const currentPage = getCurrentPageInfo();
+        crumbs.push({ label: currentPage.title, href: pathname });
+      }
+      
+      return crumbs;
+    } else {
+      // 引越し事業者用の画面の場合
+      const crumbs = [{ label: '事業者管理画面', href: '/admin/dashboard' }];
+      
+      if (pathSegments.length > 2) {
+        // /admin/dashboard以外の場合
+        const currentPage = getCurrentPageInfo();
+        crumbs.push({ label: currentPage.title, href: pathname });
+      }
+      
+      return crumbs;
     }
-
-    return crumbs;
   };
 
   return (
@@ -142,51 +167,60 @@ export default function AdminLayout({
               {/* カスタムアクション */}
               {actions}
               
-              {/* 設定メニュー */}
-              <div className="relative" ref={settingsRef}>
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
-                >
-                  <span className="text-base">⚙️</span>
-                  <span className="hidden sm:inline">設定</span>
-                </button>
-                
-                {/* 設定ドロップダウン */}
-                {showSettings && (
-                  <div className="absolute right-0 top-12 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div className="py-2">
-                      <Link
-                        href="/pricing/step1"
-                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        onClick={() => setShowSettings(false)}
-                      >
-                        <span className="text-base">💰</span>
-                        <div>
-                          <div className="font-medium">料金設定</div>
-                          <div className="text-xs text-gray-500">ポイント・料金体系</div>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/admin/profile"
-                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        onClick={() => setShowSettings(false)}
-                      >
-                        <span className="text-base">📝</span>
-                        <div>
-                          <div className="font-medium">基本情報設定</div>
-                          <div className="text-xs text-gray-500">事業者情報の編集</div>
-                        </div>
-                      </Link>
+              {/* 設定メニュー（引越し事業者用のみ） */}
+              {!pathname.includes('/admin/referrer/') && (
+                <div className="relative" ref={settingsRef}>
+                  <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
+                  >
+                    <span className="text-base">⚙️</span>
+                    <span className="hidden sm:inline">設定</span>
+                  </button>
+                  
+                  {/* 設定ドロップダウン */}
+                  {showSettings && (
+                    <div className="absolute right-0 top-12 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                      <div className="py-2">
+                        <Link
+                          href="/pricing/step1"
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          onClick={() => setShowSettings(false)}
+                        >
+                          <span className="text-base">💰</span>
+                          <div>
+                            <div className="font-medium">料金設定</div>
+                            <div className="text-xs text-gray-500">ポイント・料金体系</div>
+                          </div>
+                        </Link>
+                        <Link
+                          href="/admin/profile"
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          onClick={() => setShowSettings(false)}
+                        >
+                          <span className="text-base">📝</span>
+                          <div>
+                            <div className="font-medium">基本情報設定</div>
+                            <div className="text-xs text-gray-500">事業者情報の編集</div>
+                          </div>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* 事業者管理画面トップに戻るボタン */}
-              {pathname !== '/admin/dashboard' && (
+              {pathname !== '/admin/dashboard' && pathname !== '/admin/referrer/dashboard' && (
                 <button
-                  onClick={() => router.push('/admin/dashboard')}
+                  onClick={() => {
+                    // 引越し案件紹介者用の画面の場合は、引越し案件紹介者管理画面に戻る
+                    if (pathname.includes('/admin/referrer/')) {
+                      router.push('/admin/referrer/dashboard');
+                    } else {
+                      router.push('/admin/dashboard');
+                    }
+                  }}
                   className="bg-gray-500 hover:bg-gray-600 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
                 >
                   <span className="sm:hidden">←</span>
@@ -194,14 +228,16 @@ export default function AdminLayout({
                 </button>
               )}
               
-              {/* ログアウトボタン */}
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
-              >
-                <span className="sm:hidden">🚪</span>
-                <span className="hidden sm:inline">ログアウト</span>
-              </button>
+              {/* ログアウトボタン（引越し事業者用のみ） */}
+              {!pathname.includes('/admin/referrer/') && (
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+                >
+                  <span className="sm:hidden">🚪</span>
+                  <span className="hidden sm:inline">ログアウト</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

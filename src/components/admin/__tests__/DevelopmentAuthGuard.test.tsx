@@ -10,22 +10,30 @@ import DevelopmentAuthGuard from '../DevelopmentAuthGuard';
 // useEffect内のsetTimeoutなどの非同期処理をモック
 jest.useFakeTimers();
 
+// process.envをモック
+const mockProcessEnv = (nodeEnv: string | undefined) => {
+  Object.defineProperty(process, 'env', {
+    value: { ...process.env, NODE_ENV: nodeEnv },
+    writable: true
+  });
+};
+
 describe('DevelopmentAuthGuard', () => {
   const originalEnv = process.env.NODE_ENV;
 
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv;
+    mockProcessEnv(originalEnv);
     jest.clearAllTimers();
   });
 
   describe('開発環境での動作', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
     });
 
     it('初期状態でローディング表示される', () => {
       // テスト環境では常にローディング状態になる
-      process.env.NODE_ENV = 'test';
+      mockProcessEnv('test');
       
       render(
         <DevelopmentAuthGuard>
@@ -104,7 +112,7 @@ describe('DevelopmentAuthGuard', () => {
 
   describe('非開発環境での動作', () => {
     it('production環境では常にローディング状態', () => {
-      process.env.NODE_ENV = 'production';
+      mockProcessEnv('production');
       
       render(
         <DevelopmentAuthGuard>
@@ -118,7 +126,7 @@ describe('DevelopmentAuthGuard', () => {
     });
 
     it('test環境では常にローディング状態', () => {
-      process.env.NODE_ENV = 'test';
+      mockProcessEnv('test');
       
       render(
         <DevelopmentAuthGuard>
@@ -131,7 +139,7 @@ describe('DevelopmentAuthGuard', () => {
     });
 
     it('undefined環境では常にローディング状態', () => {
-      process.env.NODE_ENV = undefined as any;
+      mockProcessEnv(undefined);
       
       render(
         <DevelopmentAuthGuard>
@@ -146,7 +154,7 @@ describe('DevelopmentAuthGuard', () => {
 
   describe('ローディング画面のレイアウト', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production'; // ローディング状態を維持
+      mockProcessEnv('production'); // ローディング状態を維持
     });
 
     it('ローディング画面の構造が正しい', () => {
@@ -192,12 +200,12 @@ describe('DevelopmentAuthGuard', () => {
 
   describe('ステート管理', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
     });
 
     it('初期状態でisLoadingがtrueである', () => {
       // テスト環境では常にローディング状態になる
-      process.env.NODE_ENV = 'test';
+      mockProcessEnv('test');
       
       render(
         <DevelopmentAuthGuard>
@@ -226,7 +234,7 @@ describe('DevelopmentAuthGuard', () => {
 
   describe('useEffectの依存配列', () => {
     it('useEffectが一度だけ実行される', async () => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
       
       const { rerender } = render(
         <DevelopmentAuthGuard>
@@ -253,7 +261,7 @@ describe('DevelopmentAuthGuard', () => {
 
   describe('エッジケース', () => {
     it('childrenが複雑な構造でも動作する', async () => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
       
       render(
         <DevelopmentAuthGuard>
@@ -279,7 +287,7 @@ describe('DevelopmentAuthGuard', () => {
     });
 
     it('childrenがfragmentでも動作する', async () => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
       
       render(
         <DevelopmentAuthGuard>
@@ -297,7 +305,7 @@ describe('DevelopmentAuthGuard', () => {
     });
 
     it('childrenが文字列でも動作する', async () => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
       
       render(
         <DevelopmentAuthGuard>
@@ -311,7 +319,7 @@ describe('DevelopmentAuthGuard', () => {
     });
 
     it('childrenが数値でも動作する', async () => {
-      process.env.NODE_ENV = 'development';
+      mockProcessEnv('development');
       
       render(
         <DevelopmentAuthGuard>

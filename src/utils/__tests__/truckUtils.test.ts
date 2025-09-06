@@ -24,6 +24,7 @@ const mockTrucks: Truck[] = [
     truckType: '軽トラ',
     status: 'available',
     capacityKg: 350,
+    inspectionExpiry: '2025-12-31',
     schedules: []
   },
   {
@@ -33,6 +34,7 @@ const mockTrucks: Truck[] = [
     truckType: '2t',
     status: 'available',
     capacityKg: 2000,
+    inspectionExpiry: '2025-12-31',
     schedules: []
   },
   {
@@ -42,6 +44,7 @@ const mockTrucks: Truck[] = [
     truckType: '3t',
     status: 'available',
     capacityKg: 3000,
+    inspectionExpiry: '2025-12-31',
     schedules: []
   },
   {
@@ -51,6 +54,7 @@ const mockTrucks: Truck[] = [
     truckType: '2t',
     status: 'maintenance',
     capacityKg: 2000,
+    inspectionExpiry: '2025-12-31',
     schedules: []
   }
 ];
@@ -205,6 +209,7 @@ describe('truckUtils', () => {
           truckType: '4t',
           status: 'available',
           capacityKg: 4000,
+          inspectionExpiry: '2025-12-31',
           schedules: []
         }
       ];

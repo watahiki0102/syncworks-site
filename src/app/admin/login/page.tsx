@@ -1,6 +1,7 @@
 /**
  * 管理者ログインページコンポーネント
  * - 事業者アカウントのログイン機能
+ * - 利用種別選択（引越し事業者 / 紹介者）
  * - デモ用認証（admin@example.com / password123）
  * - 新規登録ページへの誘導
  */
@@ -8,11 +9,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { UserType } from '@/types/referral';
 
 export default function AdminLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [userType, setUserType] = useState<UserType>('mover');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -29,9 +32,17 @@ export default function AdminLoginPage() {
             
             if (now < expiryDate) {
                 // 有効期限内の場合、自動ログインを有効にする
+                const savedUserType = localStorage.getItem('userType') || 'mover';
                 localStorage.setItem('adminLoggedIn', 'true');
                 localStorage.setItem('adminEmail', 'admin@example.com'); // デモ用
-                router.push('/admin/dashboard');
+                localStorage.setItem('userType', savedUserType);
+                
+                // 利用種別に応じて適切な画面に遷移
+                if (savedUserType === 'referrer') {
+                    router.push('/admin/referrer/dashboard');
+                } else {
+                    router.push('/admin/dashboard');
+                }
             } else {
                 // 有効期限切れの場合、自動ログイン情報を削除
                 localStorage.removeItem('adminAutoLoginExpiry');
@@ -54,6 +65,7 @@ export default function AdminLoginPage() {
             if (email === 'admin@example.com' && password === 'password123') {
                 localStorage.setItem('adminLoggedIn', 'true');
                 localStorage.setItem('adminEmail', email);
+                localStorage.setItem('userType', userType);
                 
                 // 自動ログイン機能
                 if (rememberMe) {
@@ -67,7 +79,12 @@ export default function AdminLoginPage() {
                     localStorage.removeItem('adminRememberMe');
                 }
                 
-                router.push('/admin/dashboard');
+                // 利用種別に応じて適切な画面に遷移
+                if (userType === 'referrer') {
+                    router.push('/admin/referrer/dashboard');
+                } else {
+                    router.push('/admin/dashboard');
+                }
             } else {
                 setError('メールアドレスまたはパスワードが正しくありません');
             }
@@ -96,6 +113,36 @@ export default function AdminLoginPage() {
                     </div>
                     <h2 className="text-base md:text-lg font-bold text-gray-900 mb-2">事業者アカウントをお持ちの方</h2>
                     <p className="text-sm text-gray-800 mb-6 text-center">アカウントをお持ちの方はログインしてください。</p>
+                    
+                    {/* 利用種別選択 */}
+                    <div className="w-full mb-6">
+                        <label className="block text-sm font-medium text-gray-900 mb-3">利用種別を選択してください</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setUserType('mover')}
+                                className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                                    userType === 'mover'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                }`}
+                            >
+                                引越し事業者
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setUserType('referrer')}
+                                className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                                    userType === 'referrer'
+                                        ? 'border-green-500 bg-green-50 text-green-700'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                }`}
+                            >
+                                引越し案件紹介者
+                            </button>
+                        </div>
+                    </div>
+                    
                     <form onSubmit={handleSubmit} className="w-full space-y-4">
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-900">メールアドレス</label>

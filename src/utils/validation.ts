@@ -220,38 +220,38 @@ export const commonValidators = {
     validators.required('顧客名は必須です'),
     validators.minLength(1, '顧客名を入力してください'),
     validators.maxLength(100, '顧客名は100文字以下で入力してください')
-  ],
+  ] as ValidationRule<string>[],
 
   /** 必須のメールアドレス */
   email: [
     validators.required('メールアドレスは必須です'),
     validators.email()
-  ],
+  ] as ValidationRule<string>[],
 
   /** オプションのメールアドレス */
   optionalEmail: [
     validators.email()
-  ],
+  ] as ValidationRule<string>[],
 
   /** 必須の電話番号 */
   phone: [
     validators.required('電話番号は必須です'),
     validators.phone()
-  ],
+  ] as ValidationRule<string>[],
 
   /** 必須の住所 */
   address: [
     validators.required('住所は必須です'),
     validators.minLength(5, '正しい住所を入力してください'),
     validators.maxLength(200, '住所は200文字以下で入力してください')
-  ],
+  ] as ValidationRule<string>[],
 
   /** 引越し日 */
   moveDate: [
     validators.required('引越し日は必須です'),
     validators.date(),
     validators.futureDate()
-  ],
+  ] as ValidationRule<string>[],
 
   /** ポイント数 */
   points: [
@@ -259,7 +259,7 @@ export const commonValidators = {
     validators.number(),
     validators.min(1, '1ポイント以上を入力してください'),
     validators.max(1000, '1000ポイント以下を入力してください')
-  ],
+  ] as ValidationRule<string>[],
 
   /** 重量 */
   weight: [
@@ -267,7 +267,7 @@ export const commonValidators = {
     validators.number(),
     validators.min(1, '1kg以上を入力してください'),
     validators.max(10000, '10000kg以下を入力してください')
-  ]
+  ] as ValidationRule<string>[]
 };
 
 export default validators;

@@ -458,9 +458,9 @@ describe('validation utils', () => {
       };
       
       const schema = {
-        name: [validators.required(), validators.minLength(2)],
-        email: [validators.email()],
-        age: [validators.min(0), validators.max(150)]
+        name: [validators.required(), validators.minLength(2)] as ValidationRule<string>[],
+        email: [validators.email()] as ValidationRule<string>[],
+        age: [validators.min(0), validators.max(150)] as ValidationRule<number>[]
       };
       
       const result = validateForm(data, schema);
@@ -476,9 +476,9 @@ describe('validation utils', () => {
       };
       
       const schema = {
-        name: [validators.required()],
-        email: [validators.email()],
-        age: [validators.max(150)]
+        name: [validators.required()] as ValidationRule<string>[],
+        email: [validators.email()] as ValidationRule<string>[],
+        age: [validators.max(150)] as ValidationRule<number>[]
       };
       
       const result = validateForm(data, schema);

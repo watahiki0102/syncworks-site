@@ -17,7 +17,7 @@ export interface CompanyProfile {
 }
 
 // 共通型定義から再エクスポート
-export { type Employee as EmployeeRef } from './shared';
+import { type Employee } from './shared';
 
 export interface CaseCore {
   id: string;
@@ -35,7 +35,7 @@ export interface CaseCore {
 export interface CaseAssignment {
   truckId?: string | null;
   truckName?: string | null;
-  assignedEmployees?: EmployeeRef[];
+  assignedEmployees?: Employee[];
   startTime: string; // 'HH:mm'
   endTime: string;   // 'HH:mm'
   contractStatus: ContractStatus;

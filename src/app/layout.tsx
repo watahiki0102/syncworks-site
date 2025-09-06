@@ -6,27 +6,17 @@
  * - SEO対応
  */
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
 /**
- * Geist Sansフォントの設定（最適化）
+ * Interフォントの設定（最適化）
  */
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
   preload: true,
-});
-
-/**
- * Geist Monoフォントの設定（最適化）
- */
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: false, // モノスペースフォントは必要時のみ
 });
 
 /**
@@ -123,7 +113,7 @@ export default function RootLayout({
   return (
     <html 
       lang="ja" 
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={inter.variable}
       suppressHydrationWarning
     >
       <head>
@@ -135,14 +125,13 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{
           __html: `
             :root {
-              --font-sans: ${geistSans.style.fontFamily};
-              --font-mono: ${geistMono.style.fontFamily};
+              --font-sans: ${inter.style.fontFamily};
             }
           `
         }} />
       </head>
       <body 
-        className={`${geistSans.className} antialiased`}
+        className={`${inter.className} antialiased`}
         suppressHydrationWarning
       >
         {/* Skip to main content link for accessibility */}

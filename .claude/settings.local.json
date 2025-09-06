@@ -13,7 +13,9 @@
       "Bash(timeout 30s npm run dev)",
       "Bash(find:*)",
       "Bash(npx --max_old_space_size=8192 jest --coverage --watchAll=false --maxWorkers=2)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": [],
     "ask": [],

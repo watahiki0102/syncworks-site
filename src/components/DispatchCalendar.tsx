@@ -1162,7 +1162,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                      priceTaxIncluded: null,
                      truckId: truck.id,
                      truckName: truck.name,
-                     assignedEmployees: schedule.employeeId ? [{ id: schedule.employeeId, name: '従業員名' }] : [],
+                     assignedEmployees: schedule.employeeId ? [{ id: schedule.employeeId, name: '従業員名', role: 'staff' }] : [],
                      startTime: schedule.startTime,
                      endTime: schedule.endTime,
                      contractStatus: schedule.contractStatus || 'estimate'
