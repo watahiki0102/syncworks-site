@@ -29,6 +29,8 @@ interface SearchFilterProps {
   onSearchChange?: (query: string) => void;
   /** 検索プレースホルダー */
   searchPlaceholder?: string;
+  /** 検索アイコンを表示するかどうか */
+  showSearchIcon?: boolean;
   
   /** 選択されたフィルタ */
   selectedFilters?: string[];
@@ -70,6 +72,7 @@ export const SearchFilter = memo<SearchFilterProps>(({
   searchQuery = '',
   onSearchChange,
   searchPlaceholder = '検索...',
+  showSearchIcon = true,
   
   selectedFilters = [],
   onFilterChange,
@@ -126,7 +129,7 @@ export const SearchFilter = memo<SearchFilterProps>(({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            leftIcon={<Search className="w-4 h-4" />}
+            leftIcon={showSearchIcon ? <Search className="w-4 h-4" /> : undefined}
             rightIcon={
               searchQuery.length > 0 ? (
                 <button

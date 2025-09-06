@@ -379,7 +379,8 @@ const ReferralList: React.FC<ReferralListProps> = ({
         <SearchFilter
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="紹介ID、紹介者名、エリアで検索..."
+          searchPlaceholder="紹介ID・紹介者名・エリアで検索"
+          showSearchIcon={true}
         />
       </Card>
 

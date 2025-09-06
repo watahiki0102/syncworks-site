@@ -258,7 +258,6 @@ export default function AdminDashboard() {
                    className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200 h-24"
                    padding="sm"
                  >
-                   <AdminBadge variant="primary" size="sm">3台稼働中</AdminBadge>
                  </AdminCard>
                </Link>
 
@@ -271,7 +270,6 @@ export default function AdminDashboard() {
                    className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200 h-24"
                    padding="sm"
                  >
-                   <AdminBadge variant="success" size="sm">{contractRate}% 成約率</AdminBadge>
                  </AdminCard>
                </Link>
             </div>

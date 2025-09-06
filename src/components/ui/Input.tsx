@@ -60,10 +60,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     };
 
     const inputClasses = useMemo(() => [
-      'form-input',
+      'px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
       getVariantClasses(variant),
       getSizeClasses(inputSize),
-      leftIcon && 'pl-10',
+      leftIcon && '!pl-10',
       rightIcon && 'pr-10',
       error && 'border-red-500 focus:border-red-500 focus:ring-red-200',
       fullWidth && 'w-full',

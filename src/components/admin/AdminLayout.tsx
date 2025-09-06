@@ -228,16 +228,14 @@ export default function AdminLayout({
                 </button>
               )}
               
-              {/* ログアウトボタン（引越し事業者用のみ） */}
-              {!pathname.includes('/admin/referrer/') && (
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
-                >
-                  <span className="sm:hidden">🚪</span>
-                  <span className="hidden sm:inline">ログアウト</span>
-                </button>
-              )}
+              {/* ログアウトボタン */}
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+              >
+                <span className="sm:hidden">🚪</span>
+                <span className="hidden sm:inline">ログアウト</span>
+              </button>
             </div>
           </div>
         </div>
