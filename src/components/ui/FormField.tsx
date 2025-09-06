@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { Input, type InputProps } from './Input';
 
-interface FormFieldProps {
+interface FormFieldProps extends Omit<InputProps, 'id' | 'aria-describedby' | 'aria-invalid'> {
   /** フィールド名（フォーム送信時のキー） */
   name: string;
   /** ラベル */
@@ -41,7 +41,8 @@ export const FormField = memo<FormFieldProps>(({
   description,
   helperText,
   className = '',
-  children
+  children,
+  ...inputProps
 }) => {
   // エラー表示の条件: タッチされていて、かつエラーがある場合
   const shouldShowError = touched && error;

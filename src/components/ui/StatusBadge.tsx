@@ -1,5 +1,8 @@
 import { UnifiedCase, STATUS_STYLES } from '@/app/admin/cases/types/unified';
 
+// StatusVariant型を定義
+export type StatusVariant = 'warning' | 'info' | 'success' | 'error' | 'neutral';
+
 // ケースアイテム用のStatusBadge
 interface CaseStatusBadgeProps {
   caseItem: UnifiedCase;
@@ -9,13 +12,15 @@ interface CaseStatusBadgeProps {
 
 // シンプルなStatusBadge（フィルタリング用）
 interface SimpleStatusBadgeProps {
-  status: string;
-  bgColor: string;
-  textColor: string;
-  label: string;
+  status?: string;
+  bgColor?: string;
+  textColor?: string;
+  label?: string;
+  variant?: StatusVariant;
+  children?: React.ReactNode;
 }
 
-type StatusBadgeProps = CaseStatusBadgeProps | SimpleStatusBadgeProps;
+export type StatusBadgeProps = CaseStatusBadgeProps | SimpleStatusBadgeProps;
 
 // 型ガード関数
 function isCaseStatusBadge(props: StatusBadgeProps): props is CaseStatusBadgeProps {
@@ -25,7 +30,28 @@ function isCaseStatusBadge(props: StatusBadgeProps): props is CaseStatusBadgePro
 export function StatusBadge(props: StatusBadgeProps) {
   // シンプルなバッジの場合（フィルタリング用）
   if (!isCaseStatusBadge(props)) {
-    const { status, bgColor, textColor, label } = props;
+    const { status, bgColor, textColor, label, variant, children } = props;
+    
+    // childrenが指定されている場合はchildrenを使用
+    if (children) {
+      const variantStyles = {
+        warning: 'bg-orange-100 text-orange-800',
+        info: 'bg-blue-100 text-blue-800',
+        success: 'bg-green-100 text-green-800',
+        error: 'bg-red-100 text-red-800',
+        neutral: 'bg-gray-100 text-gray-800'
+      };
+      
+      const style = variant ? variantStyles[variant] : 'bg-gray-100 text-gray-800';
+      
+      return (
+        <span className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${style}`}>
+          {children}
+        </span>
+      );
+    }
+    
+    // 従来のスタイル指定
     return (
       <span className={`inline-flex items-center justify-center min-w-20 px-2 py-1 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
         {label}

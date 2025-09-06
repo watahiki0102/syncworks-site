@@ -4,7 +4,7 @@
  */
 
 import { QuoteRequest, QuoteHistory } from '../types';
-import { UnifiedCase, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
+import { UnifiedCase, UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
 import { normalizeSourceType, getManagementNumber } from './normalize';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
@@ -18,7 +18,7 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
     sourceType: request.sourceType,
     moveDate: request.summary.moveDate,
     moveTime: request.summary.moveTime,
-    status: request.status,
+    status: request.status as UnifiedCaseStatus,
     type: 'request',
     requestDate: request.requestDate,
     deadline: request.deadline,
@@ -36,7 +36,7 @@ export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
     customerName: history.customerName,
     sourceType: history.sourceType,
     moveDate: history.moveDate,
-    status: history.status,
+    status: history.status as UnifiedCaseStatus,
     type: 'history',
     responseDate: history.responseDate,
     amountWithTax: history.amountWithTax,

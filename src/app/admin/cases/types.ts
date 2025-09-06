@@ -1,5 +1,8 @@
 import { SourceType } from './lib/normalize';
 
+// SourceTypeをエクスポート
+export { SourceType };
+
 /**
  * 時間帯割増賃金の型定義
  */
@@ -30,6 +33,12 @@ export interface QuoteHistory {
   isContracted: boolean;   // 成約フラグ
   isReQuote: boolean;      // 再見積もりフラグ
   timeBandSurcharges: TimeBandSurcharge[]; // 時間帯割増賃金
+  summary: {               // 見積もり概要
+    from: string;          // 引越し元住所
+    to: string;            // 引越し先住所
+    items: string[];       // 荷物リスト
+    totalPoints?: number;  // 総ポイント
+  };
 }
 
 /**

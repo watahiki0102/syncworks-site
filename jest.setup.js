@@ -105,8 +105,10 @@ if (typeof window !== 'undefined') {
 
 // テスト後のクリーンアップ
 afterEach(() => {
-  // DOMクリーンアップ
-  document.body.innerHTML = '';
+  // DOMクリーンアップ（documentとbodyが存在する場合のみ）
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.innerHTML = '';
+  }
   
   // モックのリセット
   jest.clearAllMocks();
