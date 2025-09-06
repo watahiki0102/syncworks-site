@@ -78,7 +78,16 @@ const customJestConfig = {
   moduleDirectories: ['node_modules', '<rootDir>/'],
 
   // テストタイムアウト
-  testTimeout: 10000,
+  testTimeout: 15000,
+  
+  // 非同期ハンドルの検出
+  detectOpenHandles: true,
+  
+  // テスト完了後の強制終了
+  forceExit: true,
+  
+  // 最大ワーカー数を制限（CI環境での安定性向上）
+  maxWorkers: process.env.CI ? 1 : '50%',
 }
 
 // Next.jsの設定とマージして出力

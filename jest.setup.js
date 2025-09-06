@@ -102,3 +102,23 @@ if (typeof window !== 'undefined') {
     value: sessionStorageMock
   })
 }
+
+// テスト後のクリーンアップ
+afterEach(() => {
+  // DOMクリーンアップ
+  document.body.innerHTML = '';
+  
+  // モックのリセット
+  jest.clearAllMocks();
+  
+  // タイマーのクリア
+  jest.runOnlyPendingTimers();
+  jest.useRealTimers();
+});
+
+// 全テスト後のクリーンアップ
+afterAll(() => {
+  // すべてのモックをクリア
+  jest.clearAllMocks();
+  jest.restoreAllMocks();
+});
