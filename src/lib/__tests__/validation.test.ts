@@ -137,7 +137,10 @@ describe('commonValidations', () => {
 
     it('今日の日付を受け入れる', () => {
       const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
+      // ローカルタイムゾーンでの日付文字列を生成
+      const todayString = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
       
       expect(() => commonValidations.futureDate.parse(todayString)).not.toThrow();
     });

@@ -29,7 +29,7 @@ const mockQuoteRequest: QuoteRequest = {
     items: ['冷蔵庫', 'テレビ'],
     totalPoints: 10
   },
-  status: 'pending',
+  status: '見積依頼',
   priority: 'high',
   sourceType: 'syncmoving'
 };
@@ -68,7 +68,7 @@ describe('convertRequestToUnified', () => {
       sourceType: 'syncmoving',
       moveDate: '2024-01-15',
       moveTime: '午前中',
-      status: 'pending',
+      status: '見積依頼',
       type: 'request',
       requestDate: '2024-01-01',
       deadline: '2024-01-03',
@@ -99,7 +99,7 @@ describe('convertHistoryToUnified', () => {
       customerName: 'テスト花子',
       sourceType: 'suumo',
       moveDate: '2024-01-20',
-      status: '回答済', // '見積中' → '回答済' に変換
+      status: '見積済', // '見積中' → '見積済' に変換
       type: 'history',
       responseDate: '2024-01-02',
       amountWithTax: 55000,
@@ -120,9 +120,9 @@ describe('convertHistoryToUnified', () => {
 
   describe('QuoteStatus から UnifiedCaseStatus への変換', () => {
     const testCases: Array<{ input: QuoteStatus; expected: UnifiedCaseStatus; description: string }> = [
-      { input: '見積中', expected: '回答済', description: '見積中は回答済として扱う' },
+      { input: '見積中', expected: '見積済', description: '見積中は見積済として扱う' },
       { input: '完了', expected: '成約', description: '完了は成約として扱う' },
-      { input: '回答済', expected: '回答済', description: '回答済はそのまま' },
+      { input: '回答済', expected: '見積済', description: '回答済は見積済として扱う' },
       { input: '再見積', expected: '再見積', description: '再見積はそのまま' },
       { input: '成約', expected: '成約', description: '成約はそのまま' },
       { input: '不成約', expected: '不成約', description: '不成約はそのまま' },
@@ -179,7 +179,7 @@ describe('filterUnifiedCases', () => {
       customerName: 'テスト1',
       sourceType: 'syncmoving',
       moveDate: '2024-01-15',
-      status: 'pending',
+      status: '見積依頼',
       type: 'request'
     },
     {
@@ -210,7 +210,7 @@ describe('filterUnifiedCases', () => {
     
     const result = filterUnifiedCases(mockCases, filter);
     expect(result).toHaveLength(1);
-    expect(result[0].status).toBe('pending');
+    expect(result[0].status).toBe('見積依頼');
   });
 
   it('タイプフィルターが正しく動作する', () => {
@@ -269,13 +269,13 @@ describe('sortUnifiedCases', () => {
         customerName: 'テスト2',
         sourceType: 'suumo',
         moveDate: '2024-01-16',
-        status: 'pending',
+        status: '見積依頼',
         type: 'request'
       }
     ];
     
     const result = sortUnifiedCases(cases);
-    expect(result[0].status).toBe('pending');
+    expect(result[0].status).toBe('見積依頼');
     expect(result[1].status).toBe('成約');
   });
 });
@@ -288,7 +288,7 @@ describe('getPendingCount', () => {
         customerName: 'テスト1',
         sourceType: 'syncmoving',
         moveDate: '2024-01-15',
-        status: 'pending',
+        status: '見積依頼',
         type: 'request'
       },
       {
@@ -296,7 +296,7 @@ describe('getPendingCount', () => {
         customerName: 'テスト2',
         sourceType: 'suumo',
         moveDate: '2024-01-16',
-        status: 'pending',
+        status: '見積依頼',
         type: 'request'
       },
       {
@@ -322,7 +322,7 @@ describe('getStatusCounts', () => {
         customerName: 'テスト1',
         sourceType: 'syncmoving',
         moveDate: '2024-01-15',
-        status: 'pending',
+        status: '見積依頼',
         type: 'request'
       },
       {

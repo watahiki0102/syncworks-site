@@ -307,7 +307,10 @@ describe('validationUtils', () => {
       // 現在のcommonValidationsには汎用的なdate()がないため、
       // 実際のビジネスロジックの日付バリデーション機能をテストする
       const today = new Date();
-      const dateStr = today.toISOString().split('T')[0];
+      // ローカルタイムゾーンでの日付文字列を生成
+      const dateStr = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
       
       // futureDate バリデーターを使用してテスト
       const result = commonValidations.futureDate.safeParse(dateStr);
@@ -339,8 +342,11 @@ describe('validationUtils', () => {
       const farPastResult = commonValidations.futureDate.safeParse('2020-01-01');
       expect(farPastResult.success).toBe(false);
       
-      // 今日の日付は有効
-      const todayResult = commonValidations.futureDate.safeParse(today.toISOString().split('T')[0]);
+      // 今日の日付は有効（ローカルタイムゾーンで生成）
+      const todayString = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
+      const todayResult = commonValidations.futureDate.safeParse(todayString);
       expect(todayResult.success).toBe(true);
     });
   });
