@@ -13,7 +13,7 @@ const mockCaseItem: UnifiedCase = {
   customerName: 'テスト顧客',
   sourceType: 'syncmoving',
   moveDate: '2024-01-01',
-  status: '成約',
+  status: '受注',
   type: 'history',
   amountWithTax: 100000,
   summary: {
@@ -77,13 +77,13 @@ describe('StatusBadge', () => {
     it('ケースアイテムのステータスが正しく表示される', () => {
       render(<StatusBadge caseItem={mockCaseItem} />);
       
-      expect(screen.getByText('成約')).toBeInTheDocument();
+      expect(screen.getByText('受注')).toBeInTheDocument();
     });
 
     it('showDropdown=falseの場合、通常のバッジが表示される', () => {
       render(<StatusBadge caseItem={mockCaseItem} showDropdown={false} />);
       
-      const badge = screen.getByText('成約');
+      const badge = screen.getByText('受注');
       expect(badge.tagName).toBe('SPAN');
       expect(badge).toHaveClass('bg-green-100');
       expect(badge).toHaveClass('text-green-800');
@@ -106,7 +106,7 @@ describe('StatusBadge', () => {
       };
       render(<StatusBadge caseItem={syncMovingHistoryItem} showDropdown={true} />);
       
-      const badge = screen.getByText('成約');
+      const badge = screen.getByText('受注');
       expect(badge.tagName).toBe('SPAN');
     });
   });
