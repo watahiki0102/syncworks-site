@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { QuoteHistory, TimeBandSurcharge, QuoteStatus } from '../types';
+import { QuoteHistory, TimeBandSurcharge } from '../types';
+import { UnifiedCaseStatus } from '../types/unified';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber, isSourceTypeEditable } from '../lib/normalize';
 import { generateTestQuote } from '@/constants/testData';
 
@@ -52,8 +53,8 @@ export default function QuoteHistoryPage() {
       const nextDay = new Date(moveDate);
       nextDay.setDate(nextDay.getDate() + 1);
       
-      if (nextDay <= today && quote.status !== '成約' && quote.status !== 'キャンセル' && quote.status !== '不成約') {
-        return { ...quote, status: '完了' as QuoteStatus };
+      if (nextDay <= today && quote.status !== '受注' && quote.status !== 'キャンセル' && quote.status !== '失注') {
+        return { ...quote, status: '受注' as UnifiedCaseStatus };
       }
       return quote;
     });
@@ -63,7 +64,7 @@ export default function QuoteHistoryPage() {
 
   useEffect(() => {
     const filtered = quotes.filter(quote => {
-      if (!showCompleted && ['完了', 'キャンセル', '不成約'].includes(quote.status)) {
+      if (!showCompleted && ['受注', 'キャンセル', '失注'].includes(quote.status)) {
         return false;
       }
       
@@ -103,7 +104,7 @@ export default function QuoteHistoryPage() {
 
 
 
-  const updateStatus = (quoteId: string, newStatus: QuoteStatus) => {
+  const updateStatus = (quoteId: string, newStatus: UnifiedCaseStatus) => {
     setQuotes(quotes.map(q => 
       q.id === quoteId ? { ...q, status: newStatus } : q
     ));
@@ -216,10 +217,11 @@ export default function QuoteHistoryPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-1">
                       <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded-full text-xs font-medium ${
-                        quote.status === '成約' ? 'bg-green-100 text-green-800' :
-                        quote.status === '見積中' ? 'bg-yellow-100 text-yellow-800' :
+                        quote.status === '受注' ? 'bg-green-100 text-green-800' :
+                        quote.status === '見積依頼' ? 'bg-orange-100 text-orange-800' :
+                        quote.status === '見積済' ? 'bg-blue-100 text-blue-800' :
                         quote.status === '再見積' ? 'bg-purple-100 text-purple-800' :
-                        quote.status === '完了' ? 'bg-blue-100 text-blue-800' :
+                        quote.status === '失注' ? 'bg-red-100 text-red-800' :
                         quote.status === 'キャンセル' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
@@ -243,13 +245,13 @@ export default function QuoteHistoryPage() {
                           {openDropdown === quote.id && (
                             <div className="absolute -left-16 top-full mt-1 z-50">
                               <div className="bg-white border border-gray-300 rounded-md shadow-xl py-1 w-16 max-h-48 overflow-y-auto">
-                                {['見積中', '回答済', '再見積', '成約', '不成約', 'キャンセル', '完了'].map((status) => (
+                                {['見積依頼', '見積済', '再見積', '受注', '失注', 'キャンセル'].map((status) => (
                                   <button
                                     key={status}
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      updateStatus(quote.id, status as QuoteStatus);
+                                      updateStatus(quote.id, status as UnifiedCaseStatus);
                                       setOpenDropdown(null);
                                     }}
                                     className={`block w-full text-left px-2 py-1 text-xs hover:bg-gray-100 transition-colors ${
@@ -324,7 +326,7 @@ export default function QuoteHistoryPage() {
                   <div className="space-y-2 text-sm">
                     <div><span className="font-medium">基本金額:</span> {formatCurrency(viewingQuote.amount)}</div>
                     <div><span className="font-medium">税込金額:</span> <span className="text-lg font-semibold text-blue-600">{formatCurrency(viewingQuote.amountWithTax)}</span></div>
-                    <div><span className="font-medium">成約状況:</span> {viewingQuote.status === '成約' ? '成約済み' : '未成約'}</div>
+                    <div><span className="font-medium">受注状況:</span> {viewingQuote.status === '受注' ? '受注済み' : '未受注'}</div>
                   </div>
                 </div>
               </div>

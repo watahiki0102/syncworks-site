@@ -1,6 +1,6 @@
 /**
  * unifiedData.ts のテスト
- * QuoteStatus から UnifiedCaseStatus への変換ロジックのテスト
+ * UnifiedCaseStatus の統一データロジックのテスト
  */
 
 import {
@@ -12,7 +12,7 @@ import {
   getPendingCount,
   getStatusCounts,
 } from '../unifiedData';
-import { QuoteRequest, QuoteHistory, QuoteStatus } from '../../types';
+import { QuoteRequest, QuoteHistory } from '../../types';
 import { UnifiedCase, UnifiedCaseStatus } from '../../types/unified';
 
 // テスト用のモックデータ
@@ -29,7 +29,7 @@ const mockQuoteRequest: QuoteRequest = {
     items: ['冷蔵庫', 'テレビ'],
     totalPoints: 10
   },
-  status: '見積依頼',
+  status: 'pending',
   priority: 'high',
   sourceType: 'syncmoving'
 };
@@ -41,7 +41,7 @@ const mockQuoteHistory: QuoteHistory = {
   responseDate: '2024-01-02',
   amount: 50000,
   amountWithTax: 55000,
-  status: '見積中' as QuoteStatus,
+  status: '見積済' as UnifiedCaseStatus,
   items: ['洗濯機', 'ベッド'],
   fromAddress: '東京都品川区',
   toAddress: '東京都目黒区',
@@ -118,25 +118,6 @@ describe('convertHistoryToUnified', () => {
     expect(result.type).toBe('history');
   });
 
-  describe('QuoteStatus から UnifiedCaseStatus への変換', () => {
-    const testCases: Array<{ input: QuoteStatus; expected: UnifiedCaseStatus; description: string }> = [
-      { input: '見積中', expected: '見積済', description: '見積中は見積済として扱う' },
-      { input: '完了', expected: '成約', description: '完了は成約として扱う' },
-      { input: '回答済', expected: '見積済', description: '回答済は見積済として扱う' },
-      { input: '再見積', expected: '再見積', description: '再見積はそのまま' },
-      { input: '成約', expected: '成約', description: '成約はそのまま' },
-      { input: '不成約', expected: '不成約', description: '不成約はそのまま' },
-      { input: 'キャンセル', expected: 'キャンセル', description: 'キャンセルはそのまま' },
-    ];
-
-    testCases.forEach(({ input, expected, description }) => {
-      it(description, () => {
-        const testHistory = { ...mockQuoteHistory, status: input };
-        const result = convertHistoryToUnified(testHistory);
-        expect(result.status).toBe(expected);
-      });
-    });
-  });
 });
 
 describe('generateUnifiedTestData', () => {
@@ -187,7 +168,7 @@ describe('filterUnifiedCases', () => {
       customerName: 'テスト2',
       sourceType: 'suumo',
       moveDate: '2024-01-16',
-      status: '成約',
+      status: '受注',
       type: 'history'
     },
     {
@@ -195,7 +176,7 @@ describe('filterUnifiedCases', () => {
       customerName: 'テスト3',
       sourceType: '外部',
       moveDate: '2024-01-17',
-      status: '不成約',
+      status: '失注',
       type: 'history'
     }
   ];
@@ -261,7 +242,7 @@ describe('sortUnifiedCases', () => {
         customerName: 'テスト1',
         sourceType: 'syncmoving',
         moveDate: '2024-01-15',
-        status: '成約',
+        status: '受注',
         type: 'history'
       },
       {
@@ -276,7 +257,7 @@ describe('sortUnifiedCases', () => {
     
     const result = sortUnifiedCases(cases);
     expect(result[0].status).toBe('見積依頼');
-    expect(result[1].status).toBe('成約');
+    expect(result[1].status).toBe('受注');
   });
 });
 
@@ -304,7 +285,7 @@ describe('getPendingCount', () => {
         customerName: 'テスト3',
         sourceType: '外部',
         moveDate: '2024-01-17',
-        status: '成約',
+        status: '受注',
         type: 'history'
       }
     ];
@@ -330,7 +311,7 @@ describe('getStatusCounts', () => {
         customerName: 'テスト2',
         sourceType: 'suumo',
         moveDate: '2024-01-16',
-        status: '成約',
+        status: '受注',
         type: 'history'
       }
     ];
