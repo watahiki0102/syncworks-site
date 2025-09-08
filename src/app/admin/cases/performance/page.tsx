@@ -49,9 +49,9 @@ export default function PerformancePage() {
   useEffect(() => {
     // 案件一覧と全く同じデータを使用
     const unifiedData = generateUnifiedTestData();
-    // 支払対象一覧：ステータスが「成約」または「キャンセル」で仲介元がSyncMovingの場合のみ
+    // 支払対象一覧：ステータスが「受注」または「キャンセル」で仲介元がSyncMovingの場合のみ
     const paymentTargetCases = unifiedData.filter(c => 
-      (c.status === '成約' || c.status === 'キャンセル') && 
+      (c.status === '受注' || c.status === 'キャンセル') && 
       c.sourceType === 'syncmoving'
     );
     setCases(paymentTargetCases);
@@ -97,7 +97,7 @@ export default function PerformancePage() {
     });
   };
 
-  // 手数料を計算（成約金額の10%と仮定）
+  // 手数料を計算（受注金額の10%と仮定）
   const calculateCommission = (amount: number) => {
     return Math.round(amount * 0.1);
   };

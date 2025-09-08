@@ -2,7 +2,7 @@
  * 管理者見積もり回答履歴ページコンポーネント
  * - お客様への見積もり回答履歴の管理
  * - 検索・フィルタリング・ソート機能
- * - 成約状況の追跡
+ * - 受注状況の追跡
  */
 'use client';
 
@@ -160,7 +160,7 @@ export default function AdminQuotes() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'contracted':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">成約済</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">受注済</span>;
       case 'pending':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">検討中</span>;
       case 'expired':
@@ -230,7 +230,7 @@ export default function AdminQuotes() {
                     >
                       <option value="all">すべて</option>
                       <option value="pending">検討中</option>
-                      <option value="contracted">成約済</option>
+                      <option value="contracted">受注済</option>
                       <option value="expired">期限切れ</option>
                     </select>
                   </div>

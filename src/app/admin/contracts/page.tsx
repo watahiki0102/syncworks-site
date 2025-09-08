@@ -1,6 +1,6 @@
 /**
- * 管理者成約実績管理ページコンポーネント
- * - 成約実績の一覧表示
+ * 管理者受注実績管理ページコンポーネント
+ * - 受注実績の一覧表示
  * - 月次サマリーの表示
  * - フィルタリング・ソート機能
  * - CSVエクスポート機能
@@ -15,14 +15,14 @@ import AdminCard from '@/components/admin/AdminCard';
 import { generateTestContract } from '@/constants/testData';
 
 /**
- * 成約データの型定義
+ * 受注データの型定義
  */
 interface Contract {
-  id: string;              // 成約ID
+  id: string;              // 受注ID
   customerName: string;    // 顧客名
-  contractDate: string;    // 成約日
+  contractDate: string;    // 受注日
   moveDate: string;        // 引越し日
-  contractAmount: number;  // 成約金額
+  contractAmount: number;  // 受注金額
   commission: number;      // 手数料
   revenue: number;         // 売上
   items: string[];         // 荷物リスト
@@ -36,8 +36,8 @@ interface Contract {
 interface MonthlySummary {
   month: string;           // 年月（YYYY-MM形式）
   totalRevenue: number;    // 月間売上合計
-  totalContracts: number;  // 月間成約件数
-  totalAmount: number;     // 月間成約金額合計
+  totalContracts: number;  // 月間受注件数
+  totalAmount: number;     // 月間受注金額合計
 }
 
 export default function AdminContracts() {
@@ -139,11 +139,11 @@ export default function AdminContracts() {
 
   /**
    * CSVエクスポート機能
-   * フィルタリングされた成約データをCSVファイルとしてダウンロード
+   * フィルタリングされた受注データをCSVファイルとしてダウンロード
    */
   const handleExportCSV = () => {
     const csvContent = [
-      ['顧客名', '成約日', '引越し日', '成約金額', '手数料', '売上'],
+      ['顧客名', '受注日', '引越し日', '受注金額', '手数料', '売上'],
       ...filteredContracts.map(contract => [
         contract.customerName,
         contract.contractDate,
@@ -192,7 +192,7 @@ export default function AdminContracts() {
 
   /**
    * 月次サマリーの再計算
-   * 成約データから月次サマリーを動的に計算
+   * 受注データから月次サマリーを動的に計算
    */
 
 
@@ -200,10 +200,10 @@ export default function AdminContracts() {
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
         <AdminPageHeader 
-          title="成約実績管理"
-          subtitle="成約実績と売上の管理・分析"
+          title="受注実績管理"
+          subtitle="受注実績と売上の管理・分析"
           breadcrumbs={[
-            { label: '成約管理' }
+            { label: '受注管理' }
           ]}
         />
 
@@ -244,7 +244,7 @@ export default function AdminContracts() {
                       <div className="ml-5 w-0 flex-1">
                         <dl>
                           <dt className="text-sm font-medium text-gray-500 truncate">
-                            成約件数
+                            受注件数
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
                             {getCurrentMonthSummary().totalContracts}件
@@ -266,7 +266,7 @@ export default function AdminContracts() {
                       <div className="ml-5 w-0 flex-1">
                         <dl>
                           <dt className="text-sm font-medium text-gray-500 truncate">
-                            総成約金額
+                            総受注金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
                             {'¥' + getCurrentMonthSummary().totalAmount.toLocaleString()}
@@ -288,7 +288,7 @@ export default function AdminContracts() {
                       <div className="ml-5 w-0 flex-1">
                         <dl>
                           <dt className="text-sm font-medium text-gray-500 truncate">
-                            平均成約金額
+                            平均受注金額
                           </dt>
                           <dd className="text-lg font-medium text-gray-900">
                             {
@@ -390,7 +390,7 @@ export default function AdminContracts() {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
-                    <option value="contractDate">成約日</option>
+                    <option value="contractDate">受注日</option>
                     <option value="customerName">顧客名</option>
                     <option value="revenue">売上</option>
                   </select>
@@ -413,13 +413,13 @@ export default function AdminContracts() {
                           顧客名
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          成約日
+                          受注日
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           引越し日
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          成約金額
+                          受注金額
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           手数料
@@ -458,7 +458,7 @@ export default function AdminContracts() {
 
                 {filteredContracts.length === 0 && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">成約実績がありません</p>
+                    <p className="text-gray-500">受注実績がありません</p>
                   </div>
                 )}
               </div>
