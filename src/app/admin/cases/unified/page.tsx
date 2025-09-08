@@ -111,7 +111,7 @@ export default function UnifiedCasesPage() {
    * 全選択
    */
   const handleSelectAll = () => {
-    const allStatuses = ['見積依頼', '見積済', '期限切れ', '再見積', '成約', '不成約', 'キャンセル'];
+    const allStatuses = ['見積依頼', '見積済', '再見積', '受注', '失注', 'キャンセル'];
     setSelectedStatuses(allStatuses);
   };
 
@@ -220,17 +220,17 @@ export default function UnifiedCasesPage() {
     // 依頼データのステータス選択肢
     const requestStatuses = ['見積依頼', '見積済'];
     
-    // 履歴データのステータス選択肢（成約後のキャンセル修正を考慮）
+    // 履歴データのステータス選択肢（受注後のキャンセル修正を考慮）
     let historyStatuses: string[] = [];
-    if (caseItem.status === '成約') {
-      // 成約の場合は、キャンセルに変更可能
-      historyStatuses = ['成約', 'キャンセル'];
+    if (caseItem.status === '受注') {
+      // 受注の場合は、キャンセルに変更可能
+      historyStatuses = ['受注', 'キャンセル'];
     } else if (caseItem.status === 'キャンセル') {
-      // キャンセルの場合は、成約に戻すことも可能
-      historyStatuses = ['成約', 'キャンセル'];
+      // キャンセルの場合は、受注に戻すことも可能
+      historyStatuses = ['受注', 'キャンセル'];
     } else {
       // その他の場合は、キャンセル以外の選択肢
-      historyStatuses = ['見積済', '再見積', '成約', '不成約'];
+      historyStatuses = ['見積済', '再見積', '受注', '失注'];
     }
     
     const availableStatuses = caseItem.type === 'request' ? requestStatuses : historyStatuses;
@@ -322,7 +322,7 @@ export default function UnifiedCasesPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
            {[
-             '見積依頼', '見積済', '期限切れ', '再見積', '成約', '不成約', 'キャンセル'
+             '見積依頼', '見積済', '再見積', '受注', '失注', 'キャンセル'
            ].map((statusValue) => {
              const statusStyle = STATUS_STYLES[statusValue as keyof typeof STATUS_STYLES];
              return (
@@ -388,21 +388,10 @@ export default function UnifiedCasesPage() {
         {/* 件数表示 */}
         <div className="mb-4 flex justify-between items-center">
           <p className="text-sm text-gray-700">
-            {totalPages > 1 ? (
-              <>
-                <span className="font-medium">該当{filteredCases.length}件</span>
-                <span className="text-gray-500 ml-1">
-                  （全{cases.length}件）
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="font-medium">{filteredCases.length}件表示</span>
-                <span className="text-gray-500 ml-1">
-                  （全{cases.length}件中）
-                </span>
-              </>
-            )}
+            <span className="font-medium">{filteredCases.length}件</span>
+            <span className="text-gray-500 ml-1">
+              （全{cases.length}件中）
+            </span>
           </p>
           {totalPages > 1 && (
             <div className="text-sm text-gray-600 flex items-center space-x-2">

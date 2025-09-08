@@ -15,14 +15,14 @@ import { AdminLayout, AdminCard, AdminBadge } from '@/components/admin';
 
 /**
  * トレンド情報パネルコンポーネント
- * - 未回答数、本日の成約数、申し込み数、売上、成約率、平均評価を表示
+ * - 未回答数、本日の受注数、申し込み数、売上、受注率、平均評価を表示
  */
 function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sales, contractRate }: {
   unansweredCount: number;  // 未回答数
   todayApplications: number; // 本日の申し込み数
-  monthlyContracts: number; // 今月の成約数
+  monthlyContracts: number; // 今月の受注数
   sales: number;            // 今月の売上
-  contractRate: number;     // 今月の成約率
+  contractRate: number;     // 今月の受注率
 }) {
   return (
     <AdminCard title="トレンド情報" icon="📊" padding="sm" className="h-full">
@@ -53,17 +53,17 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
           <AdminBadge variant="primary" size="sm">今日</AdminBadge>
         </div>
         
-        {/* 今月の成約数 */}
+        {/* 今月の受注数 */}
         <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-25 rounded-lg border-l-4 border-green-400">
           <div className="text-xl">🎯</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">今月の成約数</div>
+            <div className="text-sm font-medium text-gray-700">今月の受注数</div>
             <div className="text-2xl font-bold text-green-600">
               {monthlyContracts}
               <span className="text-sm font-normal text-gray-600 ml-1">件</span>
             </div>
           </div>
-          <AdminBadge variant="success" size="sm">成約</AdminBadge>
+          <AdminBadge variant="success" size="sm">受注</AdminBadge>
         </div>
         
         {/* 今月の売上 */}
@@ -78,11 +78,11 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
           <AdminBadge variant="warning" size="sm">売上</AdminBadge>
         </div>
         
-        {/* 今月の成約率 */}
+        {/* 今月の受注率 */}
         <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-purple-25 rounded-lg border-l-4 border-purple-400">
           <div className="text-xl">📊</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">今月の成約率</div>
+            <div className="text-sm font-medium text-gray-700">今月の受注率</div>
             <div className="text-2xl font-bold text-purple-600">
               {contractRate}
               <span className="text-sm font-normal text-gray-600 ml-1">%</span>
@@ -109,8 +109,8 @@ function NewsPanel() {
     },
     { 
       date: "2024/12/27", 
-      title: "月間成約率が過去最高を記録",
-      content: "12月の成約率が85%に達し、過去最高記録を更新しました。",
+      title: "月間受注率が過去最高を記録",
+      content: "12月の受注率が85%に達し、過去最高記録を更新しました。",
       category: "実績",
       isNew: true
     },
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
   const contractRate = 70;
   const unansweredCount = 3;  // 未回答数
   const todayApplications = 5; // 本日の申し込み数
-  const monthlyContracts = 10; // 今月の成約数
+  const monthlyContracts = 10; // 今月の受注数
 
   const settingsActions = null; // AdminLayoutの設定メニューに統一
 
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                <Link href="/admin/analytics" className="block">
                 <AdminCard
                   title="集計管理"
-                  subtitle="売上・成約率分析"
+                  subtitle="売上・受注率分析"
                   icon="📊"
                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200 h-24"
                   padding="sm"

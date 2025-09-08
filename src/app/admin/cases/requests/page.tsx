@@ -601,7 +601,6 @@ export default function QuoteRequestsPage() {
               <option value="all">全ステータス</option>
               <option value="pending">未回答</option>
               <option value="answered">回答済</option>
-              <option value="expired">期限切れ</option>
             </select>
           </div>
         </div>
@@ -681,8 +680,7 @@ export default function QuoteRequestsPage() {
                       request.status === 'answered' ? 'bg-green-100 text-green-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {request.status === 'pending' ? '未回答' :
-                       request.status === 'answered' ? '回答済' : '期限切れ'}
+                      {request.status === 'pending' ? '未回答' : '回答済'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

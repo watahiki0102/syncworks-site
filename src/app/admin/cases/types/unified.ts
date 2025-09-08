@@ -45,11 +45,10 @@ export type UnifiedCaseStatus =
   // 依頼ステータス
   | '見積依頼'     // 未回答
   | '見積済'       // 回答済
-  | '期限切れ'     // 期限切れ
   // 履歴ステータス  
   | '再見積'       // 再見積
-  | '成約'         // 成約
-  | '不成約'       // 不成約
+  | '受注'         // 受注
+  | '失注'         // 失注
   | 'キャンセル';   // キャンセル
 
 /**
@@ -79,7 +78,7 @@ export const STATUS_FILTERS: StatusFilter[] = [
   {
     id: 'all',
     label: '全て',
-    statuses: ['見積依頼', '見積済', '期限切れ', '再見積', '成約', '不成約', 'キャンセル']
+    statuses: ['見積依頼', '見積済', '再見積', '受注', '失注', 'キャンセル']
   },
   {
     id: 'pending',
@@ -94,12 +93,12 @@ export const STATUS_FILTERS: StatusFilter[] = [
   {
     id: 'completed',
     label: '完了',
-    statuses: ['成約']
+    statuses: ['受注']
   },
   {
     id: 'cancelled',
-    label: 'キャンセル・不成約',
-    statuses: ['不成約', 'キャンセル']
+    label: 'キャンセル・失注',
+    statuses: ['失注', 'キャンセル']
   }
 ];
 
@@ -118,10 +117,9 @@ export interface StatusStyle {
 export const STATUS_STYLES: Record<UnifiedCaseStatus, StatusStyle> = {
   '見積依頼': { bgColor: 'bg-orange-100', textColor: 'text-orange-800', label: '見積依頼' },
   '見積済': { bgColor: 'bg-blue-100', textColor: 'text-blue-800', label: '見積済' },
-  '期限切れ': { bgColor: 'bg-gray-100', textColor: 'text-gray-800', label: '期限切れ' },
   '再見積': { bgColor: 'bg-purple-100', textColor: 'text-purple-800', label: '再見積' },
-  '成約': { bgColor: 'bg-green-100', textColor: 'text-green-800', label: '成約' },
-  '不成約': { bgColor: 'bg-red-100', textColor: 'text-red-800', label: '不成約' },
+  '受注': { bgColor: 'bg-green-100', textColor: 'text-green-800', label: '受注' },
+  '失注': { bgColor: 'bg-red-100', textColor: 'text-red-800', label: '失注' },
   'キャンセル': { bgColor: 'bg-red-100', textColor: 'text-red-800', label: 'キャンセル' }
 };
 

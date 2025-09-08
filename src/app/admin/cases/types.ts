@@ -1,4 +1,5 @@
 import { SourceType } from './lib/normalize';
+import { UnifiedCaseStatus } from './types/unified';
 
 // SourceTypeをエクスポート
 export type { SourceType };
@@ -24,7 +25,7 @@ export interface QuoteHistory {
   responseDate: string;    // 回答日
   amount: number;          // 見積もり金額（税抜）
   amountWithTax: number;   // 見積もり金額（税込）
-  status: QuoteStatus;     // ステータス
+  status: UnifiedCaseStatus;     // ステータス
   items: string[];         // 荷物リスト
   fromAddress: string;     // 引越し元住所
   toAddress: string;       // 引越し先住所
@@ -41,10 +42,6 @@ export interface QuoteHistory {
   };
 }
 
-/**
- * 見積もりステータスの型定義
- */
-export type QuoteStatus = '見積中' | '回答済' | '再見積' | '成約' | '不成約' | 'キャンセル' | '完了';
 
 /**
  * 見積もり依頼データの型定義
