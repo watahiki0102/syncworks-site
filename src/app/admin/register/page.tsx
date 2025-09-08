@@ -1,212 +1,823 @@
 /**
- * 管理者新規登録ページコンポーネント
- * - 事業者アカウントの新規登録機能
- * - 利用種別選択（引越し事業者 / 紹介者）
+ * 新規登録ページコンポーネント（認証前）
+ * - 引越し事業者/案件紹介者の新規アカウント登録
+ * - ステップバイステップ形式
+ * - 利用種別に応じた入力項目
  * - フォームバリデーション
- * - ローカルストレージでのデータ保存
  */
 'use client';
 
-import React from 'react';
-import { AdminLayout } from '@/components/admin';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { UserType } from '@/types/referral';
+
+type RegistrationStep = 'userType' | 'basic' | 'specific' | 'terms';
+
+interface BasicInfo {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  postalCode: string;
+  address: string;
+}
+
+interface MoverInfo {
+  companyName: string;
+  billingEmail: string;
+  description: string;
+  staffCount: string;
+  selectedPrefectures: string[];
+}
+
+interface ReferrerInfo {
+  displayName: string;
+  referrerType: 'company' | 'individual';
+  // Company fields
+  companyName?: string;
+  department?: string;
+  // Individual fields
+  fullName?: string;
+  kana?: string;
+  // Bank info
+  bankCode: string;
+  branchName: string;
+  accountNumber: string;
+  accountHolder: string;
+}
+
+const REGIONS = [
+  { name: '北海道・東北', prefectures: ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
+  { name: '関東', prefectures: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
+  { name: '中部', prefectures: ['新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] },
+  { name: '近畿', prefectures: ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] },
+  { name: '中国', prefectures: ['鳥取県', '島根県', '岡山県', '広島県', '山口県'] },
+  { name: '四国', prefectures: ['徳島県', '香川県', '愛媛県', '高知県'] },
+  { name: '九州', prefectures: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] }
+];
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<RegistrationStep>('userType');
+  const [userType, setUserType] = useState<UserType>('mover');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [basicInfo, setBasicInfo] = useState<BasicInfo>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    postalCode: '',
+    address: ''
+  });
+  
+  const [moverInfo, setMoverInfo] = useState<MoverInfo>({
+    companyName: '',
+    billingEmail: '',
+    description: '',
+    staffCount: '',
+    selectedPrefectures: []
+  });
+  
+  const [referrerInfo, setReferrerInfo] = useState<ReferrerInfo>({
+    displayName: '',
+    referrerType: 'company',
+    bankCode: '',
+    branchName: '',
+    accountNumber: '',
+    accountHolder: ''
+  });
+  
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('');
+
+  const validateBasicInfo = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!basicInfo.email) newErrors.email = 'メールアドレスは必須です';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(basicInfo.email)) {
+      newErrors.email = '正しいメールアドレス形式で入力してください';
+    }
+    
+    if (!basicInfo.password) newErrors.password = 'パスワードは必須です';
+    else if (basicInfo.password.length < 8) {
+      newErrors.password = 'パスワードは8文字以上で入力してください';
+    }
+    
+    if (basicInfo.password !== basicInfo.confirmPassword) {
+      newErrors.confirmPassword = 'パスワードが一致しません';
+    }
+    
+    if (!basicInfo.phone) newErrors.phone = '電話番号は必須です';
+    if (!basicInfo.address) newErrors.address = '住所は必須です';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateSpecificInfo = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (userType === 'mover') {
+      if (!moverInfo.companyName) newErrors.companyName = '事業者名は必須です';
+      if (!moverInfo.billingEmail) newErrors.billingEmail = '請求書送付用メールアドレスは必須です';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(moverInfo.billingEmail)) {
+        newErrors.billingEmail = '正しいメールアドレス形式で入力してください';
+      }
+      if (!moverInfo.description) newErrors.description = '事業コンセプトは必須です';
+      if (moverInfo.selectedPrefectures.length === 0) {
+        newErrors.selectedPrefectures = '対応エリアを1つ以上選択してください';
+      }
+    } else {
+      if (!referrerInfo.displayName) newErrors.displayName = '表示名は必須です';
+      
+      if (referrerInfo.referrerType === 'company') {
+        if (!referrerInfo.companyName) newErrors.companyName = '会社名は必須です';
+      } else {
+        if (!referrerInfo.fullName) newErrors.fullName = '氏名は必須です';
+        if (!referrerInfo.kana) newErrors.kana = 'カナは必須です';
+      }
+      
+      if (!referrerInfo.bankCode) newErrors.bankCode = '銀行名は必須です';
+      if (!referrerInfo.branchName) newErrors.branchName = '支店名は必須です';
+      if (!referrerInfo.accountNumber) newErrors.accountNumber = '口座番号は必須です';
+      if (!referrerInfo.accountHolder) newErrors.accountHolder = '口座名義は必須です';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 'basic' && !validateBasicInfo()) return;
+    if (currentStep === 'specific' && !validateSpecificInfo()) return;
+    
+    const steps: RegistrationStep[] = ['userType', 'basic', 'specific', 'terms'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1]);
+    }
+  };
+
+  const handlePrev = () => {
+    const steps: RegistrationStep[] = ['userType', 'basic', 'specific', 'terms'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!termsAgreed || !privacyAgreed) {
+      setErrors({ terms: '利用規約とプライバシーポリシーに同意してください' });
+      return;
+    }
+
+    try {
+      // Registration data
+      const registrationData = {
+        userType,
+        basicInfo,
+        ...(userType === 'mover' ? { moverInfo } : { referrerInfo }),
+        registeredAt: new Date().toISOString()
+      };
+
+      // Save to localStorage (in real implementation, this would be an API call)
+      localStorage.setItem('registrationData', JSON.stringify(registrationData));
+      localStorage.setItem('adminLoggedIn', 'true');
+      localStorage.setItem('adminEmail', basicInfo.email);
+      localStorage.setItem('userType', userType);
+
+      alert('新規登録が完了しました！');
+      
+      // Redirect to appropriate dashboard
+      if (userType === 'referrer') {
+        router.push('/admin/referrer/dashboard');
+      } else {
+        router.push('/admin/dashboard');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ submit: '登録中にエラーが発生しました。もう一度お試しください。' });
+    }
+  };
+
+  const handlePrefectureToggle = (pref: string) => {
+    setMoverInfo(prev => ({
+      ...prev,
+      selectedPrefectures: prev.selectedPrefectures.includes(pref)
+        ? prev.selectedPrefectures.filter(p => p !== pref)
+        : [...prev.selectedPrefectures, pref]
+    }));
+  };
+
+  const getStepNumber = () => {
+    const steps = ['userType', 'basic', 'specific', 'terms'];
+    return steps.indexOf(currentStep) + 1;
+  };
+
   return (
-    <AdminLayout title="事業者管理画面">
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* ヘッダーセクション */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">事業者管理画面</h1>
-            <p className="text-lg text-gray-600">引越し事業者の登録・管理を行います</p>
-          </div>
-          
-          {/* メインコンテンツエリア */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 最新ニュースパネル */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">最新ニュース</h2>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">更新日: 2024/12/28</p>
-              
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-gray-500">2024/12/28</span>
-                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">新機能</span>
-                    <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">NEW</span>
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10 px-4">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">新規会員登録</h1>
+          <p className="text-gray-600">SyncWorksへようこそ</p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex items-center space-x-4">
+              {[1, 2, 3, 4].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step <= getStepNumber()
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    {step}
                   </div>
-                  <h3 className="font-medium text-gray-900 mb-1">自動配車最適化機能をリリース</h3>
-                  <p className="text-sm text-gray-600">AIを活用した新しい配車最適化機能により、効率的な配車計画が可能になりました。</p>
+                  {step < 4 && (
+                    <div className={`w-12 h-1 ml-4 ${
+                      step < getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="text-center text-sm text-gray-600">
+            Step {getStepNumber()} of 4
+          </div>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl shadow-md p-8">
+          {currentStep === 'userType' && (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">利用種別を選択してください</h2>
+              <div className="space-y-4">
+                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  userType === 'mover'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="mover"
+                    checked={userType === 'mover'}
+                    onChange={(e) => setUserType(e.target.value as UserType)}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">引越し事業者として登録</h3>
+                      <p className="text-sm text-gray-600">引越しサービスを提供する事業者向け</p>
+                    </div>
+                  </div>
+                </label>
+                
+                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  userType === 'referrer'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="referrer"
+                    checked={userType === 'referrer'}
+                    onChange={(e) => setUserType(e.target.value as UserType)}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">案件紹介者として登録</h3>
+                      <p className="text-sm text-gray-600">引越し案件を紹介する個人・法人向け</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 'basic' && (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">基本情報</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    メールアドレス <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={basicInfo.email}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, email: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="example@email.com"
+                  />
+                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                 </div>
                 
-                <div className="border-l-4 border-green-500 pl-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-gray-500">2024/12/27</span>
-                    <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">実績</span>
-                    <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">NEW</span>
-                  </div>
-                  <h3 className="font-medium text-gray-900 mb-1">月間成約率が過去最高を記録</h3>
-                  <p className="text-sm text-gray-600">12月の成約率が85%に達し、過去最高記録を更新しました。</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    パスワード <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={basicInfo.password}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, password: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.password ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="8文字以上で入力"
+                  />
+                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    パスワード確認 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={basicInfo.confirmPassword}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="上記と同じパスワードを入力"
+                  />
+                  {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    電話番号 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={basicInfo.phone}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="03-1234-5678"
+                  />
+                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    郵便番号
+                  </label>
+                  <input
+                    type="text"
+                    value={basicInfo.postalCode}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, postalCode: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="123-4567"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    住所 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={basicInfo.address}
+                    onChange={(e) => setBasicInfo(prev => ({ ...prev, address: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.address ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="東京都渋谷区..."
+                  />
+                  {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
                 </div>
               </div>
             </div>
+          )}
 
-            {/* トレンド情報パネル */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+          {currentStep === 'specific' && userType === 'mover' && (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">事業者情報</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    事業者名 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={moverInfo.companyName}
+                    onChange={(e) => setMoverInfo(prev => ({ ...prev, companyName: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.companyName ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="株式会社○○○"
+                  />
+                  {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">トレンド情報</h2>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    請求書送付用メールアドレス <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={moverInfo.billingEmail}
+                    onChange={(e) => setMoverInfo(prev => ({ ...prev, billingEmail: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.billingEmail ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="billing@example.com"
+                  />
+                  {errors.billingEmail && <p className="mt-1 text-sm text-red-600">{errors.billingEmail}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    事業コンセプト <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={moverInfo.description}
+                    onChange={(e) => setMoverInfo(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.description ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="事業の特徴や強みをご記入ください"
+                  />
+                  {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    従業員数
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={moverInfo.staffCount}
+                    onChange={(e) => setMoverInfo(prev => ({ ...prev, staffCount: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="1"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    対応エリア <span className="text-red-500">*</span>
+                  </label>
+                  <div className="border rounded-md p-4">
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {REGIONS.map(region => (
+                          <button
+                            key={region.name}
+                            type="button"
+                            className={`px-3 py-1 rounded border text-sm ${
+                              selectedRegion === region.name
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'
+                            }`}
+                            onClick={() => setSelectedRegion(selectedRegion === region.name ? '' : region.name)}
+                          >
+                            {region.name}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {selectedRegion && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {REGIONS.find(r => r.name === selectedRegion)?.prefectures.map(pref => (
+                            <label key={pref} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={moverInfo.selectedPrefectures.includes(pref)}
+                                onChange={() => handlePrefectureToggle(pref)}
+                                className="accent-blue-600"
+                              />
+                              <span className="text-sm">{pref}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {moverInfo.selectedPrefectures.map(pref => (
+                        <span key={pref} className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                          {pref}
+                          <button
+                            type="button"
+                            onClick={() => handlePrefectureToggle(pref)}
+                            className="ml-1 text-blue-600 hover:text-red-600"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {errors.selectedPrefectures && <p className="mt-1 text-sm text-red-600">{errors.selectedPrefectures}</p>}
+                </div>
               </div>
+            </div>
+          )}
+
+          {currentStep === 'specific' && userType === 'referrer' && (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">紹介者情報</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    表示名 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={referrerInfo.displayName}
+                    onChange={(e) => setReferrerInfo(prev => ({ ...prev, displayName: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.displayName ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="表示名を入力"
+                  />
+                  {errors.displayName && <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    種別 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="referrerType"
+                        value="company"
+                        checked={referrerInfo.referrerType === 'company'}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, referrerType: e.target.value as 'company' | 'individual' }))}
+                        className="mr-2"
+                      />
+                      会社
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="referrerType"
+                        value="individual"
+                        checked={referrerInfo.referrerType === 'individual'}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, referrerType: e.target.value as 'company' | 'individual' }))}
+                        className="mr-2"
+                      />
+                      個人
+                    </label>
+                  </div>
+                </div>
+                
+                {referrerInfo.referrerType === 'company' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        会社名 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.companyName || ''}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, companyName: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.companyName ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="会社名を入力"
+                      />
+                      {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        部署・担当者
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.department || ''}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, department: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="部署・担当者を入力"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        氏名 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.fullName || ''}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.fullName ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="氏名を入力"
+                      />
+                      {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        カナ <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.kana || ''}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, kana: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.kana ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="カナを入力"
+                      />
+                      {errors.kana && <p className="mt-1 text-sm text-red-600">{errors.kana}</p>}
+                    </div>
+                  </>
+                )}
+                
+                <div className="border-t pt-4 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">振込先情報</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        銀行名 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={referrerInfo.bankCode}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, bankCode: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.bankCode ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="">銀行を選択してください</option>
+                        <option value="0001">みずほ銀行</option>
+                        <option value="0005">三菱UFJ銀行</option>
+                        <option value="0009">三井住友銀行</option>
+                        <option value="0010">りそな銀行</option>
+                        <option value="0033">ゆうちょ銀行</option>
+                      </select>
+                      {errors.bankCode && <p className="mt-1 text-sm text-red-600">{errors.bankCode}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        支店名 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.branchName}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, branchName: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.branchName ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="本店、新宿支店など"
+                      />
+                      {errors.branchName && <p className="mt-1 text-sm text-red-600">{errors.branchName}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        口座番号 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.accountNumber}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, accountNumber: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.accountNumber ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="1234567"
+                      />
+                      {errors.accountNumber && <p className="mt-1 text-sm text-red-600">{errors.accountNumber}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        口座名義（全角カナ） <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={referrerInfo.accountHolder}
+                        onChange={(e) => setReferrerInfo(prev => ({ ...prev, accountHolder: e.target.value }))}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.accountHolder ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="カタカナで入力"
+                      />
+                      {errors.accountHolder && <p className="mt-1 text-sm text-red-600">{errors.accountHolder}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 'terms' && (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">利用規約・プライバシーポリシー</h2>
               
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700">未回答数</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-red-600">3件</div>
-                    <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">要対応</span>
-                  </div>
+              <div className="space-y-6">
+                <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
+                  <h3 className="font-semibold mb-2">利用規約</h3>
+                  <p className="text-sm text-gray-600">
+                    本規約は、SyncWorksが提供するサービスの利用条件を定めるものです。
+                    ユーザーは本サービスを利用することで本規約に同意したものとみなされます。
+                    ...
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700">本日の申し込み数</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-blue-600">5件</div>
-                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">今日</span>
-                  </div>
+                
+                <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
+                  <h3 className="font-semibold mb-2">プライバシーポリシー</h3>
+                  <p className="text-sm text-gray-600">
+                    当社は、ユーザーの個人情報の保護に努めます。
+                    収集した個人情報は、サービスの提供及び向上のためにのみ使用いたします。
+                    ...
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700">今月の成約数</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-green-600">10件</div>
-                    <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">成約</span>
-                  </div>
+                
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={termsAgreed}
+                      onChange={(e) => setTermsAgreed(e.target.checked)}
+                      className="mr-3 accent-blue-600"
+                    />
+                    <span className="text-sm">利用規約に同意する</span>
+                  </label>
+                  
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={privacyAgreed}
+                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                      className="mr-3 accent-blue-600"
+                    />
+                    <span className="text-sm">プライバシーポリシーに同意する</span>
+                  </label>
                 </div>
-
-                <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700">今月の売上</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-yellow-600">¥450,000</div>
-                    <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">売上</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700">今月の成約率</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-purple-600">85%</div>
-                    <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">率</span>
-                  </div>
-                </div>
+                
+                {errors.terms && <p className="text-sm text-red-600">{errors.terms}</p>}
+                {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* 管理カテゴリーセクション */}
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">管理機能</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-              {/* 案件管理 */}
-              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-400 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">案件管理</h3>
-                  <p className="text-sm text-gray-600">案件・支払対象一覧</p>
-                </div>
-              </div>
-
-              {/* シフト管理 */}
-              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-400 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">シフト管理</h3>
-                  <p className="text-sm text-gray-600">従業員スケジュール</p>
-                </div>
-              </div>
-
-              {/* 配車管理 */}
-              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-400 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">配車管理</h3>
-                  <p className="text-sm text-gray-600">トラック配車・稼働</p>
-                </div>
-              </div>
-
-              {/* 集計管理 */}
-              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-400 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">集計管理</h3>
-                  <p className="text-sm text-gray-600">売上・成約率分析</p>
-                </div>
-              </div>
-            </div>
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={currentStep === 'userType' ? () => router.push('/admin/login') : handlePrev}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              {currentStep === 'userType' ? 'ログインページへ' : '戻る'}
+            </button>
+            
+            {currentStep === 'terms' ? (
+              <button
+                type="button"
+                onClick={handleRegister}
+                disabled={!termsAgreed || !privacyAgreed}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                登録完了
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                次へ
+              </button>
+            )}
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </main>
   );
 } 
