@@ -2,7 +2,7 @@
  * 依頼元種別の正規化ライブラリ
  */
 
-export type SourceType = 'syncmoving' | 'suumo' | '外部' | '手動';
+export type SourceType = 'syncmoving' | 'suumo' | '外部' | '手動' | string;
 
 /**
  * 依頼元種別を正規化する
@@ -22,13 +22,26 @@ export const normalizeSourceType = (raw?: string): SourceType => {
  * @returns 表示用ラベル
  */
 export const getSourceTypeLabel = (sourceType: SourceType): string => {
-  const labels: Record<SourceType, string> = {
+  const labels: Record<string, string> = {
     'syncmoving': 'SyncMoving',
     'suumo': 'スーモ',
     '外部': '外部',
     '手動': '手動登録'
   };
-  return labels[sourceType];
+  
+  // 固定値の場合
+  if (labels[sourceType]) {
+    return labels[sourceType];
+  }
+  
+  // 保存された仲介元名の場合
+  const savedNames = IntermediaryService.getSavedNames();
+  if (savedNames.includes(sourceType)) {
+    return sourceType;
+  }
+  
+  // 見つからない場合のデフォルト
+  return sourceType || '外部';
 };
 
 /**
@@ -87,3 +100,90 @@ export const getSourceTypeLabelWithNumber = (sourceType: SourceType, id: string)
   }
   return baseLabel;
 };
+
+/**
+ * シンプルな仲介元管理
+ */
+const INTERMEDIARY_NAMES_KEY = 'intermediary_names';
+
+export class IntermediaryService {
+  /**
+   * 保存された仲介元名の一覧を取得
+   */
+  static getSavedNames(): string[] {
+    try {
+      if (typeof window === 'undefined') return [];
+      const stored = localStorage.getItem(INTERMEDIARY_NAMES_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('仲介元名の取得に失敗しました:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 新しい仲介元名を追加
+   */
+  static addName(name: string): void {
+    if (typeof window === 'undefined') return;
+    if (!name.trim()) return;
+    
+    const savedNames = this.getSavedNames();
+    if (!savedNames.includes(name.trim())) {
+      savedNames.push(name.trim());
+      try {
+        localStorage.setItem(INTERMEDIARY_NAMES_KEY, JSON.stringify(savedNames));
+      } catch (error) {
+        console.error('仲介元名の保存に失敗しました:', error);
+      }
+    }
+  }
+
+  /**
+   * IDで仲介元名を取得（後方互換性のため）
+   */
+  static getById(id: string): { name: string } | null {
+    // 固定値の場合
+    const fixedLabels: Record<string, string> = {
+      'syncmoving': 'SyncMoving',
+      'suumo': 'スーモ',
+      '外部': '外部',
+      '手動': '手動登録'
+    };
+    
+    if (fixedLabels[id]) {
+      return { name: fixedLabels[id] };
+    }
+    
+    // 保存された仲介元名の場合
+    const savedNames = this.getSavedNames();
+    if (savedNames.includes(id)) {
+      return { name: id };
+    }
+    
+    return null;
+  }
+
+  /**
+   * 初期データを設定
+   */
+  static initializeTestData(): void {
+    if (typeof window === 'undefined') return;
+    
+    const testNames = ['スーモ', '引越し侍'];
+    testNames.forEach(name => this.addName(name));
+  }
+
+  /**
+   * 選択肢用のデータを取得（他社案件登録用）
+   */
+  static getSelectOptions() {
+    const savedNames = this.getSavedNames();
+    const savedOptions = savedNames.map(name => ({
+      value: name,
+      label: name,
+    }));
+
+    return savedOptions;
+  }
+}

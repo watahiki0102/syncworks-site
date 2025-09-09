@@ -7,6 +7,21 @@ export type MoveDateKind = '希望日' | '確定日';
 export type PaymentMethod = '銀行振込' | '現金' | 'クレジットカード' | '請求書';
 export type PaymentStatus = '未請求' | '請求済' | '入金待ち' | '入金済' | '保留';
 
+// 仲介元情報の型定義
+export interface Intermediary {
+  id: string;
+  name: string;
+  companyName: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CompanyProfile {
   name: string;
   postal: string;

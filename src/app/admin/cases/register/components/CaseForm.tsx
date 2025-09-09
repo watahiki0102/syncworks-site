@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EstimateInputMode, MoveDateKind, PaymentMethod, PaymentStatus } from '@/types/case';
 import { ITEM_CATEGORIES } from '@/constants/items';
+import { IntermediaryService } from '../../lib/normalize';
 
 interface CaseFormProps {
   estimateMode: EstimateInputMode;
@@ -42,6 +43,11 @@ interface FormData {
   // 支払情報
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  
+  // 仲介元情報
+  intermediaryMode: 'existing' | 'new';
+  sourceType: string;
+  newIntermediaryName: string;
   
   // その他
   notes: string;
@@ -89,6 +95,9 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     contractStatus: 'estimate',
     paymentMethod: '銀行振込',
     paymentStatus: '未請求',
+    intermediaryMode: 'existing',
+    sourceType: '',
+    newIntermediaryName: '',
     notes: ''
   });
 
@@ -102,6 +111,11 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       setFormData(prev => ({ ...prev, ...initialData }));
     }
   }, [initialData]);
+
+  // 仲介元のテストデータを設定
+  useEffect(() => {
+    IntermediaryService.initializeTestData();
+  }, []);
 
   // 追加サービスに手書き項目を追加
   const addCustomService = () => {
@@ -158,6 +172,19 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       newErrors.estimatedPrice = '見積金額は0以上で入力してください';
     }
 
+    // 仲介元のバリデーション
+    if (formData.intermediaryMode === 'existing' && !formData.sourceType) {
+      newErrors.sourceType = '仲介元の選択は必須です';
+    }
+    
+    if (formData.intermediaryMode === 'new') {
+      if (!formData.newIntermediaryName.trim()) {
+        newErrors.newIntermediaryName = '新しい仲介元名は必須です';
+      } else if (formData.newIntermediaryName.trim().toLowerCase() === 'syncmoving') {
+        newErrors.newIntermediaryName = 'SyncMovingは他社案件として登録できません';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -165,7 +192,20 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      // 新規仲介元の場合は保存して sourceType に設定
+      if (formData.intermediaryMode === 'new' && formData.newIntermediaryName.trim()) {
+        const newName = formData.newIntermediaryName.trim();
+        IntermediaryService.addName(newName);
+        
+        // 送信データの sourceType を新規仲介元名に設定
+        const submissionData = {
+          ...formData,
+          sourceType: newName
+        };
+        onSubmit(submissionData);
+      } else {
+        onSubmit(formData);
+      }
     }
   };
 
@@ -230,6 +270,86 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               placeholder="customer@example.com"
             />
           </div>
+        </div>
+      </div>
+
+      {/* 仲介元情報 */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">仲介元情報</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              仲介元の選択方法
+            </label>
+            <div className="flex space-x-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  value="existing"
+                  checked={formData.intermediaryMode === 'existing'}
+                  onChange={(e) => updateFormData('intermediaryMode', e.target.value as 'existing' | 'new')}
+                  className="mr-2"
+                />
+                既存から選択
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  value="new"
+                  checked={formData.intermediaryMode === 'new'}
+                  onChange={(e) => updateFormData('intermediaryMode', e.target.value as 'existing' | 'new')}
+                  className="mr-2"
+                />
+                新規追加
+              </label>
+            </div>
+          </div>
+
+          {formData.intermediaryMode === 'existing' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                仲介元 <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.sourceType}
+                onChange={(e) => updateFormData('sourceType', e.target.value)}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.sourceType ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">仲介元を選択してください</option>
+                {IntermediaryService.getSelectOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.sourceType && (
+                <p className="mt-1 text-sm text-red-600">{errors.sourceType}</p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                新しい仲介元名 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.newIntermediaryName}
+                onChange={(e) => updateFormData('newIntermediaryName', e.target.value)}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.newIntermediaryName ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="例：引越し価格ガイド、ズバット引越し比較、LIFULL引越し等"
+              />
+              {errors.newIntermediaryName && (
+                <p className="mt-1 text-sm text-red-600">{errors.newIntermediaryName}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                登録後、次回以降は選択肢に表示されます
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
