@@ -58,21 +58,21 @@ export default function PerformancePage() {
   }, []);
 
   useEffect(() => {
-    const filtered = cases.filter(caseItem => {
+    const filtered = (cases || []).filter(caseItem => {
       // 検索条件（顧客名、依頼ID、管理ナンバー）
       if (searchTerm && 
-          !caseItem.customerName.includes(searchTerm) && 
+          !caseItem.customer.customerName.includes(searchTerm) && 
           !caseItem.id.includes(searchTerm) &&
           !getManagementNumber(caseItem.sourceType, caseItem.id).includes(searchTerm)) {
         return false;
       }
       
       // 期間フィルター（引越し日でフィルタリング）
-      if (startDate && caseItem.moveDate < startDate) {
+      if (startDate && caseItem.move.moveDate < startDate) {
         return false;
       }
       
-      if (endDate && caseItem.moveDate > endDate) {
+      if (endDate && caseItem.move.moveDate > endDate) {
         return false;
       }
       
@@ -103,18 +103,18 @@ export default function PerformancePage() {
   };
 
   const calculateTotalRevenue = () => {
-    return filteredCases.reduce((total, caseItem) => {
+    return (filteredCases || []).reduce((total, caseItem) => {
       const amount = caseItem.amountWithTax || 0;
       return total + calculateCommission(amount);
     }, 0);
   };
 
   const calculateTotalContracts = () => {
-    return filteredCases.length;
+    return (filteredCases || []).length;
   };
 
   const calculateTotalAmount = () => {
-    return filteredCases.reduce((total, caseItem) => total + (caseItem.amountWithTax || 0), 0);
+    return (filteredCases || []).reduce((total, caseItem) => total + (caseItem.amountWithTax || 0), 0);
   };
 
 
@@ -122,7 +122,7 @@ export default function PerformancePage() {
   const calculateSourceTypeData = () => {
     const sourceStats: { [key: string]: { contracts: number; amount: number; revenue: number } } = {};
     
-    filteredCases.forEach(caseItem => {
+    (filteredCases || []).forEach(caseItem => {
       const sourceType = caseItem.sourceType;
       if (!sourceStats[sourceType]) {
         sourceStats[sourceType] = { contracts: 0, amount: 0, revenue: 0 };
@@ -224,7 +224,7 @@ export default function PerformancePage() {
                 </tr>
               </thead>
               <tbody className="bg-gray-50 divide-y divide-gray-200">
-                {filteredCases.map((caseItem) => (
+                {(filteredCases || []).map((caseItem) => (
                   <tr key={caseItem.id} className="bg-white hover:bg-gray-100">
                     <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
                       {getManagementNumber(caseItem.sourceType, caseItem.id)}
@@ -244,14 +244,14 @@ export default function PerformancePage() {
                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                       <span
                         style={{
-                          fontSize: `clamp(0.625rem, ${32 / Math.max(caseItem.customerName.length, 1)}rem, 0.875rem)`
+                          fontSize: `clamp(0.625rem, ${32 / Math.max(caseItem.customer.customerName.length, 1)}rem, 0.875rem)`
                         }}
                       >
-                        {caseItem.customerName}
+                        {caseItem.customer.customerName}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(caseItem.moveDate)}
+                      {formatDate(caseItem.move.moveDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
