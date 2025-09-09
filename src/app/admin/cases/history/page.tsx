@@ -310,7 +310,7 @@ export default function QuoteHistoryPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-semibold">見積詳細 - {viewingQuote.customerName}</h3>
+                <h3 className="text-2xl font-semibold">見積詳細 - {viewingQuote.customer?.customerName}</h3>
                 <button
                   onClick={() => setViewingQuote(null)}
                   className="text-gray-500 hover:text-gray-700"
