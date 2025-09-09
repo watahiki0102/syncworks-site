@@ -70,10 +70,10 @@ export default function UnifiedCasesPage() {
         const searchTerm = filter.searchTerm.toLowerCase();
         const managementNumber = getManagementNumber(caseItem.sourceType, caseItem.id);
         
-        const matchesCustomerName = caseItem.customerName.toLowerCase().includes(searchTerm);
+        const matchesCustomerName = (caseItem.customer?.customerName || '').toLowerCase().includes(searchTerm);
         const matchesManagementNumber = managementNumber.toLowerCase().includes(searchTerm);
-        const matchesAddress = caseItem.summary?.fromAddress?.toLowerCase().includes(searchTerm) ||
-                             caseItem.summary?.toAddress?.toLowerCase().includes(searchTerm);
+        const matchesAddress = caseItem.move?.fromAddress?.toLowerCase().includes(searchTerm) ||
+                             caseItem.move?.toAddress?.toLowerCase().includes(searchTerm);
         
         if (!matchesCustomerName && !matchesManagementNumber && !matchesAddress) {
           return false;
@@ -91,10 +91,10 @@ export default function UnifiedCasesPage() {
   }, [cases, filter, selectedStatuses]);
 
   // ページネーション用の計算
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredCases?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedCases = filteredCases.slice(startIndex, endIndex);
+  const paginatedCases = (filteredCases || []).slice(startIndex, endIndex);
 
   /**
    * ステータスチェックボックスの操作
@@ -389,14 +389,14 @@ export default function UnifiedCasesPage() {
         {/* 件数表示 */}
         <div className="mb-4 flex justify-between items-center">
           <p className="text-sm text-gray-700">
-            <span className="font-medium">{filteredCases.length}件</span>
+            <span className="font-medium">{filteredCases?.length || 0}件</span>
             <span className="text-gray-500 ml-1">
-              （全{cases.length}件中）
+              （全{cases?.length || 0}件中）
             </span>
           </p>
           {totalPages > 1 && (
             <div className="text-sm text-gray-600 flex items-center space-x-2">
-              <span>{startIndex + 1}-{Math.min(endIndex, filteredCases.length)}件目</span>
+              <span>{startIndex + 1}-{Math.min(endIndex, filteredCases?.length || 0)}件目</span>
               <span>ページ {currentPage} / {totalPages}</span>
             </div>
           )}
@@ -443,7 +443,7 @@ export default function UnifiedCasesPage() {
                       className="inline-block w-24 px-2 py-1 text-center text-gray-900"
                       style={{
                         fontSize: caseItem.sourceType === '外部' 
-                          ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(caseItem.sourceType).length, 1)}rem, 0.75rem)`
+                          ? `clamp(0.5rem, ${24 / Math.max((getSourceTypeLabel(caseItem.sourceType) || '').length, 1)}rem, 0.75rem)`
                           : '0.75rem'
                       }}
                     >
@@ -453,14 +453,14 @@ export default function UnifiedCasesPage() {
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                     <span
                       style={{
-                        fontSize: `clamp(0.625rem, ${32 / Math.max(caseItem.customerName.length, 1)}rem, 0.875rem)`
+                        fontSize: `clamp(0.625rem, ${32 / Math.max((caseItem.customer?.customerName || '').length, 1)}rem, 0.875rem)`
                       }}
                     >
-                      {caseItem.customerName}
+                      {caseItem.customer?.customerName}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(caseItem.moveDate)}
+                    {formatDate(caseItem.move?.moveDate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getDateDisplay(caseItem)}
@@ -479,7 +479,7 @@ export default function UnifiedCasesPage() {
             </tbody>
           </table>
 
-          {filteredCases.length === 0 && (
+          {(filteredCases?.length || 0) === 0 && (
             <div className="text-center py-8 text-gray-500">
               条件に一致する案件がありません
             </div>
