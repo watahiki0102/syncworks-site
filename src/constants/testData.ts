@@ -225,7 +225,7 @@ export const TEST_EMPLOYEES = [
 ];
 
 // 見積もり・契約データ生成ヘルパー
-export const generateTestQuote = () => {
+export const generateTestQuote = (customerIndex: number = 0) => {
   // 6つの固定テストデータ（SyncMoving 3つ、外部 3つ）
   const fixedTestData = [
     // SyncMoving案件 3つ
