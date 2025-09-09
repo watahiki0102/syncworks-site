@@ -12,7 +12,8 @@ import {
   getPendingCount,
   getStatusCounts,
 } from '../unifiedData';
-import { QuoteRequest, QuoteHistory } from '../../types';
+import { QuoteRequest } from '@/types/common';
+import { QuoteHistory } from '../../types';
 import { UnifiedCase, UnifiedCaseStatus } from '../../types/unified';
 
 // テスト用のモックデータ

@@ -3,7 +3,8 @@
  * 見積依頼と見積履歴のデータを統合して提供
  */
 
-import { QuoteRequest, QuoteHistory } from '../types';
+import { QuoteRequest } from '@/types/common';
+import { QuoteHistory } from '../types';
 import { UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
 import { UnifiedCase } from '@/types/common';
 import { normalizeSourceType, getManagementNumber } from './normalize';

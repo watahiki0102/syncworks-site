@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { QuoteRequest, TruckAvailability } from '../types';
+import { QuoteRequest } from '@/types/common';
+import { TruckAvailability } from '../types';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
