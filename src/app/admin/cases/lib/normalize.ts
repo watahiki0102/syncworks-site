@@ -186,4 +186,21 @@ export class IntermediaryService {
 
     return savedOptions;
   }
+
+  /**
+   * 全ての選択肢用のデータを取得（管理画面のフィルター用）
+   */
+  static getAllSelectOptions() {
+    const fixedOptions = [
+      { value: 'syncmoving', label: 'SyncMoving' },
+    ];
+
+    const savedNames = this.getSavedNames();
+    const savedOptions = savedNames.map(name => ({
+      value: name,
+      label: name,
+    }));
+
+    return [...fixedOptions, ...savedOptions];
+  }
 }

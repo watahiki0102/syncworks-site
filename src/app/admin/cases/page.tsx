@@ -13,6 +13,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
 import UnifiedCasesPage from './unified/page';
 import PerformancePage from './performance/page';
+import { IntermediaryService } from './lib/normalize';
 import { generateUnifiedTestData, getPendingCount } from './lib/unifiedData';
 
 type TabType = 'unified' | 'contracts';
@@ -23,6 +24,9 @@ export default function CaseManagement() {
 
   // 未回答依頼数の計算
   useEffect(() => {
+    // 仲介元のテストデータを初期化
+    IntermediaryService.initializeTestData();
+    
     const unifiedData = generateUnifiedTestData();
     const pendingCases = getPendingCount(unifiedData);
     setPendingCount(pendingCases);

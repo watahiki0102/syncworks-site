@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase } from '@/types/common';
 import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
 import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
-import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType } from '../lib/normalize';
+import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType, IntermediaryService } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
 
 export default function UnifiedCasesPage() {
@@ -43,6 +43,9 @@ export default function UnifiedCasesPage() {
   }, [openDropdown]);
 
   useEffect(() => {
+    // 仲介元のテストデータを初期化
+    IntermediaryService.initializeTestData();
+    
     // 統合テストデータを生成
     const unifiedData = generateUnifiedTestData();
     setCases(unifiedData);
@@ -374,10 +377,11 @@ export default function UnifiedCasesPage() {
                         className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       >
                         <option value="all">全て</option>
-                        <option value="syncmoving">SyncMoving</option>
-                        <option value="suumo">スーモ</option>
-                        <option value="外部">外部</option>
-                        <option value="手動">手動登録</option>
+                        {IntermediaryService.getAllSelectOptions().map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
