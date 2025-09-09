@@ -5,7 +5,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteHistory, TimeBandSurcharge } from '../types';
 import { UnifiedCaseStatus } from '../types/unified';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber, isSourceTypeEditable } from '../lib/normalize';
-import { generateTestQuote } from '@/constants/testData';
+import { generateUnifiedTestData } from '../lib/unifiedData';
 
 export default function QuoteHistoryPage() {
   const [quotes, setQuotes] = useState<QuoteHistory[]>([]);
@@ -32,15 +32,27 @@ export default function QuoteHistoryPage() {
   }, [openDropdown]);
 
   useEffect(() => {
-    // 共通テストデータから見積データを生成（6つの固定データ）
-    const demoQuotes: QuoteHistory[] = [
-      generateTestQuote(0, 0, 0, 0) as QuoteHistory,
-      generateTestQuote(1, 1, 1, 1) as QuoteHistory,
-      generateTestQuote(2, 2, 2, 2) as QuoteHistory,
-      generateTestQuote(3, 3, 3, 3) as QuoteHistory,
-      generateTestQuote(4, 4, 4, 4) as QuoteHistory,
-      generateTestQuote(5, 5, 5, 5) as QuoteHistory
-    ];
+    // 統合案件データから履歴データのみを抽出
+    const allCases = generateUnifiedTestData();
+    const historyData = allCases.filter(caseItem => caseItem.type === 'history');
+    
+    // QuoteHistory形式に変換
+    const demoQuotes: QuoteHistory[] = historyData.map(caseItem => ({
+      id: caseItem.id,
+      customerName: caseItem.customer?.customerName || '',
+      sourceType: caseItem.sourceType,
+      moveDate: caseItem.move?.moveDate || '',
+      status: caseItem.status,
+      responseDate: caseItem.responseDate || '',
+      amountWithTax: caseItem.amountWithTax || 0,
+      isReQuote: caseItem.isReQuote || false,
+      summary: {
+        from: caseItem.move?.fromAddress || '',
+        to: caseItem.move?.toAddress || '',
+        items: caseItem.items?.items?.map(item => item.name) || [],
+        totalPoints: caseItem.items?.totalPoints || 0
+      }
+    }));
 
     const normalizedQuotes = demoQuotes.map(quote => ({
       ...quote,
