@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase } from '@/types/common';
 import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
 import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
-import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
+import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
 
 export default function UnifiedCasesPage() {
@@ -69,7 +69,7 @@ export default function UnifiedCasesPage() {
       // 検索キーワードフィルター
       if (filter.searchTerm) {
         const searchTerm = filter.searchTerm.toLowerCase();
-        const managementNumber = getManagementNumber(caseItem.sourceType, caseItem.id);
+        const managementNumber = getManagementNumber(normalizeSourceType(caseItem.sourceType), caseItem.id);
         
         const matchesCustomerName = (caseItem.customer?.customerName || '').toLowerCase().includes(searchTerm);
         const matchesManagementNumber = managementNumber.toLowerCase().includes(searchTerm);
@@ -294,15 +294,15 @@ export default function UnifiedCasesPage() {
 
   return (
     <AdminAuthGuard>    
-      <div className="container mx-auto px-4 py-4">
-        <div className="mb-4">
-          <div className="space-y-4 mb-4">
+      <div className="container mx-auto px-4 py-2">
+        <div className="mb-1">
+          <div className="space-y-2 mb-2">
             {/* ステータスフィルター（チェックボックス）と検索 */}
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-3 rounded-lg">
               <div className="flex items-start gap-6">
                 {/* 左側：ステータス絞り込み */}
                 <div className="flex-shrink-0">
-                  <div className="h-6 mb-3 flex items-center">
+                  <div className="h-6 mb-2 flex items-center">
                     <div className="flex items-center gap-4">
                       <h3 className="text-sm font-medium text-gray-700 leading-6">ステータス</h3>
                       <div className="flex items-center gap-3 text-xs">
@@ -357,7 +357,7 @@ export default function UnifiedCasesPage() {
                       <h3 className="text-sm font-medium text-gray-700 leading-6">仲介元</h3>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-6">
+                  <div className="flex items-center gap-3 mt-4">
                     <div className="flex-1">
                       <input
                         type="text"
@@ -388,7 +388,7 @@ export default function UnifiedCasesPage() {
         </div>
 
         {/* 件数表示 */}
-        <div className="mb-3 flex justify-between items-center">
+        <div className="mb-1 flex justify-between items-center">
           <p className="text-sm text-gray-700">
             <span className="font-medium">{filteredCases?.length || 0}件</span>
             <span className="text-gray-500 ml-1">
@@ -437,18 +437,18 @@ export default function UnifiedCasesPage() {
               {paginatedCases.map((caseItem) => (
                 <tr key={caseItem.id} className="bg-white hover:bg-gray-100">
                   <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
-                    {getManagementNumber(caseItem.sourceType, caseItem.id)}
+                    {getManagementNumber(normalizeSourceType(caseItem.sourceType), caseItem.id)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span 
                       className="inline-block w-24 px-2 py-1 text-center text-gray-900"
                       style={{
                         fontSize: caseItem.sourceType === '外部' 
-                          ? `clamp(0.5rem, ${24 / Math.max((getSourceTypeLabel(caseItem.sourceType) || '').length, 1)}rem, 0.75rem)`
+                          ? `clamp(0.5rem, ${24 / Math.max((getSourceTypeLabel(normalizeSourceType(caseItem.sourceType)) || '').length, 1)}rem, 0.75rem)`
                           : '0.75rem'
                       }}
                     >
-                      {getSourceTypeLabel(caseItem.sourceType)}
+                      {getSourceTypeLabel(normalizeSourceType(caseItem.sourceType))}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
@@ -575,7 +575,7 @@ export default function UnifiedCasesPage() {
                     <div><span className="font-medium">顧客名:</span> {viewingCase.customer.customerName}</div>
                     <div><span className="font-medium">引越し日:</span> {viewingCase.move.moveDate}</div>
                     <div><span className="font-medium">ステータス:</span> {STATUS_STYLES[viewingCase.status].label}</div>
-                    <div><span className="font-medium">仲介元:</span> {getSourceTypeLabel(viewingCase.sourceType)}</div>
+                    <div><span className="font-medium">仲介元:</span> {getSourceTypeLabel(normalizeSourceType(viewingCase.sourceType))}</div>
                     {viewingCase.type === 'request' && viewingCase.priority && (
                       <div><span className="font-medium">優先度:</span> {PRIORITY_STYLES[viewingCase.priority].label}</div>
                     )}
