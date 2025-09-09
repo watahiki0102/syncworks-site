@@ -351,11 +351,11 @@ export default function QuoteHistoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium text-gray-500">引越し元:</span>
-                    <p className="text-gray-700">{viewingQuote.fromAddress}</p>
+                    <p className="text-gray-700">{viewingQuote.move.fromAddress}</p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-500">引越し先:</span>
-                    <p className="text-gray-700">{viewingQuote.toAddress}</p>
+                    <p className="text-gray-700">{viewingQuote.move.toAddress}</p>
                   </div>
                 </div>
               </div>
@@ -363,9 +363,9 @@ export default function QuoteHistoryPage() {
               <div className="mb-6">
                 <h4 className="font-medium text-gray-900 mb-2">荷物一覧</h4>
                 <div className="flex flex-wrap gap-2">
-                  {viewingQuote.items.map((item, index) => (
+                  {viewingQuote.items.items.map((item, index) => (
                     <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                      {item}
+                      {item.name} × {item.quantity}
                     </span>
                   ))}
                 </div>
