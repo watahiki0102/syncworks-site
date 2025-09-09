@@ -38,20 +38,23 @@ export default function QuoteHistoryPage() {
     
     // QuoteHistory形式に変換
     const demoQuotes: QuoteHistory[] = historyData.map(caseItem => ({
+      // UnifiedCaseから継承されるプロパティ
       id: caseItem.id,
-      customerName: caseItem.customer?.customerName || '',
-      sourceType: caseItem.sourceType,
-      moveDate: caseItem.move?.moveDate || '',
+      customer: caseItem.customer,
+      move: caseItem.move,
+      items: caseItem.items,
+      type: caseItem.type,
       status: caseItem.status,
+      sourceType: caseItem.sourceType,
+      referralId: caseItem.referralId,
+      // 履歴固有のプロパティ
       responseDate: caseItem.responseDate || '',
       amountWithTax: caseItem.amountWithTax || 0,
       isReQuote: caseItem.isReQuote || false,
-      summary: {
-        from: caseItem.move?.fromAddress || '',
-        to: caseItem.move?.toAddress || '',
-        items: caseItem.items?.items?.map(item => item.name) || [],
-        totalPoints: caseItem.items?.totalPoints || 0
-      }
+      // QuoteHistory固有のプロパティ
+      amount: Math.floor((caseItem.amountWithTax || 0) / 1.1), // 税抜き金額を概算
+      isContracted: caseItem.status === '受注',
+      timeBandSurcharges: []
     }));
 
     const normalizedQuotes = demoQuotes.map(quote => ({
@@ -61,7 +64,7 @@ export default function QuoteHistoryPage() {
 
     const today = new Date();
     const updatedQuotes = normalizedQuotes.map(quote => {
-      const moveDate = new Date(quote.moveDate);
+      const moveDate = new Date(quote.move?.moveDate || '');
       const nextDay = new Date(moveDate);
       nextDay.setDate(nextDay.getDate() + 1);
       
@@ -82,7 +85,7 @@ export default function QuoteHistoryPage() {
       
       if (searchTerm) {
         const managementNumber = getManagementNumber(quote.sourceType, quote.id);
-        const matchesCustomerName = quote.customerName.includes(searchTerm);
+        const matchesCustomerName = (quote.customer?.customerName || '').includes(searchTerm);
         const matchesManagementNumber = managementNumber.includes(searchTerm);
         
         if (!matchesCustomerName && !matchesManagementNumber) {
@@ -211,14 +214,14 @@ export default function QuoteHistoryPage() {
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                     <span
                       style={{
-                        fontSize: `clamp(0.625rem, ${32 / Math.max(quote.customerName.length, 1)}rem, 0.875rem)`
+                        fontSize: `clamp(0.625rem, ${32 / Math.max((quote.customer?.customerName || '').length, 1)}rem, 0.875rem)`
                       }}
                     >
-                      {quote.customerName}
+                      {quote.customer?.customerName}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quote.moveDate}
+                    {quote.move?.moveDate}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {quote.responseDate}
