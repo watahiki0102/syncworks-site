@@ -22,7 +22,7 @@ export default function EstimateModeSelector({ selectedMode, onModeChange }: Est
               : 'border-blue-300 bg-white text-blue-700 hover:border-blue-500 hover:bg-blue-50'
           }`}
         >
-          見積済み案件を登録する
+          見積済案件登録
         </button>
         <button
           onClick={() => onModeChange('manual')}
@@ -32,7 +32,7 @@ export default function EstimateModeSelector({ selectedMode, onModeChange }: Est
               : 'border-green-300 bg-white text-green-700 hover:border-green-500 hover:bg-green-50'
           }`}
         >
-          見積前案件を登録する
+          見積＆案件登録
         </button>
       </div>
       <p className="text-sm text-gray-600 text-center mt-3">

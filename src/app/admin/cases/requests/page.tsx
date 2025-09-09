@@ -66,7 +66,9 @@ export default function QuoteRequestsPage() {
           firstName: TEST_CUSTOMERS[0].name.split(' ')[1] || '',
           lastNameKana: '',
           firstNameKana: '',
-          phone: TEST_CUSTOMERS[0].phone
+          phone: TEST_CUSTOMERS[0].phone,
+          email: TEST_CUSTOMERS[0].email || '',
+          customerName: TEST_CUSTOMERS[0].name
         },
         requestDate: '2025-01-15',
         deadline: '2025-01-17',
@@ -92,7 +94,9 @@ export default function QuoteRequestsPage() {
           firstName: TEST_CUSTOMERS[1].name.split(' ')[1] || '',
           lastNameKana: '',
           firstNameKana: '',
-          phone: TEST_CUSTOMERS[1].phone
+          phone: TEST_CUSTOMERS[1].phone,
+          email: TEST_CUSTOMERS[1].email || '',
+          customerName: TEST_CUSTOMERS[1].name
         },
         requestDate: '2025-01-14',
         deadline: '2025-01-16',
@@ -118,7 +122,9 @@ export default function QuoteRequestsPage() {
           firstName: TEST_CUSTOMERS[2].name.split(' ')[1] || '',
           lastNameKana: '',
           firstNameKana: '',
-          phone: TEST_CUSTOMERS[2].phone
+          phone: TEST_CUSTOMERS[2].phone,
+          email: TEST_CUSTOMERS[2].email || '',
+          customerName: TEST_CUSTOMERS[2].name
         },
         requestDate: '2025-01-13',
         deadline: '2025-01-15',
@@ -155,8 +161,7 @@ export default function QuoteRequestsPage() {
       
       if (searchTerm) {
         const managementNumber = getManagementNumber(request.sourceType, request.id);
-        const customerName = `${request.customer.lastName} ${request.customer.firstName}`.trim();
-        const matchesCustomerName = customerName.includes(searchTerm);
+        const matchesCustomerName = request.customer.customerName.includes(searchTerm);
         const matchesManagementNumber = managementNumber.includes(searchTerm);
         
         if (!matchesCustomerName && !matchesManagementNumber) {
@@ -285,7 +290,7 @@ export default function QuoteRequestsPage() {
   const convertToFormSubmission = (request: QuoteRequest) => {
     return {
       id: request.id,
-      customerName: `${request.customer.lastName} ${request.customer.firstName}`.trim(),
+      customerName: request.customer.customerName,
       customerEmail: 'demo@example.com',
       customerPhone: '090-1234-5678',
       moveDate: request.move.moveDate,
@@ -356,7 +361,7 @@ export default function QuoteRequestsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">顧客情報</h3>
-                  <p className="text-gray-600">{`${selectedRequest.customer.lastName} ${selectedRequest.customer.firstName}`.trim()}</p>
+                  <p className="text-gray-600">{selectedRequest.customer.customerName}</p>
                 </div>
                 
                 <div>
@@ -690,7 +695,7 @@ export default function QuoteRequestsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {`${request.customer.lastName} ${request.customer.firstName}`.trim()}
+                    {request.customer.customerName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {request.move.moveDate} {request.move.moveTime}
