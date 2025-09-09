@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import UnavailablePeriodModal from './components/UnavailablePeriodModal';
@@ -986,22 +987,22 @@ function DispatchManagementContent() {
             </div>
             
             <div className="flex items-center gap-3">
-              <button
+              <AdminButton
+                variant="primary"
                 onClick={() => setShowBulkAssignModal(true)}
                 disabled={formSubmissions.filter(s => s.status === 'pending').length === 0}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 一括割り当て
-              </button>
+              </AdminButton>
               <div className="text-sm text-gray-500">
                 未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
               </div>
-              <button
+              <AdminButton
+                variant="secondary"
                 onClick={() => router.push('/admin/dashboard')}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 戻る
-              </button>
+              </AdminButton>
             </div>
           </div>
         </div>

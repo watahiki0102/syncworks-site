@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabs from '@/components/admin/AdminTabs';
+import AdminButton from '@/components/admin/AdminButton';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import ShiftTemplateManager from '@/components/ShiftTemplateManager';
@@ -512,11 +513,13 @@ export default function ShiftManagement() {
   ];
 
   const actions = (
-    <a
-      href="/admin/dispatch"
-      className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-    >
-      🚚 配車管理
+    <a href="/admin/dispatch">
+      <AdminButton
+        variant="primary"
+        icon="🚚"
+      >
+        配車管理
+      </AdminButton>
     </a>
   );
 

@@ -76,9 +76,9 @@ export default function AdminPageHeader({
             {/* 戻るボタン */}
             {showBackButton && (
               <Link href="/admin/dashboard">
-                <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <AdminButton variant="secondary">
                   戻る
-                </button>
+                </AdminButton>
               </Link>
             )}
           </div>

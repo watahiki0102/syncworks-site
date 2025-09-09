@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminButton from '@/components/admin/AdminButton';
 
 interface CaseData {
   id: string;
@@ -132,25 +133,28 @@ function CaseEditPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <a
-                  href={fromPage === 'assignment' ? '/admin/dispatch/assignment' : '/admin/cases'}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  ← {fromPage === 'assignment' ? '案件割り当てに戻る' : '案件管理に戻る'}
+                <a href={fromPage === 'assignment' ? '/admin/dispatch/assignment' : '/admin/cases'}>
+                  <AdminButton
+                    variant="secondary"
+                    icon="←"
+                  >
+                    {fromPage === 'assignment' ? '案件割り当てに戻る' : '案件管理に戻る'}
+                  </AdminButton>
                 </a>
-                <button
+                <AdminButton
+                  variant="secondary"
                   onClick={handleCancel}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   キャンセル
-                </button>
-                <button
+                </AdminButton>
+                <AdminButton
+                  variant="primary"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  loading={isSaving}
                 >
-                  {isSaving ? '保存中...' : '保存'}
-                </button>
+                  保存
+                </AdminButton>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminButton from '@/components/admin/AdminButton';
 import { Truck } from '@/types/shared';
 import { ContractStatus } from '@/types/case';
 
@@ -84,12 +85,13 @@ export default function CasesView({
         <div className="px-4 py-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">新規案件登録</h3>
-            <button
+            <AdminButton
+              variant="primary"
               onClick={() => router.push('/admin/cases/register')}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              icon="+"
             >
-              + 新規案件登録
-            </button>
+              新規案件登録
+            </AdminButton>
           </div>
         </div>
       </div>

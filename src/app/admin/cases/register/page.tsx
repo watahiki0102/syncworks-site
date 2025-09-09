@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminButton from '@/components/admin/AdminButton';
 import EstimateModeSelector from './components/EstimateModeSelector';
 import CaseForm from './components/CaseForm';
 import EstimatePDFButton from './components/EstimatePDFButton';
@@ -110,12 +111,13 @@ export default function CaseRegistrationPage() {
                   管理者専用の案件直接登録フォーム
                 </p>
               </div>
-              <button
+              <AdminButton
+                variant="secondary"
                 onClick={() => router.push('/admin/cases')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                icon="←"
               >
-                ← 案件管理に戻る
-              </button>
+                案件管理に戻る
+              </AdminButton>
             </div>
           </div>
         </header>

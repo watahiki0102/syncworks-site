@@ -61,7 +61,11 @@ export default function QuoteRequestsPage() {
     const demoRequests: QuoteRequest[] = [
       {
         id: '1',
-        customerName: TEST_CUSTOMERS[0].name,
+        customer: {
+          customerName: TEST_CUSTOMERS[0].name,
+          phoneNumber: TEST_CUSTOMERS[0].phone,
+          email: TEST_CUSTOMERS[0].email || ''
+        },
         requestDate: '2025-01-15',
         deadline: '2025-01-17',
         summary: {
