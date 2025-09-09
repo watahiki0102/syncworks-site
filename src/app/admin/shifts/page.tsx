@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import AdminTabs from '@/components/admin/AdminTabs';
 import AdminButton from '@/components/admin/AdminButton';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
@@ -504,13 +503,6 @@ export default function ShiftManagement() {
     });
   };
 
-  const tabs = [
-    { id: 'calendar', label: 'シフト表' },
-    { id: 'employees', label: '従業員管理' },
-    { id: 'templates', label: 'テンプレート' },
-    { id: 'bulk', label: '一括設定' },
-    { id: 'overview', label: '全体概要' }
-  ];
 
   const actions = (
     <a href="/admin/dispatch">
@@ -535,15 +527,6 @@ export default function ShiftManagement() {
           ]}
         />
 
-        <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-            <AdminTabs 
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as 'calendar' | 'employees' | 'templates' | 'bulk' | 'overview')}
-            />
-          </div>
-        </div>
 
         {/* メインコンテンツ */}
         <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
@@ -560,7 +543,7 @@ export default function ShiftManagement() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    📅 シフトカレンダー
+                    📅 シフト表
                   </button>
                   <button
                     onClick={() => setActiveTab('employees')}
@@ -590,7 +573,7 @@ export default function ShiftManagement() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    ⚡ 一括割当
+                    ⚡ 一括設定
                   </button>
                   <button
                     onClick={() => setActiveTab('overview')}
@@ -600,7 +583,7 @@ export default function ShiftManagement() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    📊 全体確認
+                    📊 全体概要
                   </button>
                 </nav>
               </div>

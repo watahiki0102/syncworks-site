@@ -96,13 +96,13 @@ const DateTimeSection = ({
   isRequired
 }: {
   index: number; // 希望日の番号（1, 2, 3）
-  register: UseFormRegister<FormData>;
-  watch: UseFormWatch<FormData>;
-  errors: FieldErrors<FormData>;
+  register: UseFormRegister<Step1FormData>;
+  watch: UseFormWatch<Step1FormData>;
+  errors: FieldErrors<Step1FormData>;
   isRequired: boolean; // 必須項目かどうか
 }) => {
-  const dateField = `date${index}` as keyof FormData;
-  const timeField = `timeSlot${index}` as keyof FormData;
+  const dateField = `date${index}` as keyof Step1FormData;
+  const timeField = `timeSlot${index}` as keyof Step1FormData;
   const selectedDate = watch(dateField);
   const dateError = errors[dateField];
   const timeSlotError = errors[timeField];

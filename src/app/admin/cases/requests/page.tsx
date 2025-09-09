@@ -698,7 +698,7 @@ export default function QuoteRequestsPage() {
                   ポイント
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ステータス
+                  受発注ステータス
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   優先度
