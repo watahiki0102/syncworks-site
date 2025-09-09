@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { QuoteRequest } from '@/types/common';
+import { QuoteRequest, ItemInfo } from '@/types/common';
 import { TruckAvailability } from '../types';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
@@ -18,7 +18,7 @@ export default function QuoteRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [responseStep, setResponseStep] = useState<ResponseStep>('content');
   const [truckAvailability, setTruckAvailability] = useState<TruckAvailability | null>(null);
-  const [editableItems, setEditableItems] = useState<string[]>([]);
+  const [editableItems, setEditableItems] = useState<ItemInfo[]>([]);
   const [editablePoints, setEditablePoints] = useState<number>(0);
   const [manualAmount, setManualAmount] = useState<number>(45000);
   const [contentConfirmed, setContentConfirmed] = useState<boolean>(false);
@@ -80,7 +80,13 @@ export default function QuoteRequestsPage() {
           toAddress: TEST_ADDRESSES[0].to
         },
         items: {
-          items: TEST_ITEMS[0],
+          items: TEST_ITEMS[0].map((itemName, index) => ({
+            id: `item-${index + 1}`,
+            category: 'furniture',
+            name: itemName,
+            quantity: 1,
+            points: 3
+          })),
           totalPoints: TEST_ITEMS[0].length * 3
         },
         status: 'pending',
@@ -108,7 +114,13 @@ export default function QuoteRequestsPage() {
           toAddress: TEST_ADDRESSES[1].to
         },
         items: {
-          items: TEST_ITEMS[1],
+          items: TEST_ITEMS[1].map((itemName, index) => ({
+            id: `item-${index + 1}`,
+            category: 'furniture',
+            name: itemName,
+            quantity: 1,
+            points: 3
+          })),
           totalPoints: TEST_ITEMS[1].length * 3
         },
         status: 'pending',
@@ -136,7 +148,13 @@ export default function QuoteRequestsPage() {
           toAddress: TEST_ADDRESSES[2].to
         },
         items: {
-          items: TEST_ITEMS[2],
+          items: TEST_ITEMS[2].map((itemName, index) => ({
+            id: `item-${index + 1}`,
+            category: 'furniture',
+            name: itemName,
+            quantity: 1,
+            points: 3
+          })),
           totalPoints: TEST_ITEMS[2].length * 3
         },
         status: 'answered',
@@ -298,7 +316,7 @@ export default function QuoteRequestsPage() {
       destinationAddress: request.move.toAddress,
       totalPoints: editablePoints,
       totalCapacity: editablePoints * 50, // 仮の計算
-      itemList: editableItems,
+      itemList: editableItems.map(item => item.name),
       additionalServices: [],
       status: 'pending' as const,
       truckAssignments: [],
@@ -409,13 +427,25 @@ export default function QuoteRequestsPage() {
                     <div key={index} className="flex items-center space-x-2">
                       <input
                         type="text"
-                        value={item}
+                        value={item.name}
                         onChange={(e) => {
                           const newItems = [...editableItems];
-                          newItems[index] = e.target.value;
+                          newItems[index] = { ...newItems[index], name: e.target.value };
                           setEditableItems(newItems);
                         }}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded"
+                      />
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const newItems = [...editableItems];
+                          newItems[index] = { ...newItems[index], quantity: parseInt(e.target.value) || 1 };
+                          setEditableItems(newItems);
+                        }}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded"
+                        placeholder="数量"
+                        min="1"
                       />
                       <button
                         onClick={() => {
@@ -429,7 +459,13 @@ export default function QuoteRequestsPage() {
                     </div>
                   ))}
                   <button
-                    onClick={() => setEditableItems([...editableItems, ''])}
+                    onClick={() => setEditableItems([...editableItems, {
+                      id: `item-${editableItems.length + 1}`,
+                      category: 'furniture',
+                      name: '',
+                      quantity: 1,
+                      points: 3
+                    }])}
                     className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                   >
                     荷物を追加

@@ -328,8 +328,9 @@ export default function Home() {
               <h2 className="mb-6 text-gray-900 text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
                 事業者の皆様へ
               </h2>
-              <p className="text-gray-700 mb-8 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed max-w-2xl mx-auto">
-                引越し事業者として、私たちのサービスに参加し、<br className="hidden md:block" />
+              <p className="text-gray-700 mb-8 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed max-w-3xl mx-auto">
+                引越し事業者・不動産事業者の皆様、<br className="hidden md:block" />
+                私たちのサービスに参加し、<br className="hidden md:block" />
                 より多くのお客様との出会いを創出しませんか？
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -339,7 +340,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  引越し業者登録
+                  事業者登録
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 <motion.button 
@@ -349,22 +350,6 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                 >
                   事業者ログイン
-                </motion.button>
-              </div>
-              
-              {/* 不動産事業者向けCTA */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <p className="text-gray-600 mb-4 text-base">
-                  不動産事業者の方はこちら
-                </p>
-                <motion.button 
-                  className="w-full sm:w-auto text-sm sm:text-base py-3 px-6 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 flex items-center justify-center gap-2 mx-auto shadow-lg"
-                  onClick={() => window.location.href = '/real-estates/register'}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  不動産事業者登録（無料）
-                  <ArrowRight className="w-4 h-4" />
                 </motion.button>
               </div>
             </AnimatedCard>
