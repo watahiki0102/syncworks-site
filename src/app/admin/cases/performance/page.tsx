@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '../lib/unifiedData';
-import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
-import { formatCurrency } from '@/utils/format';
+import { getSourceTypeLabel, getManagementNumber, normalizeSourceType } from '../lib/normalize';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function PerformancePage() {
@@ -63,7 +62,7 @@ export default function PerformancePage() {
       if (searchTerm && 
           !caseItem.customer.customerName.includes(searchTerm) && 
           !caseItem.id.includes(searchTerm) &&
-          !getManagementNumber(caseItem.sourceType, caseItem.id).includes(searchTerm)) {
+          !getManagementNumber(normalizeSourceType(caseItem.sourceType), caseItem.id).includes(searchTerm)) {
         return false;
       }
       
@@ -227,18 +226,18 @@ export default function PerformancePage() {
                 {(filteredCases || []).map((caseItem) => (
                   <tr key={caseItem.id} className="bg-white hover:bg-gray-100">
                     <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
-                      {getManagementNumber(caseItem.sourceType, caseItem.id)}
+                      {getManagementNumber(normalizeSourceType(caseItem.sourceType), caseItem.id)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span 
                         className="inline-block w-24 px-2 py-1 text-center text-gray-900"
                         style={{
                           fontSize: caseItem.sourceType === '外部' 
-                            ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(caseItem.sourceType).length, 1)}rem, 0.75rem)`
+                            ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(normalizeSourceType(caseItem.sourceType)).length, 1)}rem, 0.75rem)`
                             : '0.75rem'
                         }}
                       >
-                        {getSourceTypeLabel(caseItem.sourceType)}
+                        {getSourceTypeLabel(normalizeSourceType(caseItem.sourceType))}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
