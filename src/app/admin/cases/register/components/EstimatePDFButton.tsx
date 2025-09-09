@@ -67,7 +67,7 @@ export default function EstimatePDFButton({ caseId, draftPayload, disabled = fal
         </span>
       ) : (
         <span className="flex items-center">
-          📄 見積もりPDF表示
+          📄 見積PDF表示
         </span>
       )}
     </button>

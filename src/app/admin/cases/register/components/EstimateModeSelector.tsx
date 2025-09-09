@@ -11,7 +11,7 @@ export default function EstimateModeSelector({ selectedMode, onModeChange }: Est
   return (
     <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
       <h2 className="text-xl font-semibold text-gray-900 mb-4 text-center">
-        見積もり方式を選択してください
+        案件登録方式を選択してください
       </h2>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button
@@ -22,7 +22,7 @@ export default function EstimateModeSelector({ selectedMode, onModeChange }: Est
               : 'border-blue-300 bg-white text-blue-700 hover:border-blue-500 hover:bg-blue-50'
           }`}
         >
-          🧮 見積もりを算出する
+          見積済み案件を登録する
         </button>
         <button
           onClick={() => onModeChange('manual')}
@@ -32,7 +32,7 @@ export default function EstimateModeSelector({ selectedMode, onModeChange }: Est
               : 'border-green-300 bg-white text-green-700 hover:border-green-500 hover:bg-green-50'
           }`}
         >
-          ✏️ 手動で概算入力する
+          見積前案件を登録する
         </button>
       </div>
       <p className="text-sm text-gray-600 text-center mt-3">

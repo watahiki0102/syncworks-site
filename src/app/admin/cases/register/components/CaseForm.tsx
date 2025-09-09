@@ -379,7 +379,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 荷物を入力して算出
               </button>
               <p className="text-xs text-gray-500 mt-1 text-center">
-                荷物情報を入力して見積もりを計算します
+                荷物情報を入力して見積を計算します
               </p>
             </div>
             <div>
@@ -532,7 +532,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               onChange={(e) => updateFormData('contractStatus', e.target.value as any)}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="estimate">見積もり</option>
+              <option value="estimate">見積</option>
               <option value="canceled">キャンセル</option>
               <option value="completed">完了</option>
             </select>
@@ -602,7 +602,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
         </button>
       </div>
 
-      {/* 見積もりモーダル */}
+      {/* 見積モーダル */}
       {showEstimateModal && (
         <EstimateModal
           isOpen={showEstimateModal}
@@ -618,7 +618,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   );
 }
 
-// 見積もり計算モーダルコンポーネント
+// 見積計算モーダルコンポーネント
 interface EstimateModalProps {
   isOpen: boolean;
   onClose: () => void;

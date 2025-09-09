@@ -1,6 +1,6 @@
 /**
- * 管理者専用手動案件登録ページコンポーネント
- * - 見積もり算出 or 手動概算入力の2択選択
+ * 管理者専用他社案件登録ページコンポーネント
+ * - 見積算出 or 手動概算入力の2択選択
  * - 単一フォームでの案件登録
  * - PDF表示機能付き
  */
@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminButton from '@/components/admin/AdminButton';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import EstimateModeSelector from './components/EstimateModeSelector';
 import CaseForm from './components/CaseForm';
 import EstimatePDFButton from './components/EstimatePDFButton';
@@ -21,7 +22,7 @@ export default function CaseRegistrationPage() {
   const [formData, setFormData] = useState<any>(null);
 
   /**
-   * 見積もり方式の選択
+   * 見積方式の選択
    */
   const handleModeChange = (mode: EstimateInputMode) => {
     setEstimateMode(mode);
@@ -78,7 +79,7 @@ export default function CaseRegistrationPage() {
         // 管理者登録フラグ
         isManualRegistration: true,
         registeredBy: 'admin',
-        requestSource: '手動登録',
+        requestSource: '他社登録',
         estimateMode: estimateMode
       };
 
@@ -102,29 +103,27 @@ export default function CaseRegistrationPage() {
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
         {/* ヘッダー */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">手動案件登録</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  管理者専用の案件直接登録フォーム
-                </p>
-              </div>
-              <AdminButton
-                variant="secondary"
-                onClick={() => router.push('/admin/cases')}
-                icon="←"
-              >
-                案件管理に戻る
-              </AdminButton>
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader
+          title="他社案件登録"
+          subtitle="他社経由案件の登録フォーム"
+          breadcrumbs={[
+            { label: '案件管理', href: '/admin/cases' },
+            { label: '他社案件登録' }
+          ]}
+          actions={
+            <AdminButton
+              variant="secondary"
+              onClick={() => router.push('/admin/cases')}
+            >
+              戻る
+            </AdminButton>
+          }
+          showBackButton={false}
+        />
 
         {/* メインコンテンツ */}
         <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-          {/* 見積もり方式選択 */}
+          {/* 見積方式選択 */}
           <EstimateModeSelector
             selectedMode={estimateMode}
             onModeChange={handleModeChange}
@@ -136,7 +135,7 @@ export default function CaseRegistrationPage() {
               <div className="px-4 py-5 sm:p-6">
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    {estimateMode === 'calc' ? '見積もり算出' : '手動概算入力'} - 案件登録フォーム
+                    {estimateMode === 'calc' ? '見積済み案件' : '見積前案件'} - 登録フォーム
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
                     必要な情報を入力して案件を登録してください
@@ -173,10 +172,10 @@ export default function CaseRegistrationPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                見積もり方式を選択してください
+                案件登録方式を選択してください
               </h3>
               <p className="text-gray-600">
-                上記の2つの選択肢から、案件の見積もり方式を選択してください。
+                上記の2つの選択肢から、案件登録方式を選択してください。
                 選択後、該当する入力フォームが表示されます。
               </p>
             </div>
