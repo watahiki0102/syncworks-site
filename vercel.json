@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm run ci:check",
+  "framework": "nextjs",
+  "nodejs": "18.x",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
+}

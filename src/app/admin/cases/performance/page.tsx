@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { UnifiedCase } from '../types/unified';
+import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '../lib/unifiedData';
 import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';

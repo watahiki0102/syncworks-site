@@ -9,6 +9,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit --project tsconfig.dev.json",
+    "typecheck:strict": "tsc --noEmit --project tsconfig.strict.json",
+    "typecheck:build": "tsc --noEmit --project tsconfig.json",
+    "prebuild": "echo 'Skipping typecheck for now'",
+    "precommit": "npm run typecheck:strict && npm run lint",
+    "ci:check": "npm run typecheck:strict && npm run lint && npm run build",
     "test": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
     "test:watch": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
     "test:coverage": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
@@ -59,5 +64,9 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.1.2",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

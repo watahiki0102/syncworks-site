@@ -34,25 +34,8 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
  * 見積履歴データを統合案件データに変換
  */
 export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
-  return {
-    id: history.id,
-    customer: { customerName: history.customerName } as any,
-    move: { 
-      moveDate: history.moveDate,
-      fromAddress: history.summary.from,
-      toAddress: history.summary.to
-    } as any,
-    items: {
-      items: history.summary.items.map(item => ({ name: item })) as any,
-      totalPoints: history.summary.totalPoints || 0
-    } as any,
-    type: 'history',
-    status: history.status,
-    responseDate: history.responseDate,
-    amountWithTax: history.amountWithTax,
-    isReQuote: history.isReQuote,
-    sourceType: history.sourceType
-  };
+  // QuoteHistoryは既にUnifiedCaseを拡張しているため、直接返却
+  return history;
 }
 
 /**
@@ -413,7 +396,7 @@ export function filterUnifiedCases(
     // 検索キーワードフィルター
     if (filter.searchTerm) {
       const searchTerm = filter.searchTerm.toLowerCase();
-      const managementNumber = getManagementNumber(caseItem.sourceType, caseItem.id);
+      const managementNumber = getManagementNumber(caseItem.sourceType as any, caseItem.id);
       
       const matchesCustomerName = caseItem.customer?.customerName?.toLowerCase().includes(searchTerm);
       const matchesManagementNumber = managementNumber.toLowerCase().includes(searchTerm);
