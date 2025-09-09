@@ -4,7 +4,8 @@
  */
 
 import { QuoteRequest, QuoteHistory } from '../types';
-import { UnifiedCase, UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
+import { UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
+import { UnifiedCase } from '@/types/common';
 import { normalizeSourceType, getManagementNumber } from './normalize';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
@@ -14,16 +15,16 @@ import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData
 export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
   return {
     id: request.id,
-    customerName: request.customerName,
-    sourceType: request.sourceType,
-    moveDate: request.summary.moveDate,
-    moveTime: request.summary.moveTime,
-    status: request.status as UnifiedCaseStatus,
+    customer: request.customer,
+    move: request.move,
+    items: request.items,
     type: 'request',
+    status: request.status as UnifiedCaseStatus,
     requestDate: request.requestDate,
     deadline: request.deadline,
     priority: request.priority,
-    summary: request.summary
+    sourceType: request.sourceType,
+    referralId: request.referralId
   };
 }
 
@@ -34,20 +35,22 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
 export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
   return {
     id: history.id,
-    customerName: history.customerName,
-    sourceType: history.sourceType,
-    moveDate: history.moveDate,
-    status: history.status,
+    customer: { customerName: history.customerName } as any,
+    move: { 
+      moveDate: history.moveDate,
+      fromAddress: history.summary.from,
+      toAddress: history.summary.to
+    } as any,
+    items: {
+      items: history.summary.items.map(item => ({ name: item })) as any,
+      totalPoints: history.summary.totalPoints || 0
+    } as any,
     type: 'history',
+    status: history.status,
     responseDate: history.responseDate,
     amountWithTax: history.amountWithTax,
     isReQuote: history.isReQuote,
-    summary: {
-      fromAddress: history.summary.from,
-      toAddress: history.summary.to,
-      items: history.summary.items,
-      totalPoints: history.summary.totalPoints || 0
-    }
+    sourceType: history.sourceType
   };
 }
 
@@ -56,6 +59,125 @@ export function convertHistoryToUnified(history: QuoteHistory): UnifiedCase {
  */
 export function generateUnifiedTestData(): UnifiedCase[] {
   const data: UnifiedCase[] = [];
+  
+  // 確実に動作する固定テストデータを最初に追加
+  const fixedTestCases: UnifiedCase[] = [
+    {
+      id: 'req_1',
+      customer: {
+        lastName: '田中',
+        firstName: '太郎',
+        lastNameKana: 'タナカ',
+        firstNameKana: 'タロウ',
+        phone: '090-1234-5678',
+        email: 'tanaka@example.com',
+        customerName: '田中太郎'
+      },
+      move: {
+        moveType: '単身',
+        moveDate: '2024-02-15',
+        moveTime: '午前中',
+        fromAddress: '東京都新宿区西新宿1-1-1',
+        toAddress: '東京都渋谷区渋谷1-1-1'
+      },
+      items: {
+        items: [
+          { id: '1', category: '家電', name: '冷蔵庫（小型）', quantity: 1, points: 15 },
+          { id: '2', category: '家電', name: '洗濯機', quantity: 1, points: 15 },
+          { id: '3', category: '家電', name: 'テレビ（32型）', quantity: 1, points: 10 },
+          { id: '4', category: '家具', name: 'ベッド（シングル）', quantity: 1, points: 10 },
+          { id: '5', category: '生活用品', name: '衣装ケース', quantity: 1, points: 5 },
+          { id: '6', category: '生活用品', name: 'ダンボール箱（10個）', quantity: 1, points: 10 }
+        ],
+        totalPoints: 85
+      },
+      type: 'request',
+      status: '見積依頼',
+      requestDate: '2024-02-10',
+      deadline: '2024-02-13',
+      priority: 'high',
+      sourceType: 'syncmoving'
+    },
+    {
+      id: 'req_2',
+      customer: {
+        lastName: '佐藤',
+        firstName: '花子',
+        lastNameKana: 'サトウ',
+        firstNameKana: 'ハナコ',
+        phone: '090-2345-6789',
+        email: 'sato@example.com',
+        customerName: '佐藤花子'
+      },
+      move: {
+        moveType: '家族',
+        moveDate: '2024-02-20',
+        moveTime: '午後',
+        fromAddress: '東京都中野区中野1-1-1',
+        toAddress: '東京都杉並区阿佐ヶ谷1-1-1'
+      },
+      items: {
+        items: [
+          { id: '1', category: '家電', name: '冷蔵庫（中型）', quantity: 1, points: 20 },
+          { id: '2', category: '家電', name: '洗濯機', quantity: 1, points: 15 },
+          { id: '3', category: '家電', name: 'テレビ（40型）', quantity: 1, points: 15 },
+          { id: '4', category: '家具', name: 'ソファ（2人掛け）', quantity: 1, points: 20 },
+          { id: '5', category: '家具', name: 'ダイニングテーブル', quantity: 1, points: 15 },
+          { id: '6', category: '家具', name: 'ベッド（ダブル）', quantity: 1, points: 15 },
+          { id: '7', category: '生活用品', name: 'ダンボール箱（15個）', quantity: 1, points: 15 }
+        ],
+        totalPoints: 145
+      },
+      type: 'request',
+      status: '見積依頼',
+      requestDate: '2024-02-15',
+      deadline: '2024-02-18',
+      priority: 'medium',
+      sourceType: 'suumo'
+    },
+    {
+      id: 'req_3',
+      customer: {
+        lastName: '高橋',
+        firstName: '次郎',
+        lastNameKana: 'タカハシ',
+        firstNameKana: 'ジロウ',
+        phone: '090-3456-7890',
+        email: 'takahashi@example.com',
+        customerName: '高橋次郎'
+      },
+      move: {
+        moveType: '家族',
+        moveDate: '2024-02-25',
+        moveTime: '14:00-16:00',
+        fromAddress: '東京都品川区品川1-1-1',
+        toAddress: '東京都目黒区目黒1-1-1'
+      },
+      items: {
+        items: [
+          { id: '1', category: '家電', name: '冷蔵庫（大型）', quantity: 1, points: 25 },
+          { id: '2', category: '家電', name: '洗濯機', quantity: 1, points: 15 },
+          { id: '3', category: '家電', name: '乾燥機', quantity: 1, points: 20 },
+          { id: '4', category: '家電', name: 'テレビ（50型）', quantity: 1, points: 20 },
+          { id: '5', category: '家具', name: 'ソファ（3人掛け）', quantity: 1, points: 25 },
+          { id: '6', category: '家具', name: 'ダイニングテーブル（4人用）', quantity: 1, points: 20 },
+          { id: '7', category: '家具', name: 'ベッド', quantity: 2, points: 30 },
+          { id: '8', category: '家具', name: 'タンス', quantity: 2, points: 20 },
+          { id: '9', category: '生活用品', name: 'ダンボール箱（25個）', quantity: 1, points: 25 }
+        ],
+        totalPoints: 285
+      },
+      type: 'request',
+      status: '見積依頼',
+      requestDate: '2024-02-20',
+      deadline: '2024-02-23',
+      priority: 'low',
+      sourceType: '外部'
+    }
+  ];
+  
+  // 固定テストデータを追加
+  data.push(...fixedTestCases);
   
   // 基本的な顧客名パターン
   const customerNames = [
@@ -80,41 +202,88 @@ export function generateUnifiedTestData(): UnifiedCase[] {
     { from: '東京都足立区', to: '東京都北区' }
   ];
 
-  // アイテムパターン
+  // 引越しタイプ別のアイテムパターン（より現実的）
   const itemSets = [
-    ['冷蔵庫', 'テレビ', 'ソファ'],
-    ['洗濯機', 'ベッド', 'テーブル'],
-    ['机', '椅子', '本棚'],
-    ['電子レンジ', '炊飯器', 'エアコン'],
-    ['タンス', 'ドレッサー', 'カーテン'],
-    ['パソコン', 'プリンター', 'デスクチェア'],
-    ['冷蔵庫', '洗濯機', 'エアコン', 'テレビ'],
-    ['ベッド', 'タンス', '鏡台', 'カーペット'],
-    ['ソファ', 'テーブル', 'テレビ台', '照明器具'],
-    ['本棚', '机', '椅子', 'パソコン', 'プリンター']
+    // 単身者向け
+    {
+      type: '単身',
+      items: ['冷蔵庫（小型）', '洗濯機', 'テレビ（32型）', 'ベッド（シングル）', '衣装ケース', 'ダンボール箱（10個）'],
+      totalPoints: 85
+    },
+    {
+      type: '単身',
+      items: ['電子レンジ', '炊飯器', 'パソコンデスク', 'デスクチェア', '本棚', 'ダンボール箱（8個）'],
+      totalPoints: 65
+    },
+    // 2人家族向け
+    {
+      type: '2人',
+      items: ['冷蔵庫（中型）', '洗濯機', 'テレビ（40型）', 'ソファ（2人掛け）', 'ダイニングテーブル', 'ベッド（ダブル）', 'ダンボール箱（15個）'],
+      totalPoints: 145
+    },
+    {
+      type: '2人',
+      items: ['冷蔵庫（中型）', '洗濯機', 'エアコン（2台）', 'タンス', 'テレビ台', 'ダンボール箱（12個）'],
+      totalPoints: 125
+    },
+    // 3-4人家族向け
+    {
+      type: '家族',
+      items: ['冷蔵庫（大型）', '洗濯機', '乾燥機', 'テレビ（50型）', 'ソファ（3人掛け）', 'ダイニングテーブル（4人用）', 'ベッド（2台）', 'タンス（2台）', 'ダンボール箱（25個）'],
+      totalPoints: 285
+    },
+    {
+      type: '家族',
+      items: ['冷蔵庫（大型）', '洗濯機', 'エアコン（3台）', 'テレビ（2台）', '本棚（2台）', '学習机', 'ダンボール箱（30個）'],
+      totalPoints: 320
+    },
+    // オフィス向け
+    {
+      type: 'オフィス',
+      items: ['複合機', 'オフィスデスク（5台）', 'オフィスチェア（5脚）', '書庫（3台）', 'パソコン（5台）', 'ダンボール箱（40個）'],
+      totalPoints: 450
+    },
+    // 高級家具・大型家具
+    {
+      type: '高級',
+      items: ['冷蔵庫（大型）', '洗濯機', 'ピアノ', 'ソファ（革製L字）', 'ダイニングテーブル（高級）', 'ベッド（キング）', '金庫', 'ダンボール箱（20個）'],
+      totalPoints: 520
+    },
+    // 追加パターン
+    {
+      type: '単身',
+      items: ['冷蔵庫（小型）', '洗濯機', 'テレビ（32型）', 'ベッド（シングル）', '衣装ケース', 'ダンボール箱（10個）'],
+      totalPoints: 85
+    },
+    {
+      type: '家族',
+      items: ['冷蔵庫（大型）', '洗濯機', 'エアコン（3台）', 'テレビ（2台）', '本棚（2台）', '学習机', 'ダンボール箱（30個）'],
+      totalPoints: 320
+    }
   ];
 
   // 仲介元パターン
   const sourceTypes = ['syncmoving', 'suumo', '外部'];
   
-  // ステータスパターン
+  // ステータスパターン - 最初の10件は確実に見積依頼にする
   const requestStatuses = ['見積依頼', '見積済'];
   const historyStatuses = ['見積済', '再見積', '受注', '失注', 'キャンセル'];
   
   // 時間パターン
   const times = ['午前中', '午後', '夜間', '14:00-16:00', '10:00-12:00', '18:00-20:00'];
 
-  // 105件のデータを生成
-  for (let i = 0; i < 105; i++) {
-    const isRequest = i < 35; // 最初の35件を依頼データ、残り70件を履歴データ
-    const customerName = customerNames[i % customerNames.length] + (Math.floor(i / customerNames.length) > 0 ? `${Math.floor(i / customerNames.length) + 1}` : '');
+  // ページネーション確認用の動的データ生成（100件以上）
+  for (let i = 3; i < 105; i++) {
+    const isRequest = i < 25; // 最初の25件を依頼データ、残り80件を履歴データ
+    const nameIndex = i % customerNames.length;
+    const customerName = customerNames[nameIndex] + (Math.floor(i / customerNames.length) > 0 ? `${Math.floor(i / customerNames.length) + 1}` : '');
     const address = addresses[i % addresses.length];
-    const items = itemSets[i % itemSets.length];
+    const itemSet = itemSets[i % itemSets.length];
     const sourceType = sourceTypes[i % sourceTypes.length];
     
     // 日付を生成（過去30日から未来30日）
     const baseDate = new Date();
-    const dayOffset = (i % 60) - 30; // -30 to 29
+    const dayOffset = (i % 60) - 30;
     const targetDate = new Date(baseDate.getTime() + dayOffset * 24 * 60 * 60 * 1000);
     const moveDate = targetDate.toISOString().split('T')[0];
     
@@ -124,22 +293,39 @@ export function generateUnifiedTestData(): UnifiedCase[] {
       const deadline = new Date(targetDate.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
       data.push({
-        id: `req_${i + 1}`,
-        customerName,
-        sourceType: sourceType as any,
-        moveDate,
-        moveTime: times[i % times.length],
-        status: requestStatuses[i % requestStatuses.length] as any,
+        id: `req_dyn_${i}`,
+        customer: {
+          lastName: customerName.slice(0, -1),
+          firstName: customerName.slice(-1),
+          lastNameKana: 'カナ',
+          firstNameKana: 'タロウ',
+          phone: `090-${String(1000 + i).slice(-4)}-${String(5678 + i).slice(-4)}`,
+          email: `customer${i}@example.com`,
+          customerName: customerName
+        },
+        move: {
+          moveType: i % 2 === 0 ? '単身' : '家族',
+          moveDate,
+          moveTime: times[i % times.length],
+          fromAddress: address.from,
+          toAddress: address.to
+        },
+        items: {
+          items: itemSet.items.map((itemName, idx) => ({
+            id: `${i}_${idx}`,
+            category: itemName.includes('家電') ? '家電' : itemName.includes('家具') ? '家具' : '生活用品',
+            name: itemName,
+            quantity: 1,
+            points: Math.floor(Math.random() * 20) + 5
+          })),
+          totalPoints: itemSet.totalPoints + (i % 10)
+        },
         type: 'request',
+        status: i < 10 ? '見積依頼' : requestStatuses[i % requestStatuses.length] as any,
         requestDate,
         deadline,
         priority: ['high', 'medium', 'low'][i % 3] as any,
-        summary: {
-          fromAddress: address.from,
-          toAddress: address.to,
-          items,
-          totalPoints: items.length * 3 + (i % 5)
-        }
+        sourceType: sourceType as any
       });
     } else {
       // 履歴データ
@@ -147,21 +333,38 @@ export function generateUnifiedTestData(): UnifiedCase[] {
       const amount = 30000 + (i % 10) * 5000 + Math.floor(i / 10) * 2000;
       
       data.push({
-        id: `hist_${i + 1}`,
-        customerName,
-        sourceType: sourceType as any,
-        moveDate,
-        status: historyStatuses[i % historyStatuses.length] as any,
+        id: `hist_dyn_${i}`,
+        customer: {
+          lastName: customerName.slice(0, -1),
+          firstName: customerName.slice(-1),
+          lastNameKana: 'カナ',
+          firstNameKana: 'タロウ',
+          phone: `090-${String(1000 + i).slice(-4)}-${String(5678 + i).slice(-4)}`,
+          email: `customer${i}@example.com`,
+          customerName: customerName
+        },
+        move: {
+          moveType: i % 2 === 0 ? '単身' : '家族',
+          moveDate,
+          fromAddress: address.from,
+          toAddress: address.to
+        },
+        items: {
+          items: itemSet.items.map((itemName, idx) => ({
+            id: `${i}_${idx}`,
+            category: itemName.includes('家電') ? '家電' : itemName.includes('家具') ? '家具' : '生活用品',
+            name: itemName,
+            quantity: 1,
+            points: Math.floor(Math.random() * 20) + 5
+          })),
+          totalPoints: itemSet.totalPoints + (i % 10)
+        },
         type: 'history',
+        status: historyStatuses[i % historyStatuses.length] as any,
         responseDate,
         amountWithTax: amount,
-        isReQuote: i % 7 === 0, // 約14%の確率で再見積
-        summary: {
-          fromAddress: address.from,
-          toAddress: address.to,
-          items,
-          totalPoints: items.length * 3 + (i % 5)
-        }
+        isReQuote: i % 7 === 0,
+        sourceType: sourceType as any
       });
     }
   }
@@ -211,10 +414,10 @@ export function filterUnifiedCases(
       const searchTerm = filter.searchTerm.toLowerCase();
       const managementNumber = getManagementNumber(caseItem.sourceType, caseItem.id);
       
-      const matchesCustomerName = caseItem.customerName.toLowerCase().includes(searchTerm);
+      const matchesCustomerName = caseItem.customer?.customerName?.toLowerCase().includes(searchTerm);
       const matchesManagementNumber = managementNumber.toLowerCase().includes(searchTerm);
-      const matchesAddress = caseItem.summary?.fromAddress?.toLowerCase().includes(searchTerm) ||
-                           caseItem.summary?.toAddress?.toLowerCase().includes(searchTerm);
+      const matchesAddress = caseItem.move?.fromAddress?.toLowerCase().includes(searchTerm) ||
+                           caseItem.move?.toAddress?.toLowerCase().includes(searchTerm);
       
       if (!matchesCustomerName && !matchesManagementNumber && !matchesAddress) {
         return false;
@@ -243,8 +446,8 @@ export function sortUnifiedCases(cases: UnifiedCase[]): UnifiedCase[] {
     }
 
     // 3. 期限・日付順
-    const aDate = a.deadline || a.requestDate || a.responseDate || a.moveDate;
-    const bDate = b.deadline || b.requestDate || b.responseDate || b.moveDate;
+    const aDate = a.deadline || a.requestDate || a.responseDate || a.move?.moveDate;
+    const bDate = b.deadline || b.requestDate || b.responseDate || b.move?.moveDate;
     
     if (aDate && bDate) {
       return new Date(aDate).getTime() - new Date(bDate).getTime();

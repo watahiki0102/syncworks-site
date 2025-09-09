@@ -1,5 +1,6 @@
 import { SourceType } from './lib/normalize';
 import { UnifiedCaseStatus } from './types/unified';
+import { QuoteRequest, QuoteResponse, UnifiedCase } from '@/types/common';
 
 // SourceTypeをエクスポート
 export type { SourceType };
@@ -16,53 +17,19 @@ export interface TimeBandSurcharge {
 }
 
 /**
- * 見積もり履歴の型定義
+ * 見積もり履歴の型定義（共通型を拡張）
  */
-export interface QuoteHistory {
-  id: string;              // 見積もりID
-  customerName: string;    // 顧客名
-  requestDate: string;     // 依頼日
+export interface QuoteHistory extends UnifiedCase {
   responseDate: string;    // 回答日
   amount: number;          // 見積もり金額（税抜）
   amountWithTax: number;   // 見積もり金額（税込）
-  status: UnifiedCaseStatus;     // ステータス
-  items: string[];         // 荷物リスト
-  fromAddress: string;     // 引越し元住所
-  toAddress: string;       // 引越し先住所
-  moveDate: string;        // 引越し予定日
-  sourceType: SourceType;  // 依頼元種別
   isContracted: boolean;   // 成約フラグ
   isReQuote: boolean;      // 再見積もりフラグ
   timeBandSurcharges: TimeBandSurcharge[]; // 時間帯割増賃金
-  summary: {               // 見積もり概要
-    from: string;          // 引越し元住所
-    to: string;            // 引越し先住所
-    items: string[];       // 荷物リスト
-    totalPoints?: number;  // 総ポイント
-  };
 }
 
 
-/**
- * 見積もり依頼データの型定義
- */
-export interface QuoteRequest {
-  id: string;                    // 依頼ID
-  customerName: string;          // 顧客名
-  requestDate: string;           // 依頼日
-  deadline: string;              // 回答期限
-  summary: {                     // 依頼概要
-    moveDate: string;            // 引越し日
-    moveTime: string;            // 引越し時間帯
-    fromAddress: string;         // 引越し元住所
-    toAddress: string;           // 引越し先住所
-    items: string[];             // 荷物リスト
-    totalPoints: number;         // 総ポイント
-  };
-  status: 'pending' | 'answered' | 'expired';  // ステータス
-  priority: 'high' | 'medium' | 'low';         // 優先度
-  sourceType: SourceType;        // 依頼元種別
-}
+// QuoteRequestは共通型から使用
 
 /**
  * 成約データの型定義

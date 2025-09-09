@@ -55,9 +55,18 @@ export default function AdminLayout({
 }: AdminLayoutProps) {
   const [adminEmail, setAdminEmail] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [pathname, setPathname] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // クライアントサイド判定
+  useEffect(() => {
+    setIsClient(true);
+    if (typeof window !== 'undefined') {
+      setPathname(window.location.pathname);
+    }
+  }, []);
 
   // 設定メニュー外クリックで閉じる
   useEffect(() => {

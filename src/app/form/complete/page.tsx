@@ -10,22 +10,8 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { CompleteData } from '@/types/common';
 
-/**
- * 完了データの型定義
- */
-interface CompleteData {
-  submissionId: string;
-  customerName: string;
-  estimatedPrice: number;
-  recommendedTruckType: string;
-  totalPoints: number;
-  moveDate: string;
-  fromAddress: string;
-  toAddress: string;
-  referralId?: string | null;
-  contactPreference?: 'line' | 'email';
-}
 
 function FormCompleteContent() {
   const searchParams = useSearchParams();

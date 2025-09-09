@@ -10,6 +10,7 @@
 import { useState, useEffect, useReducer } from 'react';
 import TruckManagementModal from './components/TruckManagementModal';
 import { useRouter } from 'next/navigation';
+import { PricingRule, OptionItem } from '@/types/pricing';
 
 /**
  * トラック種別の定義
@@ -72,16 +73,6 @@ const DEFAULT_DISTANCE_RANGES = [
   { maxDistance: 999, basePrice: 15000 },
 ];
 
-/**
- * 料金ルールの型定義
- */
-interface PricingRule {
-  id: string;              // ルールID
-  truckType: string;       // トラック種別
-  minPoint: number;        // 最小ポイント
-  maxPoint: number | undefined; // 最大ポイント
-  price: number | undefined;    // 料金
-}
 
 /**
  * 車種係数の型定義
@@ -130,33 +121,19 @@ const OPTION_TYPES = [
  */
 type OptionType = typeof OPTION_TYPES[number]['value'];
 
-/**
- * オプションアイテムの型定義
- */
-interface OptionItem {
-  id: string;              // オプションID
-  label: string;           // オプション名
-  type: OptionType;        // オプションタイプ
-  price?: number;          // 料金（有料のみ）
-  isDefault?: boolean;     // デフォルト設定かどうか
-  unit?: string;           // 単位
-  remarks?: string;        // 備考
-  minPoint?: number;       // 最小ポイント
-  maxPoint?: number;       // 最大ポイント
-}
 
 /**
  * デフォルトオプション設定
  */
 const DEFAULT_OPTIONS: OptionItem[] = [
-  { id: 'opt-1', label: '🏠 建物養生（壁や床の保護）', type: 'free', isDefault: true },
-  { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'free', isDefault: true },
-  { id: 'opt-3', label: '🪑 家具・家電の分解・組み立て', type: 'free', isDefault: true },
-  { id: 'opt-4', label: '🧺 洗濯機取り外し', type: 'free', isDefault: true },
-  { id: 'opt-5', label: '❄️ エアコン（本体＋室外機）取り外し', type: 'free', isDefault: true },
-  { id: 'opt-6', label: '💡 照明・テレビ配線取り外し', type: 'free', isDefault: true },
-  { id: 'opt-7', label: '🚮 不用品の回収・廃棄', type: 'free', isDefault: true },
-  { id: 'opt-8', label: '🐾 ペット運搬', type: 'free', isDefault: true },
+  { id: 'opt-1', label: '🏠 建物養生（壁や床の保護）', type: 'free' as const, isDefault: true },
+  { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'free' as const, isDefault: true },
+  { id: 'opt-3', label: '🪑 家具・家電の分解・組み立て', type: 'free' as const, isDefault: true },
+  { id: 'opt-4', label: '🧺 洗濯機取り外し', type: 'free' as const, isDefault: true },
+  { id: 'opt-5', label: '❄️ エアコン（本体＋室外機）取り外し', type: 'free' as const, isDefault: true },
+  { id: 'opt-6', label: '💡 照明・テレビ配線取り外し', type: 'free' as const, isDefault: true },
+  { id: 'opt-7', label: '🚮 不用品の回収・廃棄', type: 'free' as const, isDefault: true },
+  { id: 'opt-8', label: '🐾 ペット運搬', type: 'free' as const, isDefault: true },
 ];
 
 export default function PricingStep2Page() {

@@ -9,18 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ITEM_CATEGORIES } from '@/constants/items';
-
-/**
- * 荷物ポイントの型定義
- */
-interface ItemPoint {
-  id: string;           // アイテムID
-  category: string;     // カテゴリ
-  name: string;         // 荷物名
-  points: number;       // 設定ポイント
-  defaultPoints: number; // デフォルトポイント
-  additionalCost: number; // 加算金
-}
+import { ItemPoint } from '@/types/pricing';
 
 export default function PricingStep0Page() {
   const router = useRouter();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase, UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
@@ -9,6 +10,7 @@ import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/norm
 import { formatCurrency } from '@/utils/format';
 
 export default function UnifiedCasesPage() {
+  const router = useRouter();
   const [cases, setCases] = useState<UnifiedCase[]>([]);
   const [filteredCases, setFilteredCases] = useState<UnifiedCase[]>([]);
   const [filter, setFilter] = useState<UnifiedCaseFilter>({
@@ -139,9 +141,8 @@ export default function UnifiedCasesPage() {
    * 見積回答処理 (依頼データ用)
    */
   const handleQuoteResponse = (caseItem: UnifiedCase) => {
-    // 実際の実装では見積回答フォームを表示
-    console.log('見積回答:', caseItem);
-    alert(`${caseItem.customerName}様への見積回答を開始します`);
+    // 見積回答画面に遷移
+    router.push(`/admin/cases/quote-response/${caseItem.id}`);
   };
 
   /**

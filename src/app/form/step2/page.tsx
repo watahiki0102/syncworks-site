@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import ProgressBar from '@/components/ProgressBar';
 import { ITEM_CATEGORY_NAMES } from '@/constants/items';
+import { Step2FormData } from '@/types/common';
 
 /**
  * 自動保存の間隔（ミリ秒）
@@ -52,13 +53,6 @@ const boxSizeOptions = [
   "🏠 51箱以上（3LDK / 4K以上の目安）"
 ];
 
-/**
- * Step2フォームデータの型定義
- */
-interface Step2FormData {
-  items: Record<string, any>;  // 荷物の数量データ
-  itemsRemarks?: string;       // その他備考
-}
 
 export default function Step2FormPage() {
   const { register, handleSubmit, setValue, watch } = useForm<Step2FormData>();

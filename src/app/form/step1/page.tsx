@@ -14,35 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import "react-datepicker/dist/react-datepicker.css";
 
-/**
- * フォームデータの型定義
- */
-interface FormData {
-  moveType: string; // 引越しタイプ
-  lastName: string; // 姓
-  firstName: string; // 名
-  lastNameKana: string; // 姓（カタカナ）
-  firstNameKana: string; // 名（カタカナ）
-  phone: string; // 携帯番号
-  email: string; // メールアドレス
-  date1: string; // 第1希望日
-  date2: string; // 第2希望日
-  date3: string; // 第3希望日
-  timeSlot1: string; // 第1希望時間帯
-  timeSlot2: string; // 第2希望時間帯
-  timeSlot3: string; // 第3希望時間帯
-  fromPostalCode: string; // 引越し元郵便番号
-  fromAddress: string; // 引越し元住所
-  fromResidenceType: string; // 引越し元住宅タイプ
-  fromResidenceOther?: string; // 引越し元その他の住宅タイプ
-  fromFloor: string; // 引越し元階数
-  toPostalCode: string; // 引越し先郵便番号
-  toAddress: string; // 引越し先住所
-  toResidenceType: string; // 引越し先住宅タイプ
-  toResidenceOther?: string; // 引越し先その他の住宅タイプ
-  toFloor: string; // 引越し先階数
-  referralId?: string | null; // 紹介ID（URLから取得）
-}
+import { Step1FormData } from '@/types/common';
 
 /**
  * よく使用されるメールドメイン
@@ -230,10 +202,10 @@ const AddressSection = ({
 }: {
   label: string;
   prefix: 'from' | 'to';
-  register: UseFormRegister<FormData>;
-  watch: UseFormWatch<FormData>;
-  errors: FieldErrors<FormData>;
-  setValue: UseFormSetValue<FormData>;
+  register: UseFormRegister<Step1FormData>;
+  watch: UseFormWatch<Step1FormData>;
+  errors: FieldErrors<Step1FormData>;
+  setValue: UseFormSetValue<Step1FormData>;
 }) => {
   const residenceType = watch(`${prefix}ResidenceType`);
   const isHouse = residenceType === "一軒家";
@@ -360,7 +332,7 @@ function Step1FormContent() {
     formState: { errors },
     watch,
     setValue
-  } = useForm<FormData>({
+  } = useForm<Step1FormData>({
     mode: 'onChange',
     reValidateMode: 'onChange'
   });
@@ -371,7 +343,7 @@ function Step1FormContent() {
     const savedData = loadSavedData();
     if (Object.keys(savedData).length > 0) {
       Object.entries(savedData).forEach(([key, value]) => {
-        setValue(key as keyof FormData, value);
+        setValue(key as keyof Step1FormData, value);
       });
     }
     // 紹介IDをフォームデータに設定
@@ -403,7 +375,7 @@ function Step1FormContent() {
   };
 
   // フォーム送信時の処理
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (data: Step1FormData) => {
     try {
       localStorage.setItem('formStep1', JSON.stringify(data));
       router.push('/form/step2');

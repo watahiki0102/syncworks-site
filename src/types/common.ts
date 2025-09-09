@@ -1,311 +1,233 @@
 /**
- * 共通型定義ファイル
- * アプリケーション全体で使用する基本的な型定義を提供
+ * 共通型定義
+ * フォーム入力、見積依頼、見積回答で共通して使用する型定義
  */
 
 /**
- * 基本的なID型
+ * 顧客情報の型定義
  */
-export type ID = string | number;
-
-/**
- * APIレスポンスの基本型
- */
-export interface ApiResponse<T = unknown> {
-  /** レスポンスデータ */
-  data: T;
-  /** 成功フラグ */
-  success: boolean;
-  /** エラーメッセージ（失敗時） */
-  message?: string;
-  /** エラーコード（失敗時） */
-  errorCode?: string;
-}
-
-/**
- * ページネーション情報
- */
-export interface Pagination {
-  /** 現在のページ番号 */
-  page: number;
-  /** 1ページあたりのアイテム数 */
-  limit: number;
-  /** 総アイテム数 */
-  total: number;
-  /** 総ページ数 */
-  totalPages: number;
-  /** 前のページがあるかどうか */
-  hasPrevious: boolean;
-  /** 次のページがあるかどうか */
-  hasNext: boolean;
-}
-
-/**
- * ページネーション付きデータの型
- */
-export interface PaginatedData<T> {
-  /** データ配列 */
-  items: T[];
-  /** ページネーション情報 */
-  pagination: Pagination;
-}
-
-/**
- * ソート方向
- */
-export type SortDirection = 'asc' | 'desc';
-
-/**
- * ソート設定
- */
-export interface SortConfig<T = string> {
-  /** ソート対象のフィールド */
-  field: T;
-  /** ソート方向 */
-  direction: SortDirection;
-}
-
-/**
- * フィルター条件の基本型
- */
-export interface FilterCondition<T = unknown> {
-  /** フィールド名 */
-  field: string;
-  /** 演算子 */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'like' | 'between';
-  /** 値 */
-  value: T;
-}
-
-/**
- * 検索・フィルター・ソートパラメータ
- */
-export interface SearchParams<T = string> {
-  /** 検索クエリ */
-  query?: string;
-  /** フィルター条件 */
-  filters?: FilterCondition[];
-  /** ソート設定 */
-  sort?: SortConfig<T>;
-  /** ページネーション */
-  page?: number;
-  /** 1ページあたりのアイテム数 */
-  limit?: number;
-}
-
-/**
- * 日付範囲
- */
-export interface DateRange {
-  /** 開始日 */
-  startDate: string;
-  /** 終了日 */
-  endDate: string;
-}
-
-/**
- * 住所情報
- */
-export interface Address {
-  /** 郵便番号 */
-  zipCode?: string;
-  /** 都道府県 */
-  prefecture: string;
-  /** 市区町村 */
-  city: string;
-  /** 町名・番地 */
-  streetAddress: string;
-  /** 建物名・部屋番号 */
-  building?: string;
-  /** 完全な住所（表示用） */
-  fullAddress?: string;
-}
-
-/**
- * 連絡先情報
- */
-export interface ContactInfo {
-  /** 名前 */
-  name: string;
-  /** 名前（カナ） */
-  nameKana?: string;
-  /** メールアドレス */
-  email?: string;
+export interface CustomerInfo {
+  /** 姓 */
+  lastName: string;
+  /** 名 */
+  firstName: string;
+  /** 姓（カタカナ） */
+  lastNameKana: string;
+  /** 名（カタカナ） */
+  firstNameKana: string;
   /** 電話番号 */
-  phone?: string;
-  /** 住所 */
-  address?: Address;
-}
-
-/**
- * ファイル情報
- */
-export interface FileInfo {
-  /** ファイルID */
-  id: string;
-  /** ファイル名 */
-  name: string;
-  /** ファイルサイズ（バイト） */
-  size: number;
-  /** MIMEタイプ */
-  type: string;
-  /** アップロード日時 */
-  uploadedAt: string;
-  /** ファイルURL */
-  url: string;
-}
-
-/**
- * 通貨型
- */
-export type Currency = 'JPY' | 'USD';
-
-/**
- * 金額情報
- */
-export interface Amount {
-  /** 金額 */
-  value: number;
-  /** 通貨 */
-  currency: Currency;
-  /** 税込みかどうか */
-  includesTax?: boolean;
-  /** 税率 */
-  taxRate?: number;
-}
-
-/**
- * 期間情報
- */
-export interface Period {
-  /** 開始日時 */
-  startDateTime: string;
-  /** 終了日時 */
-  endDateTime: string;
-  /** 全日フラグ */
-  allDay?: boolean;
-}
-
-/**
- * 位置情報
- */
-export interface Location {
-  /** 緯度 */
-  latitude: number;
-  /** 経度 */
-  longitude: number;
-  /** 住所（オプション） */
-  address?: string;
-}
-
-/**
- * ステータス基底型
- */
-export interface BaseStatus {
-  /** ステータス値 */
-  value: string;
-  /** 表示名 */
-  label: string;
-  /** 説明 */
-  description?: string;
-  /** カラー（UI表示用） */
-  color?: string;
-}
-
-/**
- * 汎用的なオプション項目
- */
-export interface Option<T = string> {
-  /** 値 */
-  value: T;
-  /** 表示ラベル */
-  label: string;
-  /** 無効化フラグ */
-  disabled?: boolean;
-  /** 説明 */
-  description?: string;
-  /** アイコン（オプション） */
-  icon?: string;
-}
-
-/**
- * ユーザー基本情報
- */
-export interface BaseUser {
-  /** ユーザーID */
-  id: string;
-  /** 名前 */
-  name: string;
+  phone: string;
   /** メールアドレス */
   email: string;
-  /** 作成日時 */
-  createdAt: string;
-  /** 更新日時 */
-  updatedAt: string;
+  /** 顧客名（姓+名の結合） */
+  customerName: string;
 }
 
 /**
- * タイムスタンプ情報
+ * 引越し情報の型定義
  */
-export interface Timestamps {
-  /** 作成日時 */
-  createdAt: string;
-  /** 更新日時 */
-  updatedAt: string;
-  /** 削除日時（論理削除用） */
-  deletedAt?: string;
+export interface MoveInfo {
+  /** 引越しタイプ */
+  moveType: '単身' | '家族';
+  /** 引越し日 */
+  moveDate: string;
+  /** 引越し時間帯 */
+  moveTime?: string;
+  /** 引越し元住所 */
+  fromAddress: string;
+  /** 引越し先住所 */
+  toAddress: string;
+  /** 引越し元郵便番号 */
+  fromPostalCode?: string;
+  /** 引越し先郵便番号 */
+  toPostalCode?: string;
+  /** 引越し元住宅タイプ */
+  fromResidenceType?: string;
+  /** 引越し先住宅タイプ */
+  toResidenceType?: string;
+  /** 引越し元階数 */
+  fromFloor?: string;
+  /** 引越し先階数 */
+  toFloor?: string;
 }
 
 /**
- * エンティティの基底型
+ * 荷物アイテムの型定義
  */
-export interface BaseEntity extends Timestamps {
-  /** エンティティID */
+export interface ItemInfo {
+  /** アイテムID */
   id: string;
+  /** カテゴリ */
+  category: string;
+  /** 荷物名 */
+  name: string;
+  /** 数量 */
+  quantity: number;
+  /** ポイント */
+  points: number;
+  /** 追加コスト */
+  additionalCost?: number;
 }
 
 /**
- * 作成者・更新者情報付きエンティティ
+ * 荷物情報の型定義
  */
-export interface AuditableEntity extends BaseEntity {
-  /** 作成者ID */
-  createdBy?: string;
-  /** 更新者ID */
-  updatedBy?: string;
+export interface ItemsInfo {
+  /** 荷物リスト */
+  items: ItemInfo[];
+  /** 総ポイント */
+  totalPoints: number;
+  /** 備考 */
+  remarks?: string;
 }
 
 /**
- * 検索結果のハイライト情報
+ * 見積依頼の型定義
  */
-export interface SearchHighlight {
-  /** フィールド名 */
-  field: string;
-  /** ハイライトされたテキスト */
-  text: string;
+export interface QuoteRequest {
+  /** 依頼ID */
+  id: string;
+  /** 顧客情報 */
+  customer: CustomerInfo;
+  /** 引越し情報 */
+  move: MoveInfo;
+  /** 荷物情報 */
+  items: ItemsInfo;
+  /** 依頼日 */
+  requestDate: string;
+  /** 回答期限 */
+  deadline: string;
+  /** 優先度 */
+  priority: 'high' | 'medium' | 'low';
+  /** 依頼元種別 */
+  sourceType: string;
+  /** ステータス */
+  status: 'pending' | 'answered' | 'expired';
+  /** 紹介ID */
+  referralId?: string | null;
 }
 
 /**
- * エラー情報
+ * 見積回答の型定義
  */
-export interface ErrorInfo {
-  /** エラーコード */
-  code: string;
-  /** エラーメッセージ */
-  message: string;
-  /** 詳細情報 */
-  details?: Record<string, unknown>;
-  /** スタックトレース（開発環境用） */
-  stack?: string;
+export interface QuoteResponse {
+  /** 回答ID */
+  id: string;
+  /** 依頼ID */
+  requestId: string;
+  /** 回答タイプ */
+  responseType: 'quote' | 'unavailable';
+  /** 基本料金（見積可能時のみ） */
+  basicAmount?: number;
+  /** オプション料金（見積可能時のみ） */
+  optionAmount?: number;
+  /** 税込総額（見積可能時のみ） */
+  totalAmountWithTax?: number;
+  /** 見積有効期限（見積可能時のみ） */
+  validUntil?: string;
+  /** 回答コメント */
+  comment: string;
+  /** 特記事項 */
+  notes?: string;
+  /** 回答日時 */
+  respondedAt: string;
+  /** 回答者 */
+  respondedBy: string;
 }
 
 /**
- * 汎用的なキー・バリューペア
+ * 統合案件データの型定義
  */
-export interface KeyValue<T = unknown> {
-  /** キー */
-  key: string;
-  /** 値 */
-  value: T;
+export interface UnifiedCase {
+  /** 案件ID */
+  id: string;
+  /** 顧客情報 */
+  customer: CustomerInfo;
+  /** 引越し情報 */
+  move: MoveInfo;
+  /** 荷物情報 */
+  items: ItemsInfo;
+  /** 案件タイプ */
+  type: 'request' | 'history';
+  /** ステータス */
+  status: '見積依頼' | '見積済' | '再見積' | '受注' | '失注' | 'キャンセル';
+  /** 依頼固有のフィールド */
+  requestDate?: string;
+  deadline?: string;
+  priority?: 'high' | 'medium' | 'low';
+  /** 履歴固有のフィールド */
+  responseDate?: string;
+  amountWithTax?: number;
+  isReQuote?: boolean;
+  /** 見積回答 */
+  quoteResponse?: QuoteResponse;
+  /** 依頼元種別 */
+  sourceType: string;
+  /** 紹介ID */
+  referralId?: string | null;
 }
 
-// 型定義はexportのみで、default exportは不要
+/**
+ * フォーム入力データの型定義
+ */
+export interface FormInputData {
+  /** 顧客情報 */
+  customer: CustomerInfo;
+  /** 引越し情報 */
+  move: MoveInfo;
+  /** 荷物情報 */
+  items: ItemsInfo;
+  /** 紹介ID */
+  referralId?: string | null;
+}
+
+/**
+ * フォームステップ別の型定義
+ */
+export interface Step1FormData {
+  moveType: '単身' | '家族';
+  lastName: string;
+  firstName: string;
+  lastNameKana: string;
+  firstNameKana: string;
+  phone: string;
+  email: string;
+  date1: string;
+  date2: string;
+  date3: string;
+  timeSlot1: string;
+  timeSlot2: string;
+  timeSlot3: string;
+  fromPostalCode: string;
+  fromAddress: string;
+  fromResidenceType: string;
+  fromResidenceOther?: string;
+  fromFloor: string;
+  toPostalCode: string;
+  toAddress: string;
+  toResidenceType: string;
+  toResidenceOther?: string;
+  toFloor: string;
+  referralId?: string | null;
+}
+
+export interface Step2FormData {
+  items: Record<string, any>;
+  itemsRemarks?: string;
+}
+
+/**
+ * 完了データの型定義
+ */
+export interface CompleteData {
+  submissionId: string;
+  customerName: string;
+  estimatedPrice: number;
+  recommendedTruckType: string;
+  totalPoints: number;
+  moveDate: string;
+  fromAddress: string;
+  toAddress: string;
+  referralId?: string | null;
+  contactPreference?: 'line' | 'email';
+}

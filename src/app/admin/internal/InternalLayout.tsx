@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface InternalLayoutProps {
@@ -16,7 +16,16 @@ const navigation = [
 ];
 
 export default function InternalLayout({ children }: InternalLayoutProps) {
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  // クライアントサイド判定とパス名取得
+  useEffect(() => {
+    setIsClient(true);
+    if (typeof window !== 'undefined') {
+      setPathname(window.location.pathname);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ width: '100vw', maxWidth: '100vw' }}>

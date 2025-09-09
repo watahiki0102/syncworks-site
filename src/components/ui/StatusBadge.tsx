@@ -1,4 +1,5 @@
-import { UnifiedCase, STATUS_STYLES } from '@/app/admin/cases/types/unified';
+import { STATUS_STYLES } from '@/app/admin/cases/types/unified';
+import { UnifiedCase } from '@/types/common';
 
 // StatusVariant型を定義
 export type StatusVariant = 'warning' | 'info' | 'success' | 'error' | 'neutral';

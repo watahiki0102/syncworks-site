@@ -4,38 +4,7 @@
  */
 
 import { SourceType } from '../types';
-
-/**
- * 統合案件データの型定義
- * 見積依頼(QuoteRequest)と見積履歴(QuoteHistory)を統合
- */
-export interface UnifiedCase {
-  id: string;
-  customerName: string;
-  sourceType: SourceType;
-  moveDate: string;
-  moveTime?: string;
-  status: UnifiedCaseStatus;
-  type: 'request' | 'history';
-  
-  // 依頼固有のフィールド
-  requestDate?: string;
-  deadline?: string;
-  priority?: 'high' | 'medium' | 'low';
-  
-  // 履歴固有のフィールド
-  responseDate?: string;
-  amountWithTax?: number;
-  isReQuote?: boolean;
-  
-  // 共通フィールド
-  summary?: {
-    fromAddress: string;
-    toAddress: string;
-    items: string[];
-    totalPoints: number;
-  };
-}
+import { UnifiedCase } from '@/types/common';
 
 /**
  * 統合ステータス型
@@ -131,3 +100,51 @@ export const PRIORITY_STYLES = {
   medium: { bgColor: 'bg-yellow-100', textColor: 'text-yellow-800', label: '中' },
   low: { bgColor: 'bg-green-100', textColor: 'text-green-800', label: '低' }
 } as const;
+
+/**
+ * 見積回答データ型
+ */
+export interface QuoteResponseData {
+  responseType: 'quote' | 'unavailable';
+  basicAmount?: number;
+  optionAmount?: number;
+  totalAmountWithTax?: number;
+  validUntil?: string;
+  comment: string;
+  notes?: string;
+  respondedAt: string;
+  respondedBy: string;
+}
+
+/**
+ * フォーム入力用データ型
+ */
+export interface QuoteResponseFormData {
+  /** 回答タイプ */
+  responseType: 'quote' | 'unavailable';
+  /** 基本料金（文字列） */
+  basicAmount: string;
+  /** オプション料金（文字列） */
+  optionAmount: string;
+  /** 見積有効期限 */
+  validUntil: string;
+  /** 回答コメント */
+  comment: string;
+  /** 特記事項 */
+  notes: string;
+  /** 価格調整理由 */
+  adjustmentReason?: string;
+}
+
+/**
+ * フォームエラー型
+ */
+export interface QuoteResponseFormErrors {
+  responseType?: string;
+  basicAmount?: string;
+  optionAmount?: string;
+  validUntil?: string;
+  comment?: string;
+  adjustmentReason?: string;
+  submit?: string;
+}
