@@ -68,11 +68,14 @@ export default function QuoteRequestsPage() {
         },
         requestDate: '2025-01-15',
         deadline: '2025-01-17',
-        summary: {
+        move: {
+          moveType: '単身',
           moveDate: '2025-02-01',
           moveTime: '午前中',
           fromAddress: TEST_ADDRESSES[0].from,
-          toAddress: TEST_ADDRESSES[0].to,
+          toAddress: TEST_ADDRESSES[0].to
+        },
+        items: {
           items: TEST_ITEMS[0],
           totalPoints: TEST_ITEMS[0].length * 3
         },
@@ -82,14 +85,21 @@ export default function QuoteRequestsPage() {
       },
       {
         id: '2',
-        customerName: TEST_CUSTOMERS[1].name,
+        customer: {
+          customerName: TEST_CUSTOMERS[1].name,
+          phoneNumber: TEST_CUSTOMERS[1].phone,
+          email: TEST_CUSTOMERS[1].email || ''
+        },
         requestDate: '2025-01-14',
         deadline: '2025-01-16',
-        summary: {
+        move: {
+          moveType: '家族',
           moveDate: '2025-01-30',
           moveTime: '午後',
           fromAddress: TEST_ADDRESSES[1].from,
-          toAddress: TEST_ADDRESSES[1].to,
+          toAddress: TEST_ADDRESSES[1].to
+        },
+        items: {
           items: TEST_ITEMS[1],
           totalPoints: TEST_ITEMS[1].length * 3
         },
@@ -99,14 +109,21 @@ export default function QuoteRequestsPage() {
       },
       {
         id: '3',
-        customerName: TEST_CUSTOMERS[2].name,
+        customer: {
+          customerName: TEST_CUSTOMERS[2].name,
+          phoneNumber: TEST_CUSTOMERS[2].phone,
+          email: TEST_CUSTOMERS[2].email || ''
+        },
         requestDate: '2025-01-13',
         deadline: '2025-01-15',
-        summary: {
+        move: {
+          moveType: '単身',
           moveDate: '2025-01-28',
           moveTime: '夜間',
           fromAddress: TEST_ADDRESSES[2].from,
-          toAddress: TEST_ADDRESSES[2].to,
+          toAddress: TEST_ADDRESSES[2].to
+        },
+        items: {
           items: TEST_ITEMS[2],
           totalPoints: TEST_ITEMS[2].length * 3
         },
@@ -132,7 +149,7 @@ export default function QuoteRequestsPage() {
       
       if (searchTerm) {
         const managementNumber = getManagementNumber(request.sourceType, request.id);
-        const matchesCustomerName = request.customerName.includes(searchTerm);
+        const matchesCustomerName = request.customer.customerName.includes(searchTerm);
         const matchesManagementNumber = managementNumber.includes(searchTerm);
         
         if (!matchesCustomerName && !matchesManagementNumber) {
@@ -173,13 +190,13 @@ export default function QuoteRequestsPage() {
   const startResponse = (request: QuoteRequest) => {
     setSelectedRequest(request);
     setResponseStep('content');
-    setEditableItems([...request.summary.items]);
-    setEditablePoints(request.summary.totalPoints);
+    setEditableItems([...request.items.items]);
+    setEditablePoints(request.items.totalPoints);
     setContentConfirmed(false);
     
     // トラック空き状況の取得（デモデータ）
     const mockAvailability: TruckAvailability = {
-      date: request.summary.moveDate,
+      date: request.move.moveDate,
       availableTrucks: Math.random() > 0.3 ? 2 : 0, // 30%の確率で空きなし
       totalTrucks: 5,
       timeSlots: {
@@ -261,12 +278,12 @@ export default function QuoteRequestsPage() {
   const convertToFormSubmission = (request: QuoteRequest) => {
     return {
       id: request.id,
-      customerName: request.customerName,
+      customerName: request.customer.customerName,
       customerEmail: 'demo@example.com',
       customerPhone: '090-1234-5678',
-      moveDate: request.summary.moveDate,
-      originAddress: request.summary.fromAddress,
-      destinationAddress: request.summary.toAddress,
+      moveDate: request.move.moveDate,
+      originAddress: request.move.fromAddress,
+      destinationAddress: request.move.toAddress,
       totalPoints: editablePoints,
       totalCapacity: editablePoints * 50, // 仮の計算
       itemList: editableItems,
@@ -332,7 +349,7 @@ export default function QuoteRequestsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">顧客情報</h3>
-                  <p className="text-gray-600">{selectedRequest.customerName}</p>
+                  <p className="text-gray-600">{selectedRequest.customer.customerName}</p>
                 </div>
                 
                 <div>
@@ -343,7 +360,7 @@ export default function QuoteRequestsPage() {
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">引越し日時</h3>
                   <p className="text-gray-600">
-                    {selectedRequest.summary.moveDate} {selectedRequest.summary.moveTime}
+                    {selectedRequest.move.moveDate} {selectedRequest.move.moveTime}
                   </p>
                 </div>
                 
@@ -364,11 +381,11 @@ export default function QuoteRequestsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">引越し元</p>
-                    <p className="text-gray-600">{selectedRequest.summary.fromAddress}</p>
+                    <p className="text-gray-600">{selectedRequest.move.fromAddress}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">引越し先</p>
-                    <p className="text-gray-600">{selectedRequest.summary.toAddress}</p>
+                    <p className="text-gray-600">{selectedRequest.move.toAddress}</p>
                   </div>
                 </div>
               </div>
@@ -508,7 +525,7 @@ export default function QuoteRequestsPage() {
                   <div className="space-y-2 text-sm">
                     <div><span className="font-medium">総ポイント:</span> {editablePoints}ポイント</div>
                     <div><span className="font-medium">荷物数:</span> {editableItems.length}点</div>
-                    <div><span className="font-medium">作業時間:</span> 約4時間（{selectedRequest.summary.moveTime}）</div>
+                    <div><span className="font-medium">作業時間:</span> 約4時間（{selectedRequest.move.moveTime}）</div>
                   </div>
                 </div>
                 
@@ -666,10 +683,10 @@ export default function QuoteRequestsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {request.customerName}
+                    {request.customer.customerName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {request.summary.moveDate} {request.summary.moveTime}
+                    {request.move.moveDate} {request.move.moveTime}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={getDeadlineColor(request.deadline)}>
@@ -677,7 +694,7 @@ export default function QuoteRequestsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {request.summary.totalPoints}pt
+                    {request.items.totalPoints}pt
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
