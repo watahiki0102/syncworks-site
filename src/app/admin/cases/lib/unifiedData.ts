@@ -8,7 +8,6 @@ import { QuoteHistory } from '../types';
 import { UnifiedCaseStatus, UnifiedCaseFilter, STATUS_FILTERS } from '../types/unified';
 import { UnifiedCase } from '@/types/common';
 import { normalizeSourceType, getManagementNumber } from './normalize';
-import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 /**
  * 見積依頼データを統合案件データに変換
@@ -25,7 +24,7 @@ export function convertRequestToUnified(request: QuoteRequest): UnifiedCase {
     deadline: request.deadline,
     priority: request.priority,
     sourceType: request.sourceType,
-    referralId: request.referralId
+    referralId: request.referralId ?? null
   };
 }
 

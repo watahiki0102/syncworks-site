@@ -4,7 +4,6 @@
  */
 
 import { SourceType } from '../types';
-import { UnifiedCase } from '@/types/common';
 
 /**
  * 統合ステータス型

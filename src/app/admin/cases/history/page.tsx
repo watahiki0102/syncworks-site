@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import { QuoteHistory, TimeBandSurcharge } from '../types';
+import { QuoteHistory } from '../types';
 import { UnifiedCaseStatus } from '../types/unified';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber, isSourceTypeEditable } from '../lib/normalize';
 import { generateUnifiedTestData } from '../lib/unifiedData';
@@ -12,14 +12,12 @@ export default function QuoteHistoryPage() {
   const [filteredQuotes, setFilteredQuotes] = useState<QuoteHistory[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingQuote, setEditingQuote] = useState<QuoteHistory | null>(null);
-  const [editingSurcharges, setEditingSurcharges] = useState<TimeBandSurcharge[]>([]);
   const [viewingQuote, setViewingQuote] = useState<QuoteHistory | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // ドロップダウンの外側をクリックしたときに閉じる
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = () => {
       if (openDropdown) {
         setOpenDropdown(null);
       }
@@ -46,7 +44,7 @@ export default function QuoteHistoryPage() {
       type: caseItem.type,
       status: caseItem.status,
       sourceType: caseItem.sourceType,
-      referralId: caseItem.referralId,
+      referralId: caseItem.referralId ?? null,
       // 履歴固有のプロパティ
       responseDate: caseItem.responseDate || '',
       amountWithTax: caseItem.amountWithTax || 0,
@@ -101,21 +99,6 @@ export default function QuoteHistoryPage() {
 
 
 
-  const calculateTotalWithTax = (baseAmount: number, surcharges: TimeBandSurcharge[]) => {
-    let total = baseAmount;
-    
-    surcharges.forEach(surcharge => {
-      if (surcharge.kind === 'rate') {
-        total *= surcharge.value;
-      } else {
-        total += surcharge.value;
-      }
-    });
-    
-    total *= 1.1;
-    
-    return Math.round(total);
-  };
 
 
 

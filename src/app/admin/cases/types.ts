@@ -1,6 +1,5 @@
 import { SourceType } from './lib/normalize';
-import { UnifiedCaseStatus } from './types/unified';
-import { QuoteRequest, QuoteResponse, UnifiedCase } from '@/types/common';
+import { UnifiedCase } from '@/types/common';
 
 // SourceTypeをエクスポート
 export type { SourceType };
