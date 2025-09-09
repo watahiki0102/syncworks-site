@@ -275,11 +275,11 @@ export function generateUnifiedTestData(): UnifiedCase[] {
   // ページネーション確認用の動的データ生成（100件以上）
   for (let i = 3; i < 105; i++) {
     const isRequest = i < 25; // 最初の25件を依頼データ、残り80件を履歴データ
-    const nameIndex = i % customerNames.length;
+    const nameIndex = i % Math.max(customerNames.length, 1);
     const customerName = customerNames[nameIndex] + (Math.floor(i / customerNames.length) > 0 ? `${Math.floor(i / customerNames.length) + 1}` : '');
-    const address = addresses[i % addresses.length];
-    const itemSet = itemSets[i % itemSets.length];
-    const sourceType = sourceTypes[i % sourceTypes.length];
+    const address = addresses[i % Math.max(addresses.length, 1)];
+    const itemSet = itemSets[i % Math.max(itemSets.length, 1)];
+    const sourceType = sourceTypes[i % Math.max(sourceTypes.length, 1)];
     
     // 日付を生成（過去30日から未来30日）
     const baseDate = new Date();
@@ -306,22 +306,22 @@ export function generateUnifiedTestData(): UnifiedCase[] {
         move: {
           moveType: i % 2 === 0 ? '単身' : '家族',
           moveDate,
-          moveTime: times[i % times.length],
+          moveTime: times[i % Math.max(times.length, 1)],
           fromAddress: address.from,
           toAddress: address.to
         },
         items: {
-          items: itemSet.items.map((itemName, idx) => ({
+          items: (itemSet.items || []).map((itemName, idx) => ({
             id: `${i}_${idx}`,
             category: itemName.includes('家電') ? '家電' : itemName.includes('家具') ? '家具' : '生活用品',
             name: itemName,
             quantity: 1,
             points: Math.floor(Math.random() * 20) + 5
           })),
-          totalPoints: itemSet.totalPoints + (i % 10)
+          totalPoints: (itemSet.totalPoints || 0) + (i % 10)
         },
         type: 'request',
-        status: i < 10 ? '見積依頼' : requestStatuses[i % requestStatuses.length] as any,
+        status: i < 10 ? '見積依頼' : requestStatuses[i % Math.max(requestStatuses.length, 1)] as any,
         requestDate,
         deadline,
         priority: ['high', 'medium', 'low'][i % 3] as any,
@@ -350,17 +350,17 @@ export function generateUnifiedTestData(): UnifiedCase[] {
           toAddress: address.to
         },
         items: {
-          items: itemSet.items.map((itemName, idx) => ({
+          items: (itemSet.items || []).map((itemName, idx) => ({
             id: `${i}_${idx}`,
             category: itemName.includes('家電') ? '家電' : itemName.includes('家具') ? '家具' : '生活用品',
             name: itemName,
             quantity: 1,
             points: Math.floor(Math.random() * 20) + 5
           })),
-          totalPoints: itemSet.totalPoints + (i % 10)
+          totalPoints: (itemSet.totalPoints || 0) + (i % 10)
         },
         type: 'history',
-        status: historyStatuses[i % historyStatuses.length] as any,
+        status: historyStatuses[i % Math.max(historyStatuses.length, 1)] as any,
         responseDate,
         amountWithTax: amount,
         isReQuote: i % 7 === 0,

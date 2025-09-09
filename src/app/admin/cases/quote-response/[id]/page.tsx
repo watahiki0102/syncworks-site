@@ -202,7 +202,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
 
   // 自動見積算出
   useEffect(() => {
-    if (!caseItem || !pricingData.itemPoints.length || !pricingData.pricingRules.length) return;
+    if (!caseItem || !pricingData.itemPoints?.length || !pricingData.pricingRules?.length) return;
     
     const calculateAutoQuote = () => {
       // 1. 総ポイント計算
@@ -233,7 +233,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
       console.log('距離料金:', distancePrice);
       
       // 4. オプション料金（基本的なオプション）
-      const optionPrice = pricingData.options.length > 0 ? pricingData.options[0].price || 5000 : 5000;
+      const optionPrice = pricingData.options?.length > 0 ? pricingData.options[0].price || 5000 : 5000;
       
       console.log('オプション料金:', optionPrice);
       
