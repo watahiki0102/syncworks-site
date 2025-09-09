@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { UnifiedCase, UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
+import { UnifiedCase } from '@/types/common';
+import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
 import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
 import { SourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
@@ -293,9 +294,9 @@ export default function UnifiedCasesPage() {
 
   return (
     <AdminAuthGuard>    
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <div className="space-y-4 mb-6">
+      <div className="container mx-auto px-4 py-4">
+        <div className="mb-4">
+          <div className="space-y-4 mb-4">
             {/* ステータスフィルター（チェックボックス）と検索 */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-start gap-6">
@@ -387,7 +388,7 @@ export default function UnifiedCasesPage() {
         </div>
 
         {/* 件数表示 */}
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-3 flex justify-between items-center">
           <p className="text-sm text-gray-700">
             <span className="font-medium">{filteredCases?.length || 0}件</span>
             <span className="text-gray-500 ml-1">
@@ -556,7 +557,7 @@ export default function UnifiedCasesPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-semibold">案件詳細 - {viewingCase.customerName}</h3>
+                <h3 className="text-2xl font-semibold">案件詳細 - {viewingCase.customer.customerName}</h3>
                 <button
                   onClick={() => setViewingCase(null)}
                   className="text-gray-500 hover:text-gray-700"
@@ -571,8 +572,8 @@ export default function UnifiedCasesPage() {
                 <div>
                   <h4 className="text-lg font-medium mb-4">基本情報</h4>
                   <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">顧客名:</span> {viewingCase.customerName}</div>
-                    <div><span className="font-medium">引越し日:</span> {viewingCase.moveDate}</div>
+                    <div><span className="font-medium">顧客名:</span> {viewingCase.customer.customerName}</div>
+                    <div><span className="font-medium">引越し日:</span> {viewingCase.move.moveDate}</div>
                     <div><span className="font-medium">ステータス:</span> {STATUS_STYLES[viewingCase.status].label}</div>
                     <div><span className="font-medium">仲介元:</span> {getSourceTypeLabel(viewingCase.sourceType)}</div>
                     {viewingCase.type === 'request' && viewingCase.priority && (
@@ -587,10 +588,10 @@ export default function UnifiedCasesPage() {
                 <div>
                   <h4 className="text-lg font-medium mb-4">引越し詳細</h4>
                   <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">引越し元:</span> {viewingCase.summary?.fromAddress}</div>
-                    <div><span className="font-medium">引越し先:</span> {viewingCase.summary?.toAddress}</div>
-                    <div><span className="font-medium">荷物:</span> {viewingCase.summary?.items?.join(', ')}</div>
-                    <div><span className="font-medium">ポイント:</span> {viewingCase.summary?.totalPoints}pt</div>
+                    <div><span className="font-medium">引越し元:</span> {viewingCase.move.fromAddress}</div>
+                    <div><span className="font-medium">引越し先:</span> {viewingCase.move.toAddress}</div>
+                    <div><span className="font-medium">荷物:</span> {viewingCase.items.items.map(item => item.name).join(', ')}</div>
+                    <div><span className="font-medium">ポイント:</span> {viewingCase.items.totalPoints}pt</div>
                   </div>
                 </div>
               </div>
