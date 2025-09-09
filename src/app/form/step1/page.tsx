@@ -65,7 +65,7 @@ const STYLES = {
  * ローカルストレージから保存されたデータを読み込み
  * @returns 保存されたフォームデータ
  */
-const loadSavedData = (): Partial<FormData> => {
+const loadSavedData = (): Partial<Step1FormData> => {
   if (typeof window === 'undefined') return {};
 
   const saved = localStorage.getItem('formStep1');
@@ -343,7 +343,7 @@ function Step1FormContent() {
     const savedData = loadSavedData();
     if (Object.keys(savedData).length > 0) {
       Object.entries(savedData).forEach(([key, value]) => {
-        setValue(key as keyof Step1FormData, value);
+        setValue(key as keyof Step1FormData, value as any);
       });
     }
     // 紹介IDをフォームデータに設定
