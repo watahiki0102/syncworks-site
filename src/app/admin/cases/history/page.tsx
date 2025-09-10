@@ -169,7 +169,7 @@ export default function QuoteHistoryPage() {
                   金額（税込）
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  受発注ステータス
+                  受注ステータス
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作
