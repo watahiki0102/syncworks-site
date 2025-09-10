@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 /**
  * オプションタイプの定義
@@ -372,12 +372,18 @@ export default function AdminProfile() {
 
   return (
     <AdminAuthGuard>
-      <AdminLayout
-        title="基本情報設定" 
-        subtitle="事業者情報の編集・更新"
-      >
-        <div className="max-w-4xl mx-auto">
-          <div className="px-4 py-6 sm:px-0">
+      <div className="min-h-screen bg-gray-50">
+        <AdminPageHeader 
+          title="基本情報設定"
+          subtitle="事業者情報の編集・更新"
+          breadcrumbs={[
+            { label: '基本情報設定' }
+          ]}
+        />
+        
+        <main className="max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="px-4 py-2 sm:px-0">
+            <div className="max-w-4xl mx-auto">
             <div className="bg-white shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -832,9 +838,10 @@ export default function AdminProfile() {
                 </form>
               </div>
             </div>
+            </div>
           </div>
-        </div>
-      </AdminLayout>
+        </main>
+      </div>
     </AdminAuthGuard>
   );
 } 
