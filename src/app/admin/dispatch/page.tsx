@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
@@ -56,7 +57,6 @@ function DispatchManagementContent() {
   const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'trucks' | 'cases'>('calendar');
-  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
@@ -73,134 +73,7 @@ function DispatchManagementContent() {
   
   const router = useRouter();
 
-  // 配車テンプレート定義
-  const dispatchTemplates = [
-    {
-      id: 'standard-single',
-      name: '標準単発配車',
-      description: '1台のトラックで完結する標準的な配車',
-      settings: {
-        truckCount: 1,
-        workerCount: 2,
-        timeBuffer: 30, // 分
-        autoAssignWorkers: true,
-        preferredTruckTypes: ['2tショート', '2tロング']
-      }
-    },
-    {
-      id: 'large-scale',
-      name: '大規模配車',
-      description: '複数台のトラックが必要な大規模な引越し',
-      settings: {
-        truckCount: 2,
-        workerCount: 4,
-        timeBuffer: 60,
-        autoAssignWorkers: true,
-        preferredTruckTypes: ['3t', '4t']
-      }
-    },
-    {
-      id: 'quick-delivery',
-      name: '急行配送',
-      description: '時間を重視した迅速な配送',
-      settings: {
-        truckCount: 1,
-        workerCount: 3,
-        timeBuffer: 15,
-        autoAssignWorkers: true,
-        preferredTruckTypes: ['軽トラ', '2tショート']
-      }
-    },
-    {
-      id: 'custom',
-      name: 'カスタム設定',
-      description: '個別にカスタマイズした配車設定',
-      settings: {
-        truckCount: 1,
-        workerCount: 2,
-        timeBuffer: 30,
-        autoAssignWorkers: false,
-        preferredTruckTypes: []
-      }
-    }
-  ];
 
-  // 一括割り当て機能
-  const handleBulkAssign = async (submissionIds: string[], templateId: string) => {
-    const template = dispatchTemplates.find(t => t.id === templateId);
-    if (!template) {
-      alert('テンプレートが見つかりません');
-      return;
-    }
-
-    const submissionsToAssign = formSubmissions.filter(s => submissionIds.includes(s.id));
-    
-    for (const submission of submissionsToAssign) {
-      // テンプレート設定に基づいてトラック選択
-      const availableTrucks = trucks.filter(truck => 
-        truck.status === 'available' && 
-        (template.settings.preferredTruckTypes.length === 0 || 
-         template.settings.preferredTruckTypes.includes(truck.truckType))
-      );
-
-      if (availableTrucks.length === 0) {
-        alert(`${submission.customerName}の案件に適用可能なトラックがありません`);
-        continue;
-      }
-
-      // 自動トラック割り当て
-      const selectedTruck = availableTrucks[0];
-      const startTime = new Date(submission.moveDate);
-      startTime.setHours(9, 0, 0, 0); // デフォルト開始時間
-
-      const endTime = new Date(startTime);
-      endTime.setHours(startTime.getHours() + 4); // 4時間の作業時間
-
-      const truckAssignment = {
-        truckId: selectedTruck.id,
-        truckName: selectedTruck.name,
-        capacity: submission.totalCapacity || 1000,
-        startTime: startTime.toTimeString().substring(0, 5),
-        endTime: endTime.toTimeString().substring(0, 5),
-        workType: 'moving' as const
-      };
-
-      // 提出データを更新
-      const updatedSubmission = {
-        ...submission,
-        status: 'assigned' as const,
-        truckAssignments: [truckAssignment]
-      };
-
-      // トラックのスケジュールを更新
-      const newSchedule = {
-        id: `schedule-${Date.now()}-${Math.random()}`,
-        date: submission.moveDate,
-        startTime: truckAssignment.startTime,
-        endTime: truckAssignment.endTime,
-        status: 'booked' as const,
-        customerName: submission.customerName,
-        workType: truckAssignment.workType,
-        description: `${submission.originAddress} → ${submission.destinationAddress}`,
-        capacity: truckAssignment.capacity,
-        origin: submission.originAddress,
-        destination: submission.destinationAddress
-      };
-
-      const updatedTruck = {
-        ...selectedTruck,
-        schedules: [...selectedTruck.schedules, newSchedule]
-      };
-
-      // 状態を更新
-      setFormSubmissions(prev => prev.map(s => s.id === submission.id ? updatedSubmission : s));
-      updateTruck(updatedTruck);
-    }
-
-    setShowBulkAssignModal(false);
-    // setBulkAssignData({ selectedSubmissions: [], templateSettings: {} });
-    alert(`${submissionsToAssign.length}件の案件を一括割り当てしました`);
-  };
 
   // URLパラメータから選択された案件を取得
   const selectedCaseId = searchParams.get('selectedCase');
@@ -974,39 +847,14 @@ function DispatchManagementContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* シンプルなヘッダー */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🚚</span>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">配車管理</h1>
-                <p className="text-sm text-gray-600">トラックの稼働スケジュール管理</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <AdminButton
-                variant="primary"
-                onClick={() => setShowBulkAssignModal(true)}
-                disabled={formSubmissions.filter(s => s.status === 'pending').length === 0}
-              >
-                一括割り当て
-              </AdminButton>
-              <div className="text-sm text-gray-500">
-                未割当: {formSubmissions.filter(s => s.status === 'pending').length}件
-              </div>
-              <AdminButton
-                variant="secondary"
-                onClick={() => router.push('/admin/dashboard')}
-              >
-                戻る
-              </AdminButton>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminPageHeader 
+        title="配車管理"
+        subtitle="トラックの稼働スケジュール管理"
+        breadcrumbs={[
+          { label: '配車管理' }
+        ]}
+        showBackButton={true}
+      />
 
       {/* タブナビゲーション */}
       <div className="bg-white border-b border-gray-200">
@@ -1031,8 +879,8 @@ function DispatchManagementContent() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="max-w-7xl mx-auto py-2 sm:px-6 lg:px-8">
+        <div className="px-4 py-2 sm:px-0">
 
           {/* 配車カレンダータブ */}
           {activeView === 'calendar' && (
@@ -1120,8 +968,6 @@ function DispatchManagementContent() {
                     return newSet;
                   });
                 }}
-                dispatchTemplates={dispatchTemplates}
-                onBulkAssign={handleBulkAssign}
               />
             </div>
           )}
@@ -1129,15 +975,6 @@ function DispatchManagementContent() {
         </div>
       </main>
 
-      {/* 一括割り当てモーダル */}
-      {showBulkAssignModal && (
-        <BulkAssignModal
-          submissions={formSubmissions.filter(s => s.status === 'pending')}
-          templates={dispatchTemplates}
-          onAssign={handleBulkAssign}
-          onClose={() => setShowBulkAssignModal(false)}
-        />
-      )}
 
       {/* トラック割り当てモーダル */}
       {/*showTruckModal && (
@@ -1203,110 +1040,6 @@ function DispatchManagementContent() {
   );
 }
 
-// 一括割り当てモーダルコンポーネント
-interface BulkAssignModalProps {
-  submissions: FormSubmission[];
-  templates: any[];
-  onAssign: (submissionIds: string[], templateId: string) => void;
-  onClose: () => void;
-}
-
-const BulkAssignModal = ({ submissions, templates, onAssign, onClose }: BulkAssignModalProps) => {
-  const [selectedSubmissions, setSelectedSubmissions] = useState<string[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedSubmissions.length === 0 || !selectedTemplate) {
-      alert('案件とテンプレートを選択してください');
-      return;
-    }
-    onAssign(selectedSubmissions, selectedTemplate);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">一括配車割り当て</h3>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 案件選択 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              対象案件を選択
-            </label>
-            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-3">
-              {submissions.map(submission => (
-                <label key={submission.id} className="flex items-center space-x-2 py-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedSubmissions.includes(submission.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedSubmissions(prev => [...prev, submission.id]);
-                      } else {
-                        setSelectedSubmissions(prev => prev.filter(id => id !== submission.id));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm">
-                    {submission.customerName} - {submission.moveDate}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* テンプレート選択 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              配車テンプレート
-            </label>
-            <div className="space-y-2">
-              {templates.map(template => (
-                <label key={template.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="template"
-                    value={template.id}
-                    checked={selectedTemplate === template.id}
-                    onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">{template.name}</div>
-                    <div className="text-sm text-gray-500">{template.description}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      トラック{template.settings.truckCount}台・作業者{template.settings.workerCount}名・
-                      時間バッファ{template.settings.timeBuffer}分
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              一括割り当て実行
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 // 統合案件管理コンポーネント  
 interface UnifiedCaseManagementProps {
@@ -1316,8 +1049,6 @@ interface UnifiedCaseManagementProps {
   onRemoveTruck: (submissionId: string, truckId: string) => void;
   expandedSubmissions: Set<string>;
   onToggleExpand: (id: string) => void;
-  dispatchTemplates: any[];
-  onBulkAssign: (submissionIds: string[], templateId: string) => void;
 }
 
 const UnifiedCaseManagement = ({ 
@@ -1326,9 +1057,7 @@ const UnifiedCaseManagement = ({
   onAssignTruck, 
   onRemoveTruck, 
   expandedSubmissions, 
-  onToggleExpand,
-  dispatchTemplates,
-  onBulkAssign
+  onToggleExpand
 }: UnifiedCaseManagementProps) => {
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
