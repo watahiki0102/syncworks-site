@@ -529,8 +529,8 @@ export default function ShiftManagement() {
 
 
         {/* メインコンテンツ */}
-        <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
-          <div className="px-4 py-6 sm:px-0">
+        <main className="max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="px-4 py-2 sm:px-0">
             {/* タブ切り替え */}
             <div className="mb-6">
               <div className="border-b border-gray-200">
