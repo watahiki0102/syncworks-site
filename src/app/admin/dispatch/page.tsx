@@ -8,6 +8,7 @@ import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import UnavailablePeriodModal from './components/UnavailablePeriodModal';
+import TruckAssignmentModal from './components/TruckAssignmentModal';
 import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
@@ -58,6 +59,7 @@ function DispatchManagementContent() {
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'trucks' | 'cases'>('calendar');
   const [showTruckModal, setShowTruckModal] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
   // const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
@@ -463,6 +465,62 @@ function DispatchManagementContent() {
           contractStatus: 'confirmed',
           contractDate: '2024-01-05T12:00:00Z',
         },
+        // 未割り当ての案件を追加
+        {
+          id: '4',
+          customerName: '鈴木 三郎',
+          customerEmail: 'suzuki@example.com',
+          customerPhone: '090-1111-2222',
+          moveDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 明日
+          originAddress: '東京都港区六本木7-7-7',
+          destinationAddress: '東京都品川区品川8-8-8',
+          totalPoints: 80,
+          totalCapacity: 400,
+          distance: 6,
+          itemList: ['テレビ', 'パソコン', '本'],
+          additionalServices: ['梱包'],
+          status: 'pending',
+          truckAssignments: [],
+          createdAt: new Date().toISOString(),
+          contractStatus: 'estimate',
+        },
+        {
+          id: '5',
+          customerName: '高橋 四郎',
+          customerEmail: 'takahashi@example.com',
+          customerPhone: '080-3333-4444',
+          moveDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 明後日
+          originAddress: '東京都文京区本郷9-9-9',
+          destinationAddress: '東京都台東区上野10-10-10',
+          totalPoints: 120,
+          totalCapacity: 600,
+          distance: 4,
+          itemList: ['ソファ', 'テーブル', '椅子', '本棚'],
+          additionalServices: ['梱包', '開梱'],
+          status: 'pending',
+          truckAssignments: [],
+          createdAt: new Date().toISOString(),
+          contractStatus: 'estimate',
+        },
+        {
+          id: '6',
+          customerName: '伊藤 五郎',
+          customerEmail: 'ito@example.com',
+          customerPhone: '070-5555-7777',
+          moveDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3日後
+          originAddress: '東京都練馬区練馬11-11-11',
+          destinationAddress: '東京都板橋区板橋12-12-12',
+          totalPoints: 180,
+          totalCapacity: 900,
+          distance: 8,
+          itemList: ['ベッド', 'ワードローブ', '机', '椅子'],
+          additionalServices: ['保険', '保管'],
+          status: 'pending',
+          truckAssignments: [],
+          createdAt: new Date().toISOString(),
+          contractStatus: 'confirmed',
+          contractDate: new Date().toISOString(),
+        },
       ];
       setFormSubmissions(testSubmissions);
       localStorage.setItem('formSubmissions', JSON.stringify(testSubmissions));
@@ -842,7 +900,7 @@ function DispatchManagementContent() {
   const tabs = [
     { id: 'calendar', label: '配車カレンダー', icon: '📅' },
     { id: 'trucks', label: 'トラック管理', icon: '🚚' },
-    { id: 'cases', label: '案件管理', icon: '📋' }
+    { id: 'cases', label: '配車割り当て', icon: '🚛' }
   ];
 
   return (
@@ -926,22 +984,9 @@ function DispatchManagementContent() {
             </div>
           )}
 
-          {/* 案件管理タブ */}
+          {/* 配車割り当てタブ */}
           {activeView === 'cases' && (
-            <div className="space-y-6">
-              {/* 新規案件登録 */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <div className="flex items-center justify-end mb-4">
-                    <button
-                      onClick={() => router.push('/admin/cases/register')}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      + 新規案件登録
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-4">
 
               {/* 案件一覧 */}
               <UnifiedCaseManagement
@@ -961,6 +1006,8 @@ function DispatchManagementContent() {
                     return newSet;
                   });
                 }}
+                setShowTruckModal={setShowTruckModal}
+                setSelectedSubmission={setSelectedSubmission}
               />
             </div>
           )}
@@ -970,7 +1017,7 @@ function DispatchManagementContent() {
 
 
       {/* トラック割り当てモーダル */}
-      {/*showTruckModal && (
+      {showTruckModal && (
         <TruckAssignmentModal
           selectedSubmission={selectedSubmission}
           trucks={trucks}
@@ -980,7 +1027,7 @@ function DispatchManagementContent() {
           calculateRecommendedTrucks={calculateRecommendedTrucks}
           calculateEstimatedPrice={calculateEstimatedPrice}
         />
-      )*/}
+      )}
 
       {/* 車両使用不能期間設定モーダル */}
       {showUnavailablePeriodModal && (
@@ -1042,6 +1089,8 @@ interface UnifiedCaseManagementProps {
   onRemoveTruck: (submissionId: string, truckId: string) => void;
   expandedSubmissions: Set<string>;
   onToggleExpand: (id: string) => void;
+  setShowTruckModal: (show: boolean) => void;
+  setSelectedSubmission: (submission: FormSubmission | null) => void;
 }
 
 const UnifiedCaseManagement = ({ 
@@ -1050,10 +1099,10 @@ const UnifiedCaseManagement = ({
   onAssignTruck, 
   onRemoveTruck, 
   expandedSubmissions, 
-  onToggleExpand
+  onToggleExpand,
+  setShowTruckModal,
+  setSelectedSubmission
 }: UnifiedCaseManagementProps) => {
-  const [showTruckModal, setShowTruckModal] = useState(false);
-  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
 
   return (
     <div className="bg-white shadow rounded-lg">
