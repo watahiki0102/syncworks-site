@@ -112,8 +112,7 @@ export default function ShiftOverview({
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">シフト表（全体確認）</h3>
+      <div className="flex justify-end items-center">
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('daily')}

@@ -174,8 +174,6 @@ export default function ShiftBulkAssignment({
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">シフト一括割当</h3>
-
       <div className="space-y-4">
         {/* テンプレート選択 */}
         <div>

@@ -106,8 +106,7 @@ export default function EmployeeManagement({
   return (
     <div className="space-y-6">
       {/* ヘッダーアクション */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-900">従業員一覧</h2>
+      <div className="flex justify-end items-center">
         <button
           onClick={() => {
             setFormData({

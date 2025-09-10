@@ -697,11 +697,41 @@ export default function ShiftCalendar({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ナビゲーション */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">従業員シフト管理</h2>
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex justify-between items-center mb-4">
+          {/* 左側：ビューモード切り替えと期間表示 */}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('week')}
+                className={`px-4 py-1 rounded ${
+                  viewMode === 'week' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                週
+              </button>
+              <button
+                onClick={() => setViewMode('month')}
+                className={`px-4 py-1 rounded ${
+                  viewMode === 'month' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                月
+              </button>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {viewMode === 'month' && `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`}
+              {viewMode === 'week' && `${formatDate(weekDays[0].date)} - ${formatDate(weekDays[6].date)}`}
+            </h3>
+          </div>
+
+          {/* 右側：ナビゲーションボタン */}
           <div className="flex gap-2">
             <button
               onClick={goToPreviousPeriod}
@@ -726,45 +756,19 @@ export default function ShiftCalendar({
           </div>
         </div>
 
-        {/* ビューモード切り替え */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setViewMode('week')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'week' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            週ビュー
-          </button>
-          <button
-            onClick={() => setViewMode('month')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'month' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            月ビュー
-          </button>
-        </div>
-
-        {/* 従業員検索 */}
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="従業員検索..."
-            value={employeeFilter}
-            onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="w-full md:w-64 px-3 py-2 border rounded"
-          />
-          <p className="mt-2 text-xs text-gray-500">空欄をクリックまたはドラッグしてシフトを登録できます</p>
-        </div>
-
-        {/* 操作ボタンとオプション */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-2">
+        {/* 従業員検索と操作ボタン */}
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              placeholder="従業員検索..."
+              value={employeeFilter}
+              onChange={(e) => setEmployeeFilter(e.target.value)}
+              className="w-64 px-3 py-2 border rounded"
+            />
+            <p className="text-xs text-gray-500">空欄をクリックまたはドラッグしてシフトを登録できます</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={copyPreviousWeek}
               className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm border"
@@ -777,8 +781,6 @@ export default function ShiftCalendar({
             >
               {showLegend ? '凡例を隠す' : '凡例を表示'}
             </button>
-          </div>
-          <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -789,14 +791,6 @@ export default function ShiftCalendar({
               従業員別色分け
             </label>
           </div>
-        </div>
-
-        {/* 期間表示 */}
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {viewMode === 'month' && `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`}
-            {viewMode === 'week' && `${formatDate(weekDays[0].date)} - ${formatDate(weekDays[6].date)}`}
-          </h3>
         </div>
 
         {/* 凡例（折りたたみ可能） */}

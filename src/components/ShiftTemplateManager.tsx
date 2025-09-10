@@ -112,8 +112,7 @@ export default function ShiftTemplateManager({
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">シフトテンプレート管理</h3>
+      <div className="flex justify-end items-center">
         <button
           onClick={() => setShowModal(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"

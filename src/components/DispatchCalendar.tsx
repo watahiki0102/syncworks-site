@@ -41,9 +41,10 @@ interface DispatchCalendarProps {
   trucks: Truck[];
   onUpdateTruck: (truck: Truck) => void;
   statusFilter?: 'all' | 'confirmed' | 'estimate';
+  onStatusFilterChange?: (status: 'all' | 'confirmed' | 'estimate') => void;
 }
 
-export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter = 'all' }: DispatchCalendarProps) {
+export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter = 'all', onStatusFilterChange }: DispatchCalendarProps) {
   const router = useRouter();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -1571,15 +1572,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* ビュー切り替えとナビゲーション */}
-      <div className="bg-white rounded-lg shadow p-3">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">配車スケジュール</h2>
-        </div>
-
-        {/* ビューモード選択と表示期間選択 */}
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white rounded-lg shadow p-2">
+        {/* ビューモード選択と案件ステータス */}
+        <div className="flex items-center justify-between mb-2">
           {/* ビューモード選択 */}
           <div className="flex gap-1">
             <button
@@ -1621,6 +1618,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
               作業者割り当て
             </button>
           </div>
+          
+          {/* 案件ステータスフィルター */}
+          {onStatusFilterChange && (
+            <StatusFilter value={statusFilter} onChange={onStatusFilterChange} />
+          )}
         </div>
 
         {/* 凡例 */}

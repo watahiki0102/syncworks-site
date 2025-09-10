@@ -216,16 +216,15 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">トラック管理</h2>
-        <Button
+    <div>
+      <div className="flex justify-end items-center mb-3">
+        <button
           onClick={handleCreateTruck}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1 transition-colors"
         >
           <Plus className="w-4 h-4" />
           新規登録
-        </Button>
+        </button>
       </div>
 
       {trucks.length === 0 ? (
