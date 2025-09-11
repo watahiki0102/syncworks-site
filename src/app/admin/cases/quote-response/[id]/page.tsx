@@ -287,6 +287,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
           validUntil: formData.validUntil,
           comment: formData.comment,
           notes: formData.notes || '',
+          confirmationMemo: formData.confirmationMemo || '',
           respondedAt: new Date().toISOString(),
           respondedBy: 'admin'
         };
@@ -298,6 +299,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
           responseType: 'unavailable',
           comment: formData.comment,
           notes: formData.notes || '',
+          confirmationMemo: formData.confirmationMemo || '',
           respondedAt: new Date().toISOString(),
           respondedBy: 'admin'
         };

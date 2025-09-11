@@ -111,6 +111,7 @@ export interface QuoteResponseData {
   validUntil?: string;
   comment: string;
   notes?: string;
+  confirmationMemo?: string;
   respondedAt: string;
   respondedBy: string;
 }
@@ -131,6 +132,8 @@ export interface QuoteResponseFormData {
   comment: string;
   /** 特記事項 */
   notes: string;
+  /** 確認用メモ */
+  confirmationMemo: string;
   /** 価格調整理由 */
   adjustmentReason?: string;
 }
@@ -144,6 +147,7 @@ export interface QuoteResponseFormErrors {
   optionAmount?: string;
   validUntil?: string;
   comment?: string;
+  confirmationMemo?: string;
   adjustmentReason?: string;
   submit?: string;
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase } from '@/types/common';
-import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES } from '../types/unified';
+import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES, QuoteResponseData } from '../types/unified';
 import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
 import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType, IntermediaryService } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
@@ -24,6 +24,7 @@ export default function UnifiedCasesPage() {
     '見積依頼', '再見積'
   ]);
   const [viewingCase, setViewingCase] = useState<UnifiedCase | null>(null);
+  const [quoteResponseData, setQuoteResponseData] = useState<QuoteResponseData | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(100);
@@ -150,10 +151,27 @@ export default function UnifiedCasesPage() {
   };
 
   /**
+   * 見積回答データの取得
+   */
+  const getQuoteResponseData = (caseId: string): QuoteResponseData | null => {
+    try {
+      const existingResponses = JSON.parse(localStorage.getItem('quoteResponses') || '[]');
+      // 実際の実装では、caseIdに基づいてAPIから取得
+      // 現在はローカルストレージからサンプルデータを返す
+      return existingResponses.find((response: any) => response.caseId === caseId) || null;
+    } catch {
+      return null;
+    }
+  };
+
+  /**
    * 案件詳細表示
    */
   const handleViewDetails = (caseItem: UnifiedCase) => {
     setViewingCase(caseItem);
+    // 見積回答データを取得
+    const responseData = getQuoteResponseData(caseItem.id);
+    setQuoteResponseData(responseData);
   };
 
   /**
@@ -563,7 +581,10 @@ export default function UnifiedCasesPage() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-semibold">案件詳細 - {viewingCase.customer.customerName}</h3>
                 <button
-                  onClick={() => setViewingCase(null)}
+                  onClick={() => {
+                    setViewingCase(null);
+                    setQuoteResponseData(null);
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,6 +620,51 @@ export default function UnifiedCasesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* 見積回答情報 */}
+              {quoteResponseData && (
+                <div className="mt-6 border-t pt-6">
+                  <h4 className="text-lg font-medium mb-4">見積回答情報</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="space-y-2 text-sm">
+                        <div><span className="font-medium">回答タイプ:</span> {quoteResponseData.responseType === 'quote' ? '見積可能' : '見積不可'}</div>
+                        {quoteResponseData.responseType === 'quote' && (
+                          <>
+                            <div><span className="font-medium">基本料金:</span> {formatCurrency(quoteResponseData.basicAmount || 0)}</div>
+                            <div><span className="font-medium">オプション料金:</span> {formatCurrency(quoteResponseData.optionAmount || 0)}</div>
+                            <div><span className="font-medium">税込総額:</span> <span className="text-lg font-semibold text-blue-600">{formatCurrency(quoteResponseData.totalAmountWithTax || 0)}</span></div>
+                            {quoteResponseData.validUntil && (
+                              <div><span className="font-medium">有効期限:</span> {quoteResponseData.validUntil}</div>
+                            )}
+                          </>
+                        )}
+                        <div><span className="font-medium">回答日時:</span> {new Date(quoteResponseData.respondedAt).toLocaleString('ja-JP')}</div>
+                      </div>
+                    </div>
+                    <div>
+                      {quoteResponseData.comment && (
+                        <div className="mb-4">
+                          <span className="font-medium text-sm">回答コメント:</span>
+                          <p className="text-sm text-gray-700 mt-1 p-2 bg-gray-50 rounded">{quoteResponseData.comment}</p>
+                        </div>
+                      )}
+                      {quoteResponseData.notes && (
+                        <div className="mb-4">
+                          <span className="font-medium text-sm">特記事項:</span>
+                          <p className="text-sm text-gray-700 mt-1 p-2 bg-gray-50 rounded">{quoteResponseData.notes}</p>
+                        </div>
+                      )}
+                      {quoteResponseData.confirmationMemo && (
+                        <div>
+                          <span className="font-medium text-sm">確認用メモ:</span>
+                          <p className="text-sm text-gray-700 mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded">{quoteResponseData.confirmationMemo}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

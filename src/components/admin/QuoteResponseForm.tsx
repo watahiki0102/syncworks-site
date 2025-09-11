@@ -38,6 +38,7 @@ export default function QuoteResponseForm({
     validUntil: '',
     comment: '',
     notes: '',
+    confirmationMemo: '',
     adjustmentReason: ''
   });
 
@@ -418,6 +419,23 @@ export default function QuoteResponseForm({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="その他の特記事項があればご記入ください"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  確認用メモ
+                  <span className="text-xs text-gray-500 ml-2">（お客様には表示されません）</span>
+                </label>
+                <textarea
+                  value={formData.confirmationMemo}
+                  onChange={(e) => handleInputChange('confirmationMemo', e.target.value)}
+                  rows={2}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.confirmationMemo ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="対応時の注意点や申し送り事項をご記入ください"
+                />
+                {errors.confirmationMemo && <p className="mt-1 text-sm text-red-600">{errors.confirmationMemo}</p>}
               </div>
             </div>
 

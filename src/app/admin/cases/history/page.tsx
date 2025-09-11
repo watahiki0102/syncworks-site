@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { QuoteHistory } from '../types';
-import { UnifiedCaseStatus } from '../types/unified';
+import { UnifiedCaseStatus, QuoteResponseData } from '../types/unified';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber, isSourceTypeEditable } from '../lib/normalize';
 import { generateUnifiedTestData } from '../lib/unifiedData';
 
@@ -13,6 +13,7 @@ export default function QuoteHistoryPage() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingQuote, setViewingQuote] = useState<QuoteHistory | null>(null);
+  const [quoteResponseData, setQuoteResponseData] = useState<QuoteResponseData | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // ドロップダウンの外側をクリックしたときに閉じる
@@ -101,6 +102,19 @@ export default function QuoteHistoryPage() {
 
 
 
+
+  /**
+   * 見積回答データの取得
+   */
+  const getQuoteResponseData = (quoteId: string): QuoteResponseData | null => {
+    try {
+      const existingResponses = JSON.parse(localStorage.getItem('quoteResponses') || '[]');
+      // 実際の実装では、quoteIdに基づいてAPIから取得
+      return existingResponses.find((response: any) => response.caseId === quoteId) || null;
+    } catch {
+      return null;
+    }
+  };
 
   const updateStatus = (quoteId: string, newStatus: UnifiedCaseStatus) => {
     setQuotes(quotes.map(q => 
@@ -268,7 +282,11 @@ export default function QuoteHistoryPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => setViewingQuote(quote)}
+                      onClick={() => {
+                        setViewingQuote(quote);
+                        const responseData = getQuoteResponseData(quote.id);
+                        setQuoteResponseData(responseData);
+                      }}
                       className="text-gray-600 hover:text-gray-900"
                     >
                       詳細
@@ -354,9 +372,39 @@ export default function QuoteHistoryPage() {
                 </div>
               </div>
 
+              {/* 見積回答メモ情報 */}
+              {quoteResponseData && (
+                <div className="mb-6 border-t pt-6">
+                  <h4 className="font-medium text-gray-900 mb-4">見積回答メモ</h4>
+                  <div className="space-y-4">
+                    {quoteResponseData.comment && (
+                      <div>
+                        <span className="font-medium text-sm text-gray-700">回答コメント:</span>
+                        <p className="text-sm text-gray-700 mt-1 p-3 bg-gray-50 rounded">{quoteResponseData.comment}</p>
+                      </div>
+                    )}
+                    {quoteResponseData.notes && (
+                      <div>
+                        <span className="font-medium text-sm text-gray-700">特記事項:</span>
+                        <p className="text-sm text-gray-700 mt-1 p-3 bg-gray-50 rounded">{quoteResponseData.notes}</p>
+                      </div>
+                    )}
+                    {quoteResponseData.confirmationMemo && (
+                      <div>
+                        <span className="font-medium text-sm text-gray-700">確認用メモ:</span>
+                        <p className="text-sm text-gray-700 mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded">{quoteResponseData.confirmationMemo}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <button
-                  onClick={() => setViewingQuote(null)}
+                  onClick={() => {
+                    setViewingQuote(null);
+                    setQuoteResponseData(null);
+                  }}
                   className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
                 >
                   閉じる
