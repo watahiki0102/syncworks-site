@@ -28,6 +28,55 @@ export default function UnifiedCasesPage() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(100);
+  const [editingPackingDeadline, setEditingPackingDeadline] = useState(false);
+  const [tempPackingDeadline, setTempPackingDeadline] = useState<string>('');
+
+  // 梱包資材配送期限の編集開始
+  const startEditingPackingDeadline = (currentDeadline?: string) => {
+    setTempPackingDeadline(currentDeadline || '');
+    setEditingPackingDeadline(true);
+  };
+
+  // 梱包資材配送期限の保存
+  const savePackingDeadline = () => {
+    if (viewingCase) {
+      // 実際のAPIコール実装時はここで更新処理を行う
+      const updatedCase = {
+        ...viewingCase,
+        packingDelivery: true, // 期限を設定する場合は配送ありに設定
+        packingDeadline: tempPackingDeadline
+      };
+      
+      // ローカル状態を更新（実際はAPIから最新データを取得）
+      setCases(prevCases => 
+        prevCases.map(c => c.id === viewingCase.id ? updatedCase : c)
+      );
+      setViewingCase(updatedCase);
+    }
+    setEditingPackingDeadline(false);
+    setTempPackingDeadline('');
+  };
+
+  // 梱包資材配送期限の編集キャンセル
+  const cancelEditingPackingDeadline = () => {
+    setEditingPackingDeadline(false);
+    setTempPackingDeadline('');
+  };
+
+  // テーブル行での梱包資材配送期限の直接更新
+  const updateRowPackingDeadline = (caseId: string, newDeadline: string) => {
+    setCases(prevCases => 
+      prevCases.map(c => 
+        c.id === caseId 
+          ? {
+              ...c,
+              packingDelivery: newDeadline ? true : c.packingDelivery,
+              packingDeadline: newDeadline || undefined
+            }
+          : c
+      )
+    );
+  };
 
   // ドロップダウンの外側をクリックしたときに閉じる
   useEffect(() => {
@@ -448,6 +497,9 @@ export default function UnifiedCasesPage() {
                   金額（税込）
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  梱包資材配送
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   受注ステータス
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -490,6 +542,35 @@ export default function UnifiedCasesPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
                     {getAmountDisplay(caseItem)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {caseItem.packingDelivery ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            配送あり
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                            配送なし
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">期限:</span>
+                        <input
+                          type="date"
+                          value={caseItem.packingDeadline || ''}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateRowPackingDeadline(caseItem.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                          placeholder="未設定"
+                        />
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {renderStatusDropdown(caseItem)}
@@ -584,6 +665,9 @@ export default function UnifiedCasesPage() {
                   onClick={() => {
                     setViewingCase(null);
                     setQuoteResponseData(null);
+                    // 編集状態をリセット
+                    setEditingPackingDeadline(false);
+                    setTempPackingDeadline('');
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -607,6 +691,63 @@ export default function UnifiedCasesPage() {
                     {viewingCase.amountWithTax && (
                       <div><span className="font-medium">金額:</span> {formatCurrency(viewingCase.amountWithTax)}</div>
                     )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h5 className="text-md font-medium mb-2">梱包資材配送</h5>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">配送:</span>
+                        {viewingCase.packingDelivery ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            配送あり
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                            配送なし
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* 配送期限の編集可能セクション */}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">配送期限:</span>
+                        {editingPackingDeadline ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="date"
+                              value={tempPackingDeadline}
+                              onChange={(e) => setTempPackingDeadline(e.target.value)}
+                              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                              onClick={savePackingDeadline}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              保存
+                            </button>
+                            <button
+                              onClick={cancelEditingPackingDeadline}
+                              className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-700">
+                              {viewingCase.packingDeadline ? formatDate(viewingCase.packingDeadline) : '未設定'}
+                            </span>
+                            <button
+                              onClick={() => startEditingPackingDeadline(viewingCase.packingDeadline)}
+                              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                              📅 編集
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

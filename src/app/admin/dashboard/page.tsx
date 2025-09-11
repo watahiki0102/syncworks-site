@@ -229,10 +229,12 @@ export default function AdminDashboard() {
                    title="案件管理"
                    subtitle="案件・支払対象一覧"
                    icon="📋"
-                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-white border-orange-200 h-24"
+                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-white dark:bg-gray-800 border-orange-200 dark:border-orange-700 min-h-[120px]"
                    padding="sm"
                  >
-                   <AdminBadge variant="warning" size="sm">{unansweredCount > 0 ? `${unansweredCount}件未対応` : '対応済み'}</AdminBadge>
+                   <div className="text-gray-900 dark:text-gray-100">
+                     <AdminBadge variant="warning" size="sm">{unansweredCount > 0 ? `${unansweredCount}件未対応` : '対応済み'}</AdminBadge>
+                   </div>
                  </AdminCard>
                </Link>
 
@@ -242,10 +244,12 @@ export default function AdminDashboard() {
                    title="シフト管理"
                    subtitle="従業員スケジュール"
                    icon="👥"
-                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white border-teal-200 h-24"
+                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white dark:bg-gray-800 border-teal-200 dark:border-teal-700 min-h-[120px]"
                    padding="sm"
                  >
-                   <AdminBadge variant="info" size="sm">5人稼働中</AdminBadge>
+                   <div className="text-gray-900 dark:text-gray-100">
+                     <AdminBadge variant="info" size="sm">5人稼働中</AdminBadge>
+                   </div>
                  </AdminCard>
                </Link>
 
@@ -255,12 +259,13 @@ export default function AdminDashboard() {
                   title="配車管理"
                   subtitle="トラック配車・稼働"
                   icon="🚚"
-                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white border-indigo-200 h-24"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white dark:bg-gray-800 border-indigo-200 dark:border-indigo-700 min-h-[120px]"
                   padding="sm"
                 >
-                  <></>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    <AdminBadge variant="success" size="sm">3台稼働中</AdminBadge>
+                  </div>
                 </AdminCard>
-                
                </Link>
 
                {/* 集計管理 */}
@@ -269,10 +274,12 @@ export default function AdminDashboard() {
                   title="集計管理"
                   subtitle="売上・受注率分析"
                   icon="📊"
-                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white border-purple-200 h-24"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white dark:bg-gray-800 border-purple-200 dark:border-purple-700 min-h-[120px]"
                   padding="sm"
                 >
-                  <></>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    <AdminBadge variant="info" size="sm">今月{contractRate}%</AdminBadge>
+                  </div>
                 </AdminCard>
                </Link>
             </div>
