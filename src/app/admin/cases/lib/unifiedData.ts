@@ -315,7 +315,13 @@ export function generateUnifiedTestData(): UnifiedCase[] {
         priority: ['high', 'medium', 'low'][i % 3] as any,
         sourceType: sourceType as any,
         packingDelivery: i % 3 !== 0, // 3件に1件は配送無し
-        packingDeadline: i % 3 !== 0 ? new Date(targetDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined
+        ...(i % 3 !== 0
+          ? {
+              packingDeadline: new Date(targetDate.getTime() - 5 * 24 * 60 * 60 * 1000)
+                .toISOString()
+                .split('T')[0]
+            }
+          : {})
       });
     } else {
       // 履歴データ
@@ -355,7 +361,13 @@ export function generateUnifiedTestData(): UnifiedCase[] {
         amountWithTax: amount,
         isReQuote: i % 7 === 0,
         packingDelivery: i % 4 !== 0, // 4件に1件は配送無し
-        packingDeadline: i % 4 !== 0 ? new Date(targetDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined,
+        ...(i % 4 !== 0
+          ? {
+              packingDeadline: new Date(targetDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+                .toISOString()
+                .split('T')[0]
+            }
+          : {}),
         sourceType: sourceType as any
       });
     }
