@@ -57,6 +57,7 @@ export default function AdminLayout({
   const [showSettings, setShowSettings] = useState(false);
   const [pathname, setPathname] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const router = useRouter();
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +66,9 @@ export default function AdminLayout({
     setIsClient(true);
     if (typeof window !== 'undefined') {
       setPathname(window.location.pathname);
+      // ダークモード状態を初期化
+      const isDark = document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
     }
   }, []);
 
@@ -99,6 +103,20 @@ export default function AdminLayout({
     localStorage.removeItem('adminAutoLoginExpiry');
     localStorage.removeItem('adminRememberMe');
     router.push('/admin/login');
+  };
+
+  // ダークモード切り替え
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   };
 
   /**
@@ -175,6 +193,15 @@ export default function AdminLayout({
 
               {/* カスタムアクション */}
               {actions}
+              
+              {/* ダークモード切り替えボタン */}
+              <button
+                onClick={toggleDarkMode}
+                className="flex items-center justify-center w-10 h-10 text-lg rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
               
               {/* 設定メニュー（引越し事業者用のみ） */}
               {!pathname.includes('/admin/referrer/') && (

@@ -540,7 +540,7 @@ export default function UnifiedCasesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getDateDisplay(caseItem)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">
                     {getAmountDisplay(caseItem)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -557,7 +557,7 @@ export default function UnifiedCasesPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600">期限:</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">期限:</span>
                         <input
                           type="date"
                           value={caseItem.packingDeadline || ''}
@@ -566,7 +566,7 @@ export default function UnifiedCasesPage() {
                             updateRowPackingDeadline(caseItem.id, e.target.value);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                          className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
                           placeholder="未設定"
                         />
                       </div>

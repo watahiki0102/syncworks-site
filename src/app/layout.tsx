@@ -151,13 +151,25 @@ export default function RootLayout({
         <script 
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark')
-                } else {
-                  document.documentElement.classList.remove('dark')
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme');
+                  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  
+                  if (theme === 'dark' || (!theme && systemPrefersDark)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                  
+                  // テーマが未設定の場合はシステム設定に従って保存
+                  if (!theme) {
+                    localStorage.setItem('theme', systemPrefersDark ? 'dark' : 'light');
+                  }
+                } catch (e) {
+                  console.warn('Theme initialization failed:', e);
                 }
-              } catch (_) {}
+              })();
             `
           }}
         />
