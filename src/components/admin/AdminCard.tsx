@@ -53,18 +53,18 @@ export default function AdminCard({
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 ${getShadowClass()} ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${getShadowClass()} ${className} transition-colors`}>
       {/* ヘッダー */}
       {(title || headerActions) && (
-        <div className={`border-b border-gray-200 ${title ? 'p-6 pb-4' : 'p-4'}`}>
+        <div className={`border-b border-gray-200 dark:border-gray-700 ${title ? 'p-6 pb-4' : 'p-4'}`}>
           <div className="flex items-center justify-between">
             {title && (
               <div className="flex items-center gap-3">
                 {icon && <span className="text-xl">{icon}</span>}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
                   {subtitle && (
-                    <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{subtitle}</p>
                   )}
                 </div>
               </div>
@@ -82,15 +82,15 @@ export default function AdminCard({
       <div className={getPaddingClass()}>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">読み込み中...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">読み込み中...</span>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <span className="text-4xl mb-2 block">⚠️</span>
-              <p className="text-red-600 font-medium">エラーが発生しました</p>
-              <p className="text-sm text-gray-600 mt-1">{error}</p>
+              <p className="text-red-600 dark:text-red-400 font-medium">エラーが発生しました</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{error}</p>
             </div>
           </div>
         ) : (

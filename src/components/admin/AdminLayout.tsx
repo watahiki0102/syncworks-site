@@ -145,9 +145,9 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* ヘッダー */}
-      <header className="bg-white shadow-sm border-b border-gray-200 w-full">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 w-full">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 sm:gap-0">
             {/* 左側：タイトルとログイン情報 */}
@@ -156,9 +156,9 @@ export default function AdminLayout({
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{getCurrentPageInfo().icon}</span>
                   <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
                     {subtitle && (
-                      <p className="text-sm text-gray-600">{subtitle}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
                     )}
                   </div>
                 </div>
@@ -169,8 +169,8 @@ export default function AdminLayout({
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* ログイン情報 */}
               <div className="hidden md:block text-right">
-                <div className="text-xs text-gray-500">ログイン中</div>
-                <div className="text-sm font-medium text-gray-900">{adminEmail}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">ログイン中</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{adminEmail}</div>
               </div>
 
               {/* カスタムアクション */}
@@ -181,7 +181,7 @@ export default function AdminLayout({
                 <div className="relative" ref={settingsRef}>
                   <button
                     onClick={() => setShowSettings(!showSettings)}
-                    className="flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start"
+                    className="flex items-center space-x-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto justify-center sm:justify-start border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
                   >
                     <span className="text-base">⚙️</span>
                     <span className="hidden sm:inline">設定</span>
@@ -189,28 +189,28 @@ export default function AdminLayout({
                   
                   {/* 設定ドロップダウン */}
                   {showSettings && (
-                    <div className="absolute right-0 top-12 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                    <div className="absolute right-0 top-12 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                       <div className="py-2">
                         <Link
                           href="/pricing/step1"
-                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           onClick={() => setShowSettings(false)}
                         >
                           <span className="text-base">💰</span>
                           <div>
                             <div className="font-medium">料金設定</div>
-                            <div className="text-xs text-gray-500">ポイント・料金体系</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">ポイント・料金体系</div>
                           </div>
                         </Link>
                         <Link
                           href="/admin/profile"
-                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           onClick={() => setShowSettings(false)}
                         >
                           <span className="text-base">📝</span>
                           <div>
                             <div className="font-medium">基本情報設定</div>
-                            <div className="text-xs text-gray-500">事業者情報の編集</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">事業者情報の編集</div>
                           </div>
                         </Link>
                       </div>
@@ -230,7 +230,7 @@ export default function AdminLayout({
                       router.push('/admin/dashboard');
                     }
                   }}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+                  className="bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400"
                 >
                   <span className="sm:hidden">←</span>
                   <span className="hidden sm:inline">戻る</span>
@@ -240,7 +240,7 @@ export default function AdminLayout({
               {/* ログアウトボタン */}
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center"
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
               >
                 <span className="sm:hidden">🚪</span>
                 <span className="hidden sm:inline">ログアウト</span>
@@ -252,24 +252,24 @@ export default function AdminLayout({
 
       {/* ブレッドクラム */}
       {generateBreadcrumbs().length > 1 && (
-        <div className="bg-white border-b border-gray-200 w-full">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <nav className="flex py-3" aria-label="Breadcrumb">
-              <ol className="flex items-center space-x-2">
+              <ol className="flex items-center space-x-2 overflow-x-auto">
                 {generateBreadcrumbs().map((crumb, index) => (
-                  <li key={index} className="flex items-center">
+                  <li key={index} className="flex items-center flex-shrink-0">
                     {index > 0 && (
-                      <span className="text-gray-400 mx-2">/</span>
+                      <span className="text-gray-400 dark:text-gray-500 mx-2">/</span>
                     )}
                     {crumb.href ? (
                       <Link
                         href={crumb.href}
-                        className="text-sm text-blue-600 hover:text-blue-700"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
                       >
                         {crumb.label}
                       </Link>
                     ) : (
-                      <span className="text-sm text-gray-500">{crumb.label}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{crumb.label}</span>
                     )}
                   </li>
                 ))}
@@ -281,23 +281,23 @@ export default function AdminLayout({
 
       {/* タブナビゲーション */}
       {tabs && tabs.length > 0 && (
-        <div className="bg-white border-b border-gray-200 w-full">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
           <div className="w-full px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-8" aria-label="Tabs">
+            <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => onTabChange?.(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 flex-shrink-0 transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   {tab.icon && <span>{tab.icon}</span>}
                   {tab.label}
                   {tab.badge !== undefined && tab.badge > 0 && (
-                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                       {tab.badge}
                     </span>
                   )}

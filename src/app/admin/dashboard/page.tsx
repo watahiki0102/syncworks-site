@@ -28,50 +28,50 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
     <AdminCard title="トレンド情報" icon="📊" padding="sm" className="h-full">
       <div className="space-y-2">
         {/* 未回答数 */}
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-red-25 rounded-lg border-l-4 border-red-400">
+        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-red-25 dark:from-red-900/20 dark:to-red-800/10 rounded-lg border-l-4 border-red-400 dark:border-red-500">
           <div className="text-xl">❗</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">未回答数</div>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">未回答数</div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
               {unansweredCount}
-              <span className="text-sm font-normal text-gray-600 ml-1">件</span>
+              <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
           <AdminBadge variant="danger" size="sm">{unansweredCount > 0 ? '要対応' : '対応済み'}</AdminBadge>
         </div>
         
         {/* 本日の申し込み数 */}
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-25 rounded-lg border-l-4 border-blue-400">
+        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-25 dark:from-blue-900/20 dark:to-blue-800/10 rounded-lg border-l-4 border-blue-400 dark:border-blue-500">
           <div className="text-xl">📝</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">本日の申し込み数</div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">本日の申し込み数</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {todayApplications}
-              <span className="text-sm font-normal text-gray-600 ml-1">件</span>
+              <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
           <AdminBadge variant="primary" size="sm">今日</AdminBadge>
         </div>
         
         {/* 今月の受注数 */}
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-25 rounded-lg border-l-4 border-green-400">
+        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-25 dark:from-green-900/20 dark:to-green-800/10 rounded-lg border-l-4 border-green-400 dark:border-green-500">
           <div className="text-xl">🎯</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">今月の受注数</div>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">今月の受注数</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {monthlyContracts}
-              <span className="text-sm font-normal text-gray-600 ml-1">件</span>
+              <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
           <AdminBadge variant="success" size="sm">受注</AdminBadge>
         </div>
         
         {/* 今月の売上 */}
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-amber-25 rounded-lg border-l-4 border-amber-400">
+        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-amber-25 dark:from-amber-900/20 dark:to-amber-800/10 rounded-lg border-l-4 border-amber-400 dark:border-amber-500">
           <div className="text-xl">💰</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">今月の売上</div>
-            <div className="text-2xl font-bold text-amber-600">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">今月の売上</div>
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               ¥{sales.toLocaleString()}
             </div>
           </div>
@@ -79,13 +79,13 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
         </div>
         
         {/* 今月の受注率 */}
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-purple-25 rounded-lg border-l-4 border-purple-400">
+        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-purple-25 dark:from-purple-900/20 dark:to-purple-800/10 rounded-lg border-l-4 border-purple-400 dark:border-purple-500">
           <div className="text-xl">📊</div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-700">今月の受注率</div>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">今月の受注率</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {contractRate}
-              <span className="text-sm font-normal text-gray-600 ml-1">%</span>
+              <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">%</span>
             </div>
           </div>
           <AdminBadge variant="info" size="sm">率</AdminBadge>
@@ -156,14 +156,14 @@ function NewsPanel() {
     >
       <div className="space-y-2 max-h-32 overflow-y-auto">
         {news.map((item, index) => (
-          <div key={index} className="border-b border-gray-100 last:border-b-0 pb-3 last:pb-0">
+          <div key={index} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0 pb-3 last:pb-0">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 <AdminBadge variant="default" size="sm">{item.date}</AdminBadge>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 mb-1">
-                  <h3 className="text-sm font-semibold text-gray-900 flex-1">{item.title}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-1">{item.title}</h3>
                   <div className="flex gap-1">
                     <AdminBadge variant={getCategoryVariant(item.category)} size="sm">
                       {item.category}
@@ -173,7 +173,7 @@ function NewsPanel() {
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-gray-600">{item.content}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{item.content}</p>
               </div>
             </div>
           </div>
@@ -212,17 +212,17 @@ export default function AdminDashboard() {
         title="事業者管理画面"
         actions={settingsActions}
       >
-         {/* 13インチPC最適化：2列レイアウト */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full h-[calc(100vh-200px)]">
+         {/* PC・タブレット・スマホ対応：レスポンシブレイアウト */}
+         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full min-h-[calc(100vh-200px)]">
            {/* 左列：ニュースと主要メニュー */}
-           <div className="space-y-4 max-w-2xl">
+           <div className="space-y-4 max-w-none xl:max-w-2xl">
              {/* 最新ニュース */}
-             <div className="h-1/2">
+             <div className="h-auto xl:h-1/2">
                <NewsPanel />
              </div>
              
-             {/* メニューカード群を2×2の配置 */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+             {/* メニューカード群を1列（スマホ）→2列（タブレット以上）の配置 */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-none xl:max-w-xl">
                {/* 案件管理 */}
                <Link href="/admin/cases" className="block">
                  <AdminCard
@@ -279,7 +279,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* 右列：トレンド情報 */}
-          <div className="max-w-sm h-full">
+          <div className="max-w-none xl:max-w-sm h-auto xl:h-full">
             <TrendPanel
               unansweredCount={unansweredCount}
               todayApplications={todayApplications}
