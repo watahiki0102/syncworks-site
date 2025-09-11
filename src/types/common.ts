@@ -165,6 +165,10 @@ export interface UnifiedCase {
   sourceType: string;
   /** 紹介ID */
   referralId?: string | null;
+  /** 梱包資材配送有無 */
+  packingDelivery?: boolean;
+  /** 梱包資材配送期限 */
+  packingDeadline?: string;
 }
 
 /**

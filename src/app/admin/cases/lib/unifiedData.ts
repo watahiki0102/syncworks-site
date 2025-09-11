@@ -79,7 +79,9 @@ export function generateUnifiedTestData(): UnifiedCase[] {
       requestDate: '2024-02-10',
       deadline: '2024-02-13',
       priority: 'high',
-      sourceType: 'syncmoving'
+      sourceType: 'syncmoving',
+      packingDelivery: true,
+      packingDeadline: '2024-02-12'
     },
     {
       id: 'req_2',
@@ -116,7 +118,8 @@ export function generateUnifiedTestData(): UnifiedCase[] {
       requestDate: '2024-02-15',
       deadline: '2024-02-18',
       priority: 'medium',
-      sourceType: 'suumo'
+      sourceType: 'suumo',
+      packingDelivery: false
     },
     {
       id: 'req_3',
@@ -155,7 +158,9 @@ export function generateUnifiedTestData(): UnifiedCase[] {
       requestDate: '2024-02-20',
       deadline: '2024-02-23',
       priority: 'low',
-      sourceType: '外部'
+      sourceType: '外部',
+      packingDelivery: true,
+      packingDeadline: '2024-02-22'
     }
   ];
   
@@ -308,7 +313,9 @@ export function generateUnifiedTestData(): UnifiedCase[] {
         requestDate,
         deadline,
         priority: ['high', 'medium', 'low'][i % 3] as any,
-        sourceType: sourceType as any
+        sourceType: sourceType as any,
+        packingDelivery: i % 3 !== 0, // 3件に1件は配送無し
+        packingDeadline: i % 3 !== 0 ? new Date(targetDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined
       });
     } else {
       // 履歴データ
@@ -347,6 +354,8 @@ export function generateUnifiedTestData(): UnifiedCase[] {
         responseDate,
         amountWithTax: amount,
         isReQuote: i % 7 === 0,
+        packingDelivery: i % 4 !== 0, // 4件に1件は配送無し
+        packingDeadline: i % 4 !== 0 ? new Date(targetDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined,
         sourceType: sourceType as any
       });
     }
