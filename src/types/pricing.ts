@@ -43,6 +43,8 @@ export interface OptionItem {
 
 /**
  * 荷物詳細の型定義（見積回答用）
+ * 注意: この型は common.ts の ItemInfo と同一構造
+ * 将来的に items-unified.ts の BaseItemInfo に統一予定
  */
 export interface ItemDetail {
   id: string;
@@ -52,6 +54,9 @@ export interface ItemDetail {
   points: number;
   additionalCost?: number;
 }
+
+// 後方互換性エイリアス
+export type { ItemInfo as CommonItemInfo } from './common';
 
 /**
  * /pricing データの統合型

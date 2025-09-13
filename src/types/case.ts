@@ -1,4 +1,5 @@
-export type ContractStatus = 'confirmed' | 'estimate';
+// ContractStatusはshared.tsに統一 - 重複解消
+export type { ContractStatus } from './shared';
 export type SourceType = 'sync' | 'suumo' | 'other_agency' | 'manual';
 
 // 新しく追加する型定義
@@ -53,7 +54,7 @@ export interface CaseAssignment {
   assignedEmployees?: Employee[];
   startTime: string; // 'HH:mm'
   endTime: string;   // 'HH:mm'
-  contractStatus: ContractStatus;
+  contractStatus: import('./shared').ContractStatus;
 }
 
 export type CaseDetail = CaseCore & CaseAssignment;

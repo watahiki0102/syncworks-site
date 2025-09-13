@@ -337,7 +337,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
         alert(`${caseItem.customer?.customerName}様への見積不可回答が完了しました。`);
       }
       
-      // 案件一覧に戻る
+      // 案件管理に戻る
       router.push('/admin/cases');
       
     } catch (error) {

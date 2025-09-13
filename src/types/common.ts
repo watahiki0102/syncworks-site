@@ -53,6 +53,7 @@ export interface MoveInfo {
 
 /**
  * 荷物アイテムの型定義
+ * 注意: この型は items-unified.ts の BaseItemInfo と統一予定
  */
 export interface ItemInfo {
   /** アイテムID */
@@ -68,6 +69,9 @@ export interface ItemInfo {
   /** 追加コスト */
   additionalCost?: number;
 }
+
+// 後方互換性のため、統一型へのエイリアスを追加（循環参照回避）
+// export type { BaseItemInfo as UnifiedItemInfo } from './items-unified';
 
 /**
  * 荷物情報の型定義

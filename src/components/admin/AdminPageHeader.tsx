@@ -35,6 +35,16 @@ export default function AdminPageHeader({
 
   const allBreadcrumbs = [...defaultBreadcrumbs, ...breadcrumbs];
 
+  // 戻るボタンのURLを決定する関数
+  const getBackUrl = () => {
+    // 見積回答画面の場合は案件管理に戻る
+    if (breadcrumbs.some(crumb => crumb.label === '見積回答')) {
+      return '/admin/cases';
+    }
+    // その他の場合はデフォルトのダッシュボード
+    return '/admin/dashboard';
+  };
+
   return (
     <div className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -75,7 +85,7 @@ export default function AdminPageHeader({
             
             {/* 戻るボタン */}
             {showBackButton && (
-              <Link href="/admin/dashboard">
+              <Link href={getBackUrl()}>
                 <AdminButton variant="secondary">
                   戻る
                 </AdminButton>

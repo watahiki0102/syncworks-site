@@ -493,31 +493,31 @@ export default function UnifiedCasesPage() {
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   管理No
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   仲介元
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   顧客名
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   引越日
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                   期限/回答日
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-20">
                   金額（税込）
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                   梱包資材配送
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   受注ステータス
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   操作
                 </th>
               </tr>
@@ -525,22 +525,22 @@ export default function UnifiedCasesPage() {
             <tbody className="bg-gray-50 divide-y divide-gray-200">
               {paginatedCases.map((caseItem) => (
                 <tr key={caseItem.id} className="bg-white hover:bg-gray-100">
-                  <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
+                  <td className="px-2 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
                     {getManagementNumber(normalizeSourceType(caseItem.sourceType), caseItem.id)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-4 whitespace-nowrap">
                     <span 
-                      className="inline-block w-24 px-2 py-1 text-center text-gray-900"
+                      className="inline-block w-16 px-1 py-1 text-center text-gray-900"
                       style={{
                         fontSize: caseItem.sourceType === '外部' 
-                          ? `clamp(0.5rem, ${24 / Math.max((getSourceTypeLabel(normalizeSourceType(caseItem.sourceType)) || '').length, 1)}rem, 0.75rem)`
-                          : '0.75rem'
+                          ? `clamp(0.5rem, ${16 / Math.max((getSourceTypeLabel(normalizeSourceType(caseItem.sourceType)) || '').length, 1)}rem, 0.65rem)`
+                          : '0.65rem'
                       }}
                     >
                       {getSourceTypeLabel(normalizeSourceType(caseItem.sourceType))}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                  <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">
                     <span
                       style={{
                         fontSize: `clamp(0.625rem, ${32 / Math.max((caseItem.customer?.customerName || '').length, 1)}rem, 0.875rem)`
@@ -549,16 +549,16 @@ export default function UnifiedCasesPage() {
                       {caseItem.customer?.customerName}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(caseItem.move?.moveDate)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getDateDisplay(caseItem)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">
                     {getAmountDisplay(caseItem)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         {caseItem.packingDelivery ? (
@@ -610,10 +610,10 @@ export default function UnifiedCasesPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-4 whitespace-nowrap">
                     {renderStatusDropdown(caseItem)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm font-medium">
                     {renderActionButtons(caseItem)}
                   </td>
                 </tr>

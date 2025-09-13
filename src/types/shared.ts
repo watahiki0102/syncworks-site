@@ -14,6 +14,41 @@ export interface Employee {
   shifts?: EmployeeShift[];
 }
 
+// 拡張Employee型（business/index.tsと互換性維持）
+export interface ExtendedEmployee extends Employee {
+  email?: string;
+  companyId?: string;
+  employeeId?: string;
+  hireDate?: Date;
+  isAvailable?: boolean;
+}
+
+// 型変換ユーティリティ（既存コード互換性のため）
+export function toBasicEmployee(extended: ExtendedEmployee): Employee {
+  return {
+    id: extended.id,
+    name: extended.name,
+    role: extended.role,
+    active: extended.status === 'active',
+    position: extended.position,
+    status: extended.status,
+    shifts: extended.shifts
+  };
+}
+
+export function toExtendedEmployee(basic: Employee, additional?: {
+  email?: string;
+  companyId?: string;
+  employeeId?: string;
+  hireDate?: Date;
+}): ExtendedEmployee {
+  return {
+    ...basic,
+    isAvailable: basic.active,
+    ...additional
+  };
+}
+
 // 従業員シフト情報
 export interface EmployeeShift {
   id: string;
@@ -34,9 +69,32 @@ export interface Truck {
   plateNumber: string;
   capacityKg: number;
   inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';
+  status: 'available' | 'maintenance' | 'inactive';  // 既存コード互換のため維持
   truckType: string;
   schedules: Schedule[];
+}
+
+// ステータス統一のための型定義とマッピング
+export type TruckOperationStatus = 'available' | 'maintenance' | 'inactive';
+export type BusinessTruckStatus = 'active' | 'maintenance' | 'retired';
+
+// ステータス変換ユーティリティ（画面動作維持のため）
+export function mapToOperationStatus(businessStatus: BusinessTruckStatus): TruckOperationStatus {
+  switch (businessStatus) {
+    case 'active': return 'available';
+    case 'maintenance': return 'maintenance';
+    case 'retired': return 'inactive';
+    default: return 'inactive';
+  }
+}
+
+export function mapToBusinessStatus(operationStatus: TruckOperationStatus): BusinessTruckStatus {
+  switch (operationStatus) {
+    case 'available': return 'active';
+    case 'maintenance': return 'maintenance';
+    case 'inactive': return 'retired';
+    default: return 'retired';
+  }
 }
 
 // スケジュール型（dispatch.tsから移動）

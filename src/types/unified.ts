@@ -62,8 +62,8 @@ export type EmployeeRole = 'driver' | 'staff' | 'leader' | 'manager';
 /** Truck状態（統一） */
 export type TruckStatus = 'available' | 'maintenance' | 'inactive' | 'in_use';
 
-/** 契約状態（統一） */
-export type ContractStatus = 'estimate' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+/** 契約状態（統一） - shared.tsと同じ定義を使用 */
+export type ContractStatus = 'confirmed' | 'estimate';
 
 // =============================================================================
 // 関連型定義
@@ -113,20 +113,16 @@ export interface UnifiedPricingConfig {
 /**
  * 統一見積もり計算パラメータ
  */
+// CargoItemは utils/pricing.ts に統一 - 重複解消
+export type { CargoItem } from '../utils/pricing';
+
 export interface UnifiedEstimateParams {
   truckType: string;
-  items: CargoItem[];
+  items: import('../utils/pricing').CargoItem[];
   options: WorkOption[];
   distance?: number;
   timeSurcharges?: TimeBandSurcharge[];
   taxRate?: number;
-}
-
-export interface CargoItem {
-  name: string;
-  points: number;
-  weight?: number;
-  quantity: number;
 }
 
 export interface WorkOption {
