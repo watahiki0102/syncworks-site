@@ -489,7 +489,8 @@ export default function UnifiedCasesPage() {
         </div>
 
         <div className="bg-white shadow rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
@@ -619,6 +620,7 @@ export default function UnifiedCasesPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {(filteredCases?.length || 0) === 0 && (
             <div className="text-center py-8 text-gray-500">
