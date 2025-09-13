@@ -78,6 +78,20 @@ export default function UnifiedCasesPage() {
     );
   };
 
+  // 梱包資材配送対応済み状態の切り替え
+  const togglePackingDeliveryCompleted = (caseId: string) => {
+    setCases(prevCases => 
+      prevCases.map(c => 
+        c.id === caseId 
+          ? {
+              ...c,
+              packingDeliveryCompleted: !c.packingDeliveryCompleted
+            }
+          : c
+      )
+    );
+  };
+
   // ドロップダウンの外側をクリックしたときに閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -555,21 +569,44 @@ export default function UnifiedCasesPage() {
                             配送なし
                           </span>
                         )}
+                        {caseItem.packingDelivery && (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              id={`packing-completed-${caseItem.id}`}
+                              checked={caseItem.packingDeliveryCompleted || false}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                togglePackingDeliveryCompleted(caseItem.id);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                            />
+                            <label 
+                              htmlFor={`packing-completed-${caseItem.id}`}
+                              className="text-xs text-gray-600 cursor-pointer"
+                            >
+                              対応済み
+                            </label>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">期限:</span>
-                        <input
-                          type="date"
-                          value={caseItem.packingDeadline || ''}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateRowPackingDeadline(caseItem.id, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
-                          placeholder="未設定"
-                        />
-                      </div>
+                      {caseItem.packingDelivery && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600 dark:text-gray-400">期限:</span>
+                          <input
+                            type="date"
+                            value={caseItem.packingDeadline || ''}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateRowPackingDeadline(caseItem.id, e.target.value);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            placeholder="未設定"
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -747,6 +784,35 @@ export default function UnifiedCasesPage() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* 配送対応済みチェックボックス */}
+                      {viewingCase.packingDelivery && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">対応状況:</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`modal-packing-completed-${viewingCase.id}`}
+                              checked={viewingCase.packingDeliveryCompleted || false}
+                              onChange={() => {
+                                togglePackingDeliveryCompleted(viewingCase.id);
+                                // モーダル内の表示も更新
+                                setViewingCase(prev => prev ? {
+                                  ...prev,
+                                  packingDeliveryCompleted: !prev.packingDeliveryCompleted
+                                } : null);
+                              }}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                            />
+                            <label 
+                              htmlFor={`modal-packing-completed-${viewingCase.id}`}
+                              className="text-sm text-gray-700 cursor-pointer"
+                            >
+                              配送対応済み
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
