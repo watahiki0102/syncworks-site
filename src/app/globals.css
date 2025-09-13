@@ -119,7 +119,7 @@
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
   
   /* === MODERN TYPOGRAPHY === */
-  --font-sans: 'Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   
   /* Typography Scale */
@@ -211,7 +211,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
@@ -596,6 +596,11 @@ body {
 
 /* === MOBILE OPTIMIZATION === */
 @media (max-width: 640px) {
+  /* フォント統一 - モバイルでもPCと同じフォントを使用 */
+  *, body, html {
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif !important;
+  }
+  
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
