@@ -1162,16 +1162,16 @@ const UnifiedCaseManagement = ({
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="font-medium">引越し元:</span> {submission.originAddress}
+                        <span className="font-medium text-gray-700">引越し元:</span> {submission.originAddress}
                       </div>
                       <div>
-                        <span className="font-medium">引越し先:</span> {submission.destinationAddress}
+                        <span className="font-medium text-gray-700">引越し先:</span> {submission.destinationAddress}
                       </div>
                       <div>
-                        <span className="font-medium">総ポイント:</span> {submission.totalPoints}pt
+                        <span className="font-medium text-gray-700">総ポイント:</span> {submission.totalPoints}pt
                       </div>
                       <div>
-                        <span className="font-medium">総容量:</span> {submission.totalCapacity}kg
+                        <span className="font-medium text-gray-700">総容量:</span> {submission.totalCapacity}kg
                       </div>
                     </div>
                     

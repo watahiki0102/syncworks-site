@@ -377,7 +377,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
                   id="truckType"
                   value={formState.formData.truckType}
                   onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { truckType: e.target.value } })}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     formState.errors.truckType ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >

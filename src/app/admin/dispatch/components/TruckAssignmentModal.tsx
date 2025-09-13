@@ -189,16 +189,16 @@ export default function TruckAssignmentModal({
           <h4 className="font-medium text-gray-900 mb-2">案件情報</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium">顧客名:</span> {selectedSubmission.customerName}
+              <span className="font-medium text-gray-700">顧客名:</span> {selectedSubmission.customerName}
             </div>
             <div>
-              <span className="font-medium">引越し日:</span> {selectedSubmission.moveDate}
+              <span className="font-medium text-gray-700">引越し日:</span> {selectedSubmission.moveDate}
             </div>
             <div>
-              <span className="font-medium">総容量:</span> {selectedSubmission.totalCapacity.toLocaleString()}kg
+              <span className="font-medium text-gray-700">総容量:</span> {selectedSubmission.totalCapacity.toLocaleString()}kg
             </div>
             <div>
-              <span className="font-medium">荷物ポイント:</span> {selectedSubmission.totalPoints}pt
+              <span className="font-medium text-gray-700">荷物ポイント:</span> {selectedSubmission.totalPoints}pt
             </div>
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function TruckAssignmentModal({
             <select
               value={formData.truckId}
               onChange={e => setFormData({ ...formData, truckId: e.target.value })}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded text-gray-900"
               required
             >
               <option value="">トラックを選択してください</option>
@@ -230,7 +230,7 @@ export default function TruckAssignmentModal({
                 type="time"
                 value={formData.startTime}
                 onChange={e => setFormData({ ...formData, startTime: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
+                className="w-full px-3 py-2 border rounded text-gray-900"
                 required
               />
             </div>
@@ -240,7 +240,7 @@ export default function TruckAssignmentModal({
                 type="time"
                 value={formData.endTime}
                 onChange={e => setFormData({ ...formData, endTime: e.target.value })}
-                className="w-full px-3 py-2 border rounded"
+                className="w-full px-3 py-2 border rounded text-gray-900"
                 required
               />
             </div>
@@ -251,7 +251,7 @@ export default function TruckAssignmentModal({
             <select
               value={formData.workType}
               onChange={e => setFormData({ ...formData, workType: e.target.value as any })}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded text-gray-900"
               required
             >
               <option value="loading">積込</option>
@@ -266,7 +266,7 @@ export default function TruckAssignmentModal({
               type="number"
               value={formData.capacity}
               onChange={e => setFormData({ ...formData, capacity: e.target.value })}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded text-gray-900"
               placeholder="使用容量を入力"
               min="0"
               max={selectedSubmission.totalCapacity}

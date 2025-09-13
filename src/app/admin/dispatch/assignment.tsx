@@ -327,7 +327,7 @@ function TruckAssignmentPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500">📦</span>
-                            <span className="font-medium">容量: {submission.totalCapacity.toLocaleString()}kg</span>
+                            <span className="font-medium text-gray-700">容量: {submission.totalCapacity.toLocaleString()}kg</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500">📍</span>
@@ -405,7 +405,7 @@ function TruckAssignmentPage() {
                             <h4 className="text-sm font-semibold text-gray-900 mb-2">荷物リスト</h4>
                             <div className="flex flex-wrap gap-1">
                               {submission.itemList.map((item, index) => (
-                                <span key={index} className="text-xs bg-white border px-2 py-1 rounded">
+                                <span key={index} className="text-xs bg-white border px-2 py-1 rounded text-gray-700">
                                   {item}
                                 </span>
                               ))}
@@ -518,7 +518,7 @@ function TruckAssignmentPage() {
                         <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500">📦</span>
-                            <span className="font-medium">{truck.capacityKg.toLocaleString()}kg</span>
+                            <span className="font-medium text-gray-700">{truck.capacityKg.toLocaleString()}kg</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500">🚛</span>

@@ -75,7 +75,7 @@ export default function ScheduleSlot({
     >
       {/* スケジュール情報 */}
       <div className="text-xs text-gray-700 mb-2">
-        <div className="font-medium">{schedule.startTime}-{schedule.endTime}</div>
+        <div className="font-medium text-gray-900">{schedule.startTime}-{schedule.endTime}</div>
         {schedule.customerName && (
           <div className="truncate">{schedule.customerName}</div>
         )}

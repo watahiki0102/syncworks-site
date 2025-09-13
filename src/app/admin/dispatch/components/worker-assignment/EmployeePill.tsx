@@ -37,7 +37,7 @@ export default function EmployeePill({
       title={`${worker.name} (${roleConfig.label}) - ${assignment.start}-${assignment.end}`}
     >
       <span className="text-xs">{roleConfig.icon}</span>
-      <span className="font-medium truncate max-w-[60px]">{worker.name}</span>
+      <span className="font-medium text-gray-700 truncate max-w-[60px]">{worker.name}</span>
       <button
         onClick={(e) => {
           e.stopPropagation();

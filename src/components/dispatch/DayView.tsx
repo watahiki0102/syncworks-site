@@ -353,7 +353,7 @@ export default function DayView({
                 end: Math.max(newStart + 1, displayTimeRange.end)
               });
             }}
-            className="px-3 py-1 border rounded text-sm"
+            className="px-3 py-1 border rounded text-sm text-gray-900"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
@@ -363,7 +363,7 @@ export default function DayView({
           <select
             value={displayTimeRange.end}
             onChange={(e) => setDisplayTimeRange({ ...displayTimeRange, end: parseInt(e.target.value) })}
-            className="px-3 py-1 border rounded text-sm"
+            className="px-3 py-1 border rounded text-sm text-gray-900"
           >
             {Array.from({ length: 24 }, (_, i) => (
               i > displayTimeRange.start && (

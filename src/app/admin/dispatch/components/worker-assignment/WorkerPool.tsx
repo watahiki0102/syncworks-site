@@ -75,7 +75,7 @@ const DraggableWorker = ({ worker, isAvailable, currentAssignments, onDragStart,
       {currentAssignments.length > 0 && (
         <div className="mt-2 space-y-1">
           {currentAssignments.slice(0, 2).map((assignment, index) => (
-            <div key={index} className="text-xs bg-white bg-opacity-50 px-2 py-1 rounded">
+            <div key={index} className="text-xs bg-white bg-opacity-50 px-2 py-1 rounded text-gray-700">
               {assignment}
             </div>
           ))}

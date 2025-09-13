@@ -1627,29 +1627,29 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
         {/* 凡例 */}
         <div className="bg-gray-50 rounded p-2">
-          <div className="flex items-center gap-6 text-xs">
+          <div className="flex items-center gap-6 text-xs text-gray-700">
             <div className="flex items-center gap-1">
               <span>✅</span>
-              <span>確定</span>
+              <span className="text-gray-700">確定</span>
             </div>
             <div className="flex items-center gap-1">
               <span>⏳</span>
-              <span>未確定</span>
+              <span className="text-gray-700">未確定</span>
             </div>
 
             {viewMode === 'day' && (
               <>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span>50%未満</span>
+                  <span className="text-gray-700">50%未満</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                  <span>50%以上</span>
+                  <span className="text-gray-700">50%以上</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span>80%以上</span>
+                  <span className="text-gray-700">80%以上</span>
                 </div>
               </>
             )}
