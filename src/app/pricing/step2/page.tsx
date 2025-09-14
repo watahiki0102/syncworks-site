@@ -36,41 +36,43 @@ const TRUCK_TYPES = [
 const POINT_RANGE = Array.from({ length: 9999 }, (_, i) => i + 1);
 
 /**
- * デフォルト料金設定
+ * デフォルト料金設定（より実用的な価格設定）
  */
 const DEFAULT_PRICING = [
-  { truckType: "軽トラ", minPoint: 1, maxPoint: 100, price: 15000 },
-  { truckType: "2tショート", minPoint: 101, maxPoint: 250, price: 25000 },
-  { truckType: "2tロング", minPoint: 251, maxPoint: 350, price: 35000 },
-  { truckType: "3t", minPoint: 351, maxPoint: 450, price: 45000 },
-  { truckType: "4t", minPoint: 451, maxPoint: 600, price: 60000 },
-  { truckType: "4t複数", minPoint: 601, maxPoint: 800, price: 80000 },
-  { truckType: "特別対応", minPoint: 801, maxPoint: 1000, price: 100000 },
+  { truckType: "軽トラ", minPoint: 1, maxPoint: 50, price: 12000 },
+  { truckType: "2tショート", minPoint: 51, maxPoint: 150, price: 20000 },
+  { truckType: "2tロング", minPoint: 151, maxPoint: 250, price: 28000 },
+  { truckType: "3t", minPoint: 251, maxPoint: 400, price: 38000 },
+  { truckType: "4t", minPoint: 401, maxPoint: 600, price: 50000 },
+  { truckType: "4t複数", minPoint: 601, maxPoint: 800, price: 65000 },
+  { truckType: "特別対応", minPoint: 801, maxPoint: 1000, price: 80000 },
 ];
 
 /**
- * デフォルト車種係数
+ * デフォルト車種係数（より実用的な係数設定）
  */
 const DEFAULT_TRUCK_COEFFICIENTS = [
   { truckType: "軽トラ", coefficient: 1.0 },
-  { truckType: "2tショート", coefficient: 1.2 },
-  { truckType: "2tロング", coefficient: 1.4 },
-  { truckType: "3t", coefficient: 1.6 },
-  { truckType: "4t", coefficient: 1.8 },
-  { truckType: "4t複数", coefficient: 2.0 },
-  { truckType: "特別対応", coefficient: 2.5 },
+  { truckType: "2tショート", coefficient: 1.3 },
+  { truckType: "2tロング", coefficient: 1.5 },
+  { truckType: "3t", coefficient: 1.7 },
+  { truckType: "4t", coefficient: 1.9 },
+  { truckType: "4t複数", coefficient: 2.2 },
+  { truckType: "特別対応", coefficient: 2.8 },
 ];
 
 /**
- * デフォルト距離料金
+ * デフォルト距離料金（より実用的な距離料金設定）
  */
 const DEFAULT_DISTANCE_RANGES = [
-  { maxDistance: 10, basePrice: 0 },
-  { maxDistance: 20, basePrice: 2000 },
-  { maxDistance: 30, basePrice: 4000 },
-  { maxDistance: 50, basePrice: 6000 },
-  { maxDistance: 100, basePrice: 10000 },
-  { maxDistance: 999, basePrice: 15000 },
+  { maxDistance: 5, basePrice: 0 },
+  { maxDistance: 10, basePrice: 1500 },
+  { maxDistance: 20, basePrice: 3000 },
+  { maxDistance: 30, basePrice: 5000 },
+  { maxDistance: 50, basePrice: 8000 },
+  { maxDistance: 100, basePrice: 12000 },
+  { maxDistance: 200, basePrice: 18000 },
+  { maxDistance: 999, basePrice: 25000 },
 ];
 
 
@@ -123,17 +125,21 @@ type OptionType = typeof OPTION_TYPES[number]['value'];
 
 
 /**
- * デフォルトオプション設定
+ * デフォルトオプション設定（より実用的なオプション設定）
  */
 const DEFAULT_OPTIONS: OptionItem[] = [
   { id: 'opt-1', label: '🏠 建物養生（壁や床の保護）', type: 'free' as const, isDefault: true },
-  { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'free' as const, isDefault: true },
-  { id: 'opt-3', label: '🪑 家具・家電の分解・組み立て', type: 'free' as const, isDefault: true },
-  { id: 'opt-4', label: '🧺 洗濯機取り外し', type: 'free' as const, isDefault: true },
-  { id: 'opt-5', label: '❄️ エアコン（本体＋室外機）取り外し', type: 'free' as const, isDefault: true },
-  { id: 'opt-6', label: '💡 照明・テレビ配線取り外し', type: 'free' as const, isDefault: true },
-  { id: 'opt-7', label: '🚮 不用品の回収・廃棄', type: 'free' as const, isDefault: true },
-  { id: 'opt-8', label: '🐾 ペット運搬', type: 'free' as const, isDefault: true },
+  { id: 'opt-2', label: '📦 荷造り・荷ほどきの代行', type: 'paid' as const, price: 3000, isDefault: true },
+  { id: 'opt-3', label: '🪑 家具・家電の分解・組み立て', type: 'paid' as const, price: 5000, isDefault: true },
+  { id: 'opt-4', label: '🧺 洗濯機取り外し・取り付け', type: 'paid' as const, price: 2000, isDefault: true },
+  { id: 'opt-5', label: '❄️ エアコン（本体＋室外機）取り外し・取り付け', type: 'paid' as const, price: 8000, isDefault: true },
+  { id: 'opt-6', label: '💡 照明・テレビ配線取り外し・取り付け', type: 'paid' as const, price: 3000, isDefault: true },
+  { id: 'opt-7', label: '🚮 不用品の回収・廃棄', type: 'individual' as const, isDefault: true },
+  { id: 'opt-8', label: '🐾 ペット運搬', type: 'paid' as const, price: 2000, isDefault: true },
+  { id: 'opt-9', label: '🚚 特殊車両の手配', type: 'individual' as const, isDefault: true },
+  { id: 'opt-10', label: '📦 段ボール提供', type: 'paid' as const, price: 500, isDefault: true },
+  { id: 'opt-11', label: '🕐 夜間・早朝作業', type: 'paid' as const, price: 10000, isDefault: true },
+  { id: 'opt-12', label: '🏢 オフィス移転', type: 'paid' as const, price: 15000, isDefault: true },
 ];
 
 export default function PricingStep2Page() {
@@ -297,7 +303,7 @@ export default function PricingStep2Page() {
     if (savedTrucks) {
       setPricingTrucks(JSON.parse(savedTrucks));
     } else {
-      // デフォルトのトラックデータ
+      // デフォルトのトラックデータ（より実用的なトラック設定）
       const defaultTrucks: PricingTruck[] = [
         {
           id: 'truck-1',
@@ -305,9 +311,9 @@ export default function PricingStep2Page() {
           plateNumber: '品川 500 あ 1234',
           truckType: '軽トラ',
           capacityKg: 500,
-          basePrice: 15000,
+          basePrice: 12000,
           status: 'active',
-          description: '小型荷物用',
+          description: '小型荷物・単身者向け',
         },
         {
           id: 'truck-2',
@@ -315,19 +321,59 @@ export default function PricingStep2Page() {
           plateNumber: '品川 500 い 5678',
           truckType: '2tショート',
           capacityKg: 1000,
-          basePrice: 25000,
+          basePrice: 20000,
           status: 'active',
-          description: '一般家庭用',
+          description: '1K・1R向け',
         },
         {
           id: 'truck-3',
-          name: '4tロングA',
+          name: '2tロングB',
           plateNumber: '品川 500 う 9012',
-          truckType: '4t',
-          capacityKg: 2000,
-          basePrice: 60000,
+          truckType: '2tロング',
+          capacityKg: 1500,
+          basePrice: 28000,
           status: 'active',
-          description: '大型荷物用',
+          description: '1LDK・2K向け',
+        },
+        {
+          id: 'truck-4',
+          name: '3tトラックA',
+          plateNumber: '品川 500 え 3456',
+          truckType: '3t',
+          capacityKg: 2000,
+          basePrice: 38000,
+          status: 'active',
+          description: '2LDK・3K向け',
+        },
+        {
+          id: 'truck-5',
+          name: '4tトラックA',
+          plateNumber: '品川 500 お 7890',
+          truckType: '4t',
+          capacityKg: 3000,
+          basePrice: 50000,
+          status: 'active',
+          description: '3LDK・4K向け',
+        },
+        {
+          id: 'truck-6',
+          name: '4t複数車両A',
+          plateNumber: '品川 500 か 2468',
+          truckType: '4t複数',
+          capacityKg: 4000,
+          basePrice: 65000,
+          status: 'active',
+          description: '大型物件・オフィス移転',
+        },
+        {
+          id: 'truck-7',
+          name: '特別対応車両A',
+          plateNumber: '品川 500 き 1357',
+          truckType: '特別対応',
+          capacityKg: 5000,
+          basePrice: 80000,
+          status: 'active',
+          description: 'ピアノ・金庫等の特別荷物',
         },
       ];
       setPricingTrucks(defaultTrucks);

@@ -140,6 +140,25 @@ export class IntermediaryService {
   }
 
   /**
+   * 仲介元名を削除
+   */
+  static removeName(name: string): void {
+    if (typeof window === 'undefined') return;
+    if (!name.trim()) return;
+    
+    const savedNames = this.getSavedNames();
+    const filteredNames = savedNames.filter(savedName => savedName !== name.trim());
+    
+    if (filteredNames.length !== savedNames.length) {
+      try {
+        localStorage.setItem(INTERMEDIARY_NAMES_KEY, JSON.stringify(filteredNames));
+      } catch (error) {
+        console.error('仲介元名の削除に失敗しました:', error);
+      }
+    }
+  }
+
+  /**
    * IDで仲介元名を取得（後方互換性のため）
    */
   static getById(id: string): { name: string } | null {

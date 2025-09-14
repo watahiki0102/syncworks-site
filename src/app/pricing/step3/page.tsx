@@ -18,32 +18,72 @@ const PRICE_TYPES = [
 ];
 
 /**
- * デフォルトシーズンルール設定
+ * デフォルトシーズンルール設定（より実用的なシーズン設定）
  */
 const DEFAULT_SEASON_RULES = [
   {
-    name: "年末年始",
+    name: "年末年始繁忙期",
     startDate: "2024-12-25",
     endDate: "2025-01-05",
     priceType: "percentage",
-    price: 20,
-    description: "年末年始の繁忙期"
+    price: 25,
+    description: "年末年始の繁忙期（最も需要が高い期間）"
   },
   {
-    name: "引越しシーズン",
+    name: "春の引越しシーズン",
     startDate: "2024-03-01",
     endDate: "2024-04-30",
     priceType: "percentage",
-    price: 15,
-    description: "春の引越しシーズン"
+    price: 20,
+    description: "春の引越しシーズン（新生活スタート時期）"
   },
   {
-    name: "夏季料金",
+    name: "夏の引越しシーズン",
     startDate: "2024-07-01",
     endDate: "2024-08-31",
+    priceType: "percentage",
+    price: 15,
+    description: "夏の引越しシーズン（暑い時期の作業加算）"
+  },
+  {
+    name: "ゴールデンウィーク",
+    startDate: "2024-04-29",
+    endDate: "2024-05-05",
+    priceType: "percentage",
+    price: 30,
+    description: "ゴールデンウィーク期間（連休中の特別料金）"
+  },
+  {
+    name: "夏季特別料金",
+    startDate: "2024-07-15",
+    endDate: "2024-08-15",
     priceType: "fixed",
-    price: 5000,
-    description: "夏季の特別料金"
+    price: 8000,
+    description: "真夏の暑い時期の特別料金（熱中症対策等）"
+  },
+  {
+    name: "閑散期割引",
+    startDate: "2024-09-01",
+    endDate: "2024-11-30",
+    priceType: "percentage",
+    price: -10,
+    description: "秋の閑散期割引（需要が少ない時期の割引）"
+  },
+  {
+    name: "年末繁忙期",
+    startDate: "2024-12-01",
+    endDate: "2024-12-24",
+    priceType: "percentage",
+    price: 15,
+    description: "12月の年末繁忙期（年末年始前の準備期間）"
+  },
+  {
+    name: "正月明け",
+    startDate: "2025-01-06",
+    endDate: "2025-01-15",
+    priceType: "percentage",
+    price: 10,
+    description: "正月明けの繁忙期（年末年始後の需要）"
   }
 ];
 

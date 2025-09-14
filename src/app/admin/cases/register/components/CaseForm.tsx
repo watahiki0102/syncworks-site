@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { PaymentMethod, PaymentStatus } from '@/types/case';
 import { ITEM_CATEGORIES } from '@/constants/items';
 import { IntermediaryService } from '../../lib/normalize';
+import { searchAddressByPostalCode } from '@/utils/postalCodeSearch';
+import { TimeSlotSelect } from '@/components/ui/TimeSlotSelect';
 
 interface CaseFormProps {
   onSubmit: (_formData: any) => void;
@@ -17,10 +19,16 @@ interface FormData {
   customerEmail: string;
   
   // 住所情報
-  fromAddress: string;
-  toAddress: string;
   fromPostalCode: string;
+  fromPrefecture: string;
+  fromCity: string;
+  fromStreetNumber: string;
+  fromBuildingName: string;
   toPostalCode: string;
+  toPrefecture: string;
+  toCity: string;
+  toStreetNumber: string;
+  toBuildingName: string;
   
   // 引っ越し日（3つの希望日）
   moveDate1: string;
@@ -48,7 +56,6 @@ interface FormData {
   paymentStatus: PaymentStatus;
   
   // 仲介元情報
-  intermediaryMode: 'existing' | 'new';
   sourceType: string;
   newIntermediaryName: string;
   
@@ -68,25 +75,36 @@ const ADDITIONAL_SERVICES = [
   "🚚 特殊車両の手配"
 ];
 
-const TIME_SLOTS = [
-  { value: 'morning', label: '午前（9:00-12:00）' },
-  { value: 'afternoon', label: '午後（13:00-17:00）' },
-  { value: 'evening', label: '夕方（17:00-20:00）' },
-  { value: 'custom', label: '時間指定' }
-];
+// 時間帯選択は共通コンポーネントを使用
 
 const PAYMENT_METHODS: PaymentMethod[] = ['銀行振込', '現金', 'クレジットカード', '請求書'];
 const PAYMENT_STATUSES: PaymentStatus[] = ['未請求', '請求済', '入金待ち', '入金済', '保留'];
+
+const PREFECTURES = [
+  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+];
 
 export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   const [formData, setFormData] = useState<FormData>({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
-    fromAddress: '',
-    toAddress: '',
     fromPostalCode: '',
+    fromPrefecture: '',
+    fromCity: '',
+    fromStreetNumber: '',
+    fromBuildingName: '',
     toPostalCode: '',
+    toPrefecture: '',
+    toCity: '',
+    toStreetNumber: '',
+    toBuildingName: '',
     moveDate1: '',
     moveDate2: '',
     moveDate3: '',
@@ -102,7 +120,6 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     contractStatus: 'estimate',
     paymentMethod: '銀行振込',
     paymentStatus: '未請求',
-    intermediaryMode: 'existing',
     sourceType: '',
     newIntermediaryName: '',
     notes: ''
@@ -110,6 +127,9 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
 
   const [customService, setCustomService] = useState<string>('');
   const [showEstimateModal, setShowEstimateModal] = useState<boolean>(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [isSearchingFrom, setIsSearchingFrom] = useState<boolean>(false);
+  const [isSearchingTo, setIsSearchingTo] = useState<boolean>(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -124,12 +144,101 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     IntermediaryService.initializeTestData();
   }, []);
 
+  // ドロップダウン外をクリックしたときに閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = event.target as Element;
+        if (!target.closest('.dropdown-container')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   // 追加サービスに手書き項目を追加
   const addCustomService = () => {
     if (customService.trim()) {
       const newServices = [...formData.additionalServices, customService.trim()];
       updateFormData('additionalServices', newServices);
       setCustomService('');
+    }
+  };
+
+  // 新規仲介元を追加
+  const addNewIntermediary = () => {
+    if (formData.newIntermediaryName.trim()) {
+      const newName = formData.newIntermediaryName.trim();
+      
+      // SyncMovingは他社案件として登録できない
+      if (newName.toLowerCase() === 'syncmoving') {
+        setErrors(prev => ({ ...prev, newIntermediaryName: 'SyncMovingは他社案件として登録できません' }));
+        return;
+      }
+      
+      // 仲介元サービスに追加
+      IntermediaryService.addName(newName);
+      
+      // 選択肢に自動選択
+      updateFormData('sourceType', newName);
+      
+      // 入力フィールドをクリア
+      updateFormData('newIntermediaryName', '');
+      
+      // エラーをクリア
+      if (errors.newIntermediaryName) {
+        setErrors(prev => ({ ...prev, newIntermediaryName: '' }));
+      }
+    }
+  };
+
+  // 仲介元を削除
+  const removeIntermediary = (name: string) => {
+    if (confirm(`「${name}」を削除しますか？`)) {
+      IntermediaryService.removeName(name);
+      
+      // 現在選択されている項目が削除された場合は選択をクリア
+      if (formData.sourceType === name) {
+        updateFormData('sourceType', '');
+      }
+    }
+  };
+
+  // 郵便番号から住所を検索
+  const searchAddress = async (postalCode: string, type: 'from' | 'to') => {
+    if (!postalCode || !/^\d{7}$/.test(postalCode)) {
+      return;
+    }
+
+    const setSearching = type === 'from' ? setIsSearchingFrom : setIsSearchingTo;
+    setSearching(true);
+
+    try {
+      const result = await searchAddressByPostalCode(postalCode);
+      
+      if (result) {
+        if (type === 'from') {
+          updateFormData('fromPrefecture', result.prefecture);
+          updateFormData('fromCity', result.city);
+          updateFormData('fromStreetNumber', result.streetNumber);
+        } else {
+          updateFormData('toPrefecture', result.prefecture);
+          updateFormData('toCity', result.city);
+          updateFormData('toStreetNumber', result.streetNumber);
+        }
+      } else {
+        alert('該当する住所が見つかりませんでした。');
+      }
+    } catch (error) {
+      console.error('郵便番号検索エラー:', error);
+      alert('住所の検索に失敗しました。');
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -159,11 +268,11 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       newErrors.customerPhone = '電話番号は必須です';
     }
 
-    if (!formData.fromAddress.trim()) {
+    if (!formData.fromPrefecture.trim() || !formData.fromCity.trim()) {
       newErrors.fromAddress = '引越し元住所は必須です';
     }
 
-    if (!formData.toAddress.trim()) {
+    if (!formData.toPrefecture.trim() || !formData.toCity.trim()) {
       newErrors.toAddress = '引越し先住所は必須です';
     }
 
@@ -176,16 +285,8 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     }
 
     // 仲介元のバリデーション
-    if (formData.intermediaryMode === 'existing' && !formData.sourceType) {
+    if (!formData.sourceType) {
       newErrors.sourceType = '仲介元の選択は必須です';
-    }
-    
-    if (formData.intermediaryMode === 'new') {
-      if (!formData.newIntermediaryName.trim()) {
-        newErrors.newIntermediaryName = '新しい仲介元名は必須です';
-      } else if (formData.newIntermediaryName.trim().toLowerCase() === 'syncmoving') {
-        newErrors.newIntermediaryName = 'SyncMovingは他社案件として登録できません';
-      }
     }
 
     setErrors(newErrors);
@@ -195,20 +296,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // 新規仲介元の場合は保存して sourceType に設定
-      if (formData.intermediaryMode === 'new' && formData.newIntermediaryName.trim()) {
-        const newName = formData.newIntermediaryName.trim();
-        IntermediaryService.addName(newName);
-        
-        // 送信データの sourceType を新規仲介元名に設定
-        const submissionData = {
-          ...formData,
-          sourceType: newName
-        };
-        onSubmit(submissionData);
-      } else {
-        onSubmit(formData);
-      }
+      onSubmit(formData);
     }
   };
 
@@ -279,146 +367,314 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       {/* 仲介元情報 */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <h3 className="text-lg font-medium text-gray-900 mb-4">仲介元情報</h3>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 既存から選択 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              仲介元の選択方法
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              仲介元 <span className="text-red-500">*</span>
             </label>
-            <div className="flex space-x-4">
-              <label className="inline-flex items-center text-gray-900">
-                <input
-                  type="radio"
-                  value="existing"
-                  checked={formData.intermediaryMode === 'existing'}
-                  onChange={(e) => updateFormData('intermediaryMode', e.target.value as 'existing' | 'new')}
-                  className="mr-2"
-                />
-                既存から選択
-              </label>
-              <label className="inline-flex items-center text-gray-900">
-                <input
-                  type="radio"
-                  value="new"
-                  checked={formData.intermediaryMode === 'new'}
-                  onChange={(e) => updateFormData('intermediaryMode', e.target.value as 'existing' | 'new')}
-                  className="mr-2"
-                />
-                新規追加
-              </label>
-            </div>
-          </div>
-
-          {formData.intermediaryMode === 'existing' ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                仲介元 <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.sourceType}
-                onChange={(e) => updateFormData('sourceType', e.target.value)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+            <div className="relative dropdown-container">
+              {/* カスタムドロップダウン */}
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 text-left text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.sourceType ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">仲介元を選択してください</option>
-                {IntermediaryService.getSelectOptions().map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {errors.sourceType && (
-                <p className="mt-1 text-sm text-red-600">{errors.sourceType}</p>
+                <span className={formData.sourceType ? 'text-gray-900' : 'text-gray-500'}>
+                  {formData.sourceType || '仲介元を選択してください'}
+                </span>
+                <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </button>
+              
+              {/* ドロップダウンメニュー */}
+            {isDropdownOpen && (
+              <div className="absolute z-10 top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {IntermediaryService.getSelectOptions().length > 0 ? (
+                    IntermediaryService.getSelectOptions().map((option) => (
+                      <div key={option.value} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateFormData('sourceType', option.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`text-left flex-1 text-sm ${
+                            formData.sourceType === option.value 
+                              ? 'text-blue-600 font-medium' 
+                              : 'text-gray-700 hover:text-blue-600'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeIntermediary(option.value);
+                          }}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors ml-2"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      登録済みの仲介元がありません
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                新しい仲介元名 <span className="text-red-500">*</span>
-              </label>
+            {errors.sourceType && (
+              <p className="mt-1 text-sm text-red-600">{errors.sourceType}</p>
+            )}
+          </div>
+
+          {/* 新規追加セクション */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              新規仲介元を追加
+            </label>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={formData.newIntermediaryName}
                 onChange={(e) => updateFormData('newIntermediaryName', e.target.value)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`flex-1 border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.newIntermediaryName ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="例：引越し価格ガイド、ズバット引越し比較、LIFULL引越し等"
+                placeholder="例：引越し価格ガイド等"
+                onKeyPress={(e) => e.key === 'Enter' && addNewIntermediary()}
               />
-              {errors.newIntermediaryName && (
-                <p className="mt-1 text-sm text-red-600">{errors.newIntermediaryName}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                登録後、次回以降は選択肢に表示されます
-              </p>
+              <button
+                type="button"
+                onClick={addNewIntermediary}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={!formData.newIntermediaryName.trim()}
+              >
+                追加
+              </button>
             </div>
-          )}
+            {errors.newIntermediaryName && (
+              <p className="mt-1 text-sm text-red-600">{errors.newIntermediaryName}</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              追加後、左の選択肢に表示され、選択できるようになります
+            </p>
+          </div>
         </div>
       </div>
 
       {/* 住所情報 */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">住所情報</h3>
-        <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          住所 <span className="inline-block bg-red-500 text-white text-xs px-2 py-1 rounded ml-2">必須</span>
+        </h3>
+        <div className="space-y-6">
+          {/* 引越し元住所 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              引越し元住所 <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              <input
-                type="text"
-                value={formData.fromPostalCode}
-                onChange={(e) => updateFormData('fromPostalCode', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="郵便番号"
-              />
-              <input
-                type="text"
-                value={formData.fromAddress}
-                onChange={(e) => updateFormData('fromAddress', e.target.value)}
-                className={`col-span-3 border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.fromAddress ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="住所"
-              />
+            <h4 className="text-md font-medium text-gray-700 mb-3">引越し元住所</h4>
+            <div className="space-y-3">
+            {/* 郵便番号と都道府県 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* 郵便番号 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  郵便番号 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.fromPostalCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      updateFormData('fromPostalCode', value);
+                    }}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="例：1234567"
+                    maxLength={7}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => searchAddress(formData.fromPostalCode, 'from')}
+                    disabled={!formData.fromPostalCode || formData.fromPostalCode.length !== 7 || isSearchingFrom}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                  >
+                    {isSearchingFrom ? '検索中...' : '住所を検索'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 都道府県 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  都道府県 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.fromPrefecture}
+                  onChange={(e) => updateFormData('fromPrefecture', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">選択してください</option>
+                  {PREFECTURES.map((pref) => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            {errors.fromAddress && (
-              <p className="mt-1 text-sm text-red-600">{errors.fromAddress}</p>
-            )}
+
+              {/* 市区町村 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  市区町村 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.fromCity}
+                  onChange={(e) => updateFormData('fromCity', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：渋谷区恵比寿"
+                />
+              </div>
+
+              {/* 番地 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  番地 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.fromStreetNumber}
+                  onChange={(e) => updateFormData('fromStreetNumber', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：1-2-3"
+                />
+              </div>
+
+              {/* 建物名・部屋番号 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  建物名・部屋番号
+                </label>
+                <input
+                  type="text"
+                  value={formData.fromBuildingName}
+                  onChange={(e) => updateFormData('fromBuildingName', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：マンション名 101号室"
+                />
+              </div>
+            </div>
           </div>
 
+          {/* 引越し先住所 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              引越し先住所 <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              <input
-                type="text"
-                value={formData.toPostalCode}
-                onChange={(e) => updateFormData('toPostalCode', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="郵便番号"
-              />
-              <input
-                type="text"
-                value={formData.toAddress}
-                onChange={(e) => updateFormData('toAddress', e.target.value)}
-                className={`col-span-3 border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.toAddress ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="住所"
-              />
+            <h4 className="text-md font-medium text-gray-700 mb-3">引越し先住所</h4>
+            <div className="space-y-3">
+            {/* 郵便番号と都道府県 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* 郵便番号 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  郵便番号 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.toPostalCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      updateFormData('toPostalCode', value);
+                    }}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="例：1234567"
+                    maxLength={7}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => searchAddress(formData.toPostalCode, 'to')}
+                    disabled={!formData.toPostalCode || formData.toPostalCode.length !== 7 || isSearchingTo}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                  >
+                    {isSearchingTo ? '検索中...' : '住所を検索'}
+                  </button>
+                </div>
+              </div>
+
+              {/* 都道府県 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  都道府県 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.toPrefecture}
+                  onChange={(e) => updateFormData('toPrefecture', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">選択してください</option>
+                  {PREFECTURES.map((pref) => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            {errors.toAddress && (
-              <p className="mt-1 text-sm text-red-600">{errors.toAddress}</p>
-            )}
+
+              {/* 市区町村 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  市区町村 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.toCity}
+                  onChange={(e) => updateFormData('toCity', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：渋谷区恵比寿"
+                />
+              </div>
+
+              {/* 番地 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  番地 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.toStreetNumber}
+                  onChange={(e) => updateFormData('toStreetNumber', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：1-2-3"
+                />
+              </div>
+
+              {/* 建物名・部屋番号 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  建物名・部屋番号
+                </label>
+                <input
+                  type="text"
+                  value={formData.toBuildingName}
+                  onChange={(e) => updateFormData('toBuildingName', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="例：マンション名 101号室"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 引っ越し日（3つの希望日） */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">引っ越し希望日</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">引越し希望日</h3>
         <p className="text-sm text-gray-600 mb-4">最大3つまで希望日を入力できます</p>
         
         {/* 第1希望 */}
@@ -442,16 +698,11 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
-              <select
+              <TimeSlotSelect
                 value={formData.moveTime1}
-                onChange={(e) => updateFormData('moveTime1', e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">選択してください</option>
-                {TIME_SLOTS.map((slot) => (
-                  <option key={slot.value} value={slot.value}>{slot.label}</option>
-                ))}
-              </select>
+                onChange={(value) => updateFormData('moveTime1', value)}
+                placeholder="選択してください"
+              />
             </div>
           </div>
         </div>
@@ -472,16 +723,11 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
-              <select
+              <TimeSlotSelect
                 value={formData.moveTime2}
-                onChange={(e) => updateFormData('moveTime2', e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">選択してください</option>
-                {TIME_SLOTS.map((slot) => (
-                  <option key={slot.value} value={slot.value}>{slot.label}</option>
-                ))}
-              </select>
+                onChange={(value) => updateFormData('moveTime2', value)}
+                placeholder="選択してください"
+              />
             </div>
           </div>
         </div>
@@ -502,16 +748,11 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
-              <select
+              <TimeSlotSelect
                 value={formData.moveTime3}
-                onChange={(e) => updateFormData('moveTime3', e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">選択してください</option>
-                {TIME_SLOTS.map((slot) => (
-                  <option key={slot.value} value={slot.value}>{slot.label}</option>
-                ))}
-              </select>
+                onChange={(value) => updateFormData('moveTime3', value)}
+                placeholder="選択してください"
+              />
             </div>
           </div>
         </div>
@@ -795,6 +1036,17 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
   const [items, setItems] = useState<Record<string, number>>({});
   const [boxOption, setBoxOption] = useState<string>('');
   const [boxCount, setBoxCount] = useState<number>(0);
+  const [calculationResult, setCalculationResult] = useState<{ totalPoints: number; estimatedPrice: number } | null>(null);
+
+  // モーダルが開かれた時に状態をリセット
+  useEffect(() => {
+    if (isOpen) {
+      setItems({});
+      setBoxOption('');
+      setBoxCount(0);
+      setCalculationResult(null);
+    }
+  }, [isOpen]);
 
   const boxSizeOptions = [
     "🏠 10箱未満（荷物が少ない）",
@@ -870,9 +1122,15 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
     return { totalPoints, estimatedPrice };
   };
 
-  const handleCalculateAndApply = () => {
+  const handleCalculate = () => {
     const result = calculateEstimate();
-    onCalculate(result);
+    setCalculationResult(result);
+  };
+
+  const handleApply = () => {
+    if (calculationResult) {
+      onCalculate(calculationResult);
+    }
   };
 
   if (!isOpen) return null;
@@ -961,33 +1219,49 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
         {/* 計算結果プレビュー */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-medium text-blue-900 mb-2">計算結果プレビュー</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-blue-700">総ポイント数: </span>
-              <span className="font-medium">{calculateEstimate().totalPoints}pt</span>
+          {calculationResult && calculationResult.totalPoints !== undefined ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700">総ポイント数: </span>
+                <span className="font-medium text-gray-900">{calculationResult.totalPoints}pt</span>
+              </div>
+              <div>
+                <span className="text-blue-700">見積金額: </span>
+                <span className="font-medium text-gray-900">
+                  {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(calculationResult.estimatedPrice)}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-blue-700">見積金額: </span>
-              <span className="font-medium">
-                {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(calculateEstimate().estimatedPrice)}
-              </span>
+          ) : (
+            <div className="text-sm text-blue-600">
+              算出ボタンを押して計算結果を表示してください
             </div>
-          </div>
+          )}
         </div>
         
         {/* ボタン */}
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
           >
             キャンセル
           </button>
           <button
-            onClick={handleCalculateAndApply}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            type="button"
+            onClick={handleCalculate}
+            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium"
           >
-            算出結果を適用
+            算出
+          </button>
+          <button
+            type="button"
+            onClick={handleApply}
+            disabled={!calculationResult || calculationResult.totalPoints === undefined}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            適用
           </button>
         </div>
       </div>

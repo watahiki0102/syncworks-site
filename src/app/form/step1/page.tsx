@@ -15,6 +15,8 @@ import ProgressBar from '@/components/ProgressBar';
 import "react-datepicker/dist/react-datepicker.css";
 
 import { Step1FormData } from '@/types/common';
+import { searchAddressForAutoComplete } from '@/utils/postalCodeSearch';
+import { TimeSlotSelect, TIME_SLOTS } from '@/components/ui/TimeSlotSelect';
 
 /**
  * よく使用されるメールドメイン
@@ -27,20 +29,7 @@ const COMMON_DOMAINS = [
   'hotmail.com'
 ];
 
-/**
- * 時間帯選択オプション
- */
-const TIME_SLOTS = [
-  { value: 'none', label: '指定なし' },
-  { value: 'early_morning', label: '早朝（6～9時）' },
-  { value: 'morning', label: '午前（9～12時）' },
-  { value: 'afternoon', label: '午後（12～15時）' },
-  { value: 'evening', label: '夕方（15～18時）' },
-  { value: 'night', label: '夜間（18～21時）' },
-  { value: 'not_early', label: '早朝以外（9～21時）' },
-  { value: 'not_night', label: '夜間以外（6～18時）' },
-  { value: 'daytime_only', label: '早朝・夜間以外（9～18時）' }
-];
+// 時間帯選択は共通コンポーネントを使用
 
 /**
  * 住宅タイプ選択オプション
@@ -412,12 +401,10 @@ function Step1FormContent() {
           prevPostalCodeRef.current = zipcode;
           const addressField = name === 'fromPostalCode' ? 'fromAddress' : 'toAddress';
 
-          fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zipcode}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.results && data.results.length > 0) {
-                const { address1, address2, address3 } = data.results[0];
-                setValue(addressField, `${address1}${address2}${address3}`);
+          searchAddressForAutoComplete(zipcode)
+            .then((address) => {
+              if (address) {
+                setValue(addressField, address);
               }
             })
             .catch((e) => {

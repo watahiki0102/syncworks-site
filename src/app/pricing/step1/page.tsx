@@ -24,20 +24,158 @@ export default function PricingStep0Page() {
    * - 保存データがない場合はデフォルト値を設定
    */
   useEffect(() => {
+    // バージョン管理でデータを強制更新
+    const DATA_VERSION = 'v2.3'; // 新しいバージョン
+    const savedVersion = localStorage.getItem('pricingStep0_version');
+    
+    // バージョンが異なる場合はデータをクリアして新しいデフォルト値を適用
+    if (savedVersion !== DATA_VERSION) {
+      localStorage.removeItem('pricingStep0');
+      localStorage.setItem('pricingStep0_version', DATA_VERSION);
+    }
+    
     const savedPoints = localStorage.getItem('pricingStep0');
     if (savedPoints) {
       setItemPoints(JSON.parse(savedPoints));
     } else {
-      // デフォルトポイントを設定
+      // 新しいデフォルトポイントを設定（段ボール中基準の現実的な値）
       const defaultPoints = ITEM_CATEGORIES.flatMap(category =>
-        category.items.map((item, index) => ({
-          id: `${category.category}-${index}`,
-          category: category.category,
-          name: item.name,
-          points: item.defaultPoints,
-          defaultPoints: item.defaultPoints,
-          additionalCost: 0 // 加算金を0で初期化
-        }))
+        category.items.map((item, index) => {
+          // 段ボール中（50×35×35cm）基準の現実的なポイント設定
+          let realPoints = item.defaultPoints;
+          
+          if (category.category === '大型家具') {
+          if (item.name.includes('ベッド')) {
+            realPoints = item.name.includes('シングル') ? 20 : 
+                        item.name.includes('セミダブル') ? 25 :
+                        item.name.includes('ダブル') ? 30 :
+                        item.name.includes('クイーン') ? 35 :
+                        item.name.includes('キング') ? 40 :
+                        item.name.includes('2段') ? 32 : 25;
+          } else if (item.name.includes('ソファ')) {
+            realPoints = item.name.includes('1人') ? 12 :
+                        item.name.includes('2人') ? 20 :
+                        item.name.includes('3人') ? 28 :
+                        item.name.includes('L字') ? 32 : 20;
+          } else if (item.name.includes('テーブル')) {
+            realPoints = item.name.includes('小') ? 6 :
+                        item.name.includes('中') ? 12 :
+                        item.name.includes('大') ? 20 :
+                        item.name.includes('ダイニング') ? 16 :
+                        item.name.includes('こたつ') ? 14 : 12;
+          } else if (item.name.includes('タンス') || item.name.includes('クローゼット')) {
+            realPoints = item.name.includes('大') ? 24 :
+                        item.name.includes('中') ? 16 :
+                        item.name.includes('小') ? 12 : 16;
+            } else if (item.name.includes('本棚')) {
+              realPoints = item.name.includes('大') ? 12 :
+                          item.name.includes('中') ? 8 :
+                          item.name.includes('小') ? 5 : 8;
+            } else if (item.name.includes('デスク')) {
+              realPoints = item.name.includes('大') ? 10 :
+                          item.name.includes('学習') ? 8 :
+                          item.name.includes('パソコン') ? 6 : 8;
+            } else if (item.name.includes('食器棚')) {
+              realPoints = 15;
+            } else if (item.name.includes('キャビネット')) {
+              realPoints = 10;
+            } else if (item.name.includes('チェスト')) {
+              realPoints = 8;
+            } else if (item.name.includes('ワードローブ')) {
+              realPoints = 20;
+            } else {
+              realPoints = 10;
+            }
+          } else if (category.category === '家電製品') {
+            if (item.name.includes('冷蔵庫')) {
+              realPoints = item.name.includes('小') ? 6 :
+                          item.name.includes('中') ? 10 :
+                          item.name.includes('大') ? 15 :
+                          item.name.includes('業務用') ? 20 : 10;
+            } else if (item.name.includes('洗濯機')) {
+              realPoints = item.name.includes('ドラム') ? 8 :
+                          item.name.includes('縦型') ? 6 :
+                          item.name.includes('二槽式') ? 5 : 6;
+            } else if (item.name.includes('テレビ')) {
+              realPoints = item.name.includes('32インチ以下') ? 3 :
+                          item.name.includes('43インチ') ? 5 :
+                          item.name.includes('55インチ') ? 7 :
+                          item.name.includes('65インチ以上') ? 10 :
+                          item.name.includes('小') ? 3 :
+                          item.name.includes('中') ? 5 :
+                          item.name.includes('大') ? 8 : 5;
+            } else if (item.name.includes('エアコン')) {
+              realPoints = 5;
+            } else if (item.name.includes('電子レンジ')) {
+              realPoints = 2;
+            } else if (item.name.includes('炊飯器')) {
+              realPoints = 1;
+            } else if (item.name.includes('掃除機')) {
+              realPoints = 2;
+            } else if (item.name.includes('オーブン')) {
+              realPoints = 3;
+            } else if (item.name.includes('食洗機')) {
+              realPoints = 4;
+            } else if (item.name.includes('プリンター')) {
+              realPoints = 2;
+            } else if (item.name.includes('パソコン')) {
+              realPoints = 1;
+            } else if (item.name.includes('ステレオ')) {
+              realPoints = 3;
+            } else {
+              realPoints = 3;
+            }
+          } else if (category.category === '小型家具') {
+            if (item.name.includes('椅子')) {
+              realPoints = item.name.includes('オフィス') ? 3 :
+                          item.name.includes('ダイニング') ? 2 :
+                          item.name.includes('折りたたみ') ? 1 : 2;
+            } else if (item.name.includes('スツール')) {
+              realPoints = 1;
+            } else if (item.name.includes('サイドテーブル')) {
+              realPoints = 2;
+            } else if (item.name.includes('コーヒーテーブル')) {
+              realPoints = 3;
+            } else if (item.name.includes('ラック')) {
+              realPoints = 4;
+            } else if (item.name.includes('カラーボックス')) {
+              realPoints = 3;
+            } else if (item.name.includes('ハンガーラック')) {
+              realPoints = 2;
+            } else {
+              realPoints = 3;
+            }
+          } else if (category.category === '特殊荷物') {
+            if (item.name.includes('ピアノ')) {
+              realPoints = item.name.includes('グランド') ? 50 :
+                          item.name.includes('アップライト') ? 35 :
+                          item.name.includes('電子') ? 8 : 35;
+            } else if (item.name.includes('金庫')) {
+              realPoints = item.name.includes('大') ? 25 :
+                          item.name.includes('中') ? 15 :
+                          item.name.includes('小') ? 8 : 15;
+            } else if (item.name.includes('仏壇')) {
+              realPoints = 12;
+            } else if (item.name.includes('神棚')) {
+              realPoints = 3;
+            } else if (item.name.includes('美術品')) {
+              realPoints = 5;
+            } else {
+              realPoints = 10;
+            }
+          } else {
+            realPoints = Math.max(item.defaultPoints, 2);
+          }
+          
+          return {
+            id: `${category.category}-${index}`,
+            category: category.category,
+            name: item.name,
+            points: realPoints,
+            defaultPoints: realPoints,
+            additionalCost: 0 // 加算金を0で初期化
+          };
+        })
       );
       setItemPoints(defaultPoints);
     }
@@ -96,6 +234,7 @@ export default function PricingStep0Page() {
       additionalCost: 0
     })));
   };
+
 
   /**
    * アイテムのフィルタリング
@@ -186,14 +325,17 @@ export default function PricingStep0Page() {
           <h2 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h2>
           <p className="text-gray-700">
             各荷物のポイントを設定します。このポイント合計に基づいてトラックサイズが自動判定されます。
-            業者ごとに荷物の重さや大きさに応じてポイントを調整してください。
-            1ポイントは段ボール1個分に相当します。
+            荷物の重さや大きさに応じてポイントを調整してください。
           </p>
+          <div className="mt-3 p-3 bg-white border border-blue-200 rounded">
+            <p className="text-sm font-medium text-blue-800">📦 ポイント基準</p>
+            <p className="text-sm text-gray-700">1ポイント = 段ボールMサイズ1個分（50×35×35cm）</p>
+          </div>
         </div>
 
         {/* 検索・フィルター */}
         <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 検索
@@ -222,14 +364,6 @@ export default function PricingStep0Page() {
                 ))}
               </select>
             </div>
-            <div className="flex items-end">
-              <button
-                onClick={resetAllToDefault}
-                className="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
-              >
-                🔄 全リセット
-              </button>
-            </div>
           </div>
         </div>
 
@@ -252,41 +386,56 @@ export default function PricingStep0Page() {
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">🗂 {category.category}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {categoryItems.map(item => (
-                        <div key={item.id} className="border border-gray-200 rounded p-3">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-sm font-medium text-gray-800">{item.name}</span>
+                        <div key={item.id} className="border border-gray-200 rounded p-3 min-h-[200px]">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-sm font-medium text-gray-800 flex-1 pr-2">{item.name}</span>
                             <button
                               onClick={() => resetToDefault(item.id)}
-                              className="text-xs text-blue-600 hover:text-blue-800"
+                              className="text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
                               title="デフォルト値にリセット"
                             >
                               🔄
                             </button>
                           </div>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.points}
-                              onChange={(e) => updatePoints(item.id, parseInt(e.target.value) || 0)}
-                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
-                            />
-                            <span className="text-sm text-gray-600">ポイント</span>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">ポイント</label>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.points}
+                                  onChange={(e) => updatePoints(item.id, parseInt(e.target.value) || 0)}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <span className="text-xs text-gray-500">pt</span>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">加算料金</label>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.additionalCost}
+                                  onChange={(e) => updateAdditionalCost(item.id, parseInt(e.target.value) || 0)}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="0"
+                                />
+                                <span className="text-xs text-gray-500">円</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.additionalCost}
-                              onChange={(e) => updateAdditionalCost(item.id, parseInt(e.target.value) || 0)}
-                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="0"
-                            />
-                            <span className="text-sm text-gray-600">加算料金（円）</span>
-                          </div>
-                          <div className="text-xs text-gray-400 mb-1">※この荷物に追加料金が必要な場合のみ入力してください</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            デフォルト: {item.defaultPoints}pt
+                          
+                          <div className="mt-3 space-y-1">
+                            <div className="text-xs text-gray-400">
+                              ※追加料金が必要な場合のみ入力
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              デフォルト: {item.defaultPoints}pt
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -300,12 +449,13 @@ export default function PricingStep0Page() {
 
         {/* 参考例 */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 ポイント参考例</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 ポイント参考例（1ポイント=段ボール中1個分：50×35×35cm）</h3>
           <div className="text-sm text-gray-600 space-y-1">
-            <p>• 軽い荷物（5-10ポイント）：小物、衣類、本など</p>
-            <p>• 中程度の荷物（10-25ポイント）：家具、家電など</p>
-            <p>• 重い荷物（25-50ポイント）：大型家具、大型家電など</p>
-            <p>• 特別な荷物（50ポイント以上）：ピアノ、金庫など</p>
+            <p>• 小物（1-3ポイント）：炊飯器、電子レンジ、スツールなど</p>
+            <p>• 中型荷物（4-8ポイント）：テレビ、洗濯機、デスクなど</p>
+            <p>• 大型荷物（20-32ポイント）：シングルベッド、2人ソファ、タンスなど</p>
+            <p>• 特大荷物（35ポイント以上）：ダブルベッド、大型冷蔵庫、ワードローブなど</p>
+            <p>• 特殊荷物（30ポイント以上）：アップライトピアノ、グランドピアノ、大型金庫など</p>
           </div>
         </div>
 
