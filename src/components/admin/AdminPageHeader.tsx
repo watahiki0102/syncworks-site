@@ -19,6 +19,7 @@ interface AdminPageHeaderProps {
   actions?: React.ReactNode;
   breadcrumbs?: BreadcrumbItem[];
   showBackButton?: boolean;
+  backUrl?: string;
 }
 
 export default function AdminPageHeader({
@@ -26,7 +27,8 @@ export default function AdminPageHeader({
   subtitle,
   actions,
   breadcrumbs = [],
-  showBackButton = true
+  showBackButton = true,
+  backUrl
 }: AdminPageHeaderProps) {
   // デフォルトのパンくず（事業者管理画面）
   const defaultBreadcrumbs: BreadcrumbItem[] = [
@@ -37,11 +39,11 @@ export default function AdminPageHeader({
 
   // 戻るボタンのURLを決定する関数
   const getBackUrl = () => {
-    // 見積回答画面の場合は案件管理に戻る
-    if (breadcrumbs.some(crumb => crumb.label === '見積回答')) {
-      return '/admin/cases';
+    // プロップで指定された場合はそれを使用
+    if (backUrl) {
+      return backUrl;
     }
-    // その他の場合はデフォルトのダッシュボード
+    // デフォルトは管理画面ダッシュボード
     return '/admin/dashboard';
   };
 

@@ -15,6 +15,7 @@ import {
   type WorkOption,
   type EstimateResult
 } from '@/utils/pricing';
+import { ItemPoint, PricingRule, OptionItem } from '@/types/pricing';
 
 interface PriceCalculationResult {
   totalPoints: number;
@@ -54,9 +55,39 @@ export default function PriceCalculator({
   onCalculate 
 }: PriceCalculatorProps) {
   const [calculationResult, setCalculationResult] = useState<PriceCalculationResult | null>(null);
+  const [savedItemPoints, setSavedItemPoints] = useState<ItemPoint[]>([]);
+  const [savedPricingRules, setSavedPricingRules] = useState<PricingRule[]>([]);
+  const [savedOptions, setSavedOptions] = useState<OptionItem[]>([]);
 
-  // アイテムのポイントを取得
+  // LocalStorageから設定を読み込み
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const itemPointsData = localStorage.getItem('itemPointSettings');
+      if (itemPointsData) {
+        setSavedItemPoints(JSON.parse(itemPointsData));
+      }
+      
+      const pricingRulesData = localStorage.getItem('truckPricingRules');
+      if (pricingRulesData) {
+        setSavedPricingRules(JSON.parse(pricingRulesData));
+      }
+      
+      const optionsData = localStorage.getItem('serviceOptions');
+      if (optionsData) {
+        setSavedOptions(JSON.parse(optionsData));
+      }
+    }
+  }, []);
+
+  // アイテムのポイントを取得（保存された設定を優先）
   const getItemPoints = (itemName: string): number => {
+    // まず保存された設定から探す
+    const savedItem = savedItemPoints.find(item => item.name === itemName);
+    if (savedItem) {
+      return savedItem.points;
+    }
+    
+    // 保存された設定がない場合はデフォルト値を使用
     for (const category of ITEM_CATEGORIES) {
       const item = category.items.find(i => i.name === itemName);
       if (item) {
@@ -77,8 +108,20 @@ export default function PriceCalculator({
     return 0;
   };
 
-  // 推奨トラック種別を取得
+  // 推奨トラック種別を取得（保存された料金ルールから）
   const getRecommendedTruck = (totalPoints: number): string => {
+    if (savedPricingRules.length > 0) {
+      // 保存された料金ルールから最適なトラックを選択
+      const suitableRule = savedPricingRules.find(rule => 
+        totalPoints >= rule.minPoint && 
+        (rule.maxPoint === undefined || totalPoints <= rule.maxPoint)
+      );
+      if (suitableRule) {
+        return suitableRule.truckType;
+      }
+    }
+    
+    // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
     return recommendations.length > 0 ? recommendations[0] : '軽トラック';
   };
@@ -108,11 +151,17 @@ export default function PriceCalculator({
       }
     }
 
-    // 作業オプションを設定
-    const workOptions: WorkOption[] = WORK_OPTIONS.map(option => ({
-      ...option,
-      selected: selectedOptions.includes(option.name)
-    }));
+    // 作業オプションを設定（保存された設定を優先）
+    const workOptions: WorkOption[] = savedOptions.length > 0 
+      ? savedOptions.map(option => ({
+          name: option.label,
+          price: option.price || 0,
+          selected: selectedOptions.includes(option.label)
+        }))
+      : WORK_OPTIONS.map(option => ({
+          ...option,
+          selected: selectedOptions.includes(option.name)
+        }));
 
     // 推奨トラック種別を取得
     const totalPoints = calculateTotalPoints(cargoItems);
@@ -143,7 +192,7 @@ export default function PriceCalculator({
     if (onCalculate) {
       onCalculate(result);
     }
-  }, [items, boxOption, boxCount, distance, selectedOptions]);
+  }, [items, boxOption, boxCount, distance, selectedOptions, savedItemPoints, savedPricingRules, savedOptions]);
 
   return {
     calculationResult,
@@ -160,9 +209,39 @@ export function usePriceCalculator(
   selectedOptions?: string[]
 ) {
   const [calculationResult, setCalculationResult] = useState<PriceCalculationResult | null>(null);
+  const [savedItemPoints, setSavedItemPoints] = useState<ItemPoint[]>([]);
+  const [savedPricingRules, setSavedPricingRules] = useState<PricingRule[]>([]);
+  const [savedOptions, setSavedOptions] = useState<OptionItem[]>([]);
 
-  // アイテムのポイントを取得
+  // LocalStorageから設定を読み込み
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const itemPointsData = localStorage.getItem('itemPointSettings');
+      if (itemPointsData) {
+        setSavedItemPoints(JSON.parse(itemPointsData));
+      }
+      
+      const pricingRulesData = localStorage.getItem('truckPricingRules');
+      if (pricingRulesData) {
+        setSavedPricingRules(JSON.parse(pricingRulesData));
+      }
+      
+      const optionsData = localStorage.getItem('serviceOptions');
+      if (optionsData) {
+        setSavedOptions(JSON.parse(optionsData));
+      }
+    }
+  }, []);
+
+  // アイテムのポイントを取得（保存された設定を優先）
   const getItemPoints = (itemName: string): number => {
+    // まず保存された設定から探す
+    const savedItem = savedItemPoints.find(item => item.name === itemName);
+    if (savedItem) {
+      return savedItem.points;
+    }
+    
+    // 保存された設定がない場合はデフォルト値を使用
     for (const category of ITEM_CATEGORIES) {
       const item = category.items.find(i => i.name === itemName);
       if (item) {
@@ -183,8 +262,20 @@ export function usePriceCalculator(
     return 0;
   };
 
-  // 推奨トラック種別を取得
+  // 推奨トラック種別を取得（保存された料金ルールから）
   const getRecommendedTruck = (totalPoints: number): string => {
+    if (savedPricingRules.length > 0) {
+      // 保存された料金ルールから最適なトラックを選択
+      const suitableRule = savedPricingRules.find(rule => 
+        totalPoints >= rule.minPoint && 
+        (rule.maxPoint === undefined || totalPoints <= rule.maxPoint)
+      );
+      if (suitableRule) {
+        return suitableRule.truckType;
+      }
+    }
+    
+    // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
     return recommendations.length > 0 ? recommendations[0] : '軽トラック';
   };
@@ -214,11 +305,17 @@ export function usePriceCalculator(
       }
     }
 
-    // 作業オプションを設定
-    const workOptions: WorkOption[] = WORK_OPTIONS.map(option => ({
-      ...option,
-      selected: selectedOptions?.includes(option.name) || false
-    }));
+    // 作業オプションを設定（保存された設定を優先）
+    const workOptions: WorkOption[] = savedOptions.length > 0 
+      ? savedOptions.map(option => ({
+          name: option.label,
+          price: option.price || 0,
+          selected: selectedOptions?.includes(option.label) || false
+        }))
+      : WORK_OPTIONS.map(option => ({
+          ...option,
+          selected: selectedOptions?.includes(option.name) || false
+        }));
 
     // 推奨トラック種別を取得
     const totalPoints = calculateTotalPoints(cargoItems);
@@ -246,7 +343,7 @@ export function usePriceCalculator(
   useEffect(() => {
     const result = calculateEstimateResult();
     setCalculationResult(result);
-  }, [items, boxOption, boxCount, distance, selectedOptions]);
+  }, [items, boxOption, boxCount, distance, selectedOptions, savedItemPoints, savedPricingRules, savedOptions]);
 
   return {
     calculationResult,

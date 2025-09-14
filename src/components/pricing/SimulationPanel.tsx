@@ -130,16 +130,16 @@ export default function SimulationPanel({
   };
 
   return (
-    <div className="w-1/3 bg-white border-l border-gray-200 shadow-lg">
-      <div className="sticky top-0 h-screen overflow-y-auto">
-        {/* ヘッダー */}
-        <div className="bg-gray-50 border-b border-gray-200 p-6">
+    <div className="fixed top-0 right-0 w-1/3 h-screen bg-white border-l border-gray-200 shadow-lg z-40">
+      <div className="h-full flex flex-col">
+        {/* ヘッダー - 固定部分 */}
+        <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-2">📊 料金シミュレーション</h2>
           <p className="text-sm text-gray-600">荷物を選択してトラックサイズを確認</p>
         </div>
 
-        {/* 結果表示エリア - コンパクトに横並び */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
+        {/* 結果表示エリア - 固定部分 */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
           <div className="grid grid-cols-3 gap-3 mb-3">
             {/* 荷物ポイント表示 */}
             <div className="bg-blue-50 rounded-lg p-3">
@@ -189,8 +189,10 @@ export default function SimulationPanel({
           </div>
         </div>
 
-        {/* 選択された荷物の一覧 - トグル形式 */}
-        <div className="bg-white shadow-md rounded-lg border border-gray-200">
+        {/* スクロール可能エリア */}
+        <div className="flex-1 overflow-y-auto">
+          {/* 選択された荷物の一覧 - トグル形式 */}
+          <div className="bg-white shadow-md rounded-lg border border-gray-200">
           <button
             onClick={() => setIsSelectedItemsOpen(!isSelectedItemsOpen)}
             className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -355,17 +357,18 @@ export default function SimulationPanel({
         </div>
 
 
-        {/* クリアボタン */}
-        {items.length > 0 && (
-          <div className="p-6 border-t border-gray-200">
-            <button
-              onClick={onClearAll}
-              className="w-full bg-red-50 text-red-600 py-2 px-4 rounded-lg hover:bg-red-100 transition text-sm font-medium"
-            >
-              すべてクリア
-            </button>
-          </div>
-        )}
+          {/* クリアボタン */}
+          {items.length > 0 && (
+            <div className="p-6 border-t border-gray-200">
+              <button
+                onClick={onClearAll}
+                className="w-full bg-red-50 text-red-600 py-2 px-4 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+              >
+                すべてクリア
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

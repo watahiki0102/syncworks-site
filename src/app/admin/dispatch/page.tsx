@@ -527,7 +527,7 @@ function DispatchManagementContent() {
     }
 
     // 料金設定からトラック種別を読み込み
-    const savedPricing = localStorage.getItem('pricingStep2');
+    const savedPricing = localStorage.getItem('truckPricingRules');
     if (savedPricing) {
       const pricingRules = JSON.parse(savedPricing);
       setPricingRules(pricingRules);

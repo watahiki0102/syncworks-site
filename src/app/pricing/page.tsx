@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 /**
  * 設定項目の型定義
@@ -57,7 +58,7 @@ export default function PricingMainPage() {
       
       switch (setting.id) {
         case 'rates':
-          isCompleted = !!(localStorage.getItem('pricingStep0') && localStorage.getItem('pricingStep2'));
+          isCompleted = !!(localStorage.getItem('itemPointSettings') && localStorage.getItem('truckPricingRules'));
           break;
         case 'season':
           isCompleted = !!localStorage.getItem('pricingStep3');
@@ -79,17 +80,17 @@ export default function PricingMainPage() {
 
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* ヘッダー */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-4">
-            ⚙️ 料金設定
-          </h1>
-          <p className="text-gray-600">
-            料金設定に必要な項目を選択して設定してください
-          </p>
-        </div>
+    <main className="min-h-screen bg-gray-50">
+      {/* ページヘッダー */}
+      <AdminPageHeader
+        title="⚙️ 料金設定"
+        subtitle="料金設定に必要な項目を選択して設定してください"
+        breadcrumbs={[
+          { label: '料金設定' }
+        ]}
+      />
+
+      <div className="max-w-4xl mx-auto py-10 px-4">
 
 
         {/* 設定項目一覧 */}
@@ -143,15 +144,6 @@ export default function PricingMainPage() {
           </div>
         </div>
 
-        {/* ナビゲーション */}
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={() => router.push('/admin/dashboard')}
-            className="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition"
-          >
-            管理画面に戻る
-          </button>
-        </div>
       </div>
     </main>
   );

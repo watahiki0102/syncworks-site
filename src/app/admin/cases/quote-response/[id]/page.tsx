@@ -92,15 +92,15 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
   useEffect(() => {
     const loadPricingData = () => {
       // Step1: 荷物ポイントデータ
-      const step1Data = localStorage.getItem('pricingStep0');
+      const step1Data = localStorage.getItem('itemPointSettings');
       let itemPoints = step1Data ? JSON.parse(step1Data) : [];
       
       // Step2: 料金ルールデータ
-      const step2Data = localStorage.getItem('pricingStep2');
+      const step2Data = localStorage.getItem('truckPricingRules');
       let pricingRules = step2Data ? JSON.parse(step2Data) : [];
       
       // オプションデータ
-      const optionData = localStorage.getItem('optionPricingStep2');
+      const optionData = localStorage.getItem('serviceOptions');
       let options = optionData ? JSON.parse(optionData) : [];
       
       // デフォルトデータが空の場合はテストデータを設定

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { PricingRule, OptionItem, ItemPoint } from '@/types/pricing';
 import { SimulationToggle, SimulationPanel, ItemCard } from '@/components/pricing';
 import { ITEM_CATEGORIES } from '@/constants/items';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 /**
  * トラック種別の定義
@@ -313,16 +314,16 @@ export default function PricingRatesPage() {
   useEffect(() => {
     // 荷物ポイント設定の読み込み
     const DATA_VERSION = 'v2.3';
-    const savedVersion = typeof window !== 'undefined' ? localStorage.getItem('pricingStep0_version') : null;
+    const savedVersion = typeof window !== 'undefined' ? localStorage.getItem('itemPointSettings_version') : null;
 
     if (savedVersion !== DATA_VERSION) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('pricingStep0');
-        localStorage.setItem('pricingStep0_version', DATA_VERSION);
+        localStorage.removeItem('itemPointSettings');
+        localStorage.setItem('itemPointSettings_version', DATA_VERSION);
       }
     }
 
-    const savedPoints = typeof window !== 'undefined' ? localStorage.getItem('pricingStep0') : null;
+    const savedPoints = typeof window !== 'undefined' ? localStorage.getItem('itemPointSettings') : null;
     if (savedPoints) {
       setItemPoints(JSON.parse(savedPoints));
     } else {
@@ -468,7 +469,7 @@ export default function PricingRatesPage() {
     }
 
     // 料金設定の読み込み
-    const savedPricing = typeof window !== 'undefined' ? localStorage.getItem('pricingStep2') : null;
+    const savedPricing = typeof window !== 'undefined' ? localStorage.getItem('truckPricingRules') : null;
     if (savedPricing) {
       setPricingRules(JSON.parse(savedPricing));
     } else {
@@ -510,7 +511,7 @@ export default function PricingRatesPage() {
     }
 
     // オプション設定の読み込み
-    const savedOptions = typeof window !== 'undefined' ? localStorage.getItem('optionPricingStep2') : null;
+    const savedOptions = typeof window !== 'undefined' ? localStorage.getItem('serviceOptions') : null;
     if (savedOptions) {
       setOptions(JSON.parse(savedOptions));
     }
@@ -523,7 +524,7 @@ export default function PricingRatesPage() {
    */
   useEffect(() => {
     if (!isLoading && typeof window !== 'undefined') {
-      localStorage.setItem('pricingStep0', JSON.stringify(itemPoints));
+      localStorage.setItem('itemPointSettings', JSON.stringify(itemPoints));
     }
   }, [itemPoints, isLoading]);
 
@@ -532,7 +533,7 @@ export default function PricingRatesPage() {
    */
   useEffect(() => {
     if (!isLoading && typeof window !== 'undefined') {
-      localStorage.setItem('pricingStep2', JSON.stringify(pricingRules));
+      localStorage.setItem('truckPricingRules', JSON.stringify(pricingRules));
     }
   }, [pricingRules, isLoading]);
 
@@ -559,7 +560,7 @@ export default function PricingRatesPage() {
    */
   useEffect(() => {
     if (!isLoading && typeof window !== 'undefined') {
-      localStorage.setItem('optionPricingStep2', JSON.stringify(options));
+      localStorage.setItem('serviceOptions', JSON.stringify(options));
     }
   }, [options, isLoading]);
 
@@ -936,10 +937,6 @@ export default function PricingRatesPage() {
     router.push('/pricing/season');
   };
 
-  // 前へ戻る
-  const handleBack = () => {
-    router.push('/pricing');
-  };
 
   // 配車管理画面へ遷移
   const handleDispatchManagement = () => {
@@ -957,33 +954,136 @@ export default function PricingRatesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SimulationToggle isEnabled={isSimulationEnabled} onToggle={() => setIsSimulationEnabled(!isSimulationEnabled)} />
-      <div className="flex">
-        <main className={`${isSimulationEnabled ? 'w-2/3' : 'w-full'} transition-all duration-300 py-10 px-4`}>
+      {/* ページヘッダー */}
+      <AdminPageHeader
+        title="⚙️ 料金基準設定"
+        breadcrumbs={[
+          { label: '料金設定', href: '/pricing' },
+          { label: '料金基準設定' }
+        ]}
+        backUrl="/pricing"
+      />
+
+
+      <div className={`${isSimulationEnabled ? 'pr-[33.333333%]' : ''} transition-all duration-300`}>
+        <main className="py-10 px-4">
           <div className="max-w-6xl mx-auto">
-            {/* ヘッダー */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-blue-800 mb-4">
-                ⚙️ 料金基準設定
-              </h1>
+
+            {/* シミュレーション切り替えボタン（上部右寄せ） */}
+            <div className="flex justify-end mb-6">
+              <button
+                onClick={() => setIsSimulationEnabled(!isSimulationEnabled)}
+                className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
+                  isSimulationEnabled
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }`}
+              >
+                {isSimulationEnabled ? 'シミュレーション ON' : 'シミュレーション OFF'}
+              </button>
             </div>
 
-            {/* 荷物ポイント設定 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsItemPointsOpen(!isItemPointsOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">📦</span>
-                  <h2 className="text-xl font-semibold text-gray-800">荷物ポイント設定</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isItemPointsOpen ? '−' : '+'}
-                </span>
-              </button>
+            {/* 設定項目を2列レイアウトで配置 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* 荷物ポイント設定 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsItemPointsOpen(!isItemPointsOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">📦</span>
+                    <h2 className="text-xl font-semibold text-gray-800">荷物ポイント設定</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isItemPointsOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
 
-              {isItemPointsOpen && (
+              {/* 料金設定 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsPricingOpen(!isPricingOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">💰</span>
+                    <h2 className="text-xl font-semibold text-gray-800">料金設定</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isPricingOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
+
+              {/* 車種係数設定 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsTruckCoefficientOpen(!isTruckCoefficientOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">🚛</span>
+                    <h2 className="text-xl font-semibold text-gray-800">車種係数設定</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isTruckCoefficientOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
+
+              {/* 距離加算額設定 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsDistanceOpen(!isDistanceOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">📍</span>
+                    <h2 className="text-xl font-semibold text-gray-800">距離加算額設定</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isDistanceOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
+
+              {/* オプション料金設定 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsOptionsOpen(!isOptionsOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">🛠️</span>
+                    <h2 className="text-xl font-semibold text-gray-800">オプション料金設定</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isOptionsOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
+
+              {/* トラック管理 */}
+              <div className="bg-white shadow-md rounded-lg">
+                <button
+                  onClick={() => setIsDispatchOpen(!isDispatchOpen)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">🚚</span>
+                    <h2 className="text-xl font-semibold text-gray-800">トラック管理</h2>
+                  </div>
+                  <span className="text-2xl font-bold text-gray-600">
+                    {isDispatchOpen ? '−' : '+'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {isItemPointsOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6">
                   {/* 説明 */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1136,25 +1236,12 @@ export default function PricingRatesPage() {
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* 料金設定 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsPricingOpen(!isPricingOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">💰</span>
-                  <h2 className="text-xl font-semibold text-gray-800">料金設定</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isPricingOpen ? '−' : '+'}
-                </span>
-              </button>
 
-              {isPricingOpen && (
+            {isPricingOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6">
                   {/* 説明 */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1356,25 +1443,11 @@ export default function PricingRatesPage() {
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* 車種係数設定 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsTruckCoefficientOpen(!isTruckCoefficientOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🚛</span>
-                  <h2 className="text-xl font-semibold text-gray-800">車種係数設定</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isTruckCoefficientOpen ? '−' : '+'}
-                </span>
-              </button>
-
-              {isTruckCoefficientOpen && (
+            {isTruckCoefficientOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
@@ -1455,25 +1528,11 @@ export default function PricingRatesPage() {
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* 距離加算額設定 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsDistanceOpen(!isDistanceOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">📍</span>
-                  <h2 className="text-xl font-semibold text-gray-800">距離加算額設定</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isDistanceOpen ? '−' : '+'}
-                </span>
-              </button>
-
-              {isDistanceOpen && (
+            {isDistanceOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
@@ -1565,25 +1624,11 @@ export default function PricingRatesPage() {
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* オプション料金設定 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsOptionsOpen(!isOptionsOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🛠️</span>
-                  <h2 className="text-xl font-semibold text-gray-800">オプション料金設定</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isOptionsOpen ? '−' : '+'}
-                </span>
-              </button>
-
-              {isOptionsOpen && (
+            {isOptionsOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6">
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
@@ -1767,25 +1812,11 @@ export default function PricingRatesPage() {
                   </div>
                   {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* トラック管理 */}
-            <div className="bg-white shadow-md rounded-lg mb-6">
-              <button
-                onClick={() => setIsDispatchOpen(!isDispatchOpen)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🚚</span>
-                  <h2 className="text-xl font-semibold text-gray-800">トラック管理</h2>
-                </div>
-                <span className="text-2xl font-bold text-gray-600">
-                  {isDispatchOpen ? '−' : '+'}
-                </span>
-              </button>
-
-              {isDispatchOpen && (
+            {isDispatchOpen && (
+              <div className="bg-white shadow-md rounded-lg mb-6">
                 <div className="px-6 pb-6 text-center">
                   <p className="text-gray-600 mb-6">
                     トラックの登録・管理は配車管理画面で行います
@@ -1797,32 +1828,23 @@ export default function PricingRatesPage() {
                     🚚 配車管理画面へ
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* ナビゲーション */}
-            <div className="flex justify-start mt-8">
-              <button
-                onClick={handleBack}
-                className="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition"
-              >
-                戻る
-              </button>
-            </div>
           </div>
         </main>
 
-        {isSimulationEnabled && (
-          <SimulationPanel
-            items={simulationItems}
-            onRemoveItem={removeSimulationItem}
-            onUpdateQuantity={updateSimulationQuantity}
-            onClearAll={clearSimulation}
-            onAddItem={(itemId: string, itemName: string, points: number) => {
-              addSimulationItem({ id: itemId, name: itemName, points });
-            }}
-          />
-        )}
+      {isSimulationEnabled && (
+        <SimulationPanel
+          items={simulationItems}
+          onRemoveItem={removeSimulationItem}
+          onUpdateQuantity={updateSimulationQuantity}
+          onClearAll={clearSimulation}
+          onAddItem={(itemId: string, itemName: string, points: number) => {
+            addSimulationItem({ id: itemId, name: itemName, points });
+          }}
+        />
+      )}
       </div>
     </div>
   );

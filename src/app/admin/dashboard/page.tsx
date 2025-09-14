@@ -37,7 +37,6 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
-          <AdminBadge variant="danger" size="sm">{unansweredCount > 0 ? '要対応' : '対応済'}</AdminBadge>
         </div>
         
         {/* 本日の申し込み数 */}
@@ -50,7 +49,6 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
-          <AdminBadge variant="primary" size="sm">今日</AdminBadge>
         </div>
         
         {/* 今月の受注数 */}
@@ -63,7 +61,6 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
-          <AdminBadge variant="success" size="sm">受注</AdminBadge>
         </div>
         
         {/* 今月の売上 */}
@@ -75,7 +72,6 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               ¥{sales.toLocaleString()}
             </div>
           </div>
-          <AdminBadge variant="warning" size="sm">売上</AdminBadge>
         </div>
         
         {/* 今月の受注率 */}
@@ -88,7 +84,6 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">%</span>
             </div>
           </div>
-          <AdminBadge variant="info" size="sm">率</AdminBadge>
         </div>
       </div>
     </AdminCard>
@@ -213,16 +208,16 @@ export default function AdminDashboard() {
         actions={settingsActions}
       >
          {/* PC・タブレット・スマホ対応：レスポンシブレイアウト */}
-         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full min-h-[calc(100vh-200px)]">
-           {/* 左列：ニュースと主要メニュー */}
-           <div className="space-y-4 max-w-none xl:max-w-2xl">
+         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full min-h-[calc(100vh-200px)] max-w-none">
+           {/* 左列：ニュースと主要メニュー（2列分の幅） */}
+           <div className="space-y-6 w-full xl:col-span-2">
              {/* 最新ニュース */}
              <div className="h-auto xl:h-1/2">
                <NewsPanel />
              </div>
              
              {/* メニューカード群を1列（スマホ）→2列（タブレット以上）の配置 */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-none xl:max-w-xl">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                {/* 案件管理 */}
                <Link href="/admin/cases" className="block">
                  <AdminCard
@@ -285,8 +280,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* 右列：トレンド情報 */}
-          <div className="max-w-none xl:max-w-sm h-auto xl:h-full">
+          {/* 右列：トレンド情報（1列分の幅） */}
+          <div className="w-full h-auto xl:h-full xl:col-span-1">
             <TrendPanel
               unansweredCount={unansweredCount}
               todayApplications={todayApplications}

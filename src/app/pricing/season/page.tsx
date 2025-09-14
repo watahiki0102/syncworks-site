@@ -3,20 +3,12 @@
  * - シーズン別料金設定
  * - 期間限定の料金調整
  * - パーセンテージ・固定金額の設定
- * - シミュレーション機能（Apple公式サイトUI参考）
  */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SimulationToggle, SimulationPanel } from '@/components/pricing';
-
-interface SimulationItem {
-  id: string;
-  name: string;
-  points: number;
-  quantity: number;
-}
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 /**
  * 料金タイプの定義
@@ -100,23 +92,19 @@ const DEFAULT_SEASON_RULES = [
  * シーズンルールの型定義
  */
 interface SeasonRule {
-  id: string;              // ルールID
-  name: string;            // シーズン名
-  startDate: string;       // 開始日
-  endDate: string;         // 終了日
+  id: string;             // ルールID
+  name: string;           // シーズン名
+  startDate: string;      // 開始日
+  endDate: string;        // 終了日
   priceType: 'percentage' | 'fixed'; // 料金タイプ
-  price: number;           // 料金値
-  description: string;     // 説明
+  price: number;          // 料金値
+  description: string;    // 説明
 }
 
 export default function SeasonPage() {
   const router = useRouter();
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // シミュレーション機能の状態
-  const [isSimulationEnabled, setIsSimulationEnabled] = useState(false);
-  const [simulationItems, setSimulationItems] = useState<SimulationItem[]>([]);
 
   /**
    * 初期データの読み込み
@@ -169,7 +157,6 @@ export default function SeasonPage() {
 
   /**
    * シーズンルールの削除
-   * @param id 削除するルールのID
    */
   const removeRule = (id: string) => {
     setSeasonRules(seasonRules.filter(rule => rule.id !== id));
@@ -177,9 +164,6 @@ export default function SeasonPage() {
 
   /**
    * シーズンルールの更新
-   * @param id 更新するルールのID
-   * @param field 更新するフィールド
-   * @param value 新しい値
    */
   const updateRule = (id: string, field: keyof SeasonRule, value: any) => {
     setSeasonRules(seasonRules.map(rule => 
@@ -189,10 +173,6 @@ export default function SeasonPage() {
 
   /**
    * 日付の重複チェック
-   * @param startDate 開始日
-   * @param endDate 終了日
-   * @param excludeId 除外するルールID
-   * @returns 重複があるかどうか
    */
   const checkDateOverlap = (startDate: string, endDate: string, excludeId?: string) => {
     const start = new Date(startDate);
@@ -210,7 +190,6 @@ export default function SeasonPage() {
 
   /**
    * バリデーション
-   * @returns バリデーション結果
    */
   const validateRules = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -263,56 +242,7 @@ export default function SeasonPage() {
   };
 
   /**
-   * シミュレーションアイテムの追加
-   */
-  const addSimulationItem = (item: { id: string; name: string; points: number }) => {
-    const existingItem = simulationItems.find(simItem => simItem.id === item.id);
-    if (existingItem) {
-      setSimulationItems(simulationItems.map(simItem =>
-        simItem.id === item.id 
-          ? { ...simItem, quantity: simItem.quantity + 1 }
-          : simItem
-      ));
-    } else {
-      setSimulationItems([...simulationItems, {
-        id: item.id,
-        name: item.name,
-        points: item.points,
-        quantity: 1
-      }]);
-    }
-  };
-
-  /**
-   * シミュレーションアイテムの削除
-   */
-  const removeSimulationItem = (id: string) => {
-    setSimulationItems(simulationItems.filter(item => item.id !== id));
-  };
-
-  /**
-   * シミュレーションアイテムの数量更新
-   */
-  const updateSimulationQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeSimulationItem(id);
-      return;
-    }
-    setSimulationItems(simulationItems.map(item =>
-      item.id === id ? { ...item, quantity } : item
-    ));
-  };
-
-  /**
-   * シミュレーションの全クリア
-   */
-  const clearSimulation = () => {
-    setSimulationItems([]);
-  };
-
-  /**
    * 保存処理
-   * - バリデーション後にデータを保存
    */
   const handleSave = () => {
     const validation = validateRules();
@@ -333,222 +263,190 @@ export default function SeasonPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* シミュレーション切り替えボタン（固定位置） */}
-      <SimulationToggle
-        isEnabled={isSimulationEnabled}
-        onToggle={() => setIsSimulationEnabled(!isSimulationEnabled)}
+      {/* ページヘッダー */}
+      <AdminPageHeader
+        title="🌸 シーズン加算設定"
+        subtitle="繁忙期・閑散期など時期による料金加算を設定します"
+        breadcrumbs={[
+          { label: '料金設定', href: '/pricing' },
+          { label: 'シーズン加算設定' }
+        ]}
+        backUrl="/pricing"
       />
 
-      <div className="flex">
-        {/* メインコンテンツ */}
-        <main className={`${isSimulationEnabled ? 'w-2/3' : 'w-full'} transition-all duration-300 py-10 px-4`}>
-          <div className="max-w-4xl mx-auto">
-        {/* ヘッダー */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-4">
-            🌸 シーズン加算設定
-          </h1>
-          <p className="text-gray-600">
-            繁忙期・閑散期など時期による料金加算を設定します
-          </p>
-        </div>
-
-        {/* 説明 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h2 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h2>
-          <p className="text-gray-700">
-            繁忙期・閑散期など時期による料金加算を設定します。
-            日付範囲と加算金額（パーセンテージまたは固定金額）を指定できます。
-          </p>
-        </div>
-
-        {/* シーズン料金設定 */}
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">📅 シーズン加算設定</h2>
-            <button
-              onClick={addRule}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-            >
-              ＋ シーズン追加
-            </button>
+      <main className="py-10 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* 説明 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h2 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h2>
+            <p className="text-gray-700">
+              繁忙期・閑散期など時期による料金加算を設定します。
+              日付範囲と加算金額（パーセンテージまたは固定金額）を指定できます。
+            </p>
           </div>
 
-          {seasonRules.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              シーズンルールが設定されていません。「＋ シーズン追加」ボタンで追加してください。
+          {/* シーズン料金設定 */}
+          <div className="bg-white shadow-md rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">📅 シーズン加算設定</h2>
+              <button
+                onClick={addRule}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              >
+                ＋ シーズン追加
+              </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {seasonRules.map((rule, index) => (
-                <div key={rule.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-800">シーズン {index + 1}</h3>
-                    <button
-                      onClick={() => removeRule(rule.id)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      🗑️ 削除
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* シーズン名 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        シーズン名
-                      </label>
-                      <input
-                        type="text"
-                        value={rule.name}
-                        onChange={(e) => updateRule(rule.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：年末年始"
-                      />
-                    </div>
 
-                    {/* 料金タイプ */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        料金タイプ
-                      </label>
-                      <select
-                        value={rule.priceType}
-                        onChange={(e) => updateRule(rule.id, 'priceType', e.target.value as 'percentage' | 'fixed')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            {seasonRules.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">シーズンルールがありません。「シーズン追加」ボタンで追加してください。</p>
+            ) : (
+              <div className="space-y-4">
+                {seasonRules.map((rule, index) => (
+                  <div key={rule.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-gray-800">シーズン {index + 1}</h3>
+                      <button
+                        onClick={() => removeRule(rule.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
                       >
-                        {PRICE_TYPES.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
+                        削除
+                      </button>
                     </div>
 
-                    {/* 開始日 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        開始日
-                      </label>
-                      <input
-                        type="date"
-                        value={rule.startDate}
-                        onChange={(e) => updateRule(rule.id, 'startDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    {/* 終了日 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        終了日
-                      </label>
-                      <input
-                        type="date"
-                        value={rule.endDate}
-                        onChange={(e) => updateRule(rule.id, 'endDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    {/* 料金 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        加算料金
-                      </label>
-                      <div className="flex">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* シーズン名 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          シーズン名
+                        </label>
                         <input
-                          type="number"
-                          min="0"
-                          max={rule.priceType === 'percentage' ? 100 : undefined}
-                          step={rule.priceType === 'percentage' ? 1 : 100}
-                          value={rule.price}
-                          onChange={(e) => updateRule(rule.id, 'price', parseFloat(e.target.value) || 0)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
-                          placeholder={rule.priceType === 'percentage' ? "例：20" : "例：5000"}
+                          type="text"
+                          value={rule.name}
+                          onChange={(e) => updateRule(rule.id, 'name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="例：年末年始繁忙期"
                         />
-                        <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
-                          {rule.priceType === 'percentage' ? '%' : '円'}
-                        </span>
+                      </div>
+
+                      {/* 料金タイプ */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          料金タイプ
+                        </label>
+                        <select
+                          value={rule.priceType}
+                          onChange={(e) => updateRule(rule.id, 'priceType', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {PRICE_TYPES.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 開始日 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          開始日
+                        </label>
+                        <input
+                          type="date"
+                          value={rule.startDate}
+                          onChange={(e) => updateRule(rule.id, 'startDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* 終了日 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          終了日
+                        </label>
+                        <input
+                          type="date"
+                          value={rule.endDate}
+                          onChange={(e) => updateRule(rule.id, 'endDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* 料金 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          料金
+                        </label>
+                        <div className="flex">
+                          <input
+                            type="number"
+                            value={rule.price}
+                            onChange={(e) => updateRule(rule.id, 'price', parseFloat(e.target.value) || 0)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <span className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-r-md">
+                            {rule.priceType === 'percentage' ? '%' : '円'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 説明 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          説明
+                        </label>
+                        <input
+                          type="text"
+                          value={rule.description}
+                          onChange={(e) => updateRule(rule.id, 'description', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="例：年末年始の繁忙期（最も需要が高い期間）"
+                        />
                       </div>
                     </div>
 
-                    {/* 説明 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        説明
-                      </label>
-                      <input
-                        type="text"
-                        value={rule.description}
-                        onChange={(e) => updateRule(rule.id, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="例：年末年始の繁忙期"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 表示例 */}
-                  <div className="mt-2 text-sm text-gray-600">
-                    <span>
+                    {/* 表示例 */}
+                    <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-600">
                       {rule.name}：{rule.startDate}〜{rule.endDate} → 
                       {rule.priceType === 'percentage' ? `+${rule.price}%` : `+¥${rule.price.toLocaleString()}`}
-                    </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* 参考例 */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 参考例</h3>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>• 年末年始（12/25〜1/5）：+20%（繁忙期）</p>
-            <p>• 引越しシーズン（3/1〜4/30）：+15%（春の繁忙期）</p>
-            <p>• 夏季料金（7/1〜8/31）：+5,000円（夏季特別料金）</p>
-            <p>• 閑散期（9/1〜11/30）：-10%（割引期間）</p>
+          {/* 参考例 */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">💡 参考例</h3>
+            <p className="text-gray-700 text-sm">
+              • 年末年始（12/25〜1/5）：+25%<br/>
+              • 春の引越しシーズン（3/1〜4/30）：+20%<br/>
+              • 夏季特別料金（7/15〜8/15）：+8,000円<br/>
+              • 閑散期割引（9/1〜11/30）：-10%
+            </p>
+          </div>
+
+          {/* 料金計算例 */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
+            <h3 className="text-lg font-semibold text-green-800 mb-2">📊 料金計算例</h3>
+            <p className="text-gray-700 text-sm">
+              • 基本料金：40,000円<br/>
+              • 年末年始繁忙期（+25%）：40,000円 × 1.25 = 50,000円<br/>
+              • 夏季特別料金（+8,000円）：40,000円 + 8,000円 = 48,000円<br/>
+              • 合計：48,000円
+            </p>
+          </div>
+
+          {/* ナビゲーション */}
+          <div className="flex justify-end mt-8">
+            <button
+              onClick={handleSave}
+              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+            >
+              💾 保存
+            </button>
           </div>
         </div>
-
-        {/* 料金計算例 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">🧮 料金計算例</h3>
-          <div className="text-sm text-gray-700 space-y-1">
-            <p>• 基本料金：35,000円（2tショート × 2人）</p>
-            <p>• 距離：15km → +5,000円</p>
-            <p>• シーズン：年末年始 → +20%（8,000円）</p>
-            <p>• 合計：48,000円</p>
-          </div>
-        </div>
-
-            {/* ナビゲーション */}
-            <div className="flex justify-between mt-8">
-              <button
-                onClick={() => router.push('/pricing')}
-                className="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition"
-              >
-                料金設定に戻る
-              </button>
-              <button
-                onClick={handleSave}
-                className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
-              >
-                💾 保存
-              </button>
-            </div>
-          </div>
-        </main>
-
-        {/* シミュレーションパネル（Apple公式サイトUI参考） */}
-        {isSimulationEnabled && (
-          <SimulationPanel
-            items={simulationItems}
-            onRemoveItem={removeSimulationItem}
-            onUpdateQuantity={updateSimulationQuantity}
-            onClearAll={clearSimulation}
-          />
-        )}
-      </div>
+      </main>
     </div>
   );
 }

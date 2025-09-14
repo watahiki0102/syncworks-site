@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useEffect, useRef, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface AdminLayoutProps {
@@ -17,9 +17,8 @@ interface AdminLayoutProps {
   subtitle?: string;
   actions?: ReactNode;
   breadcrumbs?: Array<{ label: string; href?: string }>;
-  tabs?: Array<{ id: string; label: string; icon?: string; badge?: number }>;
+  tabs?: Array<{ id: string; label: string; icon?: string; badge?: number; href?: string }>;
   activeTab?: string;
-  onTabChange?: (tabId: string) => void;
 }
 
 /**
@@ -35,7 +34,7 @@ const PAGE_CONFIG = {
   '/admin/profile': { title: '基本情報設定', icon: '📝' },
   '/admin/quotes': { title: '見積もり管理', icon: '💰' },
   '/admin/notifications': { title: '通知管理', icon: '🔔' },
-  
+
   // 引越し案件紹介者用の画面
   '/admin/referrer/dashboard': { title: '紹介者管理画面', icon: '🏠' },
   '/admin/referrer/referrals': { title: '紹介状況リスト', icon: '📋' },
@@ -51,7 +50,7 @@ export default function AdminLayout({
   breadcrumbs,
   tabs,
   activeTab,
-  onTabChange
+  
 }: AdminLayoutProps) {
   const [adminEmail, setAdminEmail] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -70,11 +69,11 @@ export default function AdminLayout({
 
   // 設定メニュー外クリックで閉じる
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
         setShowSettings(false);
       }
-    };
+    }
 
     if (showSettings) {
       document.addEventListener('mousedown', handleClickOutside);
@@ -86,21 +85,24 @@ export default function AdminLayout({
   }, [showSettings]);
 
   useEffect(() => {
-    const email = localStorage.getItem('adminEmail');
-    if (email) {
-      setAdminEmail(email);
+    if (typeof window !== 'undefined') {
+      const email = localStorage.getItem('adminEmail');
+      if (email) {
+        setAdminEmail(email);
+      }
     }
   }, []);
 
   const handleLogout = () => {
-    if (!window.confirm('本当にログアウトしますか？')) return;
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminAutoLoginExpiry');
-    localStorage.removeItem('adminRememberMe');
-    router.push('/admin/login');
+    if (typeof window !== 'undefined') {
+      if (!window.confirm('本当にログアウトしますか？')) return;
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminAutoLoginExpiry');
+      localStorage.removeItem('adminRememberMe');
+      router.push('/admin/login');
+    }
   };
-
 
   /**
    * 現在のページ情報を取得
@@ -115,32 +117,34 @@ export default function AdminLayout({
   const generateBreadcrumbs = () => {
     if (breadcrumbs) return breadcrumbs;
 
+    if (!pathname) return [];
+
     const pathSegments = pathname.split('/').filter(Boolean);
-    
+
     // 引越し案件紹介者用の画面かどうかを判定
     const isReferrerPage = pathname.includes('/admin/referrer/');
-    
+
     if (isReferrerPage) {
       // 引越し案件紹介者用の画面の場合
-      const crumbs = [];
-      
+      const crumbs: Array<{ label: string; href?: string }> = [];
+
       if (pathSegments.length > 3) {
         // /admin/referrer/dashboard以外の場合
         const currentPage = getCurrentPageInfo();
         crumbs.push({ label: currentPage.title, href: pathname });
       }
-      
+
       return crumbs;
     } else {
       // 引越し事業者用の画面の場合
-      const crumbs = [{ label: '事業者管理画面', href: '/admin/dashboard' }];
-      
+      const crumbs: Array<{ label: string; href?: string }> = [{ label: '事業者管理画面', href: '/admin/dashboard' }];
+
       if (pathSegments.length > 2) {
         // /admin/dashboard以外の場合
         const currentPage = getCurrentPageInfo();
         crumbs.push({ label: currentPage.title, href: pathname });
       }
-      
+
       return crumbs;
     }
   };
@@ -165,7 +169,7 @@ export default function AdminLayout({
                 </div>
               </div>
             </div>
-            
+
             {/* 右側：ログイン情報・アクション・メニュー */}
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* ログイン情報 */}
@@ -176,7 +180,7 @@ export default function AdminLayout({
 
               {/* カスタムアクション */}
               {actions}
-              
+
               {/* 設定メニュー（引越し事業者用のみ） */}
               {!pathname.includes('/admin/referrer/') && (
                 <div className="relative" ref={settingsRef}>
@@ -187,7 +191,7 @@ export default function AdminLayout({
                     <span className="text-base">⚙️</span>
                     <span className="hidden sm:inline">設定</span>
                   </button>
-                  
+
                   {/* 設定ドロップダウン */}
                   {showSettings && (
                     <div className="absolute right-0 top-12 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
@@ -236,7 +240,7 @@ export default function AdminLayout({
                   <span className="hidden sm:inline">戻る</span>
                 </button>
               )}
-              
+
               {/* ログアウトボタン */}
               <button
                 onClick={handleLogout}
@@ -284,25 +288,48 @@ export default function AdminLayout({
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => onTabChange?.(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 flex-shrink-0 transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  {tab.icon && <span>{tab.icon}</span>}
-                  {tab.label}
-                  {tab.badge !== undefined && tab.badge > 0 && (
-                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const baseClassName = `py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 flex-shrink-0 transition-colors ${
+                  isActive
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                }`;
+                
+                const tabContent = (
+                  <>
+                    {tab.icon && <span>{tab.icon}</span>}
+                    {tab.label}
+                    {tab.badge !== undefined && tab.badge > 0 && (
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </>
+                );
+                
+                if (tab.href) {
+                  return (
+                    <Link
+                      key={tab.id}
+                      href={tab.href}
+                      className={baseClassName}
+                    >
+                      {tabContent}
+                    </Link>
+                  );
+                } else {
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {}}
+                      className={baseClassName}
+                    >
+                      {tabContent}
+                    </button>
+                  );
+                }
+              })}
             </nav>
           </div>
         </div>
@@ -310,7 +337,7 @@ export default function AdminLayout({
 
       {/* メインコンテンツ */}
       <main className="w-full py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-120px)]">
+        <div className="w-full px-4 sm:px-6 lg:px-8 h-[calc(100vh-120px)]">
           {children}
         </div>
       </main>
