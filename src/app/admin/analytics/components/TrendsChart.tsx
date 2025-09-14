@@ -59,7 +59,7 @@ export default function TrendsChart({
   const defaultFormatter = (_value: number) => _value.toLocaleString();
 
   // カスタムツールチップ
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
     if (active && payload && payload.length) {
       const formattedValue = valueFormatter ? valueFormatter(payload[0].value) : defaultFormatter(payload[0].value);
       

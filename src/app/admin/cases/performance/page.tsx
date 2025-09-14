@@ -112,11 +112,6 @@ export default function PerformancePage() {
     return (filteredCases || []).length;
   };
 
-  const calculateTotalAmount = () => {
-    return (filteredCases || []).reduce((total, caseItem) => total + (caseItem.amountWithTax || 0), 0);
-  };
-
-
   // 仲介元別集計データを計算
   const calculateSourceTypeData = () => {
     const sourceStats: { [key: string]: { contracts: number; amount: number; revenue: number } } = {};

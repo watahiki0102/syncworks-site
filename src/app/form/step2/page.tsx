@@ -172,7 +172,7 @@ export default function Step2FormPage() {
         {/* 段ボールの数の目安 */}
         <section className={styles.section}>
           <h2 className="text-lg font-semibold mb-4">📦 段ボール目安</h2>
-          <p className="text-sm text-gray-500 mb-2">※おおまかな荷物量の目安として1つ選択してください</p>
+          <p className="text-sm text-gray-500 mb-2">※数量入力した荷物以外の梱包で必要な段ボール箱数を選択してください</p>
           <div className="space-y-3">
             {boxSizeOptions.map((option) => (
               <label key={option} className="flex items-center space-x-3">

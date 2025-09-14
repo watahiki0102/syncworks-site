@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { UnifiedCase } from '@/types/common';
-import { UnifiedCaseFilter, STATUS_FILTERS, STATUS_STYLES, PRIORITY_STYLES, QuoteResponseData } from '../types/unified';
-import { generateUnifiedTestData, filterUnifiedCases, sortUnifiedCases } from '../lib/unifiedData';
+import { UnifiedCaseFilter, STATUS_STYLES, PRIORITY_STYLES, QuoteResponseData } from '../types/unified';
+import { generateUnifiedTestData, sortUnifiedCases } from '../lib/unifiedData';
 import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType, IntermediaryService } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
 
@@ -94,7 +94,7 @@ export default function UnifiedCasesPage() {
 
   // ドロップダウンの外側をクリックしたときに閉じる
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = () => {
       if (openDropdown) {
         setOpenDropdown(null);
       }

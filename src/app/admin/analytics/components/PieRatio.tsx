@@ -40,7 +40,7 @@ export default function PieRatio({ title, data, height = 300 }: PieRatioProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   // カスタムツールチップ
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number } }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const percentage = ((data.value / total) * 100).toFixed(1);
@@ -57,10 +57,10 @@ export default function PieRatio({ title, data, height = 300 }: PieRatioProps) {
   };
 
   // カスタム凡例
-  const CustomLegend = ({ payload }: any) => {
+  const CustomLegend = ({ payload }: { payload?: Array<{ value: string; color: string; payload: { value: number } }> }) => {
     return (
       <div className="flex flex-wrap justify-center gap-4 mt-4">
-        {payload.map((entry: any, index: number) => (
+        {payload?.map((entry, index: number) => (
           <div key={`legend-${index}`} className="flex items-center gap-2">
             <div 
               className="w-3 h-3 rounded-full"

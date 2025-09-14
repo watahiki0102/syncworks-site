@@ -6,8 +6,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Button from '../Button';
-import { ButtonProps } from '../Button';
+import Button from '../../src/components/ui/Button';
 
 describe('Button component', () => {
   it('デフォルトの設定でレンダリングされる', () => {
@@ -159,7 +158,7 @@ describe('Button component', () => {
 
     it('アイコンがある時にテキストに適切なマージンが付く', () => {
       render(
-        <Button leftIcon={<span>←</span>}>
+        <Button>
           Text with margin
         </Button>
       );
@@ -316,7 +315,6 @@ describe('Button component', () => {
       render(
         <Button 
           isLoading
-          leftIcon={<span>←</span>}
           fullWidth
           variant="destructive"
         >

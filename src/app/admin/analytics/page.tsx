@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminCard from '@/components/admin/AdminCard';
@@ -139,7 +138,7 @@ export default function AdminAnalytics() {
 
   // シンプルなデータ集計関数
   const aggregateDataByInterval = useMemo(() => {
-    return (contracts: any[], interval: PlotInterval) => {
+    return (contracts: Array<{ contractDate: string; amount: number }>, interval: PlotInterval) => {
       const aggregated = new Map();
       
       contracts.forEach(contract => {

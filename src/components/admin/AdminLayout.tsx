@@ -193,7 +193,7 @@ export default function AdminLayout({
                     <div className="absolute right-0 top-12 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                       <div className="py-2">
                         <Link
-                          href="/pricing/step1"
+                          href="/pricing"
                           className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           onClick={() => setShowSettings(false)}
                         >
@@ -233,7 +233,6 @@ export default function AdminLayout({
                   }}
                   className="bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400"
                 >
-                  <span className="sm:hidden">←</span>
                   <span className="hidden sm:inline">戻る</span>
                 </button>
               )}

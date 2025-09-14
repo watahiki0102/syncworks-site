@@ -1,13 +1,22 @@
 /**
- * 料金設定 Step3 ページコンポーネント
+ * シーズン加算設定ページコンポーネント
  * - シーズン別料金設定
  * - 期間限定の料金調整
  * - パーセンテージ・固定金額の設定
+ * - シミュレーション機能（Apple公式サイトUI参考）
  */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { SimulationToggle, SimulationPanel } from '@/components/pricing';
+
+interface SimulationItem {
+  id: string;
+  name: string;
+  points: number;
+  quantity: number;
+}
 
 /**
  * 料金タイプの定義
@@ -100,10 +109,14 @@ interface SeasonRule {
   description: string;     // 説明
 }
 
-export default function PricingStep3Page() {
+export default function SeasonPage() {
   const router = useRouter();
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // シミュレーション機能の状態
+  const [isSimulationEnabled, setIsSimulationEnabled] = useState(false);
+  const [simulationItems, setSimulationItems] = useState<SimulationItem[]>([]);
 
   /**
    * 初期データの読み込み
@@ -250,33 +263,64 @@ export default function PricingStep3Page() {
   };
 
   /**
-   * 完了処理
-   * - 全ステップのデータを統合保存
+   * シミュレーションアイテムの追加
    */
-  const handleComplete = () => {
+  const addSimulationItem = (item: { id: string; name: string; points: number }) => {
+    const existingItem = simulationItems.find(simItem => simItem.id === item.id);
+    if (existingItem) {
+      setSimulationItems(simulationItems.map(simItem =>
+        simItem.id === item.id 
+          ? { ...simItem, quantity: simItem.quantity + 1 }
+          : simItem
+      ));
+    } else {
+      setSimulationItems([...simulationItems, {
+        id: item.id,
+        name: item.name,
+        points: item.points,
+        quantity: 1
+      }]);
+    }
+  };
+
+  /**
+   * シミュレーションアイテムの削除
+   */
+  const removeSimulationItem = (id: string) => {
+    setSimulationItems(simulationItems.filter(item => item.id !== id));
+  };
+
+  /**
+   * シミュレーションアイテムの数量更新
+   */
+  const updateSimulationQuantity = (id: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeSimulationItem(id);
+      return;
+    }
+    setSimulationItems(simulationItems.map(item =>
+      item.id === id ? { ...item, quantity } : item
+    ));
+  };
+
+  /**
+   * シミュレーションの全クリア
+   */
+  const clearSimulation = () => {
+    setSimulationItems([]);
+  };
+
+  /**
+   * 保存処理
+   * - バリデーション後にデータを保存
+   */
+  const handleSave = () => {
     const validation = validateRules();
     if (!validation.isValid) {
       alert(`エラーがあります:\n${validation.errors.join('\n')}`);
       return;
     }
-    
-    // 全ステップのデータを保存
-    const allPricingData = {
-      step1: JSON.parse(localStorage.getItem('pricingStep1') || '[]'),
-      step2: JSON.parse(localStorage.getItem('pricingStep2') || '[]'),
-      step3: seasonRules
-    };
-    
-    localStorage.setItem('pricingComplete', JSON.stringify(allPricingData));
-    alert('料金設定が完了しました！');
-    router.push('/vendors');
-  };
-
-  /**
-   * 前のステップに戻る
-   */
-  const handleBack = () => {
-    router.push('/pricing/step2');
+    alert('シーズン加算設定を保存しました！');
   };
 
   if (isLoading) {
@@ -288,29 +332,25 @@ export default function PricingStep3Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      {/* シミュレーション切り替えボタン（固定位置） */}
+      <SimulationToggle
+        isEnabled={isSimulationEnabled}
+        onToggle={() => setIsSimulationEnabled(!isSimulationEnabled)}
+      />
+
+      <div className="flex">
+        {/* メインコンテンツ */}
+        <main className={`${isSimulationEnabled ? 'w-2/3' : 'w-full'} transition-all duration-300 py-10 px-4`}>
+          <div className="max-w-4xl mx-auto">
         {/* ヘッダー */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-800 mb-4">
-            🌸 シーズン料金設定
+            🌸 シーズン加算設定
           </h1>
-          <div className="flex justify-center items-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">1</div>
-              <span className="ml-2">ポイント設定</span>
-            </div>
-            <div className="w-8 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">2</div>
-              <span className="ml-2">料金設定</span>
-            </div>
-            <div className="w-8 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
-              <span className="ml-2">シーズン設定</span>
-            </div>
-          </div>
+          <p className="text-gray-600">
+            繁忙期・閑散期など時期による料金加算を設定します
+          </p>
         </div>
 
         {/* 説明 */}
@@ -325,7 +365,7 @@ export default function PricingStep3Page() {
         {/* シーズン料金設定 */}
         <div className="bg-white shadow-md rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">📅 シーズン料金設定</h2>
+            <h2 className="text-xl font-semibold text-gray-800">📅 シーズン加算設定</h2>
             <button
               onClick={addRule}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
@@ -481,22 +521,34 @@ export default function PricingStep3Page() {
           </div>
         </div>
 
-        {/* ナビゲーション */}
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={handleBack}
-            className="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition"
-          >
-            ← 戻る
-          </button>
-          <button
-            onClick={handleComplete}
-            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
-          >
-            完了
-          </button>
-        </div>
+            {/* ナビゲーション */}
+            <div className="flex justify-between mt-8">
+              <button
+                onClick={() => router.push('/pricing')}
+                className="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition"
+              >
+                料金設定に戻る
+              </button>
+              <button
+                onClick={handleSave}
+                className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+              >
+                💾 保存
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* シミュレーションパネル（Apple公式サイトUI参考） */}
+        {isSimulationEnabled && (
+          <SimulationPanel
+            items={simulationItems}
+            onRemoveItem={removeSimulationItem}
+            onUpdateQuantity={updateSimulationQuantity}
+            onClearAll={clearSimulation}
+          />
+        )}
       </div>
-    </main>
+    </div>
   );
-} 
+}

@@ -209,7 +209,7 @@ function TruckAssignmentPage() {
                   href="/admin/dispatch"
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  ← 配車管理に戻る
+                  配車管理に戻る
                 </a>
               </div>
             </div>

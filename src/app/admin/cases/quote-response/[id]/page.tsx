@@ -14,8 +14,7 @@ import QuoteResponseForm from '@/components/admin/QuoteResponseForm';
 import { QuoteResponseFormData, QuoteResponseData } from '@/app/admin/cases/types/unified';
 import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '@/app/admin/cases/lib/unifiedData';
-import { formatCurrency } from '@/utils/format';
-import { ItemPoint, PricingRule, OptionItem, PricingData, AutoQuoteResult } from '@/types/pricing';
+import { PricingData, AutoQuoteResult } from '@/types/pricing';
 
 interface QuoteResponsePageProps {
   params: {

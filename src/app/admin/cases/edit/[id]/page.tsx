@@ -136,7 +136,6 @@ function CaseEditPage() {
                 <a href={fromPage === 'assignment' ? '/admin/dispatch/assignment' : '/admin/cases'}>
                   <AdminButton
                     variant="secondary"
-                    icon="←"
                   >
                     {fromPage === 'assignment' ? '案件割り当てに戻る' : '案件管理に戻る'}
                   </AdminButton>
