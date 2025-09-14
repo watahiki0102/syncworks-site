@@ -11,22 +11,13 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminButton from '@/components/admin/AdminButton';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import EstimateModeSelector from './components/EstimateModeSelector';
 import CaseForm from './components/CaseForm';
 import EstimatePDFButton from './components/EstimatePDFButton';
-import { EstimateInputMode } from '@/types/case';
 
 export default function CaseRegistrationPage() {
   const router = useRouter();
-  const [estimateMode, setEstimateMode] = useState<EstimateInputMode | null>(null);
   const [formData, setFormData] = useState<any>(null);
 
-  /**
-   * 見積方式の選択
-   */
-  const handleModeChange = (mode: EstimateInputMode) => {
-    setEstimateMode(mode);
-  };
 
   /**
    * フォーム送信処理
@@ -80,7 +71,7 @@ export default function CaseRegistrationPage() {
         isManualRegistration: true,
         registeredBy: 'admin',
         requestSource: '他社登録',
-        estimateMode: estimateMode
+        estimateMode: 'unified'
       };
 
       // ローカルストレージに保存
@@ -123,63 +114,37 @@ export default function CaseRegistrationPage() {
 
         {/* メインコンテンツ */}
         <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-          {/* 見積方式選択 */}
-          <EstimateModeSelector
-            selectedMode={estimateMode}
-            onModeChange={handleModeChange}
-          />
-
           {/* 案件登録フォーム */}
-          {estimateMode && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {estimateMode === 'calc' ? '見積済み案件' : '見積前案件'} - 登録フォーム
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    必要な情報を入力して案件を登録してください
-                  </p>
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  他社案件登録フォーム
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  必要な情報を入力して案件を登録してください
+                </p>
+              </div>
+
+              <CaseForm
+                onSubmit={handleFormSubmit}
+              />
+
+              {/* PDF表示ボタン */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="flex justify-center">
+                  <EstimatePDFButton
+                    draftPayload={formData}
+                    disabled={!formData}
+                  />
                 </div>
-
-                <CaseForm
-                  estimateMode={estimateMode}
-                  onSubmit={handleFormSubmit}
-                />
-
-                {/* PDF表示ボタン */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <div className="flex justify-center">
-                    <EstimatePDFButton
-                      draftPayload={formData}
-                      disabled={!formData}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 text-center mt-2">
+                <p className="text-xs text-gray-500 text-center mt-2">
                     ※入力内容に誤りがない場合に限る
                   </p>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* 方式未選択時の案内 */}
-          {!estimateMode && (
-            <div className="bg-white shadow rounded-lg p-8 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                案件登録方式を選択してください
-              </h3>
-              <p className="text-gray-600">
-                上記の2つの選択肢から、案件登録方式を選択してください。
-                選択後、該当する入力フォームが表示されます。
-              </p>
-            </div>
-          )}
+          }
         </main>
       </div>
     </AdminAuthGuard>

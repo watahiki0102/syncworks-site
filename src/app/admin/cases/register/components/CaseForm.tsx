@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { EstimateInputMode, MoveDateKind, PaymentMethod, PaymentStatus } from '@/types/case';
+import { PaymentMethod, PaymentStatus } from '@/types/case';
 import { ITEM_CATEGORIES } from '@/constants/items';
 import { IntermediaryService } from '../../lib/normalize';
 
 interface CaseFormProps {
-  estimateMode: EstimateInputMode;
   onSubmit: (_formData: any) => void;
   initialData?: any;
 }
@@ -23,14 +22,18 @@ interface FormData {
   fromPostalCode: string;
   toPostalCode: string;
   
-  // 引っ越し日
-  moveDateKind: MoveDateKind;
-  moveDate: string;
-  moveTime: string;
+  // 引っ越し日（3つの希望日）
+  moveDate1: string;
+  moveDate2: string;
+  moveDate3: string;
+  moveTime1: string;
+  moveTime2: string;
+  moveTime3: string;
   
   // 荷量・作業オプション
   totalPoints: number;
   additionalServices: string[];
+  customAdditionalServices: string;
   
   // 見積金額
   estimatedPrice: number;
@@ -38,7 +41,7 @@ interface FormData {
   priceTaxIncluded: number;
   
   // 契約情報
-  contractStatus: 'estimate' | 'canceled' | 'completed';
+  contractStatus: 'estimate' | 'confirmed';
   
   // 支払情報
   paymentMethod: PaymentMethod;
@@ -84,11 +87,15 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     toAddress: '',
     fromPostalCode: '',
     toPostalCode: '',
-    moveDateKind: '希望日',
-    moveDate: '',
-    moveTime: '',
+    moveDate1: '',
+    moveDate2: '',
+    moveDate3: '',
+    moveTime1: '',
+    moveTime2: '',
+    moveTime3: '',
     totalPoints: 0,
     additionalServices: [],
+    customAdditionalServices: '',
     estimatedPrice: 0,
     taxRate: 10,
     priceTaxIncluded: 0,
@@ -160,12 +167,8 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       newErrors.toAddress = '引越し先住所は必須です';
     }
 
-    if (!formData.moveDate) {
-      newErrors.moveDate = '引越し日は必須です';
-    }
-
-    if (formData.moveDateKind === '確定日' && !formData.moveDate) {
-      newErrors.moveDate = '確定日は必須です';
+    if (!formData.moveDate1) {
+      newErrors.moveDate1 = '第1希望の引越し日は必須です';
     }
 
     if (formData.estimatedPrice < 0) {
@@ -230,7 +233,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               type="text"
               value={formData.customerName}
               onChange={(e) => updateFormData('customerName', e.target.value)}
-              className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+              className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                 errors.customerName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="田中太郎"
@@ -248,7 +251,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               type="tel"
               value={formData.customerPhone}
               onChange={(e) => updateFormData('customerPhone', e.target.value)}
-              className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+              className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                 errors.customerPhone ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="090-1234-5678"
@@ -266,7 +269,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               type="email"
               value={formData.customerEmail}
               onChange={(e) => updateFormData('customerEmail', e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="customer@example.com"
             />
           </div>
@@ -282,7 +285,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               仲介元の選択方法
             </label>
             <div className="flex space-x-4">
-              <label className="inline-flex items-center">
+              <label className="inline-flex items-center text-gray-900">
                 <input
                   type="radio"
                   value="existing"
@@ -292,7 +295,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 />
                 既存から選択
               </label>
-              <label className="inline-flex items-center">
+              <label className="inline-flex items-center text-gray-900">
                 <input
                   type="radio"
                   value="new"
@@ -313,7 +316,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               <select
                 value={formData.sourceType}
                 onChange={(e) => updateFormData('sourceType', e.target.value)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.sourceType ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
@@ -337,7 +340,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 type="text"
                 value={formData.newIntermediaryName}
                 onChange={(e) => updateFormData('newIntermediaryName', e.target.value)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.newIntermediaryName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="例：引越し価格ガイド、ズバット引越し比較、LIFULL引越し等"
@@ -366,14 +369,14 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 type="text"
                 value={formData.fromPostalCode}
                 onChange={(e) => updateFormData('fromPostalCode', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="郵便番号"
               />
               <input
                 type="text"
                 value={formData.fromAddress}
                 onChange={(e) => updateFormData('fromAddress', e.target.value)}
-                className={`col-span-3 border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`col-span-3 border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.fromAddress ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="住所"
@@ -393,14 +396,14 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 type="text"
                 value={formData.toPostalCode}
                 onChange={(e) => updateFormData('toPostalCode', e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="郵便番号"
               />
               <input
                 type="text"
                 value={formData.toAddress}
                 onChange={(e) => updateFormData('toAddress', e.target.value)}
-                className={`col-span-3 border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`col-span-3 border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.toAddress ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="住所"
@@ -413,71 +416,100 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
         </div>
       </div>
 
-      {/* 引っ越し日 */}
+      {/* 引っ越し日（3つの希望日） */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">引っ越し日</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              日付の種類
-            </label>
-            <div className="flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  value="希望日"
-                  checked={formData.moveDateKind === '希望日'}
-                  onChange={(e) => updateFormData('moveDateKind', e.target.value as MoveDateKind)}
-                  className="mr-2"
-                />
-                希望日
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  value="確定日"
-                  checked={formData.moveDateKind === '確定日'}
-                  onChange={(e) => updateFormData('moveDateKind', e.target.value as MoveDateKind)}
-                  className="mr-2"
-                />
-                確定日
-              </label>
-            </div>
-          </div>
-
+        <h3 className="text-lg font-medium text-gray-900 mb-4">引っ越し希望日</h3>
+        <p className="text-sm text-gray-600 mb-4">最大3つまで希望日を入力できます</p>
+        
+        {/* 第1希望 */}
+        <div className="space-y-4 mb-6">
+          <h4 className="text-md font-medium text-gray-900">第1希望 <span className="text-red-500">*</span></h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                引越し日 <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
               <input
                 type="date"
-                value={formData.moveDate}
-                onChange={(e) => updateFormData('moveDate', e.target.value)}
+                value={formData.moveDate1}
+                onChange={(e) => updateFormData('moveDate1', e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.moveDate ? 'border-red-500' : 'border-gray-300'
+                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.moveDate1 ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.moveDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.moveDate}</p>
+              {errors.moveDate1 && (
+                <p className="mt-1 text-sm text-red-600">{errors.moveDate1}</p>
               )}
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                時間帯
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
               <select
-                value={formData.moveTime}
-                onChange={(e) => updateFormData('moveTime', e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.moveTime1}
+                onChange={(e) => updateFormData('moveTime1', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">選択してください</option>
                 {TIME_SLOTS.map((slot) => (
-                  <option key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </option>
+                  <option key={slot.value} value={slot.value}>{slot.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* 第2希望 */}
+        <div className="space-y-4 mb-6">
+          <h4 className="text-md font-medium text-gray-900">第2希望</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
+              <input
+                type="date"
+                value={formData.moveDate2}
+                onChange={(e) => updateFormData('moveDate2', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
+              <select
+                value={formData.moveTime2}
+                onChange={(e) => updateFormData('moveTime2', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">選択してください</option>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot.value} value={slot.value}>{slot.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* 第3希望 */}
+        <div className="space-y-4">
+          <h4 className="text-md font-medium text-gray-900">第3希望</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
+              <input
+                type="date"
+                value={formData.moveDate3}
+                onChange={(e) => updateFormData('moveDate3', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">時間帯</label>
+              <select
+                value={formData.moveTime3}
+                onChange={(e) => updateFormData('moveTime3', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">選択してください</option>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot.value} value={slot.value}>{slot.label}</option>
                 ))}
               </select>
             </div>
@@ -510,7 +542,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 type="number"
                 value={formData.totalPoints || ''}
                 onChange={(e) => updateFormData('totalPoints', parseFloat(e.target.value) || 0)}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="10.5"
                 step="0.5"
                 readOnly
@@ -524,7 +556,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                 type="number"
                 value={formData.estimatedPrice || ''}
                 onChange={(e) => updateFormData('estimatedPrice', parseInt(e.target.value) || 0)}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                className={`mt-1 block w-full border rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                   errors.estimatedPrice ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="50000"
@@ -542,7 +574,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
               {ADDITIONAL_SERVICES.map((service) => (
-                <label key={service} className="flex items-center text-sm">
+                <label key={service} className="flex items-center text-sm text-gray-900">
                   <input
                     type="checkbox"
                     checked={formData.additionalServices.includes(service)}
@@ -570,7 +602,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                   type="text"
                   value={customService}
                   onChange={(e) => setCustomService(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="サービス名を入力してください"
                   onKeyPress={(e) => e.key === 'Enter' && addCustomService()}
                 />
@@ -582,6 +614,21 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
                   追加
                 </button>
               </div>
+            </div>
+
+            {/* 自由記述追加サービス */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                その他追加サービス（自由記述）
+              </label>
+              <textarea
+                value={formData.customAdditionalServices}
+                onChange={(e) => updateFormData('customAdditionalServices', e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+                placeholder="特別なサービスや詳細な要求事項があれば自由にご記入ください"
+              />
+              <p className="text-xs text-gray-500 mt-1">上記のサービス以外で必要なものがあれば記入してください</p>
             </div>
 
             {/* 追加されたサービス一覧 */}
@@ -623,7 +670,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
               type="number"
               value={formData.taxRate}
               onChange={(e) => updateFormData('taxRate', parseFloat(e.target.value) || 0)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               min="0"
               max="100"
             />
@@ -650,11 +697,10 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             <select
               value={formData.contractStatus}
               onChange={(e) => updateFormData('contractStatus', e.target.value as any)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="estimate">見積</option>
-              <option value="canceled">キャンセル</option>
-              <option value="completed">完了</option>
+              <option value="confirmed">契約済み</option>
             </select>
           </div>
         </div>
@@ -671,7 +717,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             <select
               value={formData.paymentMethod}
               onChange={(e) => updateFormData('paymentMethod', e.target.value as PaymentMethod)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               {PAYMENT_METHODS.map((method) => (
                 <option key={method} value={method}>
@@ -688,7 +734,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
             <select
               value={formData.paymentStatus}
               onChange={(e) => updateFormData('paymentStatus', e.target.value as PaymentStatus)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               {PAYMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
@@ -707,7 +753,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
           value={formData.notes}
           onChange={(e) => updateFormData('notes', e.target.value)}
           rows={3}
-          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           placeholder="特別な要望や注意事項があれば記載してください"
         />
       </div>
@@ -847,20 +893,20 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
         {/* 家具・家電の数量入力 */}
         {ITEM_CATEGORIES.map((category) => (
           <div key={category.category} className="mb-6 bg-gray-50 p-4 rounded-lg">
-            <h4 className="text-lg font-medium mb-3">{category.category}</h4>
+            <h4 className="text-lg font-medium mb-3 text-gray-900">{category.category}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {category.items.map((item) => (
                 <div key={item.name} className="flex items-center justify-between bg-white p-2 rounded border">
-                  <label className="flex-1 text-sm">{item.name}</label>
+                  <label className="flex-1 text-sm text-gray-900">{item.name}</label>
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => handleQuantityChange(item.name, false)}
-                      className="px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                      className="px-2 py-1 bg-gray-200 text-gray-900 rounded text-sm hover:bg-gray-300"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center text-sm font-medium">
+                    <span className="w-8 text-center text-sm font-medium text-gray-900">
                       {items[item.name] || 0}
                     </span>
                     <button
@@ -879,7 +925,7 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
         
         {/* 段ボール目安 */}
         <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-lg font-medium mb-3">段ボール目安</h4>
+          <h4 className="text-lg font-medium mb-3 text-gray-900">段ボール目安</h4>
           <div className="space-y-2">
             {boxSizeOptions.map((option) => (
               <label key={option} className="flex items-center space-x-2">
@@ -891,7 +937,7 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
                   onChange={(e) => setBoxOption(e.target.value)}
                   className="form-radio text-blue-600"
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm text-gray-900">{option}</span>
               </label>
             ))}
             {boxOption?.includes('51箱以上') && (
@@ -904,7 +950,7 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
                   value={boxCount}
                   onChange={(e) => setBoxCount(Number(e.target.value))}
                   min={50}
-                  className="mt-1 w-32 px-3 py-1 border border-gray-300 rounded text-sm"
+                  className="mt-1 w-32 px-3 py-1 border border-gray-300 rounded text-sm text-gray-900"
                   placeholder="例：60"
                 />
               </div>

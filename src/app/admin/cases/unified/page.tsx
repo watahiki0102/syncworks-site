@@ -448,14 +448,14 @@ export default function UnifiedCasesPage() {
                         placeholder="顧客名・管理Noで検索..."
                         value={filter.searchTerm}
                         onChange={(e) => setFilter(prev => ({ ...prev, searchTerm: e.target.value }))}
-                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div className="w-40">
                       <select
                         value={filter.sourceType}
                         onChange={(e) => setFilter(prev => ({ ...prev, sourceType: e.target.value as 'all' | SourceType }))}
-                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       >
                         <option value="all">全て</option>
                         {IntermediaryService.getAllSelectOptions().map((option) => (
@@ -585,7 +585,7 @@ export default function UnifiedCasesPage() {
                             />
                             <label 
                               htmlFor={`packing-completed-${caseItem.id}`}
-                              className="text-xs text-gray-600 cursor-pointer"
+                              className="text-xs text-gray-900 cursor-pointer"
                             >
                               対応済み
                             </label>

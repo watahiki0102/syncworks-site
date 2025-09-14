@@ -155,23 +155,23 @@ export default function QuoteResponseForm({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">顧客名</span>
-                  <span className="font-medium">{caseItem.customer.customerName}</span>
+                  <span className="font-medium text-gray-900">{caseItem.customer.customerName}</span>
                 </div>
                 {caseItem.customer.phone && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">電話番号</span>
-                    <span className="font-medium">{caseItem.customer.phone}</span>
+                    <span className="font-medium text-gray-900">{caseItem.customer.phone}</span>
                   </div>
                 )}
                 {caseItem.customer.email && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">メール</span>
-                    <span className="font-medium">{caseItem.customer.email}</span>
+                    <span className="font-medium text-gray-900">{caseItem.customer.email}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">引越し日</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-gray-900">
                     {new Date(caseItem.move.moveDate).toLocaleDateString('ja-JP')}
                     {caseItem.move.moveTime && ` ${caseItem.move.moveTime}`}
                   </span>
@@ -179,17 +179,17 @@ export default function QuoteResponseForm({
                 {caseItem.move.moveType && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">引越しタイプ</span>
-                    <span className="font-medium">{caseItem.move.moveType}</span>
+                    <span className="font-medium text-gray-900">{caseItem.move.moveType}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">仲介元</span>
-                  <span className="font-medium">{getSourceTypeLabel(caseItem.sourceType as any)}</span>
+                  <span className="font-medium text-gray-900">{getSourceTypeLabel(caseItem.sourceType as any)}</span>
                 </div>
                 {caseItem.priority && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">優先度</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-gray-900">
                       {caseItem.priority === 'high' ? '高' : 
                        caseItem.priority === 'medium' ? '中' : '低'}
                     </span>
@@ -213,11 +213,11 @@ export default function QuoteResponseForm({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">引越し元</span>
-                    <span className="font-medium text-right max-w-xs">{caseItem.move.fromAddress}</span>
+                    <span className="font-medium text-right max-w-xs text-gray-900">{caseItem.move.fromAddress}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">引越し先</span>
-                    <span className="font-medium text-right max-w-xs">{caseItem.move.toAddress}</span>
+                    <span className="font-medium text-right max-w-xs text-gray-900">{caseItem.move.toAddress}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">荷物一覧</span>
@@ -231,7 +231,7 @@ export default function QuoteResponseForm({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">ポイント</span>
-                    <span className="font-medium">{caseItem.items.totalPoints}pt</span>
+                    <span className="font-medium text-gray-900">{caseItem.items.totalPoints}pt</span>
                   </div>
                 </div>
               </div>
@@ -244,19 +244,19 @@ export default function QuoteResponseForm({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">推奨トラック</span>
-                    <span className="font-medium">{autoQuote.recommendedTruck}</span>
+                    <span className="font-medium text-gray-900">{autoQuote.recommendedTruck}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">基準価格</span>
-                    <span className="font-medium">{formatCurrency(autoQuote.basePrice)}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(autoQuote.basePrice)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">距離料金</span>
-                    <span className="font-medium">{formatCurrency(autoQuote.distancePrice)}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(autoQuote.distancePrice)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">オプション料金</span>
-                    <span className="font-medium">{formatCurrency(autoQuote.optionPrice)}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(autoQuote.optionPrice)}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-gray-600 font-medium">算出総額</span>
@@ -288,7 +288,7 @@ export default function QuoteResponseForm({
                       : 'border-gray-300 bg-white hover:bg-gray-50'
                   }`}
                 >
-                  <div className="font-medium">見積可能</div>
+                  <div className="font-medium text-gray-900">見積可能</div>
                   <div className="text-xs text-gray-500 mt-1">金額を提示</div>
                 </button>
                 <button
@@ -300,7 +300,7 @@ export default function QuoteResponseForm({
                       : 'border-gray-300 bg-white hover:bg-gray-50'
                   }`}
                 >
-                  <div className="font-medium">見積不可</div>
+                  <div className="font-medium text-gray-900">見積不可</div>
                   <div className="text-xs text-gray-500 mt-1">対応不可</div>
                 </button>
               </div>
@@ -312,7 +312,7 @@ export default function QuoteResponseForm({
                 {/* 算出価格適用ボタン */}
                 {autoQuote && (
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-800 mb-3">算出価格を適用</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">算出価格を適用</h4>
                     <button
                       type="button"
                       onClick={applyCalculatedQuote}
@@ -339,7 +339,7 @@ export default function QuoteResponseForm({
                         type="number"
                         value={formData.basicAmount}
                         onChange={(e) => handleInputChange('basicAmount', e.target.value)}
-                        className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full pl-8 pr-3 py-2 border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.basicAmount ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="30000"
@@ -360,7 +360,7 @@ export default function QuoteResponseForm({
                         type="number"
                         value={formData.optionAmount}
                         onChange={(e) => handleInputChange('optionAmount', e.target.value)}
-                        className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full pl-8 pr-3 py-2 border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.optionAmount ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="5000"
@@ -375,7 +375,7 @@ export default function QuoteResponseForm({
                 {/* 税込総額（自動計算） */}
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">税込総額</span>
+                    <span className="text-sm font-medium text-gray-900">税込総額</span>
                     <span className="text-lg font-bold text-gray-900">
                       {formatCurrency(calculateTotalWithTax())}
                     </span>
@@ -395,7 +395,7 @@ export default function QuoteResponseForm({
                   value={formData.comment}
                   onChange={(e) => handleInputChange('comment', e.target.value)}
                   rows={3}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-3 py-2 border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.comment ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="お見積りの詳細や注意事項をご記入ください（10文字以上）"
@@ -416,7 +416,7 @@ export default function QuoteResponseForm({
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="その他の特記事項があればご記入ください"
                 />
               </div>
@@ -430,7 +430,7 @@ export default function QuoteResponseForm({
                   value={formData.confirmationMemo}
                   onChange={(e) => handleInputChange('confirmationMemo', e.target.value)}
                   rows={2}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-3 py-2 border rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.confirmationMemo ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="対応時の注意点や申し送り事項をご記入ください"
