@@ -1108,7 +1108,7 @@ const UnifiedCaseManagement = ({
     <div className="bg-white shadow rounded-lg">
       <div className="px-4 py-5 sm:p-6">
         <div className="flex items-center justify-end mb-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-900">
             総案件数: {submissions.length}件
           </div>
         </div>
@@ -1162,26 +1162,26 @@ const UnifiedCaseManagement = ({
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="font-medium text-gray-700">引越し元:</span> {submission.originAddress}
+                        <span className="font-medium text-gray-900">引越し元:</span> <span className="text-gray-900">{submission.originAddress}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700">引越し先:</span> {submission.destinationAddress}
+                        <span className="font-medium text-gray-900">引越し先:</span> <span className="text-gray-900">{submission.destinationAddress}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700">総ポイント:</span> {submission.totalPoints}pt
+                        <span className="font-medium text-gray-900">総ポイント:</span> <span className="text-gray-900">{submission.totalPoints}pt</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700">総容量:</span> {submission.totalCapacity}kg
+                        <span className="font-medium text-gray-900">総容量:</span> <span className="text-gray-900">{submission.totalCapacity}kg</span>
                       </div>
                     </div>
                     
                     {submission.truckAssignments.length > 0 && (
                       <div className="mt-3">
-                        <span className="text-sm font-medium text-gray-700">割り当て済みトラック:</span>
+                        <span className="text-sm font-medium text-gray-900">割り当て済みトラック:</span>
                         <div className="mt-1 space-y-1">
                           {submission.truckAssignments.map((assignment, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                              <span className="text-sm">
+                              <span className="text-sm text-gray-900">
                                 {assignment.truckName} ({assignment.startTime}-{assignment.endTime})
                               </span>
                               <button

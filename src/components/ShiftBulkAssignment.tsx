@@ -177,11 +177,11 @@ export default function ShiftBulkAssignment({
       <div className="space-y-4">
         {/* テンプレート選択 */}
         <div>
-          <label className="block text-sm font-medium mb-1">テンプレート選択（任意）</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">テンプレート選択（任意）</label>
           <select
             value={selectedTemplate}
             onChange={e => handleTemplateChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-3 py-2 border rounded text-gray-900"
           >
             <option value="">テンプレートを選択</option>
             {templates.map(template => (
@@ -194,11 +194,11 @@ export default function ShiftBulkAssignment({
 
         {/* 従業員選択 */}
         <div>
-          <label className="block text-sm font-medium mb-1">従業員</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">従業員</label>
           <select
             value={selectedEmployee}
             onChange={e => handleEmployeeChange(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-3 py-2 border rounded text-gray-900"
             required
           >
             <option value="">従業員を選択</option>
@@ -213,22 +213,22 @@ export default function ShiftBulkAssignment({
         {/* 勤務時間 */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">開始時間</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">開始時間</label>
             <input
               type="time"
               value={startTime}
               onChange={e => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">終了時間</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">終了時間</label>
             <input
               type="time"
               value={endTime}
               onChange={e => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
               required
             />
           </div>
@@ -236,11 +236,11 @@ export default function ShiftBulkAssignment({
 
         {/* 備考 */}
         <div>
-          <label className="block text-sm font-medium mb-1">備考</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">備考</label>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
             rows={2}
           />
         </div>
@@ -248,7 +248,7 @@ export default function ShiftBulkAssignment({
         {/* 選択された日付 */}
         {selectedDates.length > 0 && (
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               対象日 ({selectedDates.length}日)
             </label>
             <div className="p-3 bg-gray-50 rounded border">
@@ -291,7 +291,7 @@ export default function ShiftBulkAssignment({
               {Object.entries(DUPLICATE_STATUS).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-1">
                   <div className={`w-3 h-3 rounded ${value.color}`}></div>
-                  <span>{value.icon} {value.label}</span>
+                  <span className="text-gray-900">{value.icon} {value.label}</span>
                 </div>
               ))}
             </div>

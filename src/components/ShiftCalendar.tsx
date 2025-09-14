@@ -764,7 +764,7 @@ export default function ShiftCalendar({
               placeholder="従業員検索..."
               value={employeeFilter}
               onChange={(e) => setEmployeeFilter(e.target.value)}
-              className="w-64 px-3 py-2 border rounded"
+              className="w-64 px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
             />
             <p className="text-xs text-gray-500">空欄をクリックまたはドラッグしてシフトを登録できます</p>
           </div>
@@ -781,7 +781,7 @@ export default function ShiftCalendar({
             >
               {showLegend ? '凡例を隠す' : '凡例を表示'}
             </button>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm text-gray-900">
               <input
                 type="checkbox"
                 checked={colorByEmployee}
@@ -851,11 +851,11 @@ export default function ShiftCalendar({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">作業種別</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">作業種別</label>
                 <select
                   value={editingShift.workType}
                   onChange={(e) => setEditingShift({...editingShift, workType: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900"
                 >
                   {Object.entries(WORK_TYPES).map(([key, value]) => (
                     <option key={key} value={key}>
@@ -866,22 +866,22 @@ export default function ShiftCalendar({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">顧客名（任意）</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">顧客名（任意）</label>
                 <input
                   type="text"
                   value={editingShift.customerName}
                   onChange={(e) => setEditingShift({...editingShift, customerName: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   placeholder="顧客名を入力"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">備考（任意）</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">備考（任意）</label>
                 <textarea
                   value={editingShift.notes}
                   onChange={(e) => setEditingShift({...editingShift, notes: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   rows={3}
                   placeholder="備考を入力"
                 />

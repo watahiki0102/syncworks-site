@@ -37,7 +37,7 @@ function TrendPanel({ unansweredCount, todayApplications, monthlyContracts, sale
               <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">件</span>
             </div>
           </div>
-          <AdminBadge variant="danger" size="sm">{unansweredCount > 0 ? '要対応' : '対応済み'}</AdminBadge>
+          <AdminBadge variant="danger" size="sm">{unansweredCount > 0 ? '要対応' : '対応済'}</AdminBadge>
         </div>
         
         {/* 本日の申し込み数 */}
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
                    padding="sm"
                  >
                    <div className="text-gray-900 dark:text-gray-100">
-                     <AdminBadge variant="warning" size="sm">{unansweredCount > 0 ? `${unansweredCount}件未対応` : '対応済み'}</AdminBadge>
+                     <AdminBadge variant="warning" size="sm">{unansweredCount > 0 ? `${unansweredCount}件未対応` : '対応済'}</AdminBadge>
                    </div>
                  </AdminCard>
                </Link>

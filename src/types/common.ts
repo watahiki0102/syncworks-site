@@ -173,7 +173,7 @@ export interface UnifiedCase {
   packingDelivery?: boolean;
   /** 梱包資材配送期限 */
   packingDeadline?: string;
-  /** 梱包資材配送対応済み */
+  /** 梱包資材配送対応済 */
   packingDeliveryCompleted?: boolean;
 }
 

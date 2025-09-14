@@ -321,7 +321,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
         <div className="space-y-4">
               {/* トラック名 */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-1">
                   トラック名 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -337,7 +337,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
 
               {/* ナンバー */}
               <div>
-                <label htmlFor="plateNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="plateNumber" className="block text-sm font-medium text-gray-900 mb-1">
                   ナンバー <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -353,7 +353,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
 
               {/* 容量 */}
               <div>
-                <label htmlFor="capacityKg" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="capacityKg" className="block text-sm font-medium text-gray-900 mb-1">
                   容量 (kg) <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -370,7 +370,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
 
               {/* 車種 */}
               <div>
-                <label htmlFor="truckType" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="truckType" className="block text-sm font-medium text-gray-900 mb-1">
                   車種 <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -391,7 +391,7 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
 
               {/* 車検有効期限 */}
               <div>
-                <label htmlFor="inspectionExpiry" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="inspectionExpiry" className="block text-sm font-medium text-gray-900 mb-1">
                   車検有効期限
                 </label>
                 <Input
@@ -404,14 +404,14 @@ export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps
 
               {/* ステータス */}
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-900 mb-1">
                   ステータス
                 </label>
                 <select
                   id="status"
                   value={formState.formData.status}
                   onChange={(e) => dispatch({ type: 'UPDATE_FORM_DATA', payload: { status: e.target.value as Truck['status'] } })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   {truckStatuses.map(status => (
                     <option key={status.value} value={status.value}>{status.label}</option>

@@ -154,7 +154,7 @@ export default function ShiftTemplateManager({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">勤務時間:</span>
+                  <span className="font-medium text-gray-900">勤務時間:</span>
                   <div className="text-gray-600">
                     {template.startTime} - {template.endTime}
                   </div>
@@ -164,7 +164,7 @@ export default function ShiftTemplateManager({
                 </div>
                 
                 <div>
-                  <span className="font-medium">適用曜日:</span>
+                  <span className="font-medium text-gray-900">適用曜日:</span>
                   <div className="flex gap-1 mt-1">
                     {WEEKDAYS_EN.map((day, index) => (
                       <span
@@ -182,7 +182,7 @@ export default function ShiftTemplateManager({
                 </div>
 
                 <div>
-                  <span className="font-medium">備考:</span>
+                  <span className="font-medium text-gray-900">備考:</span>
                   <div className="text-gray-600">
                     {template.notes || 'なし'}
                   </div>
@@ -203,28 +203,28 @@ export default function ShiftTemplateManager({
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingTemplate ? 'テンプレート編集' : 'テンプレート追加'}
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">テンプレート名</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">テンプレート名</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">従業員</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">従業員</label>
                 <select
                   value={formData.employeeId}
                   onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900"
                   required
                 >
                   <option value="">従業員を選択</option>
@@ -238,29 +238,29 @@ export default function ShiftTemplateManager({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">開始時間</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">開始時間</label>
                   <input
                     type="time"
                     value={formData.startTime}
                     onChange={e => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">終了時間</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">終了時間</label>
                   <input
                     type="time"
                     value={formData.endTime}
                     onChange={e => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">適用曜日</label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">適用曜日</label>
                 <div className="grid grid-cols-7 gap-1">
                   {WEEKDAYS_EN.map((day, index) => (
                     <button
@@ -280,11 +280,11 @@ export default function ShiftTemplateManager({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">備考</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">備考</label>
                 <textarea
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   rows={3}
                 />
               </div>

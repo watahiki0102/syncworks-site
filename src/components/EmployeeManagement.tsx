@@ -152,15 +152,15 @@ export default function EmployeeManagement({
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">役職:</span>
-                  <span className="font-medium">{employee.position}</span>
+                  <span className="font-medium text-gray-900">{employee.position}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">入社日:</span>
-                  <span className="font-medium">{employee.hireDate}</span>
+                  <span className="font-medium text-gray-900">{employee.hireDate}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">シフト数:</span>
-                  <span className="font-medium">{employee.shifts.length}件</span>
+                  <span className="font-medium text-gray-900">{employee.shifts.length}件</span>
                 </div>
               </div>
 
@@ -187,50 +187,50 @@ export default function EmployeeManagement({
       {showEmployeeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {selectedEmployee ? '従業員編集' : '従業員追加'}
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">氏名</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">氏名</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">メールアドレス</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">メールアドレス</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">電話番号</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">電話番号</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">役職</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">役職</label>
                 <select
                   value={formData.position}
                   onChange={e => setFormData({ ...formData, position: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900"
                   required
                 >
                   {EMPLOYEE_POSITIONS.map(position => (
@@ -242,11 +242,11 @@ export default function EmployeeManagement({
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">ステータス</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">ステータス</label>
                 <select
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900"
                   required
                 >
                   <option value="active">在籍中</option>
@@ -255,12 +255,12 @@ export default function EmployeeManagement({
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">入社日</label>
+                <label className="block text-sm font-medium text-gray-900 mb-1">入社日</label>
                 <input
                   type="date"
                   value={formData.hireDate}
                   onChange={e => setFormData({ ...formData, hireDate: e.target.value })}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>

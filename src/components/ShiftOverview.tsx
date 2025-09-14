@@ -139,12 +139,12 @@ export default function ShiftOverview({
 
       {/* 日付選択 */}
       <div className="flex gap-2 items-center">
-        <label className="text-sm font-medium">表示日:</label>
+        <label className="text-sm font-medium text-gray-900">表示日:</label>
         <input
           type="date"
           value={selectedDate}
           onChange={e => onDateChange(e.target.value)}
-          className="px-3 py-1 border rounded text-sm"
+          className="px-3 py-1 border rounded text-sm text-gray-900 placeholder-gray-500"
         />
       </div>
 
@@ -255,18 +255,18 @@ export default function ShiftOverview({
             return (
               <div className="space-y-3">
                 <div>
-                  <span className="font-medium">{employee.name}</span>
+                  <span className="font-medium text-gray-900">{employee.name}</span>
                   <span className="text-gray-600 ml-2">({employee.position})</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">総勤務時間:</span>
-                    <span className="font-medium ml-2">{totalHours}時間</span>
+                    <span className="font-medium text-gray-900 ml-2">{totalHours}時間</span>
                   </div>
                   <div>
                     <span className="text-gray-600">シフト数:</span>
-                    <span className="font-medium ml-2">{shifts.length}件</span>
+                    <span className="font-medium text-gray-900 ml-2">{shifts.length}件</span>
                   </div>
                 </div>
 
@@ -304,9 +304,9 @@ export default function ShiftOverview({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-2">従業員</th>
+                  <th className="text-left p-2 text-gray-900">従業員</th>
                   {weekDays.map(date => (
-                    <th key={date} className="p-2 text-center">
+                    <th key={date} className="p-2 text-center text-gray-900">
                       {new Date(date).toLocaleDateString('ja-JP', {
                         month: 'short',
                         day: 'numeric',
@@ -314,7 +314,7 @@ export default function ShiftOverview({
                       })}
                     </th>
                   ))}
-                  <th className="p-2 text-center font-medium">週合計</th>
+                  <th className="p-2 text-center font-medium text-gray-900">週合計</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,7 +324,7 @@ export default function ShiftOverview({
                   return (
                     <tr key={employee.id} className="border-b hover:bg-gray-50">
                       <td className="p-2">
-                        <div className="font-medium">{employee.name}</div>
+                        <div className="font-medium text-gray-900">{employee.name}</div>
                         <div className="text-xs text-gray-600">{employee.position}</div>
                       </td>
                       {weekDays.map(date => {
@@ -339,7 +339,7 @@ export default function ShiftOverview({
                           </td>
                         );
                       })}
-                      <td className="p-2 text-center font-bold">
+                      <td className="p-2 text-center font-bold text-gray-900">
                         {weeklyHours}時間
                       </td>
                     </tr>

@@ -78,7 +78,7 @@ export default function UnifiedCasesPage() {
     );
   };
 
-  // 梱包資材配送対応済み状態の切り替え
+  // 梱包資材配送対応済状態の切り替え
   const togglePackingDeliveryCompleted = (caseId: string) => {
     setCases(prevCases => 
       prevCases.map(c => 
@@ -499,7 +499,7 @@ export default function UnifiedCasesPage() {
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   仲介元
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                   顧客名
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
@@ -587,7 +587,7 @@ export default function UnifiedCasesPage() {
                               htmlFor={`packing-completed-${caseItem.id}`}
                               className="text-xs text-gray-900 cursor-pointer"
                             >
-                              対応済み
+                              配送済
                             </label>
                           </div>
                         )}
@@ -787,7 +787,7 @@ export default function UnifiedCasesPage() {
                         )}
                       </div>
                       
-                      {/* 配送対応済みチェックボックス */}
+                      {/* 配送対応済チェックボックス */}
                       {viewingCase.packingDelivery && (
                         <div className="flex items-center gap-2">
                           <span className="font-medium">対応状況:</span>
@@ -810,7 +810,7 @@ export default function UnifiedCasesPage() {
                               htmlFor={`modal-packing-completed-${viewingCase.id}`}
                               className="text-sm text-gray-700 cursor-pointer"
                             >
-                              配送対応済み
+                              配送対応済
                             </label>
                           </div>
                         </div>
