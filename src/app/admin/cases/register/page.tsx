@@ -144,9 +144,8 @@ export default function CaseRegistrationPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
-    </AdminAuthGuard>
+          </main>
+        </div>
+      </AdminAuthGuard>
   );
-} 
+}
