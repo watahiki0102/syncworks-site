@@ -113,7 +113,7 @@ export default function CaseRegistrationPage() {
         />
 
         {/* メインコンテンツ */}
-        <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="w-full max-w-none py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           {/* 案件登録フォーム */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">

@@ -378,7 +378,7 @@ export default function UnifiedCasesPage() {
 
   return (
     <AdminAuthGuard>    
-      <div className="container mx-auto px-4 py-2">
+      <div className="w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8 py-2">
         <div className="mb-1">
           <div className="space-y-2 mb-2">
             {/* ステータスフィルター（チェックボックス）と検索 */}

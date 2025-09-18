@@ -132,7 +132,7 @@ export default function QuoteHistoryPage() {
 
   return (
     <AdminAuthGuard>
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full max-w-none px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">見積回答履歴</h1>
           

@@ -153,7 +153,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* ヘッダー */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 w-full">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-4 sm:gap-0">
             {/* 左側：タイトルとログイン情報 */}
             <div className="flex items-center gap-4">
@@ -257,7 +257,7 @@ export default function AdminLayout({
       {/* ブレッドクラム */}
       {generateBreadcrumbs().length > 1 && (
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
             <nav className="flex py-3" aria-label="Breadcrumb">
               <ol className="flex items-center space-x-2 overflow-x-auto">
                 {generateBreadcrumbs().map((crumb, index) => (
@@ -286,7 +286,7 @@ export default function AdminLayout({
       {/* タブナビゲーション */}
       {tabs && tabs.length > 0 && (
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
             <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
@@ -336,8 +336,8 @@ export default function AdminLayout({
       )}
 
       {/* メインコンテンツ */}
-      <main className="w-full py-4">
-        <div className="w-full px-4 sm:px-6 lg:px-8 h-[calc(100vh-120px)]">
+      <main className="w-full max-w-none py-4">
+        <div className="w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8 h-[calc(100vh-120px)]">
           {children}
         </div>
       </main>

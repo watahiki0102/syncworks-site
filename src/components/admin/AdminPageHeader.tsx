@@ -4,6 +4,8 @@
  * - パンくずナビゲーション
  * - 統一されたページタイトル表示
  */
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import AdminButton from './AdminButton';
@@ -49,7 +51,7 @@ export default function AdminPageHeader({
 
   return (
     <div className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-4">
         {/* パンくずナビゲーション */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
           {allBreadcrumbs.map((crumb, index) => (

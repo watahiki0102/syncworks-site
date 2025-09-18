@@ -328,7 +328,7 @@ export default function QuoteRequestsPage() {
   if (selectedRequest) {
     return (
       <AdminAuthGuard>
-        <div className="container mx-auto px-4 py-8">
+        <div className="w-full max-w-none px-4 py-8">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">見積もり回答</h1>
             
@@ -650,7 +650,7 @@ export default function QuoteRequestsPage() {
 
   return (
     <AdminAuthGuard>
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full max-w-none px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">見積もり回答依頼通知</h1>
           

@@ -915,7 +915,7 @@ function DispatchManagementContent() {
       />
       {/* タブナビゲーション */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8">
           <nav className="flex space-x-8" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
@@ -936,7 +936,7 @@ function DispatchManagementContent() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-2 sm:px-6 lg:px-8">
+      <main className="w-full max-w-none py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
         <div className="px-4 py-2 sm:px-0">
 
           {/* 配車カレンダータブ */}

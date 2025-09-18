@@ -387,7 +387,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
             ]}
           />
           
-          <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <main className="w-full max-w-none py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
             <div className="bg-white rounded-lg shadow p-6 text-center">
               <div className="text-6xl text-gray-400 mb-4">❌</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">案件が見つかりません</h3>
@@ -419,8 +419,8 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
           ]}
         />
 
-        <main className="max-w-7xl mx-auto py-6 px-6">
-          <div className="max-w-4xl mx-auto">
+        <main className="w-full max-w-none py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+          <div className="w-full max-w-none">
             {/* 見積回答フォーム */}
             <div>
               <div className="bg-white rounded-lg shadow p-6">

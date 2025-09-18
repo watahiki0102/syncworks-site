@@ -122,7 +122,7 @@ function CaseEditPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
           {/* ヘッダー */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
@@ -159,7 +159,7 @@ function CaseEditPage() {
           </div>
 
           {/* 編集フォーム */}
-          <div className="bg-white shadow rounded-lg">
+          <div className="w-full max-w-4xl mx-auto bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-medium text-gray-900">基本情報</h2>
             </div>
@@ -342,7 +342,7 @@ function CaseEditPage() {
 
           {/* 戻り先情報 */}
           {fromPage === 'assignment' && (
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="w-full max-w-4xl mx-auto mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center">
                 <span className="text-blue-600 text-lg mr-2">ℹ️</span>
                 <div>

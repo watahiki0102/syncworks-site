@@ -242,7 +242,7 @@ export default function AdminAnalytics() {
         />
 
         {/* メインコンテンツ */}
-        <main className="max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <main className="w-full max-w-none py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="space-y-6">
             {/* 表示間隔選択 */}
             <div className="bg-white rounded-lg shadow p-6">

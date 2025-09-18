@@ -132,7 +132,7 @@ export default function PerformancePage() {
 
   return (
     <AdminAuthGuard>
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8 py-8">
         <div className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-6">
             <div>
