@@ -199,7 +199,7 @@ export default function AdminQuotes() {
           ]}
         />
 
-        <main className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <main className="w-full py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="px-4 py-6 sm:px-0">
             {/* フィルター・検索 */}
             <AdminCard title="検索・フィルタ" icon="🔍" padding="lg" className="mb-6">

@@ -21,22 +21,35 @@ export const VIEW_MODE_LABELS = {
  */
 
 /**
- * 時間帯定義（1時間単位）
+ * 時間帯定義（30分単位）
  */
 export const TIME_SLOTS = [
-  { id: '08:00', label: '08:00-09:00', start: '08:00', end: '09:00', color: 'bg-blue-100 text-blue-800' },
-  { id: '09:00', label: '09:00-10:00', start: '09:00', end: '10:00', color: 'bg-green-100 text-green-800' },
-  { id: '10:00', label: '10:00-11:00', start: '10:00', end: '11:00', color: 'bg-green-100 text-green-800' },
-  { id: '11:00', label: '11:00-12:00', start: '11:00', end: '12:00', color: 'bg-green-100 text-green-800' },
-  { id: '12:00', label: '12:00-13:00', start: '12:00', end: '13:00', color: 'bg-yellow-100 text-yellow-800' },
-  { id: '13:00', label: '13:00-14:00', start: '13:00', end: '14:00', color: 'bg-yellow-100 text-yellow-800' },
-  { id: '14:00', label: '14:00-15:00', start: '14:00', end: '15:00', color: 'bg-yellow-100 text-yellow-800' },
-  { id: '15:00', label: '15:00-16:00', start: '15:00', end: '16:00', color: 'bg-purple-100 text-purple-800' },
-  { id: '16:00', label: '16:00-17:00', start: '16:00', end: '17:00', color: 'bg-purple-100 text-purple-800' },
-  { id: '17:00', label: '17:00-18:00', start: '17:00', end: '18:00', color: 'bg-purple-100 text-purple-800' },
-  { id: '18:00', label: '18:00-19:00', start: '18:00', end: '19:00', color: 'bg-gray-100 text-gray-800' },
-  { id: '19:00', label: '19:00-20:00', start: '19:00', end: '20:00', color: 'bg-gray-100 text-gray-800' },
-  { id: '20:00', label: '20:00-21:00', start: '20:00', end: '21:00', color: 'bg-gray-100 text-gray-800' },
+  { id: '08:00', label: '08:00-08:30', start: '08:00', end: '08:30', color: 'bg-blue-100 text-blue-800' },
+  { id: '08:30', label: '08:30-09:00', start: '08:30', end: '09:00', color: 'bg-blue-100 text-blue-800' },
+  { id: '09:00', label: '09:00-09:30', start: '09:00', end: '09:30', color: 'bg-green-100 text-green-800' },
+  { id: '09:30', label: '09:30-10:00', start: '09:30', end: '10:00', color: 'bg-green-100 text-green-800' },
+  { id: '10:00', label: '10:00-10:30', start: '10:00', end: '10:30', color: 'bg-green-100 text-green-800' },
+  { id: '10:30', label: '10:30-11:00', start: '10:30', end: '11:00', color: 'bg-green-100 text-green-800' },
+  { id: '11:00', label: '11:00-11:30', start: '11:00', end: '11:30', color: 'bg-green-100 text-green-800' },
+  { id: '11:30', label: '11:30-12:00', start: '11:30', end: '12:00', color: 'bg-green-100 text-green-800' },
+  { id: '12:00', label: '12:00-12:30', start: '12:00', end: '12:30', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '12:30', label: '12:30-13:00', start: '12:30', end: '13:00', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '13:00', label: '13:00-13:30', start: '13:00', end: '13:30', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '13:30', label: '13:30-14:00', start: '13:30', end: '14:00', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '14:00', label: '14:00-14:30', start: '14:00', end: '14:30', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '14:30', label: '14:30-15:00', start: '14:30', end: '15:00', color: 'bg-yellow-100 text-yellow-800' },
+  { id: '15:00', label: '15:00-15:30', start: '15:00', end: '15:30', color: 'bg-purple-100 text-purple-800' },
+  { id: '15:30', label: '15:30-16:00', start: '15:30', end: '16:00', color: 'bg-purple-100 text-purple-800' },
+  { id: '16:00', label: '16:00-16:30', start: '16:00', end: '16:30', color: 'bg-purple-100 text-purple-800' },
+  { id: '16:30', label: '16:30-17:00', start: '16:30', end: '17:00', color: 'bg-purple-100 text-purple-800' },
+  { id: '17:00', label: '17:00-17:30', start: '17:00', end: '17:30', color: 'bg-purple-100 text-purple-800' },
+  { id: '17:30', label: '17:30-18:00', start: '17:30', end: '18:00', color: 'bg-purple-100 text-purple-800' },
+  { id: '18:00', label: '18:00-18:30', start: '18:00', end: '18:30', color: 'bg-gray-100 text-gray-800' },
+  { id: '18:30', label: '18:30-19:00', start: '18:30', end: '19:00', color: 'bg-gray-100 text-gray-800' },
+  { id: '19:00', label: '19:00-19:30', start: '19:00', end: '19:30', color: 'bg-gray-100 text-gray-800' },
+  { id: '19:30', label: '19:30-20:00', start: '19:30', end: '20:00', color: 'bg-gray-100 text-gray-800' },
+  { id: '20:00', label: '20:00-20:30', start: '20:00', end: '20:30', color: 'bg-gray-100 text-gray-800' },
+  { id: '20:30', label: '20:30-21:00', start: '20:30', end: '21:00', color: 'bg-gray-100 text-gray-800' },
 ];
 
 /**

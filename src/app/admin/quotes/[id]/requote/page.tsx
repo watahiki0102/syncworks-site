@@ -144,7 +144,7 @@ export default function ReQuotePage() {
     return (
       <AdminAuthGuard>
         <main className="bg-gray-50 min-h-screen py-10 px-4">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="w-full max-w-4xl mx-auto text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">データを読み込み中...</p>
           </div>
@@ -157,7 +157,7 @@ export default function ReQuotePage() {
     return (
       <AdminAuthGuard>
         <main className="bg-gray-50 min-h-screen py-10 px-4">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="w-full max-w-4xl mx-auto text-center">
             <h1 className="text-3xl font-bold text-red-600 mb-4">データが見つかりません</h1>
             <p className="text-gray-600 mb-6">元の見積もりデータが見つかりませんでした。</p>
             <button 
@@ -175,7 +175,7 @@ export default function ReQuotePage() {
   return (
     <AdminAuthGuard>
       <main className="bg-gray-50 min-h-screen py-10 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full max-w-4xl mx-auto">
           {/* ヘッダー */}
           <div className="flex justify-between items-center mb-8">
             <div>

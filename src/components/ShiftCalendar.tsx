@@ -192,7 +192,8 @@ export default function ShiftCalendar({
   };
 
   const isBreakTime = (timeSlot: string) => {
-    return timeSlot === '12:00'; // 12:00-13:00を休憩時間として設定
+    // 12:00-13:00を休憩時間として設定（30分単位対応）
+    return timeSlot === '12:00' || timeSlot === '12:30';
   };
 
   const getEmployeeColor = (employeeId: string) => {
@@ -435,7 +436,7 @@ export default function ShiftCalendar({
     return (
       <div className="bg-white rounded-lg shadow">
         <div className="overflow-x-auto">
-          <div className="min-w-[1600px]">
+          <div className="min-w-[2400px]">
             {/* ヘッダー行 */}
             <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200 sticky top-0 z-20">
               <div className="p-4 bg-gray-50 font-medium text-gray-900 sticky left-0 z-20">従業員</div>
@@ -454,29 +455,25 @@ export default function ShiftCalendar({
               ))}
             </div>
 
-            {/* 時間帯ヘッダー */}
-            <div className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200 sticky top-14 z-10">
+            {/* 時間帯ヘッダー - 1つの行として表示 */}
+            <div className="grid grid-cols-[250px_repeat(26,1fr)] gap-px bg-gray-200 sticky top-14 z-10">
               <div className="p-2 bg-gray-50 font-medium text-gray-600 sticky left-0 z-20">時間帯</div>
-              {weekDays.map(day => (
-                <div key={day.date} className={`grid grid-cols-[repeat(13,1fr)] gap-px ${day.isWeekend ? 'bg-gray-100' : ''}`}>
-                  {TIME_SLOTS.map(slot => (
-                    <div
-                      key={slot.id}
-                      className={`p-1 text-xs text-center text-gray-500 border bg-gray-50 ${
-                        isBreakTime(slot.id) ? 'bg-gray-200' : ''
-                      }`}
-                      title={isBreakTime(slot.id) ? '休憩時間' : slot.label}
-                    >
-                      {slot.label}
-                    </div>
-                  ))}
+              {TIME_SLOTS.map(slot => (
+                <div
+                  key={slot.id}
+                  className={`p-1 text-xs text-center text-gray-500 border bg-gray-50 ${
+                    isBreakTime(slot.id) ? 'bg-gray-200' : ''
+                  }`}
+                  title={isBreakTime(slot.id) ? '休憩時間' : slot.label}
+                >
+                  {slot.start}
                 </div>
               ))}
             </div>
 
             {/* 従業員行 */}
             {filteredEmployees.map(employee => (
-              <div key={employee.id} className="grid grid-cols-[250px_repeat(7,1fr)] gap-px bg-gray-200">
+              <div key={employee.id} className="grid grid-cols-[250px_repeat(182,1fr)] gap-px bg-gray-200">
                 {/* 従業員情報 */}
                 <div className={`p-4 border ${colorByEmployee ? getEmployeeColor(employee.id) : 'bg-white'} sticky left-0 z-10 bg-white`}>
                   <div className="font-medium text-lg text-gray-900">{employee.name}</div>
@@ -486,17 +483,15 @@ export default function ShiftCalendar({
                   )}
                 </div>
 
-                {/* 各日のシフト */}
-                {weekDays.map(day => (
-                  <div key={day.date} className={`grid grid-cols-[repeat(13,1fr)] gap-px ${day.isWeekend ? 'bg-gray-100' : ''}`}
-                  >
-                    {TIME_SLOTS.map(slot => {
+                {/* 全時間スロット（7日 × 26スロット = 182個） */}
+                {weekDays.flatMap(day => 
+                  TIME_SLOTS.map(slot => {
                       const shift = getShiftForDateTime(employee.id, day.date, slot.id);
                       const truckSchedule = getTruckScheduleForDateTime(day.date, slot.id);
                       const isOverworkDay = isOverwork(employee.id, day.date);
                       const isBreak = isBreakTime(slot.id);
                       
-                      let cellClass = 'h-16 border cursor-pointer hover:opacity-80 transition-opacity relative group';
+                      let cellClass = 'h-12 border cursor-pointer hover:opacity-80 transition-opacity relative group';
                       let tooltipText = `${day.date} ${slot.label} - 空き`;
 
                       if (shift) {
@@ -525,7 +520,7 @@ export default function ShiftCalendar({
                       
                       return (
                         <div
-                          key={slot.id}
+                          key={`${day.date}-${slot.id}`}
                           className={cellClass}
                           onClick={() => handleCellClick(employee.id, day.date, slot.id)}
                           onMouseDown={() => handleMouseDown(employee.id, day.date, slot.id)}
@@ -560,9 +555,8 @@ export default function ShiftCalendar({
                           )}
                         </div>
                       );
-                    })}
-                  </div>
-                ))}
+                  })
+                )}
               </div>
             ))}
           </div>

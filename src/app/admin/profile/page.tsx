@@ -390,9 +390,9 @@ export default function AdminProfile() {
           ]}
         />
         
-        <main className="max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <main className="w-full py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="px-4 py-2 sm:px-0">
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full max-w-4xl mx-auto">
             <div className="bg-white shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">

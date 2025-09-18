@@ -90,12 +90,12 @@ export default function PricingMainPage() {
         ]}
       />
 
-      <div className="max-w-4xl mx-auto py-10 px-4">
+      <div className="w-full max-w-4xl mx-auto py-10 px-2 sm:px-4 lg:px-6 xl:px-8">
 
 
         {/* 設定項目一覧 */}
         <div className="flex justify-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
             {settings.map((setting) => (
             <div
               key={setting.id}
