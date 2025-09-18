@@ -113,9 +113,9 @@ export default function CaseRegistrationPage() {
         />
 
         {/* メインコンテンツ */}
-        <main className="w-full max-w-none py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <main className="w-full py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
           {/* 案件登録フォーム */}
-          <div className="bg-white shadow rounded-lg">
+          <div className="w-full max-w-4xl mx-auto bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -140,12 +140,12 @@ export default function CaseRegistrationPage() {
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-2">
                     ※入力内容に誤りがない場合に限る
-                  </p>
-                </div>
+                </p>
               </div>
             </div>
-          </main>
-        </div>
-      </AdminAuthGuard>
+          </div>
+        </main>
+      </div>
+    </AdminAuthGuard>
   );
 }

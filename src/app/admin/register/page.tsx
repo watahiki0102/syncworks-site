@@ -10,11 +10,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserType } from '@/types/referral';
+import EmailFieldsGroup, { EmailData, validateEmailData } from '@/components/admin/EmailFieldsGroup';
 
 type RegistrationStep = 'userType' | 'basic' | 'specific' | 'terms';
 
 interface BasicInfo {
-  email: string;
+  emailData: EmailData;
   password: string;
   confirmPassword: string;
   phone: string;
@@ -24,7 +25,6 @@ interface BasicInfo {
 
 interface MoverInfo {
   companyName: string;
-  billingEmail: string;
   description: string;
   staffCount: string;
   selectedPrefectures: string[];
@@ -63,7 +63,11 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
-    email: '',
+    emailData: {
+      businessEmail: '',
+      billingEmail: '',
+      customerEmail: ''
+    },
     password: '',
     confirmPassword: '',
     phone: '',
@@ -73,7 +77,6 @@ export default function RegisterPage() {
   
   const [moverInfo, setMoverInfo] = useState<MoverInfo>({
     companyName: '',
-    billingEmail: '',
     description: '',
     staffCount: '',
     selectedPrefectures: []
@@ -95,10 +98,11 @@ export default function RegisterPage() {
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!basicInfo.email) newErrors.email = 'メールアドレスは必須です';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(basicInfo.email)) {
-      newErrors.email = '正しいメールアドレス形式で入力してください';
-    }
+    // メールアドレスのバリデーション
+    const emailErrors = validateEmailData(basicInfo.emailData);
+    Object.entries(emailErrors).forEach(([key, value]) => {
+      if (value) newErrors[key] = value;
+    });
     
     if (!basicInfo.password) newErrors.password = 'パスワードは必須です';
     else if (basicInfo.password.length < 8) {
@@ -121,10 +125,6 @@ export default function RegisterPage() {
     
     if (userType === 'mover') {
       if (!moverInfo.companyName) newErrors.companyName = '事業者名は必須です';
-      if (!moverInfo.billingEmail) newErrors.billingEmail = '請求書送付用メールアドレスは必須です';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(moverInfo.billingEmail)) {
-        newErrors.billingEmail = '正しいメールアドレス形式で入力してください';
-      }
       if (!moverInfo.description) newErrors.description = '事業コンセプトは必須です';
       if (moverInfo.selectedPrefectures.length === 0) {
         newErrors.selectedPrefectures = '対応エリアを1つ以上選択してください';
@@ -186,7 +186,7 @@ export default function RegisterPage() {
       // Save to localStorage (in real implementation, this would be an API call)
       localStorage.setItem('registrationData', JSON.stringify(registrationData));
       localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminEmail', basicInfo.email);
+      localStorage.setItem('adminEmail', basicInfo.emailData.businessEmail);
       localStorage.setItem('userType', userType);
 
       alert('新規登録が完了しました！');
@@ -318,21 +318,23 @@ export default function RegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">基本情報</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    メールアドレス <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={basicInfo.email}
-                    onChange={(e) => setBasicInfo(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="example@email.com"
-                  />
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                </div>
+                <EmailFieldsGroup
+                  emailData={basicInfo.emailData}
+                  onChange={(field, value) => {
+                    setBasicInfo(prev => ({
+                      ...prev,
+                      emailData: {
+                        ...prev.emailData,
+                        [field]: value
+                      }
+                    }));
+                  }}
+                  errors={{
+                    businessEmail: errors.businessEmail,
+                    billingEmail: errors.billingEmail,
+                    customerEmail: errors.customerEmail
+                  }}
+                />
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -434,21 +436,6 @@ export default function RegisterPage() {
                   {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    請求書送付用メールアドレス <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={moverInfo.billingEmail}
-                    onChange={(e) => setMoverInfo(prev => ({ ...prev, billingEmail: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.billingEmail ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="billing@example.com"
-                  />
-                  {errors.billingEmail && <p className="mt-1 text-sm text-red-600">{errors.billingEmail}</p>}
-                </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

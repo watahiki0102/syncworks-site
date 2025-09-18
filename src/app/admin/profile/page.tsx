@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import EmailFieldsGroup, { EmailData, validateEmailData } from '@/components/admin/EmailFieldsGroup';
 
 /**
  * オプションタイプの定義
@@ -74,8 +75,7 @@ const REGIONS = [
  */
 interface FormData {
   companyName: string;           // 事業者名
-  email: string;                // メールアドレス
-  billingEmail: string;         // 請求書送付用メールアドレス
+  emailData: EmailData;          // メールアドレス情報
   phone: string;                // 電話番号
   postalCode: string;           // 郵便番号
   address: string;              // 住所
@@ -97,8 +97,11 @@ interface FormData {
 export default function AdminProfile() {
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
-    email: '',
-    billingEmail: '',
+    emailData: {
+      businessEmail: '',
+      billingEmail: '',
+      customerEmail: ''
+    },
     phone: '',
     postalCode: '',
     address: '',
@@ -154,8 +157,11 @@ export default function AdminProfile() {
       const data = JSON.parse(savedData);
       setFormData({
         companyName: data.companyName || '',
-        email: data.email || '',
-        billingEmail: data.billingEmail || '',
+        emailData: {
+          businessEmail: data.email || data.emailData?.businessEmail || '',
+          billingEmail: data.billingEmail || data.emailData?.billingEmail || '',
+          customerEmail: data.emailData?.customerEmail || ''
+        },
         phone: data.phone || '',
         postalCode: data.postalCode || '',
         address: data.address || '',
@@ -185,10 +191,13 @@ export default function AdminProfile() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.companyName.trim()) newErrors.companyName = '事業者名は必須です';
-    if (!formData.email) newErrors.email = 'メールアドレスは必須です';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = '正しいメールアドレス形式で入力してください';
-    if (!formData.billingEmail) newErrors.billingEmail = '請求書送付用メールアドレスは必須です';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.billingEmail)) newErrors.billingEmail = '正しいメールアドレス形式で入力してください';
+    
+    // メールアドレスのバリデーション
+    const emailErrors = validateEmailData(formData.emailData);
+    Object.entries(emailErrors).forEach(([key, value]) => {
+      if (value) newErrors[key] = value;
+    });
+    
     if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
     if (!formData.address.trim()) newErrors.address = '住所は必須です';
     if (!formData.description.trim()) newErrors.description = '事業コンセプトは必須です';
@@ -439,41 +448,32 @@ export default function AdminProfile() {
                     {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                   </div>
 
-                  {/* メールアドレス */}
-                  <div className="mb-6">
-                    <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-1">
-                      メールアドレス <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="admin@example.com"
-                    />
-                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                  </div>
-
-                  {/* 請求書送付用メールアドレス */}
-                  <div className="mb-6">
-                    <label htmlFor="billingEmail" className="block text-base font-medium text-gray-700 mb-1">
-                      請求書送付用メールアドレス <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="billingEmail"
-                      name="billingEmail"
-                      type="email"
-                      required
-                      value={formData.billingEmail}
-                      onChange={handleInputChange}
-                      className={`appearance-none block w-full px-4 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base ${errors.billingEmail ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="billing@example.com"
-                    />
-                    {errors.billingEmail && <p className="mt-1 text-sm text-red-600">{errors.billingEmail}</p>}
-                  </div>
+                  {/* メールアドレス項目 */}
+                  <EmailFieldsGroup
+                    emailData={formData.emailData}
+                    onChange={(field, value) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        emailData: {
+                          ...prev.emailData,
+                          [field]: value
+                        }
+                      }));
+                      // エラーをクリア
+                      if (errors[field]) {
+                        setErrors(prev => ({
+                          ...prev,
+                          [field]: ''
+                        }));
+                      }
+                    }}
+                    errors={{
+                      businessEmail: errors.businessEmail,
+                      billingEmail: errors.billingEmail,
+                      customerEmail: errors.customerEmail
+                    }}
+                    className="mb-6"
+                  />
 
                   {/* 電話番号 */}
                   <div className="mb-6">
