@@ -13,7 +13,7 @@ import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
 import { toLocalDateString } from '@/utils/dateTimeUtils';
-import { Truck, Schedule } from '@/types/shared';
+import { Truck, Schedule, TruckAssignment } from '@/types/shared';
 import { ContractStatus } from '@/types/case';
 
 interface FormSubmission {
@@ -43,14 +43,6 @@ interface FormSubmission {
   registeredBy?: string; // 登録者
 }
 
-interface TruckAssignment {
-  truckId: string;
-  truckName: string;
-  capacity: number;
-  startTime: string;
-  endTime: string;
-  workType: 'loading' | 'moving' | 'unloading';
-}
 
 function DispatchManagementContent() {
   const searchParams = useSearchParams();
@@ -1178,18 +1170,42 @@ const UnifiedCaseManagement = ({
                     {submission.truckAssignments.length > 0 && (
                       <div className="mt-3">
                         <span className="text-sm font-medium text-gray-900">割り当て済みトラック:</span>
-                        <div className="mt-1 space-y-1">
+                        <div className="mt-1 space-y-2">
                           {submission.truckAssignments.map((assignment, index) => (
-                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                              <span className="text-sm text-gray-900">
-                                {assignment.truckName} ({assignment.startTime}-{assignment.endTime})
-                              </span>
-                              <button
-                                onClick={() => onRemoveTruck(submission.id, assignment.truckId)}
-                                className="text-red-600 hover:text-red-800 text-xs"
-                              >
-                                削除
-                              </button>
+                            <div key={index} className="bg-gray-50 p-3 rounded">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {assignment.truckName}
+                                    </span>
+                                    <span className="text-xs text-gray-600">
+                                      {assignment.startTime}-{assignment.endTime}
+                                    </span>
+                                    {assignment.isManualSelection && (
+                                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                                        手動選択
+                                      </span>
+                                    )}
+                                  </div>
+                                  {assignment.isManualSelection && assignment.selectionReason && (
+                                    <div className="mt-1 text-xs text-gray-600">
+                                      理由: {assignment.selectionReason}
+                                    </div>
+                                  )}
+                                  {assignment.selectionTimestamp && (
+                                    <div className="mt-1 text-xs text-gray-500">
+                                      選択日時: {new Date(assignment.selectionTimestamp).toLocaleString('ja-JP')}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => onRemoveTruck(submission.id, assignment.truckId)}
+                                  className="text-red-600 hover:text-red-800 text-xs ml-2"
+                                >
+                                  削除
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>

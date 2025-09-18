@@ -148,3 +148,18 @@ export interface Option {
 
 // スケジュールID型
 export type ScheduleId = string;
+
+// トラック割り当て情報
+export interface TruckAssignment {
+  truckId: string;
+  truckName: string;
+  capacity: number;
+  startTime: string;
+  endTime: string;
+  workType: 'loading' | 'moving' | 'unloading';
+  employeeId?: string; // 従業員IDを追加
+  isManualSelection?: boolean; // 手動選択フラグ
+  selectionReason?: string; // 手動選択の理由
+  recommendedTrucks?: string[]; // 推奨されていたトラックのID一覧
+  selectionTimestamp?: string; // 選択日時
+}

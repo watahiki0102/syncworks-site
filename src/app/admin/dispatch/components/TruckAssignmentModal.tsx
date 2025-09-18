@@ -10,8 +10,9 @@
 import { useState, useEffect } from 'react';
 // import { formatTime } from '@/utils/dateTimeUtils'; // Currently unused
 import { ContractStatus } from '@/types/case';
-import { Truck, Employee, EmployeeShift } from '@/types/shared';
+import { Truck, Employee, EmployeeShift, TruckAssignment } from '@/types/shared';
 import { FormModal, SimpleModal } from '@/components/ui/SimpleModal';
+import { calculateTruckEfficiency } from '@/utils/truckUtils';
 
 interface FormSubmission {
   id: string;
@@ -35,15 +36,6 @@ interface FormSubmission {
   contractDate?: string;
 }
 
-interface TruckAssignment {
-  truckId: string;
-  truckName: string;
-  capacity: number;
-  startTime: string;
-  endTime: string;
-  workType: 'loading' | 'moving' | 'unloading';
-  employeeId?: string; // 従業員IDを追加
-}
 
 // Employee と EmployeeShift は共通型から import済み
 
@@ -78,6 +70,7 @@ export default function TruckAssignmentModal({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [_selectedEmployee, _setSelectedEmployee] = useState<Employee | null>(null);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [manualSelectionReason, setManualSelectionReason] = useState('');
 
   useEffect(() => {
     // ローカルストレージから従業員データを読み込み
@@ -107,6 +100,10 @@ export default function TruckAssignmentModal({
     const selectedTruck = trucks.find(t => t.id === formData.truckId);
     if (!selectedTruck) return;
 
+    const recommendedTrucks = calculateRecommendedTrucks(selectedSubmission.totalPoints);
+    const recommendedTruckIds = recommendedTrucks.map(truck => truck.id);
+    const isManualSelection = !recommendedTruckIds.includes(formData.truckId);
+
     const truckAssignment: TruckAssignment = {
       truckId: formData.truckId,
       truckName: selectedTruck.name,
@@ -115,6 +112,10 @@ export default function TruckAssignmentModal({
       endTime: formData.endTime,
       workType: formData.workType,
       employeeId: formData.employeeId || undefined, // 従業員IDを追加
+      isManualSelection,
+      selectionReason: isManualSelection ? manualSelectionReason : undefined,
+      recommendedTrucks: recommendedTruckIds,
+      selectionTimestamp: new Date().toISOString(),
     };
 
     assignTruckToSubmission(selectedSubmission.id, truckAssignment);
@@ -174,6 +175,29 @@ export default function TruckAssignmentModal({
     formData.endTime
   );
 
+  // 推奨トラックを取得
+  const recommendedTrucks = calculateRecommendedTrucks(selectedSubmission.totalPoints);
+  const recommendedTruckIds = recommendedTrucks.map(truck => truck.id);
+  
+  // 利用可能なトラックを推奨/非推奨で分類
+  const availableTrucks = trucks.filter(truck => truck.status === 'available');
+  const recommendedAvailableTrucks = availableTrucks.filter(truck => 
+    recommendedTruckIds.includes(truck.id)
+  );
+  const otherAvailableTrucks = availableTrucks.filter(truck => 
+    !recommendedTruckIds.includes(truck.id)
+  );
+
+  // 選択されたトラックが推奨外かどうか
+  const isManualSelection = formData.truckId && !recommendedTruckIds.includes(formData.truckId);
+
+  // トラック効率性を計算
+  const calculateSuitabilityScore = (truck: Truck): number => {
+    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+    // 効率性を0-100のスコアに変換（簡易版）
+    return Math.min(100, Math.max(0, 100 - efficiency * 10));
+  };
+
   return (
     <>
       <FormModal
@@ -204,23 +228,134 @@ export default function TruckAssignmentModal({
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">トラック選択</label>
-            <select
-              value={formData.truckId}
-              onChange={e => setFormData({ ...formData, truckId: e.target.value })}
-              className="w-full px-3 py-2 border rounded text-gray-900"
-              required
-            >
-              <option value="">トラックを選択してください</option>
-              {trucks
-                .filter(truck => truck.status === 'available')
-                .map(truck => (
-                  <option key={truck.id} value={truck.id}>
-                    {truck.name} ({truck.plateNumber}) - {truck.capacityKg}kg
-                  </option>
-                ))}
-            </select>
+          {/* トラック選択セクション */}
+          <div className="space-y-4">
+            {/* 推奨トラック */}
+            {recommendedAvailableTrucks.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2 text-green-700 flex items-center gap-2">
+                  <span className="text-green-600">📋</span>
+                  推奨トラック（基準に適合）
+                </label>
+                <div className="space-y-2">
+                  {recommendedAvailableTrucks.map(truck => {
+                    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+                    const suitabilityScore = calculateSuitabilityScore(truck);
+                    const isSelected = formData.truckId === truck.id;
+                    
+                    return (
+                      <div
+                        key={truck.id}
+                        className={`p-3 border rounded cursor-pointer transition-colors ${
+                          isSelected 
+                            ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
+                            : 'border-green-300 hover:bg-green-25 hover:border-green-400'
+                        }`}
+                        onClick={() => setFormData({ ...formData, truckId: truck.id })}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="truckSelection"
+                                checked={isSelected}
+                                onChange={() => setFormData({ ...formData, truckId: truck.id })}
+                                className="text-green-600"
+                              />
+                              {truck.name} ({truck.plateNumber})
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">推奨</span>
+                            </div>
+                            <div className="text-sm text-gray-600 ml-6">
+                              {truck.truckType} - {truck.capacityKg.toLocaleString()}kg
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-gray-500">
+                            <div>効率性: {efficiency.toFixed(2)}</div>
+                            <div>適合度: {suitabilityScore.toFixed(0)}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* その他のトラック（手動選択） */}
+            {otherAvailableTrucks.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-600 flex items-center gap-2">
+                  <span className="text-gray-500">🔧</span>
+                  手動選択（その他利用可能トラック）
+                </label>
+                <div className="space-y-2">
+                  {otherAvailableTrucks.map(truck => {
+                    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+                    const suitabilityScore = calculateSuitabilityScore(truck);
+                    const isSelected = formData.truckId === truck.id;
+                    
+                    return (
+                      <div
+                        key={truck.id}
+                        className={`p-3 border rounded cursor-pointer transition-colors ${
+                          isSelected 
+                            ? 'border-yellow-500 bg-yellow-50 ring-2 ring-yellow-200' 
+                            : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        }`}
+                        onClick={() => setFormData({ ...formData, truckId: truck.id })}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="truckSelection"
+                                checked={isSelected}
+                                onChange={() => setFormData({ ...formData, truckId: truck.id })}
+                                className="text-yellow-600"
+                              />
+                              {truck.name} ({truck.plateNumber})
+                            </div>
+                            <div className="text-sm text-gray-600 ml-6">
+                              {truck.truckType} - {truck.capacityKg.toLocaleString()}kg
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-gray-500">
+                            <div>効率性: {efficiency.toFixed(2)}</div>
+                            <div>適合度: {suitabilityScore.toFixed(0)}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 手動選択時の理由入力 */}
+            {isManualSelection && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <label className="block text-sm font-medium text-yellow-800 mb-1">
+                  手動選択の理由（任意）
+                </label>
+                <textarea
+                  value={manualSelectionReason}
+                  onChange={(e) => setManualSelectionReason(e.target.value)}
+                  placeholder="推奨外のトラックを選択する理由を入力してください（例：顧客の特別な要望、緊急対応、効率性を重視など）"
+                  className="w-full px-2 py-2 text-sm border rounded text-gray-900 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  rows={3}
+                />
+              </div>
+            )}
+
+            {/* トラックが選択されていない場合の表示 */}
+            {availableTrucks.length === 0 && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded text-center">
+                <p className="text-red-600 font-medium">利用可能なトラックがありません</p>
+                <p className="text-sm text-red-500 mt-1">トラック管理画面で利用可能なトラックを確認してください</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
