@@ -7,45 +7,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import SeasonCalendar from '@/components/pricing/SeasonCalendar';
+import type { SeasonRule } from '@/types/pricing';
 
-/**
- * 料金タイプの定義
- */
-const PRICE_TYPES = [
-  { value: 'percentage', label: 'パーセンテージ（%）' },
-  { value: 'fixed', label: '固定金額（円）' }
-];
-
-/**
- * 繰り返しタイプの定義
- */
-const RECURRING_TYPES = [
-  { value: 'none', label: '繰り返しなし' },
-  { value: 'yearly', label: '毎年' },
-  { value: 'monthly', label: '毎月' },
-  { value: 'weekly', label: '毎週' }
-];
-
-/**
- * 曜日の定義
- */
-const WEEKDAYS = [
-  { value: 0, label: '日', short: '日' },
-  { value: 1, label: '月', short: '月' },
-  { value: 2, label: '火', short: '火' },
-  { value: 3, label: '水', short: '水' },
-  { value: 4, label: '木', short: '木' },
-  { value: 5, label: '金', short: '金' },
-  { value: 6, label: '土', short: '土' }
-];
+type SeasonRuleInput = Omit<SeasonRule, 'id'>;
+type SeasonRuleSeed = Pick<SeasonRule, 'name' | 'startDate' | 'endDate' | 'priceType' | 'price' | 'description'>;
 
 /**
  * デフォルトシーズンルール設定（より実用的なシーズン設定）
  */
-const DEFAULT_SEASON_RULES = [
+const DEFAULT_SEASON_RULES: SeasonRuleSeed[] = [
   {
     name: "年末年始繁忙期",
     startDate: "2024-12-25",
@@ -112,34 +84,12 @@ const DEFAULT_SEASON_RULES = [
   }
 ];
 
-/**
- * 繰り返しパターンの型定義
- */
-interface RecurringPattern {
-  weekdays?: number[];          // 曜日指定 (0=日, 1=月, ...)
-  monthlyPattern?: 'date' | 'weekday'; // 日付固定 or 曜日固定
-}
-
-/**
- * シーズンルールの型定義
- */
-interface SeasonRule {
-  id: string;             // ルールID
-  name: string;           // シーズン名
-  startDate: string;      // 開始日
-  endDate: string;        // 終了日
-  priceType: 'percentage' | 'fixed'; // 料金タイプ
-  price: number;          // 料金値
-  description: string;    // 説明
-  // 繰り返し機能
-  isRecurring: boolean;           // 繰り返し有効フラグ
-  recurringType: 'yearly' | 'monthly' | 'weekly' | 'none'; // 繰り返しタイプ
-  recurringPattern?: RecurringPattern; // 繰り返しパターン
-  recurringEndYear?: number;      // 繰り返し終了年
-}
+const createSeasonRule = (rule: SeasonRuleInput, id?: string): SeasonRule => ({
+  ...rule,
+  id: id ?? `season-${Date.now()}`,
+});
 
 export default function SeasonPage() {
-  const router = useRouter();
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -148,26 +98,41 @@ export default function SeasonPage() {
    * - 保存されたシーズンルールを復元
    */
   useEffect(() => {
-    const savedRules = localStorage.getItem('pricingStep3');
-    if (savedRules) {
-      setSeasonRules(JSON.parse(savedRules));
-    } else {
-      // デフォルトルールを設定
-      const defaultRules = DEFAULT_SEASON_RULES.map((rule, index) => ({
-        id: `season-${index}`,
-        name: rule.name,
-        startDate: rule.startDate,
-        endDate: rule.endDate,
-        priceType: rule.priceType as 'percentage' | 'fixed',
-        price: rule.price,
-        description: rule.description,
-        isRecurring: false,
-        recurringType: 'none' as const,
-        recurringPattern: undefined,
-        recurringEndYear: undefined
-      }));
-      setSeasonRules(defaultRules);
+    const savedRulesRaw = localStorage.getItem('pricingStep3');
+
+    if (savedRulesRaw) {
+      try {
+        const parsed = JSON.parse(savedRulesRaw) as SeasonRule[];
+        if (Array.isArray(parsed)) {
+          const normalized = parsed.map(rule => ({
+            ...rule,
+            recurringType: rule.recurringType ?? 'none',
+            isRecurring: rule.isRecurring ?? false,
+          }));
+          setSeasonRules(normalized);
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to parse saved season rules', error);
+      }
     }
+
+    // デフォルトルールを設定
+    const defaultRules = DEFAULT_SEASON_RULES.map((rule, index) =>
+      createSeasonRule(
+        {
+          ...rule,
+          isRecurring: false,
+          recurringType: 'none',
+          recurringPattern: undefined,
+          recurringEndYear: undefined,
+        },
+        `season-${index}`,
+      ),
+    );
+
+    setSeasonRules(defaultRules);
     setIsLoading(false);
   }, []);
 
@@ -183,41 +148,42 @@ export default function SeasonPage() {
   /**
    * シーズンルールの追加
    */
-  const addRule = (newRule?: SeasonRule) => {
+  const addRule = (newRule?: SeasonRuleInput) => {
     if (newRule) {
-      setSeasonRules([...seasonRules, newRule]);
-    } else {
-      const defaultRule: SeasonRule = {
-        id: `season-${Date.now()}`,
-        name: "",
-        startDate: "",
-        endDate: "",
-        priceType: "percentage",
-        price: 0,
-        description: "",
-        isRecurring: false,
-        recurringType: "none",
-        recurringPattern: undefined,
-        recurringEndYear: undefined
-      };
-      setSeasonRules([...seasonRules, defaultRule]);
+      setSeasonRules(prev => [...prev, createSeasonRule(newRule)]);
+      return;
     }
+
+    const defaultRule: SeasonRuleInput = {
+      name: "",
+      startDate: "",
+      endDate: "",
+      priceType: "percentage",
+      price: 0,
+      description: "",
+      isRecurring: false,
+      recurringType: "none",
+      recurringPattern: undefined,
+      recurringEndYear: undefined,
+    };
+
+    setSeasonRules(prev => [...prev, createSeasonRule(defaultRule)]);
   };
 
   /**
    * シーズンルールの削除
    */
   const removeRule = (id: string) => {
-    setSeasonRules(seasonRules.filter(rule => rule.id !== id));
+    setSeasonRules(prev => prev.filter(rule => rule.id !== id));
   };
 
   /**
    * シーズンルールの更新
    */
-  const updateRule = (id: string, field: keyof SeasonRule, value: any) => {
-    setSeasonRules(seasonRules.map(rule => 
-      rule.id === id ? { ...rule, [field]: value } : rule
-    ));
+  const updateRule = (updatedRule: SeasonRule) => {
+    setSeasonRules(prev =>
+      prev.map(rule => (rule.id === updatedRule.id ? { ...updatedRule } : rule))
+    );
   };
 
 
