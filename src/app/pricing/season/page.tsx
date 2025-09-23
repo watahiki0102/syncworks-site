@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import SeasonCalendar from '@/components/pricing/SeasonCalendar';
 
 /**
  * 料金タイプの定義
@@ -16,6 +17,29 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 const PRICE_TYPES = [
   { value: 'percentage', label: 'パーセンテージ（%）' },
   { value: 'fixed', label: '固定金額（円）' }
+];
+
+/**
+ * 繰り返しタイプの定義
+ */
+const RECURRING_TYPES = [
+  { value: 'none', label: '繰り返しなし' },
+  { value: 'yearly', label: '毎年' },
+  { value: 'monthly', label: '毎月' },
+  { value: 'weekly', label: '毎週' }
+];
+
+/**
+ * 曜日の定義
+ */
+const WEEKDAYS = [
+  { value: 0, label: '日', short: '日' },
+  { value: 1, label: '月', short: '月' },
+  { value: 2, label: '火', short: '火' },
+  { value: 3, label: '水', short: '水' },
+  { value: 4, label: '木', short: '木' },
+  { value: 5, label: '金', short: '金' },
+  { value: 6, label: '土', short: '土' }
 ];
 
 /**
@@ -89,6 +113,14 @@ const DEFAULT_SEASON_RULES = [
 ];
 
 /**
+ * 繰り返しパターンの型定義
+ */
+interface RecurringPattern {
+  weekdays?: number[];          // 曜日指定 (0=日, 1=月, ...)
+  monthlyPattern?: 'date' | 'weekday'; // 日付固定 or 曜日固定
+}
+
+/**
  * シーズンルールの型定義
  */
 interface SeasonRule {
@@ -99,6 +131,11 @@ interface SeasonRule {
   priceType: 'percentage' | 'fixed'; // 料金タイプ
   price: number;          // 料金値
   description: string;    // 説明
+  // 繰り返し機能
+  isRecurring: boolean;           // 繰り返し有効フラグ
+  recurringType: 'yearly' | 'monthly' | 'weekly' | 'none'; // 繰り返しタイプ
+  recurringPattern?: RecurringPattern; // 繰り返しパターン
+  recurringEndYear?: number;      // 繰り返し終了年
 }
 
 export default function SeasonPage() {
@@ -123,7 +160,11 @@ export default function SeasonPage() {
         endDate: rule.endDate,
         priceType: rule.priceType as 'percentage' | 'fixed',
         price: rule.price,
-        description: rule.description
+        description: rule.description,
+        isRecurring: false,
+        recurringType: 'none' as const,
+        recurringPattern: undefined,
+        recurringEndYear: undefined
       }));
       setSeasonRules(defaultRules);
     }
@@ -142,17 +183,25 @@ export default function SeasonPage() {
   /**
    * シーズンルールの追加
    */
-  const addRule = () => {
-    const newRule: SeasonRule = {
-      id: `season-${Date.now()}`,
-      name: "",
-      startDate: "",
-      endDate: "",
-      priceType: "percentage",
-      price: 0,
-      description: ""
-    };
-    setSeasonRules([...seasonRules, newRule]);
+  const addRule = (newRule?: SeasonRule) => {
+    if (newRule) {
+      setSeasonRules([...seasonRules, newRule]);
+    } else {
+      const defaultRule: SeasonRule = {
+        id: `season-${Date.now()}`,
+        name: "",
+        startDate: "",
+        endDate: "",
+        priceType: "percentage",
+        price: 0,
+        description: "",
+        isRecurring: false,
+        recurringType: "none",
+        recurringPattern: undefined,
+        recurringEndYear: undefined
+      };
+      setSeasonRules([...seasonRules, defaultRule]);
+    }
   };
 
   /**
@@ -170,6 +219,7 @@ export default function SeasonPage() {
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
   };
+
 
   /**
    * 日付の重複チェック
@@ -226,6 +276,25 @@ export default function SeasonPage() {
       if (rule.priceType === 'percentage' && rule.price > 100) {
         errors.push(`ルール${i + 1}: パーセンテージは100%以下にしてください`);
       }
+      
+      // 繰り返し設定のバリデーション
+      if (rule.isRecurring) {
+        if (rule.recurringType === 'none') {
+          errors.push(`ルール${i + 1}: 繰り返し設定が有効な場合は繰り返しタイプを選択してください`);
+        }
+        
+        if (rule.recurringType === 'weekly' && (!rule.recurringPattern?.weekdays || rule.recurringPattern.weekdays.length === 0)) {
+          errors.push(`ルール${i + 1}: 週単位の繰り返しでは曜日を選択してください`);
+        }
+        
+        if (rule.recurringType === 'monthly' && !rule.recurringPattern?.monthlyPattern) {
+          errors.push(`ルール${i + 1}: 月単位の繰り返しではパターンを選択してください`);
+        }
+        
+        if (rule.recurringType === 'yearly' && rule.recurringEndYear && rule.recurringEndYear <= new Date().getFullYear()) {
+          errors.push(`ルール${i + 1}: 繰り返し終了年は来年以降を指定してください`);
+        }
+      }
     }
 
     // 日付の重複チェック
@@ -274,176 +343,30 @@ export default function SeasonPage() {
         backUrl="/pricing"
       />
 
-      <main className="py-10 px-2 sm:px-4 lg:px-6 xl:px-8">
-        <div className="w-full max-w-4xl mx-auto">
-          {/* 説明 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h2 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h2>
-            <p className="text-gray-700">
-              繁忙期・閑散期など時期による料金加算を設定します。
-              日付範囲と加算金額（パーセンテージまたは固定金額）を指定できます。
-            </p>
-          </div>
-
-          {/* シーズン料金設定 */}
-          <div className="bg-white shadow-md rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">📅 シーズン加算設定</h2>
-              <button
-                onClick={addRule}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-              >
-                ＋ シーズン追加
-              </button>
-            </div>
-
-            {seasonRules.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">シーズンルールがありません。「シーズン追加」ボタンで追加してください。</p>
-            ) : (
-              <div className="space-y-4">
-                {seasonRules.map((rule, index) => (
-                  <div key={rule.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-gray-800">シーズン {index + 1}</h3>
-                      <button
-                        onClick={() => removeRule(rule.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        削除
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* シーズン名 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          シーズン名
-                        </label>
-                        <input
-                          type="text"
-                          value={rule.name}
-                          onChange={(e) => updateRule(rule.id, 'name', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="例：年末年始繁忙期"
-                        />
-                      </div>
-
-                      {/* 料金タイプ */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          料金タイプ
-                        </label>
-                        <select
-                          value={rule.priceType}
-                          onChange={(e) => updateRule(rule.id, 'priceType', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          {PRICE_TYPES.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 開始日 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          開始日
-                        </label>
-                        <input
-                          type="date"
-                          value={rule.startDate}
-                          onChange={(e) => updateRule(rule.id, 'startDate', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      {/* 終了日 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          終了日
-                        </label>
-                        <input
-                          type="date"
-                          value={rule.endDate}
-                          onChange={(e) => updateRule(rule.id, 'endDate', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      {/* 料金 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          料金
-                        </label>
-                        <div className="flex">
-                          <input
-                            type="number"
-                            value={rule.price}
-                            onChange={(e) => updateRule(rule.id, 'price', parseFloat(e.target.value) || 0)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <span className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-r-md">
-                            {rule.priceType === 'percentage' ? '%' : '円'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 説明 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          説明
-                        </label>
-                        <input
-                          type="text"
-                          value={rule.description}
-                          onChange={(e) => updateRule(rule.id, 'description', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="例：年末年始の繁忙期（最も需要が高い期間）"
-                        />
-                      </div>
-                    </div>
-
-                    {/* 表示例 */}
-                    <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-600">
-                      {rule.name}：{rule.startDate}〜{rule.endDate} → 
-                      {rule.priceType === 'percentage' ? `+${rule.price}%` : `+¥${rule.price.toLocaleString()}`}
-                    </div>
-                  </div>
-                ))}
+      <main className="w-full max-w-none py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="px-4 py-2 sm:px-0">
+          {/* カレンダービューコントロール */}
+          <div className="bg-white shadow rounded-lg mb-4">
+            <div className="px-4 py-2 sm:p-3 flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <h2 className="text-xl font-semibold text-gray-800">📅 シーズン料金カレンダー</h2>
               </div>
-            )}
+              <div className="flex items-center space-x-2">
+                {/* 保存はモーダル内で行うため、ここでは不要 */}
+              </div>
+            </div>
           </div>
 
-          {/* 参考例 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2">💡 参考例</h3>
-            <p className="text-gray-700 text-sm">
-              • 年末年始（12/25〜1/5）：+25%<br/>
-              • 春の引越しシーズン（3/1〜4/30）：+20%<br/>
-              • 夏季特別料金（7/15〜8/15）：+8,000円<br/>
-              • 閑散期割引（9/1〜11/30）：-10%
-            </p>
-          </div>
-
-          {/* 料金計算例 */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
-            <h3 className="text-lg font-semibold text-green-800 mb-2">📊 料金計算例</h3>
-            <p className="text-gray-700 text-sm">
-              • 基本料金：40,000円<br/>
-              • 年末年始繁忙期（+25%）：40,000円 × 1.25 = 50,000円<br/>
-              • 夏季特別料金（+8,000円）：40,000円 + 8,000円 = 48,000円<br/>
-              • 合計：48,000円
-            </p>
-          </div>
-
-          {/* ナビゲーション */}
-          <div className="flex justify-end mt-8">
-            <button
-              onClick={handleSave}
-              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
-            >
-              💾 保存
-            </button>
+          {/* 全画面カレンダー表示 */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-2 sm:p-3">
+              <SeasonCalendar
+                seasonRules={seasonRules}
+                onUpdateRule={updateRule}
+                onAddRule={addRule}
+                onRemoveRule={removeRule}
+              />
+            </div>
           </div>
         </div>
       </main>
