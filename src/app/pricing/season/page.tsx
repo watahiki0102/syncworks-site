@@ -343,7 +343,7 @@ export default function SeasonPage() {
         backUrl="/pricing"
       />
 
-      <main className="w-full max-w-none py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+      <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
         <div className="px-4 py-2 sm:px-0">
           {/* カレンダービューコントロール */}
           <div className="bg-white shadow rounded-lg mb-4">

@@ -16,7 +16,7 @@ interface EmployeeShift {
   employeeId: string;
   date: string;
   timeSlot: string;
-  status: 'confirmed' | 'booked' | 'unavailable' | 'overtime' | 'provisional' | 'available';
+  status: 'working' | 'unavailable';
   truckScheduleId?: string;
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance' | 'break' | 'other';
@@ -64,7 +64,7 @@ export default function ShiftOverview({
   const getTotalWorkHours = (employeeId: string, date: string) => {
     const shifts = getShiftsForEmployee(employeeId, date);
     return shifts.filter(shift => 
-      shift.status === 'confirmed' || shift.status === 'booked'
+      shift.status === 'working'
     ).length;
   };
 
@@ -81,7 +81,7 @@ export default function ShiftOverview({
 
   const getEmployeeStats = (employeeId: string, date: string) => {
     const shifts = getShiftsForEmployee(employeeId, date);
-    const confirmedShifts = shifts.filter(s => s.status === 'confirmed' || s.status === 'booked');
+    const confirmedShifts = shifts.filter(s => s.status === 'working');
     const totalHours = confirmedShifts.length;
     const isOverwork = totalHours > 8;
 
@@ -97,7 +97,7 @@ export default function ShiftOverview({
       const shifts = getShiftsForEmployee(employee.id, date);
       return shifts.some(shift => 
         shift.timeSlot === timeSlot && 
-        (shift.status === 'confirmed' || shift.status === 'booked')
+        (shift.status === 'working')
       );
     });
 
@@ -249,7 +249,7 @@ export default function ShiftOverview({
             if (!employee) return null;
 
             const shifts = getShiftsForEmployee(selectedEmployee, selectedDate);
-            const confirmedShifts = shifts.filter(s => s.status === 'confirmed' || s.status === 'booked');
+            const confirmedShifts = shifts.filter(s => s.status === 'working');
             const totalHours = confirmedShifts.length;
 
             return (

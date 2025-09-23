@@ -315,6 +315,38 @@ export default function DayView({
     }).filter(truck => truck.count > 0);
   };
 
+  // 時間帯ごとの稼働人数を計算
+  const getPersonnelCountForTimeSlot = (timeSlot: TimeSlot) => {
+    const activeSchedules = trucks.flatMap(truck =>
+      getFilteredSchedules(truck.schedules).filter(schedule =>
+        schedule.date === selectedDate &&
+        schedule.status === 'available' &&
+        schedule.startTime <= timeSlot.time &&
+        schedule.endTime > timeSlot.time
+      )
+    );
+
+    // 各スケジュールの従業員数を合計（重複を除く）
+    const uniquePersonnel = new Set<string>();
+    activeSchedules.forEach(schedule => {
+      // スケジュールに従業員IDが設定されている場合
+      if (schedule.employeeId) {
+        uniquePersonnel.add(schedule.employeeId);
+      }
+      // 案件データから従業員情報を取得
+      const relatedCase = cases.find(c => c.id === schedule.id);
+      if (relatedCase && relatedCase.assignedEmployees) {
+        relatedCase.assignedEmployees.forEach(emp => {
+          if (emp.id) {
+            uniquePersonnel.add(emp.id);
+          }
+        });
+      }
+    });
+
+    return uniquePersonnel.size;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-6" data-view="day">
       {/* 日付ヘッダー */}
@@ -389,6 +421,31 @@ export default function DayView({
               {slot.time}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 人数表示行 */}
+      <div className="grid grid-cols-[200px_1fr] gap-1 mb-2">
+        <div className="p-2 font-medium text-gray-600 bg-blue-50 border rounded text-center">
+          <span className="text-sm">人数</span>
+        </div>
+        <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
+          {timeSlots.map(slot => {
+            const personnelCount = getPersonnelCountForTimeSlot(slot);
+            return (
+              <div 
+                key={`personnel-${slot.time}`} 
+                className={`p-2 text-center text-sm font-medium border rounded ${
+                  personnelCount > 0 
+                    ? 'bg-blue-100 text-blue-800 border-blue-200' 
+                    : 'bg-gray-50 text-gray-500 border-gray-200'
+                }`}
+                title={`${slot.time}の稼働人数: ${personnelCount}人`}
+              >
+                {personnelCount > 0 ? `${personnelCount}人` : '-'}
+              </div>
+            );
+          })}
         </div>
       </div>
 

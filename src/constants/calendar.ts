@@ -56,11 +56,12 @@ export const TIME_SLOTS = [
  * シフトステータス
  */
 export const SHIFT_STATUS = {
+  working: { label: '出勤', color: 'bg-lime-100 text-lime-800', icon: '✅' },
+  unavailable: { label: '出勤不可', color: 'bg-gray-100 text-gray-800', icon: '❌' },
+  // 旧ステータス（後方互換性のため残す）
   confirmed: { label: '確定済み', color: 'bg-green-100 text-green-800', icon: '✅' },
   booked: { label: '配車済み', color: 'bg-blue-100 text-blue-800', icon: '🚚' },
-  unavailable: { label: '非稼働/休み', color: 'bg-red-100 text-red-800', icon: '❌' },
   overtime: { label: '前日残業あり', color: 'bg-orange-100 text-orange-800', icon: '⚠️' },
-  provisional: { label: '仮登録', color: 'bg-yellow-100 text-yellow-800', icon: '📝' },
   available: { label: '稼働可能', color: 'bg-gray-100 text-gray-800', icon: '⚪' },
 } as const;
 
@@ -86,5 +87,5 @@ export const DUPLICATE_STATUS = {
   none: { label: '重複なし', color: 'bg-gray-100 text-gray-800', icon: '⚪' },
   partial: { label: '部分重複', color: 'bg-yellow-100 text-yellow-800', icon: '🟡' },
   full: { label: '完全重複', color: 'bg-red-100 text-red-800', icon: '🔴' },
-  available: { label: '登録可能', color: 'bg-green-100 text-green-800', icon: '🟢' },
+  working: { label: '登録可能', color: 'bg-green-100 text-green-800', icon: '🟢' },
 } as const; 

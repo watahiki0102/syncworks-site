@@ -55,7 +55,7 @@ export interface EmployeeShift {
   employeeId: string;
   date: string;
   timeSlot: string;
-  status: 'available' | 'booked' | 'unavailable' | 'overtime' | 'provisional';
+  status: 'available' | 'booked' | 'unavailable' | 'overtime';
   truckScheduleId?: string;
   customerName?: string;
   workType?: string;

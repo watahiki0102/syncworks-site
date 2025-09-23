@@ -15,7 +15,7 @@ import DayViewComponent from './dispatch/DayView';
 import StatusFilter from './dispatch/StatusFilter';
 import { CaseDetail as CaseDetailType } from '../types/case';
 import { Truck, Schedule } from '../types/dispatch';
-import WorkerAssignmentView from '../app/admin/dispatch/views/WorkerAssignmentView';
+import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
 
 interface Option {
   name: string;
@@ -35,7 +35,7 @@ interface TimeSlot {
   end: string;
 }
 
-type ViewMode = 'month' | 'week' | 'day' | 'worker-assignment';
+type ViewMode = 'month' | 'day';
 
 interface DispatchCalendarProps {
   trucks: Truck[];
@@ -175,45 +175,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     return blocks;
   };
 
-  /**
-   * 週ビュー用の時間帯ブロック配列を生成
-   * @returns TimeSlot[]
-   */
-  const generateWeekTimeBlocks = () => [
-    { time: '09:00-11:00', label: '9:00', start: '09:00', end: '11:00' },
-    { time: '11:00-13:00', label: '11:00', start: '11:00', end: '13:00' },
-    { time: '13:00-15:00', label: '13:00', start: '13:00', end: '15:00' },
-    { time: '15:00-17:00', label: '15:00', start: '15:00', end: '17:00' },
-    { time: '17:00-19:00', label: '17:00', start: '17:00', end: '19:00' },
-    { time: '19:00-21:00', label: '19:00', start: '19:00', end: '21:00' },
-  ];
 
   const timeBlocks = generateTimeBlocks();
 
-  /**
-   * 指定日付の週の各日付情報を返す
-   * @param date - 基準日
-   * @returns 週の各日付情報配列
-   */
-  const getWeekDays = (date: Date) => {
-    const startOfWeek = new Date(date);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day;
-    startOfWeek.setDate(diff);
-
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(startOfWeek);
-      currentDate.setDate(startOfWeek.getDate() + i);
-      days.push({
-        date: toLocalDateString(currentDate),
-        day: currentDate.getDate(),
-        dayOfWeek: WEEKDAYS_JA[i],
-        isToday: currentDate.toDateString() === new Date().toDateString(),
-      });
-    }
-    return days;
-  };
 
   /**
    * 指定月のカレンダー表示用日付配列を返す
@@ -327,7 +291,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     };
   };
 
-  const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
   const dayInfo = getDayInfo(currentDate);
   
@@ -339,13 +302,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     }
   }, [trucks]);
 
-  // 初回レンダー時に週ビューが要求されている場合、selectedDateを今日に揃える
-  useEffect(() => {
-    if (viewMode === 'week') {
-      setSelectedDate(toLocalDateString(today));
-      setCurrentDate(today);
-    }
-  }, []);
 
   /**
    * 指定された日付と時間のスケジュールを取得
@@ -839,6 +795,53 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       );
     };
 
+    // 日付ごとのイベントを取得
+    const getEventsForDate = (date: string): CalendarEvent[] => {
+      const schedules = getSchedulesForDate(date);
+      
+      // 確定と未確定を分けて表示
+      const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
+      const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
+      
+      const events: CalendarEvent[] = [];
+      
+      // 確定案件のイベント
+      if (confirmedSchedules.length > 0) {
+        events.push({
+          id: `confirmed-${date}`,
+          title: `✅ ${confirmedSchedules.length}件`,
+          description: '確定案件',
+          status: 'confirmed',
+          backgroundColor: 'bg-green-100',
+          color: 'text-green-800',
+          onClick: () => {
+            setExpandedDate(date);
+            setIsExpandedView(true);
+            setMonthViewFilterType('confirmed');
+          }
+        });
+      }
+      
+      // 未確定案件のイベント
+      if (unconfirmedSchedules.length > 0) {
+        events.push({
+          id: `unconfirmed-${date}`,
+          title: `⏳ ${unconfirmedSchedules.length}件`,
+          description: '未確定案件',
+          status: 'estimate',
+          backgroundColor: 'bg-gray-100',
+          color: 'text-gray-700',
+          onClick: () => {
+            setExpandedDate(date);
+            setIsExpandedView(true);
+            setMonthViewFilterType('unconfirmed');
+          }
+        });
+      }
+      
+      return events;
+    };
+
 
 
 
@@ -992,143 +995,30 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     };
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        {/* 月次ナビゲーション */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">
-              {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
-            </h3>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                const prevMonth = new Date(currentDate);
-                prevMonth.setMonth(prevMonth.getMonth() - 1);
-                setCurrentDate(prevMonth);
-              }}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              前月
-            </button>
-            <button
-              onClick={() => {
-                const nextMonth = new Date(currentDate);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                setCurrentDate(nextMonth);
-              }}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              翌月
-            </button>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <div className="min-w-[800px]">
-            {/* 曜日ヘッダー */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {['日', '月', '火', '水', '木', '金', '土'].map(day => (
-                <div key={day} className="p-1 text-center text-sm font-medium text-gray-600">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* 日付グリッド */}
-            {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5">
-                {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
-                  const schedules = getSchedulesForDate(day.date);
-                  const hasSchedules = schedules.length > 0;
-
-                  return (
-                    <div
-                      key={day.date}
-                      data-date-cell
-                      className={`min-h-[80px] p-1 border cursor-pointer hover:bg-gray-50 transition-colors ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                        } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
-                      onClick={(e) => {
-                        console.log('Date clicked:', day.date);
-                        setSelectedDate(day.date);
-                        setViewMode('day');
-                        // 日ビューのセクションにスクロール
-                        setTimeout(() => {
-                          const dayViewElement = document.querySelector('[data-view="day"]');
-                          if (dayViewElement) {
-                            dayViewElement.scrollIntoView({
-                              behavior: 'smooth',
-                              block: 'start'
-                            });
-                          }
-                        }, 200);
-                      }}
-                    >
-                      <div className={`text-xs font-medium mb-0.5 ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                        } ${day.isToday ? 'text-blue-600' : ''} ${
-                        // 土曜日は青色、日曜日と祝日は赤色で表示
-                        day.dayOfWeekNumber === 6 ? 'text-blue-600' :
-                          (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
-                        }`}>
-                        {day.day}
-                      </div>
-
-                      {hasSchedules && (
-                        <div className="space-y-1 flex flex-col items-center">
-                          {/* 確定と未確定の件数を分けて表示 */}
-                          {(() => {
-                            const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
-                            const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
-
-                            return (
-                              <>
-                                {/* 確定件数 */}
-                                {confirmedSchedules.length > 0 && (
-                                  <div
-                                    className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-green-200 transition-colors w-full flex items-center justify-center gap-1"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setExpandedDate(day.date);
-                                      setIsExpandedView(true);
-                                      // 確定でフィルターをかけた状態でモーダルを開く
-                                      setMonthViewFilterType('confirmed');
-                                    }}
-                                  >
-                                    <span>✅</span>
-                                    <span>{confirmedSchedules.length}件</span>
-                                  </div>
-                                )}
-
-                                {/* 未確定件数 */}
-                                {unconfirmedSchedules.length > 0 && (
-                                  <div
-                                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded text-center font-medium cursor-pointer hover:bg-gray-200 transition-colors w-full flex items-center justify-center gap-1"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setExpandedDate(day.date);
-                                      setIsExpandedView(true);
-                                      // 未確定でフィルターをかけた状態でモーダルを開く
-                                      setMonthViewFilterType('unconfirmed');
-                                    }}
-                                  >
-                                    <span>⏳</span>
-                                    <span>{unconfirmedSchedules.length}件</span>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 月ビュー用スケジュール一覧モーダル */}
-        {isExpandedView && expandedDate && (
+      <UnifiedMonthCalendar
+        currentDate={currentDate}
+        onDateChange={setCurrentDate}
+        onDateClick={(date, day) => {
+          console.log('Date clicked:', date);
+          setSelectedDate(date);
+          setViewMode('day');
+          // 日ビューのセクションにスクロール
+          setTimeout(() => {
+            const dayViewElement = document.querySelector('[data-view="day"]');
+            if (dayViewElement) {
+              dayViewElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          }, 200);
+        }}
+        getEventsForDate={getEventsForDate}
+        showNavigation={true}
+        showWeekdays={true}
+        showModal={isExpandedView && expandedDate}
+        modalTitle={expandedDate ? `${formatDate(expandedDate)} のスケジュール` : ''}
+        modalContent={isExpandedView && expandedDate ? (
           <MonthScheduleModal
             date={expandedDate}
             schedules={getSchedulesForDate(expandedDate)}
@@ -1136,11 +1026,18 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
               setIsExpandedView(false);
               setExpandedDate(null);
               setSelectedSchedule(null);
-              setMonthViewFilterType('all'); // フィルター状態をリセット
+              setMonthViewFilterType('all');
             }}
           />
-        )}
-      </div>
+        ) : null}
+        onCloseModal={() => {
+          setIsExpandedView(false);
+          setExpandedDate(null);
+          setSelectedSchedule(null);
+          setMonthViewFilterType('all');
+        }}
+        className=""
+      />
     );
   };
 
@@ -1201,375 +1098,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
 
 
-  // ガントチャート風ビュー
-  const GanttView = () => {
-    const weekTimeBlocks = generateWeekTimeBlocks();
-
-    const handleCellClick = (date: string, timeSlot: string) => {
-      const [start, end] = timeSlot.split('-');
-      setSelectedDate(date);
-      setSelectedSchedule(null);
-      setPrefillTime({ start, end });
-      setShowScheduleModal(true);
-    };
-
-    const handleScheduleClick = (schedule: Schedule) => {
-      setSelectedSchedule(schedule);
-      setShowScheduleModal(true);
-    };
-
-    // 指定された日付と時間帯のスケジュールを取得（全トラックから）
-    const getBlockSchedules = (date: string, timeBlock: TimeSlot) => {
-      const allSchedules = trucks.flatMap(truck =>
-        truck.schedules
-          .filter(schedule => schedule.date === date)
-          .filter(schedule => {
-            const scheduleStart = schedule.startTime;
-            const scheduleEnd = schedule.endTime;
-            // 時間ブロックとスケジュールの重複を正しく判定
-            // スケジュールの開始時刻 < 時間ブロックの終了時刻 かつ
-            // スケジュールの終了時刻 > 時間ブロックの開始時刻
-            const hasOverlap = scheduleStart < timeBlock.end && scheduleEnd > timeBlock.start;
-            
-            // デバッグ用：重複判定の詳細を確認
-            if (date === toLocalDateString(new Date()) && timeBlock.start === '13:00') {
-              console.log(`Schedule overlap check:`, {
-                date,
-                timeBlock: timeBlock.start + '-' + timeBlock.end,
-                schedule: {
-                  id: schedule.id,
-                  startTime: scheduleStart,
-                  endTime: scheduleEnd,
-                  customerName: schedule.customerName
-                },
-                hasOverlap
-              });
-            }
-            
-            return hasOverlap;
-          })
-          .map(schedule => ({
-            ...schedule,
-            truckName: truck.name,
-            truckId: truck.id,
-          }))
-      );
-
-      // 重複するスケジュールを除外（IDベースでユニークにする）
-      const uniqueSchedules = allSchedules.filter((schedule, index, self) =>
-        index === self.findIndex(s => s.id === schedule.id)
-      );
-
-      // デバッグ用：最終結果を確認
-      if (date === toLocalDateString(new Date()) && timeBlock.start === '13:00') {
-        console.log(`Final schedules for ${date} ${timeBlock.time}:`, uniqueSchedules);
-      }
-
-      return uniqueSchedules;
-    };
-
-
-
-    // 顧客ごとの色を生成（案件ごとに色分け）
-    const getCustomerColor = (customerName: string) => {
-      const colors = [
-        '#e0f2fe', // 薄い青
-        '#fce7f3', // 薄いピンク
-        '#dcfce7', // 薄い緑
-        '#fef3c7', // 薄い黄色
-        '#f3e8ff', // 薄い紫
-        '#fed7aa', // 薄いオレンジ
-        '#ccfbf1', // 薄いティール
-        '#fecaca', // 薄い赤
-        '#dbeafe', // 薄いブルー
-        '#e0e7ff', // 薄いインディゴ
-        '#fef2f2', // 薄いローズ
-        '#f0fdf4', // 薄いエメラルド
-        '#fffbeb', // 薄いアンバー
-        '#f5f3ff', // 薄いバイオレット
-        '#ecfdf5', // 薄いエメラルド
-        '#fefce8', // 薄いライム
-        '#fdf2f8', // 薄いピンク
-        '#f0f9ff', // 薄いスカイ
-        '#fdf4ff', // 薄いフューシャ
-        '#f0fdfa', // 薄いティール
-        '#fef7f0', // 薄いオレンジ
-        '#f4f4f5', // 薄いグレー
-        '#fafafa', // 薄いスレート
-        '#f8fafc', // 薄いスレート
-        '#f1f5f9', // 薄いスレート
-        '#f9fafb', // 薄いグレー
-        '#faf5ff', // 薄いバイオレット
-        '#fef2f2', // 薄いローズ
-        '#f0fdf4', // 薄いエメラルド
-        '#fefce8', // 薄いライム
-        '#fef2f2'  // 薄いローズ
-      ];
-
-      // 顧客名のハッシュ値で色を決定
-      let hash = 0;
-      for (let i = 0; i < customerName.length; i++) {
-        hash = customerName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      return colors[Math.abs(hash) % colors.length];
-    };
-
-    // 案件の表示用スタイルを取得
-    const getScheduleDisplayStyle = (schedule: Schedule, index: number) => {
-      const baseColor = schedule.customerName ? 
-        getCustomerColor(schedule.customerName) : 
-        schedule.status === 'available' ? '#dbeafe' : '#fef3c7';
-      
-      // 境界線の色を決定（より濃い色で区切りを明確に）
-      const borderColor = schedule.customerName ? 
-        getCustomerColor(schedule.customerName).replace('0', '8') : 
-        '#94a3b8';
-      
-      return {
-        backgroundColor: baseColor,
-        borderColor: borderColor,
-        borderWidth: '1px',
-        borderStyle: 'solid'
-      };
-    };
-
-    // 苗字を抽出する関数
-    const getLastName = (fullName?: string) => {
-      if (!fullName) return '?';
-      // 空白、全角空白、タブで分割して最初の部分（苗字）を取得
-      const parts = fullName.split(/[ \t　]/);
-      return parts[0] || '?';
-    };
-
-
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        {/* 週ビュー用の前週・翌週ボタン */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">
-              {formatDate(weekDays[0].date)} - {formatDate(weekDays[6].date)}
-            </h3>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                const prevWeek = new Date(currentDate);
-                prevWeek.setDate(prevWeek.getDate() - 7);
-                setCurrentDate(prevWeek);
-              }}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              前週
-            </button>
-            <button
-              onClick={() => {
-                const nextWeek = new Date(currentDate);
-                nextWeek.setDate(nextWeek.getDate() + 7);
-                setCurrentDate(nextWeek);
-              }}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              翌週
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <div className="min-w-[800px]">
-            {/* ヘッダー行 - 曜日のみ */}
-            <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2">
-              <div className="p-2 font-medium text-gray-600">時間</div>
-              {weekDays.map(day => (
-                <div
-                  key={day.date}
-                  className="p-2 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => {
-                    setSelectedDate(day.date);
-                    setViewMode('day');
-                    setExpandedDate(null);
-                    setIsExpandedView(false);
-                    setTimeout(() => {
-                      const dayViewElement = document.querySelector('[data-view="day"]');
-                      if (dayViewElement) {
-                        dayViewElement.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start'
-                        });
-                      }
-                    }, 100);
-                  }}
-                >
-                  <div className={`font-medium ${day.isToday ? 'text-blue-600' : 'text-gray-600'}`}>
-                    {day.dayOfWeek}
-                  </div>
-                  <div className={`text-sm ${day.isToday ? 'text-blue-600' : 'text-gray-500'}`}>
-                    {day.day}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* メイングリッド - 各行が時間ブロック、各列が曜日 */}
-            {weekTimeBlocks.map(block => (
-              <div key={block.time} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-1">
-                {/* 時間軸（左側） */}
-                <div className="p-2 text-sm text-gray-600 border bg-gray-50 flex items-center justify-center">
-                  {block.label}
-                </div>
-
-                {/* 各曜日のスケジュール */}
-                {weekDays.map(day => {
-                  const schedules = getBlockSchedules(day.date, block);
-                  
-                  // デバッグ用：特定の時間帯のスケジュールを確認
-                  if (day.date === toLocalDateString(new Date()) && block.start === '13:00') {
-                    console.log(`Debug - Date: ${day.date}, Time: ${block.time}, Schedules count: ${schedules.length}`, schedules);
-                  }
-
-                  return (
-                    <div
-                      key={day.date}
-                      className={`h-20 border transition-opacity ${schedules.length > 0 ? 'relative overflow-hidden' : ''
-                        }`}
-                      style={{
-                        backgroundColor: '#f9fafb' // セルの背景色を統一
-                      }}
-                      onClick={() => handleCellClick(day.date, block.time)}
-                      title={schedules.length > 0 ?
-                        schedules.length >= 5 ?
-                          `${schedules.length}件のスケジュール` :
-                          `${schedules.length}件のスケジュール` :
-                        `${day.date} ${block.label} - 空き`
-                      }
-                    >
-                      {schedules.length === 0 ? (
-                        // 空き時間は何も表示しない
-                        <div className="w-full h-full"></div>
-                      ) : schedules.length >= 5 ? (
-                        // 5件以上は件数のみ表示、クリックで日ビューに飛ばす
-                        <div
-                          className="absolute inset-0 flex flex-col items-center justify-center text-xs cursor-pointer p-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDate(day.date);
-                            setViewMode('day');
-                          }}
-                        >
-                          <div className="text-center w-full">
-                            <div className="text-lg font-bold text-orange-600">
-                              +{schedules.length}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        // 4件までは横に重ねて表示
-                        schedules.map((schedule, index) => {
-                          // 横並びの位置を計算（セルの境界内に収める）
-                          let leftPercent = 0;
-                          if (schedules.length === 1) {
-                            leftPercent = 0;
-                          } else if (schedules.length === 2) {
-                            leftPercent = index === 0 ? 0 : 50;
-                          } else if (schedules.length === 3) {
-                            leftPercent = index === 0 ? 0 : index === 1 ? 33.33 : index === 2 ? 66.67 : 0;
-                          } else if (schedules.length === 4) {
-                            leftPercent = index === 0 ? 0 : index === 1 ? 25 : index === 2 ? 50 : 75;
-                          }
-
-                          const displayStyle = getScheduleDisplayStyle(schedule, index);
-
-                          return (
-                            <div
-                              key={`${schedule.id}-${index}`}
-                              className={`absolute top-0 bottom-0 cursor-pointer p-1 text-xs hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm`}
-                              style={{
-                                left: `${leftPercent}%`,
-                                width: `calc(${100 / schedules.length}% - 2px)`,
-                                maxWidth: `calc(${100 / schedules.length}% - 2px)`,
-                                ...displayStyle
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedDate(schedule.date);
-                                setViewMode('day');
-                                setHighlightedScheduleId(schedule.id);
-                              }}
-                              onMouseEnter={(e) => {
-                                e.stopPropagation();
-                                // ホバー時のツールチップ表示
-                                const tooltip = document.createElement('div');
-                                tooltip.className = 'absolute z-50 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap';
-                                tooltip.textContent = `${schedule.customerName || '未設定'} (${schedule.startTime}-${schedule.endTime})`;
-                                tooltip.style.left = `${e.clientX + 10}px`;
-                                tooltip.style.top = `${e.clientY - 30}px`;
-                                document.body.appendChild(tooltip);
-                                
-                                // マウスアウト時にツールチップを削除
-                                const removeTooltip = () => {
-                                  if (tooltip.parentNode) {
-                                    tooltip.parentNode.removeChild(tooltip);
-                                  }
-                                  document.removeEventListener('mouseleave', removeTooltip);
-                                };
-                                document.addEventListener('mouseleave', removeTooltip);
-                              }}
-                              onMouseLeave={(e) => {
-                                e.stopPropagation();
-                                // ツールチップを削除
-                                const tooltips = document.querySelectorAll('.absolute.z-50.bg-gray-900');
-                                tooltips.forEach(tooltip => {
-                                  if (tooltip.parentNode) {
-                                    tooltip.parentNode.removeChild(tooltip);
-                                  }
-                                });
-                              }}
-                            >
-                              <div className="text-center w-full h-full flex flex-col justify-center">
-                                {schedules.length === 1 ? (
-                                  // 1件の場合は契約状況アイコン、顧客名、時間の順で表示
-                                  <div className="flex flex-col items-center justify-center gap-1">
-                                    <div className="flex items-center justify-center">
-                                      <span className="text-sm opacity-80">
-                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                      </span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800">
-                                      {schedule.customerName || '未設定'}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      {schedule.startTime}-{schedule.endTime}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  // 2-4件の場合は契約状況アイコンと顧客名の苗字を表示
-                                  <div className="flex flex-col items-center justify-center gap-1">
-                                    <div className="flex items-center justify-center">
-                                      <span className="text-sm opacity-80">
-                                        {schedule.contractStatus === 'confirmed' ? '✅' : '⏳'}
-                                      </span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800">
-                                      {getLastName(schedule.customerName)}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-2">
@@ -1589,33 +1117,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
             <button
               onClick={() => {
                 setSelectedDate(toLocalDateString(today));
-                setCurrentDate(today);
-                setViewMode('week');
-              }}
-              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              週
-            </button>
-            <button
-              onClick={() => {
-                setSelectedDate(toLocalDateString(today));
                 setViewMode('day');
               }}
               className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               日
-            </button>
-            <button
-              onClick={() => {
-                setSelectedDate(toLocalDateString(today));
-                setViewMode('worker-assignment');
-              }}
-              className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === 'worker-assignment' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              作業者割り当て
             </button>
           </div>
           
@@ -1661,18 +1168,10 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
       {/* ビューモードに応じた表示 */}
       {viewMode === 'month' && <MonthView />}
-      {viewMode === 'week' && <GanttView />}
       {viewMode === 'day' && <DayView />}
-      {viewMode === 'worker-assignment' && (
-        <WorkerAssignmentView
-          trucks={trucks}
-          selectedDate={selectedDate}
-          onUpdateTruck={onUpdateTruck}
-        />
-      )}
 
       {/* スケジュールモーダル */}
       {showScheduleModal && <ScheduleModal />}
     </div>
   );
-} 
+}

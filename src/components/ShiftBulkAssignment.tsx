@@ -16,7 +16,7 @@ interface EmployeeShift {
   employeeId: string;
   date: string;
   timeSlot: string;
-  status: 'confirmed' | 'booked' | 'unavailable' | 'overtime' | 'provisional' | 'available';
+  status: 'working' | 'unavailable';
   truckScheduleId?: string;
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance' | 'break' | 'other';
@@ -146,7 +146,7 @@ export default function ShiftBulkAssignment({
           employeeId: selectedEmployee,
           date,
           timeSlot,
-          status: 'confirmed' as const,
+          status: 'working' as const,
           notes,
         };
         onAddShift(selectedEmployee, newShift);
@@ -261,8 +261,8 @@ export default function ShiftBulkAssignment({
                         ? DUPLICATE_STATUS.full.color
                         : duplicateCheckResults[date] === 'partial'
                         ? DUPLICATE_STATUS.partial.color
-                        : duplicateCheckResults[date] === 'available'
-                        ? DUPLICATE_STATUS.available.color
+                        : duplicateCheckResults[date] === 'working'
+                        ? DUPLICATE_STATUS.working.color
                         : 'bg-gray-100'
                     }`}
                   >

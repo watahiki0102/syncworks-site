@@ -208,7 +208,7 @@ export default function AdminDashboard() {
         actions={settingsActions}
       >
          {/* PC・タブレット・スマホ対応：レスポンシブレイアウト */}
-         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full min-h-[calc(100vh-200px)] max-w-none">
+         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full min-h-[calc(100vh-200px)] max-w-7xl mx-auto px-4">
            {/* 左列：ニュースと主要メニュー（2列分の幅） */}
            <div className="space-y-6 w-full xl:col-span-2">
              {/* 最新ニュース */}

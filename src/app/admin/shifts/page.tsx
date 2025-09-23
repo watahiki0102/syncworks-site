@@ -7,10 +7,9 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminButton from '@/components/admin/AdminButton';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
-import ShiftTemplateManager from '@/components/ShiftTemplateManager';
-import ShiftBulkAssignment from '@/components/ShiftBulkAssignment';
-import ShiftOverview from '@/components/ShiftOverview';
 import { TIME_SLOTS } from '@/constants/calendar';
+import TimeRangeSelector, { TimeRangeType } from '@/components/TimeRangeSelector';
+import TimeRangeDisplaySelector from '@/components/TimeRangeDisplaySelector';
 
 interface Employee {
   id: string;
@@ -28,22 +27,13 @@ interface EmployeeShift {
   employeeId: string;
   date: string;
   timeSlot: string;
-  status: 'confirmed' | 'booked' | 'unavailable' | 'overtime' | 'provisional' | 'available';
-  truckScheduleId?: string;
+  status: 'working' | 'unavailable';
   customerName?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance' | 'break' | 'other';
   notes?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
-interface ShiftTemplate {
-  id: string;
-  name: string;
-  employeeId: string;
-  startTime: string;
-  endTime: string;
-  weekdays: string[];
-  notes?: string;
-}
 
 interface TruckSchedule {
   id: string;
@@ -51,26 +41,35 @@ interface TruckSchedule {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'available' | 'booked' | 'maintenance';
-  customerName?: string;
-  workType?: 'loading' | 'moving' | 'unloading' | 'maintenance';
-  description?: string;
-  capacity?: number;
-  origin?: string;
-  destination?: string;
-  employeeId?: string;
+  customerName: string;
+  origin: string;
+  destination: string;
+  notes?: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  employees: string[];
 }
 
 export default function ShiftManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [truckSchedules, setTruckSchedules] = useState<TruckSchedule[]>([]);
-  const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
-
-  const [overviewDate, setOverviewDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'employees' | 'templates' | 'bulk' | 'overview'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'employees'>('calendar');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  
+  // 日ビュー用の時間帯設定関連のstate
+  const [timeRangeType, setTimeRangeType] = useState<TimeRangeType>('full');
+  const [customStartTime, setCustomStartTime] = useState<string>('');
+  const [customEndTime, setCustomEndTime] = useState<string>('');
+  
+  // 時間帯表示設定（配車管理画面のような機能）
+  const [displayStartTime, setDisplayStartTime] = useState<number>(8);
+  const [displayEndTime, setDisplayEndTime] = useState<number>(20);
+  
+  const handleDisplayTimeRangeChange = (start: number, end: number) => {
+    setDisplayStartTime(start);
+    setDisplayEndTime(end);
+  };
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -90,53 +89,27 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-01-15',
           shifts: [
+            // 午前の引越し作業（9:00-12:30）
             {
               id: 'shift-1',
               employeeId: 'emp-1',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '09:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-1',
-              customerName: '山田 太郎',
-              workType: 'loading',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '新宿区→渋谷区（午前の引越し作業）',
             },
+            // 午後の引越し作業（14:00-17:30）
             {
-              id: 'shift-2',
-              employeeId: 'emp-1',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '10:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-1',
-              customerName: '山田 太郎',
-              workType: 'moving',
-            },
-            {
-              id: 'shift-3',
-              employeeId: 'emp-1',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '11:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-1',
-              customerName: '山田 太郎',
-              workType: 'unloading',
-            },
-            {
-              id: 'shift-4',
+              id: 'shift-8',
               employeeId: 'emp-1',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '14:00',
-              status: 'confirmed',
-              workType: 'maintenance',
-              notes: '車両整備',
-            },
-            {
-              id: 'shift-5',
-              employeeId: 'emp-1',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '15:00',
-              status: 'confirmed',
-              workType: 'other',
-              notes: '事務作業',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '品川区→大田区（午後の引越し作業）',
             },
           ],
         },
@@ -149,42 +122,147 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-03-20',
           shifts: [
+            // 午前の引越し作業（9:00-12:30）- 田中さんと同行
             {
-              id: 'shift-3',
+              id: 'shift-15',
               employeeId: 'emp-2',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '09:00',
-              status: 'available',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
             },
             {
-              id: 'shift-4',
+              id: 'shift-16',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '09:30',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
+            },
+            {
+              id: 'shift-17',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '10:00',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
+            },
+            {
+              id: 'shift-18',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '10:30',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
+            },
+            {
+              id: 'shift-19',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '11:00',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
+            },
+            {
+              id: 'shift-20',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '11:30',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
+            },
+            {
+              id: 'shift-21',
               employeeId: 'emp-2',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '12:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-2',
-              customerName: '鈴木 次郎',
-              workType: 'moving',
+              status: 'working',
+              startTime: '09:00',
+              endTime: '12:30',
+              notes: '田中さんと同行（午前の引越し作業）',
             },
+            // 午後の引越し作業（14:00-17:30）- 田中さんと同行
             {
-              id: 'shift-5',
-              employeeId: 'emp-2',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '13:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-2',
-              customerName: '鈴木 次郎',
-              workType: 'moving',
-            },
-            {
-              id: 'shift-6',
+              id: 'shift-22',
               employeeId: 'emp-2',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '14:00',
-              status: 'booked',
-              truckScheduleId: 'truck-schedule-2',
-              customerName: '鈴木 次郎',
-              workType: 'moving',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-23',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '14:30',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-24',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '15:00',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-25',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '15:30',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-26',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:00',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-27',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:30',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
+            },
+            {
+              id: 'shift-28',
+              employeeId: 'emp-2',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '17:00',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '17:30',
+              notes: '田中さんと同行（午後の引越し作業）',
             },
           ],
         },
@@ -197,45 +275,177 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2022-11-10',
           shifts: [
+            // 午前休み（8:00-12:00）- 体調不良
             {
-              id: 'shift-7',
+              id: 'shift-29',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '08:00',
-              status: 'overtime',
-              notes: '前日からの継続作業',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
             },
             {
-              id: 'shift-8',
+              id: 'shift-30',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '08:30',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
+            },
+            {
+              id: 'shift-31',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '09:00',
-              status: 'overtime',
-              notes: '前日からの継続作業',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
             },
             {
-              id: 'shift-9',
+              id: 'shift-32',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '09:30',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
+            },
+            {
+              id: 'shift-33',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '10:00',
-              status: 'overtime',
-              notes: '前日からの継続作業',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
             },
             {
-              id: 'shift-10',
+              id: 'shift-34',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '10:30',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
+            },
+            {
+              id: 'shift-35',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '11:00',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
+            },
+            {
+              id: 'shift-36',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '11:30',
+              status: 'unavailable',
+              startTime: '08:00',
+              endTime: '12:00',
+              notes: '体調不良のため午前休み',
+            },
+            // 午後の引越し作業（13:00-17:30）
+            {
+              id: 'shift-37',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '13:00',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-38',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '13:30',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-39',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '14:00',
-              status: 'unavailable',
-              notes: '休暇',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
             },
             {
-              id: 'shift-11',
+              id: 'shift-40',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '14:30',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-41',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '15:00',
-              status: 'unavailable',
-              notes: '休暇',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-42',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '15:30',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-43',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:00',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-44',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:30',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-45',
+              employeeId: 'emp-3',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '17:00',
+              status: 'working',
+              startTime: '13:00',
+              endTime: '17:30',
+              notes: '目黒区→世田谷区（午後の引越し作業）',
             },
           ],
         },
@@ -248,40 +458,147 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-06-05',
           shifts: [
+            // 午前の引越し作業（8:30-12:00）
             {
-              id: 'shift-12',
+              id: 'shift-46',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '08:30',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
+            },
+            {
+              id: 'shift-47',
               employeeId: 'emp-4',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '09:00',
-              status: 'available',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
             },
             {
-              id: 'shift-13',
+              id: 'shift-48',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '09:30',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
+            },
+            {
+              id: 'shift-49',
               employeeId: 'emp-4',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '10:00',
-              status: 'available',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
             },
             {
-              id: 'shift-14',
+              id: 'shift-50',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '10:30',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
+            },
+            {
+              id: 'shift-51',
               employeeId: 'emp-4',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '11:00',
-              status: 'available',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
             },
             {
-              id: 'shift-15',
+              id: 'shift-52',
               employeeId: 'emp-4',
               date: new Date().toISOString().split('T')[0],
-              timeSlot: '14:00',
-              status: 'available',
+              timeSlot: '11:30',
+              status: 'working',
+              startTime: '08:30',
+              endTime: '12:00',
+              notes: '中野区→杉並区（午前の引越し作業）',
+            },
+            // 午後の引越し作業（14:30-18:00）
+            {
+              id: 'shift-53',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '14:30',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
             },
             {
-              id: 'shift-16',
+              id: 'shift-54',
               employeeId: 'emp-4',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '15:00',
-              status: 'available',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-55',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '15:30',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-56',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:00',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-57',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '16:30',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-58',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '17:00',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
+            },
+            {
+              id: 'shift-59',
+              employeeId: 'emp-4',
+              date: new Date().toISOString().split('T')[0],
+              timeSlot: '17:30',
+              status: 'working',
+              startTime: '14:30',
+              endTime: '18:00',
+              notes: '江戸川区→江東区（午後の引越し作業）',
             },
           ],
         },
@@ -306,35 +623,6 @@ export default function ShiftManagement() {
       setTruckSchedules(JSON.parse(savedTruckSchedules));
     } else {
 
-    // ローカルストレージからテンプレートデータを読み込み
-    const savedTemplates = localStorage.getItem('shiftTemplates');
-    if (savedTemplates) {
-      setShiftTemplates(JSON.parse(savedTemplates));
-    } else {
-      // テストテンプレートデータ
-      const testTemplates: ShiftTemplate[] = [
-        {
-          id: 'template-1',
-          name: '朝勤務',
-          employeeId: 'emp-1',
-          startTime: '08:00',
-          endTime: '12:00',
-          weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
-          notes: '平日朝勤務',
-        },
-        {
-          id: 'template-2',
-          name: '午後勤務',
-          employeeId: 'emp-2',
-          startTime: '13:00',
-          endTime: '17:00',
-          weekdays: ['mon', 'wed', 'fri'],
-          notes: '月水金午後勤務',
-        },
-      ];
-      setShiftTemplates(testTemplates);
-      localStorage.setItem('shiftTemplates', JSON.stringify(testTemplates));
-    }
       // テストデータを初期化
       const testTruckSchedules: TruckSchedule[] = [
         {
@@ -343,14 +631,12 @@ export default function ShiftManagement() {
           date: new Date().toISOString().split('T')[0],
           startTime: '09:00',
           endTime: '12:00',
-          status: 'booked',
           customerName: '山田 太郎',
-          workType: 'loading',
-          description: '引っ越し作業',
-          capacity: 800,
           origin: '東京都新宿区西新宿1-1-1',
           destination: '東京都渋谷区渋谷2-2-2',
-          employeeId: 'emp-1',
+          notes: '引っ越し作業',
+          status: 'confirmed',
+          employees: ['emp-1'],
         },
         {
           id: 'truck-schedule-2',
@@ -358,14 +644,12 @@ export default function ShiftManagement() {
           date: new Date().toISOString().split('T')[0],
           startTime: '12:00',
           endTime: '15:00',
-          status: 'booked',
           customerName: '鈴木 次郎',
-          workType: 'moving',
-          description: '引っ越し作業',
-          capacity: 600,
           origin: '東京都中野区中野3-3-3',
           destination: '東京都杉並区阿佐ヶ谷4-4-4',
-          employeeId: 'emp-2',
+          notes: '引っ越し作業',
+          status: 'confirmed',
+          employees: ['emp-2'],
         },
       ];
       setTruckSchedules(testTruckSchedules);
@@ -447,61 +731,11 @@ export default function ShiftManagement() {
       }
       return employee;
     });
+    
     saveEmployees(updatedEmployees);
   };
 
-  // テンプレート管理関数
-  const addTemplate = (template: Omit<ShiftTemplate, 'id'>) => {
-    const newTemplate: ShiftTemplate = {
-      ...template,
-      id: `template-${Date.now()}-${Math.random()}`,
-    };
 
-    setShiftTemplates(prev => [...prev, newTemplate]);
-    localStorage.setItem('shiftTemplates', JSON.stringify([...shiftTemplates, newTemplate]));
-  };
-
-  const updateTemplate = (id: string, template: Partial<ShiftTemplate>) => {
-    setShiftTemplates(prev => prev.map(t => 
-      t.id === id ? { ...t, ...template } : t
-    ));
-
-    const updatedTemplates = shiftTemplates.map(t => 
-      t.id === id ? { ...t, ...template } : t
-    );
-    localStorage.setItem('shiftTemplates', JSON.stringify(updatedTemplates));
-  };
-
-  const deleteTemplate = (id: string) => {
-    setShiftTemplates(prev => prev.filter(t => t.id !== id));
-    
-    const updatedTemplates = shiftTemplates.filter(t => t.id !== id);
-    localStorage.setItem('shiftTemplates', JSON.stringify(updatedTemplates));
-  };
-
-  const applyTemplate = (templateId: string, dates: string[]) => {
-    const template = shiftTemplates.find(t => t.id === templateId);
-    if (!template) return;
-
-    dates.forEach(date => {
-      const timeSlots = TIME_SLOTS.filter(slot => {
-        const slotStart = slot.start;
-        const slotEnd = slot.end;
-        return slotStart >= template.startTime && slotEnd <= template.endTime;
-      });
-
-      timeSlots.forEach(timeSlot => {
-        const newShift = {
-          employeeId: template.employeeId,
-          date,
-          timeSlot: timeSlot.id,
-          status: 'confirmed' as const,
-          notes: template.notes,
-        };
-        addShift(template.employeeId, newShift);
-      });
-    });
-  };
 
 
   const actions = (
@@ -519,17 +753,17 @@ export default function ShiftManagement() {
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50">
         <AdminPageHeader 
-          title="シフト管理"
+          title="従業員管理"
           subtitle="従業員の稼働スケジュール管理"
           actions={actions}
           breadcrumbs={[
-            { label: 'シフト管理' }
+            { label: '従業員管理' }
           ]}
         />
 
 
         {/* メインコンテンツ */}
-        <main className="w-full max-w-none py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div className="px-4 py-2 sm:px-0">
             {/* タブ切り替え */}
             <div className="mb-6">
@@ -543,7 +777,7 @@ export default function ShiftManagement() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    📅 シフト表
+                    📅 シフト管理
                   </button>
                   <button
                     onClick={() => setActiveTab('employees')}
@@ -553,41 +787,12 @@ export default function ShiftManagement() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    👥 従業員管理
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('templates')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'templates'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📋 テンプレート
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('bulk')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'bulk'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    ⚡ 一括設定
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'overview'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📊 全体概要
+                    👥 従業員一覧
                   </button>
                 </nav>
               </div>
             </div>
+
 
             {/* タブコンテンツ */}
             {activeTab === 'calendar' && (
@@ -598,6 +803,13 @@ export default function ShiftManagement() {
                 onAddShift={addShift}
                 onDeleteShift={deleteShift}
                 onUpdateTruckSchedules={saveTruckSchedules}
+                timeRangeType={timeRangeType}
+                customStartTime={customStartTime}
+                customEndTime={customEndTime}
+                showTimeRangeSelector={true}
+                displayStartTime={displayStartTime}
+                displayEndTime={displayEndTime}
+                onDisplayTimeRangeChange={handleDisplayTimeRangeChange}
               />
             )}
             
@@ -614,34 +826,6 @@ export default function ShiftManagement() {
               />
             )}
 
-            {activeTab === 'templates' && (
-              <ShiftTemplateManager
-                employees={employees}
-                templates={shiftTemplates}
-                onAddTemplate={addTemplate}
-                onUpdateTemplate={updateTemplate}
-                onDeleteTemplate={deleteTemplate}
-                onApplyTemplate={applyTemplate}
-              />
-            )}
-
-            {activeTab === 'bulk' && (
-              <ShiftBulkAssignment
-                employees={employees}
-                templates={shiftTemplates}
-                selectedDates={selectedDates}
-                onAddShift={addShift}
-                onUpdateShift={updateShift}
-              />
-            )}
-
-            {activeTab === 'overview' && (
-              <ShiftOverview
-                employees={employees}
-                selectedDate={overviewDate}
-                onDateChange={setOverviewDate}
-              />
-            )}
           </div>
         </main>
       </div>

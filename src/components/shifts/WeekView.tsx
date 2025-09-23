@@ -16,7 +16,7 @@ interface EmployeeShift {
   employeeId: string;
   date: string;
   timeSlot: string;
-  status: 'confirmed' | 'booked' | 'unavailable' | 'overtime' | 'provisional' | 'available';
+  status: 'working' | 'unavailable';
   truckScheduleId?: string;
   customerName?: string;
   workType?: 'loading' | 'moving' | 'unloading' | 'maintenance' | 'break' | 'other';
