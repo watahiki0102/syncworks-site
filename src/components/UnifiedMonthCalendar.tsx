@@ -265,10 +265,10 @@ export default function UnifiedMonthCalendar({
           </div>
         )}
 
-        {/* カレンダーグリッド */}
+        {/* カレンダーグリッド - レスポンシブ対応 */}
         <div className="p-6">
           <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
+            <div className="w-full">
               {/* 曜日ヘッダー */}
               {showWeekdays && (
                 <div className="grid grid-cols-7 gap-1 mb-1">

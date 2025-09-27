@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
-import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import UnifiedCalendarLayout from '@/components/layout/UnifiedCalendarLayout';
 import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
@@ -896,120 +896,81 @@ function DispatchManagementContent() {
     { id: 'cases', label: '配車割り当て', icon: '🚛' }
   ];
 
+  const actions = null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminPageHeader 
-        title="配車管理"
-        subtitle="トラックの稼働スケジュール管理"
-        breadcrumbs={[
-          { label: '配車管理' }
-        ]}
-        showBackButton={true}
-      />
-      {/* タブナビゲーション */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveView(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 ${
-                  activeView === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+    <UnifiedCalendarLayout
+      title="配車管理"
+      subtitle="トラックの稼働スケジュール管理"
+      breadcrumbs={[
+        { label: '配車管理' }
+      ]}
+      showBackButton={true}
+      actions={actions}
+      tabs={tabs}
+      activeTab={activeView}
+      onTabChange={(tabId) => setActiveView(tabId as any)}
+    >
+
+      {/* 配車カレンダータブ */}
+      {activeView === 'calendar' && (
+        <DispatchCalendar 
+          trucks={trucks as any}
+          onUpdateTruck={updateTruck}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+      )}
+
+      {/* トラック管理タブ */}
+      {activeView === 'trucks' && (
+        <div className="space-y-4">
+          {/* トラック状況 */}
+          <TruckManagement 
+            trucks={trucks as any}
+            onTrucksChange={setTrucks}
+          />
+
+          {/* トラック登録 */}
+          <TruckRegistration
+            trucks={trucks}
+            selectedTruck={selectedTruck}
+            onAddTruck={addTruck}
+            onUpdateTruck={updateTruck}
+            onDeleteTruck={deleteTruck}
+            onSelectTruck={setSelectedTruck}
+            availableTruckTypes={availableTruckTypes}
+            pricingRules={pricingRules}
+          />
         </div>
-      </div>
+      )}
 
-
-      {/* メインコンテンツ */}
-      <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
-        <div className="px-4 py-2 sm:px-0">
-
-          {/* 配車カレンダータブ */}
-          {activeView === 'calendar' && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-2 sm:p-3">
-                <DispatchCalendar 
-                  trucks={trucks as any}
-                  onUpdateTruck={updateTruck}
-                  statusFilter={statusFilter}
-                  onStatusFilterChange={setStatusFilter}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* トラック管理タブ */}
-          {activeView === 'trucks' && (
-            <div className="space-y-4">
-              {/* トラック状況 */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-2 sm:p-3">
-                  <TruckManagement 
-                    trucks={trucks as any}
-                    onTrucksChange={setTrucks}
-                  />
-                </div>
-              </div>
-
-              {/* トラック登録 */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-2 sm:p-3">
-                  <TruckRegistration
-                    trucks={trucks}
-                    selectedTruck={selectedTruck}
-                    onAddTruck={addTruck}
-                    onUpdateTruck={updateTruck}
-                    onDeleteTruck={deleteTruck}
-                    onSelectTruck={setSelectedTruck}
-                    availableTruckTypes={availableTruckTypes}
-                    pricingRules={pricingRules}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 配車割り当てタブ */}
-          {activeView === 'cases' && (
-            <div className="space-y-4">
-
-              {/* 案件一覧 */}
-              <UnifiedCaseManagement
-                submissions={formSubmissions}
-                trucks={trucks}
-                onAssignTruck={assignTruckByIdToSubmission}
-                onRemoveTruck={removeTruckFromSubmission}
-                expandedSubmissions={expandedSubmissions}
-                onToggleExpand={(id) => {
-                  setExpandedSubmissions(prev => {
-                    const newSet = new Set(prev);
-                    if (newSet.has(id)) {
-                      newSet.delete(id);
-                    } else {
-                      newSet.add(id);
-                    }
-                    return newSet;
-                  });
-                }}
-                setShowTruckModal={setShowTruckModal}
-                setSelectedSubmission={setSelectedSubmission}
-              />
-            </div>
-          )}
-
+      {/* 配車割り当てタブ */}
+      {activeView === 'cases' && (
+        <div className="space-y-4">
+          {/* 案件一覧 */}
+          <UnifiedCaseManagement
+            submissions={formSubmissions}
+            trucks={trucks}
+            onAssignTruck={assignTruckByIdToSubmission}
+            onRemoveTruck={removeTruckFromSubmission}
+            expandedSubmissions={expandedSubmissions}
+            onToggleExpand={(id) => {
+              setExpandedSubmissions(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(id)) {
+                  newSet.delete(id);
+                } else {
+                  newSet.add(id);
+                }
+                return newSet;
+              });
+            }}
+            setShowTruckModal={setShowTruckModal}
+            setSelectedSubmission={setSelectedSubmission}
+          />
         </div>
-      </main>
-
-
+      )}
       {/* トラック割り当てモーダル */}
       {showTruckModal && (
         <TruckAssignmentModal
@@ -1070,7 +1031,7 @@ function DispatchManagementContent() {
           onPeriodChange={setUnavailablePeriod}
         />
       )}
-    </div>
+    </UnifiedCalendarLayout>
   );
 }
 
@@ -1229,7 +1190,7 @@ export default function DispatchManagement() {
   return (
     <AdminAuthGuard>
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">配車管理画面を読み込み中...</p>

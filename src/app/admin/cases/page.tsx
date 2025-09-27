@@ -61,15 +61,13 @@ export default function CaseManagement() {
           ]}
         />
 
-        <div className="bg-white border-b">
-          <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-            <AdminTabs 
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as TabType)}
-            />
-          </div>
-        </div>
+        <AdminTabs 
+          variant="calendar"
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as TabType)}
+          className="px-2 sm:px-4 lg:px-6 xl:px-8"
+        />
 
         {/* メインコンテンツ */}
         <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">

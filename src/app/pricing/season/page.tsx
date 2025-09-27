@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import UnifiedCalendarLayout from '@/components/layout/UnifiedCalendarLayout';
 import SeasonCalendar from '@/components/pricing/SeasonCalendar';
 import type { SeasonRule } from '@/types/pricing';
 
@@ -92,6 +92,7 @@ const createSeasonRule = (rule: SeasonRuleInput, id?: string): SeasonRule => ({
 export default function SeasonPage() {
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('calendar');
 
   /**
    * 初期データの読み込み
@@ -290,52 +291,43 @@ export default function SeasonPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'calendar', label: 'シーズン料金カレンダー', icon: '📅' },
+    { id: 'settings', label: '設定', icon: '⚙️' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ページヘッダー */}
-      <AdminPageHeader
-        title="🌸 シーズン加算設定"
-        subtitle="繁忙期・閑散期など時期による料金加算を設定します"
-        breadcrumbs={[
-          { label: '料金設定', href: '/pricing' },
-          { label: 'シーズン加算設定' }
-        ]}
-        backUrl="/pricing"
-      />
-
-      <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
-        <div className="px-4 py-2 sm:px-0">
-          {/* カレンダービューコントロール */}
-          <div className="bg-white shadow rounded-lg mb-4">
-            <div className="px-4 py-2 sm:p-3 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <h2 className="text-xl font-semibold text-gray-800">📅 シーズン料金カレンダー</h2>
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* 保存はモーダル内で行うため、ここでは不要 */}
-              </div>
-            </div>
-          </div>
-
-          {/* 全画面カレンダー表示 */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-2 sm:p-3">
-              <SeasonCalendar
-                seasonRules={seasonRules}
-                onUpdateRule={updateRule}
-                onAddRule={addRule}
-                onRemoveRule={removeRule}
-              />
-            </div>
-          </div>
+    <UnifiedCalendarLayout
+      title="🌸 シーズン加算設定"
+      subtitle="繁忙期・閑散期など時期による料金加算を設定します"
+      breadcrumbs={[
+        { label: '料金設定', href: '/pricing' },
+        { label: 'シーズン加算設定' }
+      ]}
+      backUrl="/pricing"
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      {activeTab === 'calendar' && (
+        <SeasonCalendar
+          seasonRules={seasonRules}
+          onUpdateRule={updateRule}
+          onAddRule={addRule}
+          onRemoveRule={removeRule}
+        />
+      )}
+      {activeTab === 'settings' && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">設定画面は今後実装予定です</p>
         </div>
-      </main>
-    </div>
+      )}
+    </UnifiedCalendarLayout>
   );
 }

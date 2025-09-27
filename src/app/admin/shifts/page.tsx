@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminButton from '@/components/admin/AdminButton';
+import AdminTabs from '@/components/admin/AdminTabs';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import { TIME_SLOTS } from '@/constants/calendar';
@@ -624,20 +625,11 @@ export default function ShiftManagement() {
 
 
 
-  const actions = (
-    <a href="/admin/dispatch">
-      <AdminButton
-        variant="primary"
-        icon="🚚"
-      >
-        配車管理
-      </AdminButton>
-    </a>
-  );
+  const actions = null;
 
   return (
     <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <AdminPageHeader 
           title="従業員管理"
           subtitle="従業員の稼働スケジュール管理"
@@ -648,42 +640,35 @@ export default function ShiftManagement() {
         />
 
 
-        {/* メインコンテンツ */}
-        <main className={`w-full ${(showClipboard || showEmployeeSummary) ? 'max-w-[75%]' : 'max-w-7xl'} mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
-          <div className="w-full">
-            <div className="px-4 py-2 sm:px-0">
-            {/* タブ切り替え */}
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex flex-wrap gap-2 sm:space-x-8 sm:gap-0">
-                  <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'calendar'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📅 シフト管理
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('employees')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'employees'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    👥 従業員一覧
-                  </button>
-                </nav>
-              </div>
-            </div>
+        {/* タブナビゲーション */}
+        <AdminTabs
+          variant="calendar"
+          tabs={[
+            { id: 'calendar', label: 'シフト管理', icon: '📅' },
+            { id: 'employees', label: '従業員一覧', icon: '👥' }
+          ]}
+          activeTab={activeTab}
+          onTabChange={(tabId) => {
+            setActiveTab(tabId as 'calendar' | 'employees');
+            if (tabId === 'employees') {
+              // 従業員一覧タブに切り替えた際にサイドバーを非表示にする
+              setShowEmployeeSummary(false);
+              setShowClipboard(false);
+            }
+          }}
+          className="px-2 sm:px-4 lg:px-6 xl:px-8"
+        />
+
+        {/* メインコンテンツ - dispatchと同じレスポンシブ仕様 */}
+        <main className={`w-full ${(showClipboard || showEmployeeSummary) ? 'max-w-[75%] mr-[25%]' : 'max-w-7xl'} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
+          <div className="px-4 py-2 sm:px-0">
 
 
             {/* タブコンテンツ */}
             {activeTab === 'calendar' && (
-              <ShiftCalendar
+              <div className="bg-white">
+                <div className="px-4 py-2 sm:p-3">
+                  <ShiftCalendar
                 employees={employees}
                 cases={cases}
                 onUpdateShift={updateShift}
@@ -707,11 +692,15 @@ export default function ShiftManagement() {
                 pendingPasteDate={pendingPasteDate}
                 onShiftClickForClipboard={handleShiftClickForClipboard}
                 onDateClickForClipboard={handleDateClickForClipboard}
-              />
+                  />
+                </div>
+              </div>
             )}
             
             {activeTab === 'employees' && (
-              <EmployeeManagement
+              <div className="bg-white">
+                <div className="px-4 py-2 sm:p-3">
+                  <EmployeeManagement
                 employees={employees}
                 selectedEmployee={selectedEmployee}
                 onAddEmployee={addEmployee}
@@ -720,16 +709,17 @@ export default function ShiftManagement() {
                 onSelectEmployee={setSelectedEmployee}
                 onShowEmployeeModal={setShowEmployeeModal}
                 showEmployeeModal={showEmployeeModal}
-              />
+                  />
+                </div>
+              </div>
             )}
 
-            </div>
           </div>
         </main>
 
         {/* 統合サイドパネル - 従業員集計とクリップボードをまとめたパネル */}
         {(showClipboard || showEmployeeSummary) && (
-          <div className="fixed top-32 right-0 w-[25%] h-[calc(100vh-8rem)] bg-white border-l border-gray-300 shadow-lg z-40">
+          <div className="fixed top-32 right-0 w-[25%] h-[calc(100vh-8rem)] bg-white border-l border-gray-300 shadow-lg z-40 overflow-hidden">
             <div className="h-full flex flex-col">
               {/* ヘッダー - タブ切り替え */}
               <div className="flex border-b border-gray-200">
