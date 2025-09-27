@@ -241,24 +241,22 @@ export default function UnifiedMonthCalendar({
         {/* 月次ナビゲーション */}
         {showNavigation && (
           <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
-                </h3>
-              </div>
-              <div className="flex gap-2">
+            <div className="flex justify-start items-center">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrevMonth}
                   className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                 >
-                  前月
+                  ＜
                 </button>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
+                </h3>
                 <button
                   onClick={handleNextMonth}
                   className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                 >
-                  翌月
+                  ＞
                 </button>
               </div>
             </div>

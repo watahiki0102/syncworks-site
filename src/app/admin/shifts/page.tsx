@@ -630,34 +630,38 @@ export default function ShiftManagement() {
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-white">
-        <AdminPageHeader 
-          title="従業員管理"
-          subtitle="従業員の稼働スケジュール管理"
-          actions={actions}
-          breadcrumbs={[
-            { label: '従業員管理' }
-          ]}
-        />
+        <div className={`${(showClipboard || showEmployeeSummary) ? 'mr-[25%]' : ''}`}>
+          <AdminPageHeader 
+            title="従業員管理"
+            subtitle="従業員の稼働スケジュール管理"
+            actions={actions}
+            breadcrumbs={[
+              { label: '従業員管理' }
+            ]}
+          />
+        </div>
 
 
         {/* タブナビゲーション */}
-        <AdminTabs
-          variant="calendar"
-          tabs={[
-            { id: 'calendar', label: 'シフト管理', icon: '📅' },
-            { id: 'employees', label: '従業員一覧', icon: '👥' }
-          ]}
-          activeTab={activeTab}
-          onTabChange={(tabId) => {
-            setActiveTab(tabId as 'calendar' | 'employees');
-            if (tabId === 'employees') {
-              // 従業員一覧タブに切り替えた際にサイドバーを非表示にする
-              setShowEmployeeSummary(false);
-              setShowClipboard(false);
-            }
-          }}
-          className="px-2 sm:px-4 lg:px-6 xl:px-8"
-        />
+        <div className={`${(showClipboard || showEmployeeSummary) ? 'mr-[25%]' : ''}`}>
+          <AdminTabs
+            variant="calendar"
+            tabs={[
+              { id: 'calendar', label: 'シフト管理', icon: '📅' },
+              { id: 'employees', label: '従業員一覧', icon: '👥' }
+            ]}
+            activeTab={activeTab}
+            onTabChange={(tabId) => {
+              setActiveTab(tabId as 'calendar' | 'employees');
+              if (tabId === 'employees') {
+                // 従業員一覧タブに切り替えた際にサイドバーを非表示にする
+                setShowEmployeeSummary(false);
+                setShowClipboard(false);
+              }
+            }}
+            className="px-2 sm:px-4 lg:px-6 xl:px-8"
+          />
+        </div>
 
         {/* メインコンテンツ - dispatchと同じレスポンシブ仕様 */}
         <main className={`w-full ${(showClipboard || showEmployeeSummary) ? 'max-w-[75%] mr-[25%]' : 'max-w-7xl'} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
@@ -719,7 +723,7 @@ export default function ShiftManagement() {
 
         {/* 統合サイドパネル - 従業員集計とクリップボードをまとめたパネル */}
         {(showClipboard || showEmployeeSummary) && (
-          <div className="fixed top-32 right-0 w-[25%] h-[calc(100vh-8rem)] bg-white border-l border-gray-300 shadow-lg z-40 overflow-hidden">
+          <div className="fixed top-0 right-0 w-[25%] h-full bg-white border-l border-gray-300 shadow-lg z-50 overflow-hidden">
             <div className="h-full flex flex-col">
               {/* ヘッダー - タブ切り替え */}
               <div className="flex border-b border-gray-200">

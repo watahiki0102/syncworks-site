@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA, TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
@@ -115,9 +115,6 @@ export default function ShiftCalendar({
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
-  const [editingShift, setEditingShift] = useState<EmployeeShift | null>(null);
-  const [showShiftModal, setShowShiftModal] = useState(false);
   const [dragState, setDragState] = useState<{
     currentEmployee: string;
     startTime: string;
@@ -128,12 +125,115 @@ export default function ShiftCalendar({
     employeeId: string;
     direction: 'start' | 'end';
     originalTime: string;
+    currentTime: string;
+  } | null>(null);
+  const [barResizeState, setBarResizeState] = useState<{
+    employeeId: string;
+    blockIndex: number;
+    direction: 'start' | 'end';
+    originalStartTime: string;
+    originalEndTime: string;
+    currentTime: string;
   } | null>(null);
   const [showOnlyShiftEmployees, setShowOnlyShiftEmployees] = useState(true);
-  const [showEmployeeListModal, setShowEmployeeListModal] = useState(false);
-  const [selectedDateForModal, setSelectedDateForModal] = useState<string>('');
-  const [employeesForModal, setEmployeesForModal] = useState<Employee[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // 月ビュー展開状態管理
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [allDatesExpanded, setAllDatesExpanded] = useState<boolean>(false);
+  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set()); // 展開された週を管理
+
+  // デバッグ用：状態変化を監視
+  useEffect(() => {
+    console.log('State changed - allDatesExpanded:', allDatesExpanded, 'expandedDate:', expandedDate, 'collapsedDates:', Array.from(collapsedDates), 'expandedWeeks:', Array.from(expandedWeeks));
+  }, [allDatesExpanded, expandedDate, collapsedDates, expandedWeeks]);
+
+  // グローバルなマウスイベントリスナー
+  useEffect(() => {
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (dragState) {
+        handleMouseUp();
+      } else if (resizeState) {
+        handleResizeEnd();
+      } else if (barResizeState) {
+        handleBarResizeEnd();
+      }
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (barResizeState) {
+        // マウス位置に基づいて時間スロットを計算
+        const target = e.target as HTMLElement;
+        
+        // 時間セルまたはその子要素から時間スロットIDを取得
+        let timeSlotElement = target;
+        while (timeSlotElement && !timeSlotElement.dataset.timeSlotId) {
+          timeSlotElement = timeSlotElement.parentElement as HTMLElement;
+          if (!timeSlotElement || timeSlotElement.classList.contains('calendar-grid')) {
+            break;
+          }
+        }
+        
+        if (timeSlotElement && timeSlotElement.dataset.timeSlotId) {
+          handleBarResizeEnter(barResizeState.employeeId, timeSlotElement.dataset.timeSlotId);
+        }
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+    };
+  }, [dragState, resizeState, barResizeState]);
+
+  // 日付から週を取得するヘルパー関数
+  const getWeekKey = (date: string) => {
+    const dateObj = new Date(date);
+    const year = dateObj.getFullYear();
+    const weekNumber = Math.ceil((dateObj.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+    return `${year}-W${weekNumber}`;
+  };
+
+  // すべての日付を展開/縮小する処理
+  const handleExpandAllDates = () => {
+    console.log('handleExpandAllDates called - setting allDatesExpanded to true');
+    setAllDatesExpanded(true);
+    setExpandedDate(null); // 個別展開をクリア
+    setCollapsedDates(new Set()); // 個別縮小もクリア
+    setExpandedWeeks(new Set()); // 週展開もクリア
+  };
+
+  const handleCollapseAllDates = () => {
+    console.log('handleCollapseAllDates called - setting allDatesExpanded to false');
+    setAllDatesExpanded(false);
+    setExpandedDate(null); // 個別展開もクリア
+    setCollapsedDates(new Set()); // 個別縮小もクリア
+    setExpandedWeeks(new Set()); // 週展開もクリア
+  };
+
+  // 個別の日付を縮小する関数
+  const handleCollapseDate = (date: string) => {
+    console.log('handleCollapseDate called:', date);
+    setExpandedDate(null);
+    setCollapsedDates(prev => {
+      const newSet = new Set(prev);
+      newSet.add(date);
+      return newSet;
+    });
+    setExpandedWeeks(new Set());
+  };
+
+  // 従業員をクリックした時の処理（日ビューに遷移）
+  const handleEmployeeClick = (employee: Employee, date: string) => {
+    console.log('handleEmployeeClick called:', employee.name, date);
+    setSelectedEmployee(employee);
+    setSelectedDate(date);
+    setViewMode('day'); // 日ビューに遷移
+  };
   // クリップボード関連の状態はプロパティから受け取る
 
   const filteredEmployees = employees.filter(emp => emp.status === 'active');
@@ -542,8 +642,8 @@ export default function ShiftCalendar({
 
 
   const isBreakTime = (timeSlot: string) => {
-    // 12:00-13:00を休憩時間として設定（30分単位対応）
-    return timeSlot === '12:00' || timeSlot === '12:30';
+    // 休憩時間の設定を削除（12時から13時も通常時間として表示）
+    return false;
   };
 
 
@@ -727,23 +827,53 @@ export default function ShiftCalendar({
       const startIndex = filteredTimeSlots.findIndex(ts => ts.id === dragState.startTime);
       const endIndex = filteredTimeSlots.findIndex(ts => ts.id === dragState.currentTime);
       
+      console.log('Drag completed - startIndex:', startIndex, 'endIndex:', endIndex);
+      
       if (startIndex !== -1 && endIndex !== -1) {
         const [minIndex, maxIndex] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)];
+        const selectedSlots = maxIndex - minIndex + 1;
         
-        for (let i = minIndex; i <= maxIndex; i++) {
-          const timeSlot = filteredTimeSlots[i];
-          const existingShift = getShiftAtDateTime(dragState.currentEmployee, selectedDate, timeSlot.id);
+        console.log('Selected slots:', selectedSlots);
+        
+        // 30分以上のマスを選択した場合、その日付まで拡大
+        if (selectedSlots >= 2) { // 2スロット = 1時間以上（30分の2つ分）
+          console.log('Expanding to month view');
+          // 日ビューから月ビューに戻る（拡大状態）
+          setViewMode('month');
+          setExpandedDate(selectedDate);
+          setAllDatesExpanded(false);
+          setCollapsedDates(new Set());
           
-          if (!existingShift) {
-            const newShift: Omit<EmployeeShift, 'id'> = {
-              employeeId: dragState.currentEmployee,
-              date: selectedDate,
-              timeSlot: timeSlot.id,
-              status: 'working',
-              customerName: '',
-              notes: '',
-            };
-            handleShiftAdd(newShift);
+          // 選択された従業員をクリア（月ビューでの表示のため）
+          setSelectedEmployee(null);
+        } else {
+          console.log('Creating shifts for selected slots');
+          // 30分未満の場合は通常のシフト作成
+          // 開始時間と終了時間を正確に計算
+          const startTimeSlot = filteredTimeSlots[minIndex];
+          const endTimeSlot = filteredTimeSlots[maxIndex];
+          const startTime = startTimeSlot.start;
+          const endTime = endTimeSlot.end;
+          
+          console.log('Creating shift from', startTime, 'to', endTime);
+          
+          for (let i = minIndex; i <= maxIndex; i++) {
+            const timeSlot = filteredTimeSlots[i];
+            const existingShift = getShiftAtDateTime(dragState.currentEmployee, selectedDate, timeSlot.id);
+            
+            if (!existingShift) {
+              const newShift: Omit<EmployeeShift, 'id'> = {
+                employeeId: dragState.currentEmployee,
+                date: selectedDate,
+                timeSlot: timeSlot.id,
+                status: 'working',
+                customerName: '',
+                notes: '',
+                startTime: startTime,
+                endTime: endTime,
+              };
+              handleShiftAdd(newShift);
+            }
           }
         }
       }
@@ -758,8 +888,11 @@ export default function ShiftCalendar({
     const timeSlot = TIME_SLOTS.find(ts => ts.id === timeSlotId);
     if (!timeSlot) return;
     
-    // ここでリサイズのプレビューを表示する処理を追加
-    // 実際のリサイズは handleResizeEnd で実行
+    // リサイズ状態を更新してプレビューを表示
+    setResizeState(prev => prev ? {
+      ...prev,
+      currentTime: timeSlot.start, // 現在のマウス位置の時間を更新
+    } : null);
   };
 
   const handleResizeEnd = () => {
@@ -771,23 +904,30 @@ export default function ShiftCalendar({
       ?.shifts.find(s => s.id === resizeState.shiftId);
     
     if (shift) {
-      // 新しい時間範囲でシフトを更新
-      const newStartTime = resizeState.direction === 'start' 
-        ? TIME_SLOTS.find(ts => ts.id === resizeState.originalTime)?.start || ''
-        : shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
+      // 新しい時間範囲を計算（現在のマウス位置を使用）
+      let newStartTime: string;
+      let newEndTime: string;
       
-      const newEndTime = resizeState.direction === 'end'
-        ? TIME_SLOTS.find(ts => ts.id === resizeState.originalTime)?.end || ''
-        : shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
+      if (resizeState.direction === 'start') {
+        // 開始時間を変更（現在のマウス位置まで）
+        newStartTime = resizeState.currentTime;
+        newEndTime = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
+      } else {
+        // 終了時間を変更（現在のマウス位置まで）
+        newStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
+        newEndTime = resizeState.currentTime;
+      }
+      
+      console.log('Resize: from', shift.startTime, shift.endTime, 'to', newStartTime, newEndTime);
       
       // 既存のシフトを削除
       onDeleteShift(resizeState.employeeId, resizeState.shiftId);
       
       // 新しい時間範囲でシフトを再作成
       const startIndex = TIME_SLOTS.findIndex(ts => ts.start === newStartTime);
-      const endIndex = TIME_SLOTS.findIndex(ts => ts.end === newEndTime);
+      const endIndex = TIME_SLOTS.findIndex(ts => ts.start === newEndTime);
       
-      if (startIndex !== -1 && endIndex !== -1) {
+      if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
         for (let i = startIndex; i <= endIndex; i++) {
           const timeSlot = TIME_SLOTS[i];
           const newShift: Omit<EmployeeShift, 'id'> = {
@@ -798,7 +938,7 @@ export default function ShiftCalendar({
             customerName: shift.customerName,
             notes: shift.notes,
             startTime: newStartTime,
-            endTime: newEndTime,
+            endTime: TIME_SLOTS[endIndex].end, // 終了時間は最後のスロットの終了時間
           };
           handleShiftAdd(newShift);
         }
@@ -806,6 +946,99 @@ export default function ShiftCalendar({
     }
     
     setResizeState(null);
+  };
+
+  // バーリサイズ用の関数
+  const handleBarResizeEnter = (employeeId: string, timeSlotId: string) => {
+    if (!barResizeState) return;
+    if (barResizeState.employeeId !== employeeId) return;
+    
+    const timeSlot = TIME_SLOTS.find(ts => ts.id === timeSlotId);
+    if (!timeSlot) return;
+    
+    // 開始時間を変更する場合は、終了時間より前でなければならない
+    if (barResizeState.direction === 'start') {
+      const originalEndTime = barResizeState.originalEndTime;
+      if (timeSlot.start >= originalEndTime) {
+        return; // 終了時間以降には移動できない
+      }
+    }
+    
+    // 終了時間を変更する場合は、開始時間より後でなければならない
+    if (barResizeState.direction === 'end') {
+      const originalStartTime = barResizeState.originalStartTime;
+      if (timeSlot.end <= originalStartTime) {
+        return; // 開始時間以前には移動できない
+      }
+    }
+    
+    const newTime = barResizeState.direction === 'start' ? timeSlot.start : timeSlot.end;
+    
+    setBarResizeState(prev => prev ? {
+      ...prev,
+      currentTime: newTime,
+    } : null);
+  };
+
+  const handleBarResizeEnd = () => {
+    if (!barResizeState) return;
+    
+    const employee = employees.find(emp => emp.id === barResizeState.employeeId);
+    if (!employee) return;
+    
+    const dayShifts = employee.shifts.filter(shift => shift.date === selectedDate);
+    const shiftBlocks = getShiftBlocks(employee.id, selectedDate);
+    const targetBlock = shiftBlocks[barResizeState.blockIndex];
+    
+    if (targetBlock) {
+      // 新しい時間範囲を計算
+      let newStartTime: string;
+      let newEndTime: string;
+      
+      if (barResizeState.direction === 'start') {
+        newStartTime = barResizeState.currentTime;
+        newEndTime = barResizeState.originalEndTime;
+      } else {
+        newStartTime = barResizeState.originalStartTime;
+        newEndTime = barResizeState.currentTime;
+      }
+      
+      console.log('Bar resize: from', barResizeState.originalStartTime, barResizeState.originalEndTime, 'to', newStartTime, newEndTime);
+      
+      // 対象ブロックのシフトを削除
+      const blockShifts = dayShifts.filter(shift => {
+        const shiftStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
+        const shiftEndTime = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
+        return shiftStartTime >= barResizeState.originalStartTime && shiftEndTime <= barResizeState.originalEndTime;
+      });
+      
+      blockShifts.forEach(shift => {
+        onDeleteShift(employee.id, shift.id);
+      });
+      
+      // 新しい時間範囲でシフトを再作成
+      const startIndex = TIME_SLOTS.findIndex(ts => ts.start === newStartTime);
+      const endIndex = TIME_SLOTS.findIndex(ts => ts.start === newEndTime);
+      
+      if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+        for (let i = startIndex; i <= endIndex; i++) {
+          const timeSlot = TIME_SLOTS[i];
+          const newShift: Omit<EmployeeShift, 'id'> = {
+            employeeId: employee.id,
+            date: selectedDate,
+            timeSlot: timeSlot.id,
+            status: 'working',
+            customerName: '',
+            notes: '',
+            startTime: newStartTime,
+            endTime: TIME_SLOTS[endIndex].end,
+          };
+          handleShiftAdd(newShift);
+        }
+      }
+    }
+    
+    setBarResizeState(null);
   };
 
   const handleShiftSave = () => {
@@ -901,6 +1134,17 @@ export default function ShiftCalendar({
 
   // 日ビュー - 横時間・縦従業員のレイアウト
   const DayView = () => {
+    const employeeRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
+
+    // 選択された従業員にスクロール
+    useEffect(() => {
+      if (selectedEmployee && employeeRefs.current[selectedEmployee.id]) {
+        employeeRefs.current[selectedEmployee.id]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, [selectedEmployee]);
     const getShiftBlocks = (employeeId: string, date: string) => {
       const dayShifts = getShiftsForDate(employeeId, date);
       const blocks: Array<{
@@ -930,8 +1174,8 @@ export default function ShiftCalendar({
         if (!currentBlock) {
           currentBlock = {
             id: shift.id,
-            startTime: timeSlot.start,
-            endTime: timeSlot.end,
+            startTime: shift.startTime || timeSlot.start,
+            endTime: shift.endTime || timeSlot.end,
             status: shift.status,
             customerName: shift.customerName,
             notes: shift.notes,
@@ -942,14 +1186,14 @@ export default function ShiftCalendar({
           currentBlock.status === shift.status &&
           currentBlock.endIndex === timeIndex - 1
         ) {
-          currentBlock.endTime = timeSlot.end;
+          currentBlock.endTime = shift.endTime || timeSlot.end;
           currentBlock.endIndex = timeIndex;
         } else {
           blocks.push(currentBlock);
           currentBlock = {
             id: shift.id,
-            startTime: timeSlot.start,
-            endTime: timeSlot.end,
+            startTime: shift.startTime || timeSlot.start,
+            endTime: shift.endTime || timeSlot.end,
             status: shift.status,
             customerName: shift.customerName,
             notes: shift.notes,
@@ -1074,30 +1318,38 @@ export default function ShiftCalendar({
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sticky left-0 bg-gray-50 z-10">
                   従業員
                 </th>
-                {filteredTimeSlots.map(timeSlot => (
-                  <th key={timeSlot.id} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-16 relative">
-                    <div className="flex flex-col">
-                      <span className="font-bold">{timeSlot.start}</span>
-                      <span className="text-xs opacity-75">{timeSlot.end}</span>
-                    </div>
-                    
-                    {/* 時間帯の可視化 */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200 rounded">
-                      {(() => {
-                        const hour = parseInt(timeSlot.start.split(':')[0]);
-                        if (hour >= 6 && hour < 12) {
-                          return <div className="h-full bg-yellow-300 rounded" title="午前" />;
-                        } else if (hour >= 12 && hour < 18) {
-                          return <div className="h-full bg-orange-300 rounded" title="午後" />;
-                        } else if (hour >= 18 && hour < 22) {
-                          return <div className="h-full bg-purple-300 rounded" title="夜間" />;
-                        } else {
-                          return <div className="h-full bg-gray-300 rounded" title="深夜" />;
-                        }
-                      })()}
-                    </div>
-                  </th>
-                ))}
+                {filteredTimeSlots.map(timeSlot => {
+                  // 1時間単位で表示するため、30分スロットをグループ化
+                  const hour = parseInt(timeSlot.start.split(':')[0]);
+                  const isHalfHour = timeSlot.start.split(':')[1] === '30';
+                  
+                  // 30分スロットの場合は表示しない（1時間の開始時刻のみ表示）
+                  if (isHalfHour) return null;
+                  
+                  return (
+                    <th key={timeSlot.id} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-16 relative" colSpan={2}>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-base">{hour}:00</span>
+                        <span className="text-xs opacity-75">{hour + 1}:00</span>
+                      </div>
+                      
+                      {/* 時間帯の可視化 */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200 rounded">
+                        {(() => {
+                          if (hour >= 6 && hour < 12) {
+                            return <div className="h-full bg-yellow-300 rounded" title="午前" />;
+                          } else if (hour >= 12 && hour < 18) {
+                            return <div className="h-full bg-orange-300 rounded" title="午後" />;
+                          } else if (hour >= 18 && hour < 22) {
+                            return <div className="h-full bg-purple-300 rounded" title="夜間" />;
+                          } else {
+                            return <div className="h-full bg-gray-300 rounded" title="深夜" />;
+                          }
+                        })()}
+                      </div>
+                    </th>
+                  );
+                }).filter(Boolean)}
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -1105,7 +1357,13 @@ export default function ShiftCalendar({
                 const shiftBlocks = getShiftBlocks(employee.id, selectedDate);
                 
                 return (
-                  <tr key={employee.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <tr 
+                    key={employee.id} 
+                    ref={(el) => { employeeRefs.current[employee.id] = el; }}
+                    className={`border-b border-gray-200 hover:bg-gray-50 ${
+                      selectedEmployee?.id === employee.id ? 'bg-blue-50 ring-2 ring-blue-200' : ''
+                    }`}
+                  >
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1123,39 +1381,10 @@ export default function ShiftCalendar({
                             );
                           })()}
                         </div>
-                        <div className="flex items-center gap-1">
-                          {shiftBlocks.length > 0 && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`${employee.name}のシフトをすべて削除しますか？`)) {
-                                  // 現在のemployeesの状態から該当する従業員を取得
-                                  const currentEmployee = employees.find(emp => emp.id === employee.id);
-                                  if (!currentEmployee) return;
-                                  
-                                  // その従業員のその日のシフトをすべて削除
-                                  const shiftsToDelete = currentEmployee.shifts
-                                    .filter(shift => shift.date === selectedDate);
-                                  
-                                  // 削除対象のシフトIDを配列に格納
-                                  const shiftIds = shiftsToDelete.map(shift => shift.id);
-                                  
-                                  // 各シフトを削除（逆順で削除してインデックスの問題を回避）
-                                  shiftIds.reverse().forEach(shiftId => {
-                                    onDeleteShift(employee.id, shiftId);
-                                  });
-                                }
-                              }}
-                              className="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50"
-                              title="シフトを削除"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
                       </div>
                       
                       {/* 出勤時間の可視化バー */}
-                      <div className="mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="mt-1 h-1 bg-gray-200 rounded-full overflow-hidden relative group">
                         {shiftBlocks.map((block, index) => {
                           const startIndex = TIME_SLOTS.findIndex(ts => ts.start === block.startTime);
                           const endIndex = TIME_SLOTS.findIndex(ts => ts.end === block.endTime);
@@ -1170,23 +1399,105 @@ export default function ShiftCalendar({
                           return (
                             <div
                               key={index}
-                              className={`absolute h-full ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'}`}
+                              className={`absolute h-full ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'} group-hover:opacity-80 transition-opacity relative cursor-pointer`}
                               style={{
                                 width: `${width}%`,
                                 left: `${left}%`,
                               }}
                               title={`${block.startTime}-${block.endTime} ${SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}`}
-                            />
+                              onClick={(e) => {
+                                // リサイズハンドルがクリックされた場合は何もしない
+                                if (e.target !== e.currentTarget) return;
+                                
+                                // バーをクリックしてモーダルを開く
+                                const shift = employees
+                                  .find(emp => emp.id === employee.id)
+                                  ?.shifts.find(s => {
+                                    const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
+                                    const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
+                                    return shiftStartTime >= block.startTime && shiftEndTime <= block.endTime;
+                                  });
+                                
+                                if (shift) {
+                                  setSelectedShift(shift);
+                                  setEditingShift({ ...shift });
+                                  setShowShiftModal(true);
+                                }
+                              }}
+                            >
+                              {/* バーリサイズハンドル - 左端 */}
+                              <div
+                                className="absolute left-0 top-0 bottom-0 w-3 cursor-w-resize opacity-0 group-hover:opacity-100 bg-blue-500 hover:bg-blue-600 transition-all flex items-center justify-center"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  setBarResizeState({
+                                    employeeId: employee.id,
+                                    blockIndex: index,
+                                    direction: 'start',
+                                    originalStartTime: block.startTime,
+                                    originalEndTime: block.endTime,
+                                    currentTime: block.startTime,
+                                  });
+                                }}
+                                onMouseUp={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleBarResizeEnd();
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                title="開始時間を変更（ドラッグして調整）"
+                              >
+                                {/* 左矢印アイコン */}
+                                <div className="text-white text-xs opacity-70">
+                                  ←
+                                </div>
+                              </div>
+                              
+                              {/* バーリサイズハンドル - 右端 */}
+                              <div
+                                className="absolute right-0 top-0 bottom-0 w-3 cursor-e-resize opacity-0 group-hover:opacity-100 bg-blue-500 hover:bg-blue-600 transition-all flex items-center justify-center"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  setBarResizeState({
+                                    employeeId: employee.id,
+                                    blockIndex: index,
+                                    direction: 'end',
+                                    originalStartTime: block.startTime,
+                                    originalEndTime: block.endTime,
+                                    currentTime: block.endTime,
+                                  });
+                                }}
+                                onMouseUp={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleBarResizeEnd();
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                title="終了時間を変更（ドラッグして調整）"
+                              >
+                                {/* 右矢印アイコン */}
+                                <div className="text-white text-xs opacity-70">
+                                  →
+                                </div>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
                     </td>
                     <td className="relative h-16" colSpan={filteredTimeSlots.length}>
                       <div className="absolute inset-0 flex">
-                        {/* 時間スロットの背景 */}
+                        {/* 時間スロットの背景 - 30分単位で操作可能 */}
                         {filteredTimeSlots.map((timeSlot, index) => (
                           <div
                             key={timeSlot.id}
+                            data-time-slot-id={timeSlot.id}
                             className={`flex-1 border-r border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors relative ${
                               isBreakTime(timeSlot.id) ? 'bg-gray-50' : ''
                             }`}
@@ -1195,7 +1506,8 @@ export default function ShiftCalendar({
                                 handleCellClick(employee.id, selectedDate, timeSlot.id);
                               }
                             }}
-                            onMouseDown={() => {
+                            onMouseDown={(e) => {
+                              e.preventDefault();
                               if (!resizeState) {
                                 handleMouseDown(employee.id, selectedDate, timeSlot.id);
                               }
@@ -1203,15 +1515,20 @@ export default function ShiftCalendar({
                             onMouseEnter={() => {
                               if (resizeState) {
                                 handleResizeEnter(employee.id, selectedDate, timeSlot.id);
-                              } else {
+                              } else if (dragState) {
                                 handleMouseEnter(employee.id, selectedDate, timeSlot.id);
+                              } else if (barResizeState) {
+                                handleBarResizeEnter(employee.id, timeSlot.id);
                               }
                             }}
-                            onMouseUp={() => {
+                            onMouseUp={(e) => {
+                              e.preventDefault();
                               if (resizeState) {
                                 handleResizeEnd();
-                              } else {
+                              } else if (dragState) {
                                 handleMouseUp();
+                              } else if (barResizeState) {
+                                handleBarResizeEnd();
                               }
                             }}
                             title={`${timeSlot.start}-${timeSlot.end}`}
@@ -1223,17 +1540,44 @@ export default function ShiftCalendar({
                                 index <= filteredTimeSlots.findIndex(ts => ts.id === dragState.currentTime)) ||
                                (filteredTimeSlots.findIndex(ts => ts.id === dragState.currentTime) <= index &&
                                 index <= filteredTimeSlots.findIndex(ts => ts.id === dragState.startTime))) && (
-                              <div className="absolute inset-0 bg-blue-200 opacity-50 border-2 border-blue-400 border-dashed"></div>
+                              <div className="absolute inset-0 bg-blue-200 opacity-70 border-2 border-blue-500 border-solid z-10">
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>
+                              </div>
                             )}
                             
                             {/* リサイズ中の表示 */}
                             {resizeState && 
                               resizeState.employeeId === employee.id &&
                               ((resizeState.direction === 'start' && 
-                                filteredTimeSlots.findIndex(ts => ts.id === timeSlot.id) <= filteredTimeSlots.findIndex(ts => ts.start === resizeState.originalTime)) ||
+                                filteredTimeSlots.findIndex(ts => ts.id === timeSlot.id) <= filteredTimeSlots.findIndex(ts => ts.start === resizeState.currentTime)) ||
                                (resizeState.direction === 'end' && 
-                                filteredTimeSlots.findIndex(ts => ts.id === timeSlot.id) >= filteredTimeSlots.findIndex(ts => ts.end === resizeState.originalTime))) && (
-                              <div className="absolute inset-0 bg-yellow-200 opacity-50 border-2 border-yellow-400 border-dashed"></div>
+                                filteredTimeSlots.findIndex(ts => ts.id === timeSlot.id) >= filteredTimeSlots.findIndex(ts => ts.start === resizeState.currentTime))) && (
+                              <div className="absolute inset-0 bg-yellow-200 opacity-70 border-2 border-yellow-500 border-solid z-20">
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-yellow-600"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-600"></div>
+                              </div>
+                            )}
+                            
+                            {/* バーリサイズ中の表示 */}
+                            {barResizeState && 
+                              barResizeState.employeeId === employee.id && (() => {
+                                if (barResizeState.direction === 'start') {
+                                  // 開始時間を変更中：現在の時間から元の終了時間までの範囲を表示
+                                  const newStartIndex = filteredTimeSlots.findIndex(ts => ts.start === barResizeState.currentTime);
+                                  const originalEndIndex = filteredTimeSlots.findIndex(ts => ts.end === barResizeState.originalEndTime);
+                                  return index >= newStartIndex && index <= originalEndIndex;
+                                } else {
+                                  // 終了時間を変更中：元の開始時間から現在の時間までの範囲を表示
+                                  const originalStartIndex = filteredTimeSlots.findIndex(ts => ts.start === barResizeState.originalStartTime);
+                                  const newEndIndex = filteredTimeSlots.findIndex(ts => ts.end === barResizeState.currentTime);
+                                  return index >= originalStartIndex && index <= newEndIndex;
+                                }
+                              })() && (
+                              <div className="absolute inset-0 bg-purple-200 opacity-70 border-2 border-purple-500 border-solid z-20">
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-purple-600"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600"></div>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -1275,7 +1619,13 @@ export default function ShiftCalendar({
                                     employeeId: employee.id,
                                     direction: 'start',
                                     originalTime: block.startTime,
+                                    currentTime: block.startTime,
                                   });
+                                }}
+                                onMouseUp={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleResizeEnd();
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1294,7 +1644,13 @@ export default function ShiftCalendar({
                                     employeeId: employee.id,
                                     direction: 'end',
                                     originalTime: block.endTime,
+                                    currentTime: block.endTime,
                                   });
+                                }}
+                                onMouseUp={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleResizeEnd();
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1302,8 +1658,8 @@ export default function ShiftCalendar({
                                 title="終了時間を変更（ドラッグでリサイズ）"
                               />
 
-                              <div className="h-full flex items-center justify-center p-1">
-                                <div className="text-xs font-medium text-center truncate">
+                              <div className="h-full flex items-center justify-between p-1">
+                                <div className="text-xs font-medium text-center truncate flex-1">
                                   <div className="font-bold">
                                     {SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}
                                   </div>
@@ -1311,6 +1667,22 @@ export default function ShiftCalendar({
                                     {block.startTime}-{block.endTime}
                                   </div>
                                 </div>
+                                {/* 削除ボタン */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const shift = employees
+                                      .find(emp => emp.id === employee.id)
+                                      ?.shifts.find(s => s.id === block.id);
+                                    if (shift && window.confirm(`${employee.name}のシフト（${block.startTime}-${block.endTime}）を削除しますか？`)) {
+                                      onDeleteShift(employee.id, shift.id);
+                                    }
+                                  }}
+                                  className="text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                                  title="このシフトを削除"
+                                >
+                                  ✕
+                                </button>
                               </div>
                             </div>
                           );
@@ -1329,16 +1701,19 @@ export default function ShiftCalendar({
 
   // 月ビュー
   const MonthView = () => {
-    // 従業員をクリックした時の処理（シフト編集モーダル表示）
-    const handleEmployeeClick = (employee: Employee, date: string) => {
-      setSelectedEmployee(employee);
-      setSelectedDate(date);
-      setEditingShift(null); // 新規作成
-      setShowShiftModal(true);
-    };
+    
+
 
     // 日付をクリックした時の処理（日ビューに遷移またはクリップボード操作）
     const handleDateClick = (date: string, event?: React.MouseEvent) => {
+      // allDatesExpandedがtrueの場合は個別の展開状態を変更しない
+      if (!allDatesExpanded) {
+        // 他の日をクリックした場合、展開状態をリセット
+        if (expandedDate && expandedDate !== date) {
+          setExpandedDate(null);
+        }
+      }
+      
       if (clipboardMode === 'paste') {
         // ペーストモードの場合
         handleDateClickForClipboard(date);
@@ -1350,16 +1725,38 @@ export default function ShiftCalendar({
             return;
           }
         }
-      setSelectedDate(date);
-      setViewMode('day');
+        setSelectedDate(date);
+        setViewMode('day');
       }
     };
 
-    // +N表示をクリックした時の処理（従業員一覧モーダル表示）
+    // +N表示をクリックした時の処理（日のマスを展開）
     const handleMoreEmployeesClick = (date: string, allEmployees: Employee[]) => {
-      setSelectedDateForModal(date);
-      setEmployeesForModal(allEmployees);
-      setShowEmployeeListModal(true);
+      console.log('handleMoreEmployeesClick called:', date, 'allDatesExpanded:', allDatesExpanded, 'collapsedDates:', Array.from(collapsedDates));
+      const weekKey = getWeekKey(date);
+      
+      if (allDatesExpanded) {
+        // 全て展開されている場合は、個別に閉じる
+        console.log('Adding date to collapsedDates:', date);
+        handleCollapseDate(date);
+        // 週の展開状態は変更しない（週全体は連動させない）
+      } else {
+        // 通常の個別展開/縮小
+        if (expandedDate === date) {
+          // 既に展開されている場合は閉じる
+          setExpandedDate(null);
+          // 週の展開状態は変更しない（個別動作のため）
+        } else {
+          // 展開する
+          setExpandedDate(date);
+          // 週の行幅を拡大するため、週を展開状態にする
+          setExpandedWeeks(prev => {
+            const newSet = new Set(prev);
+            newSet.add(weekKey);
+            return newSet;
+          });
+        }
+      }
     };
 
 
@@ -1445,8 +1842,80 @@ export default function ShiftCalendar({
         })
         : filteredEmployees; // 全てのアクティブな従業員を表示
       
-      // 5人以上の場合の処理
-      if (activeEmployees.length > 5) {
+      // 展開された日付の場合は全ての従業員を表示
+      const weekKey = getWeekKey(date);
+      const isWeekExpanded = expandedWeeks.has(weekKey);
+      console.log('getEventsForDate:', date, 'expandedDate:', expandedDate, 'allDatesExpanded:', allDatesExpanded, 'collapsedDates:', Array.from(collapsedDates), 'activeEmployees.length:', activeEmployees.length, 'weekKey:', weekKey, 'isWeekExpanded:', isWeekExpanded);
+      
+      // 完全に個別の動作：該当日付のみが展開されている場合のみ全表示
+      if ((expandedDate === date || (allDatesExpanded && !collapsedDates.has(date)))) {
+        const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
+          const shifts = getShiftsForDate(employee.id, date);
+          const utilizationRate = getUtilizationRate(employee.id, date);
+          const hasShifts = shifts.length > 0;
+          const timeRange = getShiftTimeRange(employee.id, date);
+          
+          return {
+            id: `${employee.id}-${date}`,
+            title: employee.name,
+            description: timeRange || '',
+            status: hasShifts ? 'working' as const : 'unavailable' as const,
+            backgroundColor: hasShifts ? getUtilizationColor(utilizationRate).split(' ')[0] : 'bg-gray-100',
+            color: hasShifts ? getUtilizationColor(utilizationRate).split(' ')[1] : 'text-gray-700',
+            onClick: () => {
+              console.log('Expanded event onClick triggered for:', employee.name, 'clipboardMode:', clipboardMode);
+              if (clipboardMode === 'copy' && hasShifts) {
+                // コピーモードの場合、各シフトを選択可能にする
+                shifts.forEach(shift => {
+                  handleShiftClickForClipboard(shift);
+                });
+              } else {
+                // 通常モードの場合、シフト編集モーダルを表示
+                handleEmployeeClick(employee, date);
+              }
+            },
+            metadata: {
+              employee,
+              utilizationRate,
+              timeRange,
+              shifts
+            }
+          };
+        });
+        
+        // 展開状態では-ボタンを追加（メンバーがいる場合のみ）
+        if (activeEmployees.length > 0) {
+          events.push({
+          id: `collapse-${date}`,
+          title: '-',
+          description: '',
+          status: 'unavailable' as const,
+          backgroundColor: 'bg-red-100',
+          color: 'text-red-700',
+          onClick: () => handleMoreEmployeesClick(date, activeEmployees),
+          metadata: {
+            employee: null,
+            utilizationRate: 0,
+            timeRange: null,
+            isMoreButton: true,
+            allEmployees: activeEmployees,
+            isExpanded: true
+          } as any
+          });
+        }
+        
+        return events;
+      }
+      
+      // メンバーがいない場合は何も表示しない
+      if (activeEmployees.length === 0) {
+        return [];
+      }
+
+      // 5人以上の場合の処理（展開状態でない場合のみ）
+      console.log('Checking 5+ condition for date:', date, 'activeEmployees.length:', activeEmployees.length, 'expandedDate:', expandedDate, 'allDatesExpanded:', allDatesExpanded, 'collapsedDates.has(date):', collapsedDates.has(date), 'isWeekExpanded:', isWeekExpanded);
+      // 完全に個別の動作：該当日付が展開されていない場合のみ+N表示
+      if (activeEmployees.length > 5 && expandedDate !== date && (!allDatesExpanded || collapsedDates.has(date))) {
         const displayEmployees = activeEmployees.slice(0, 4);
         const remainingCount = activeEmployees.length - 4;
         
@@ -1469,7 +1938,7 @@ export default function ShiftCalendar({
                 shifts.forEach(shift => {
                   handleShiftClickForClipboard(shift);
                 });
-              } else if (clipboardMode === 'none') {
+              } else {
                 // 通常モードの場合、シフト編集モーダルを表示
                 handleEmployeeClick(employee, date);
               }
@@ -1483,11 +1952,11 @@ export default function ShiftCalendar({
           };
         });
         
-        // +N表示のイベントを追加
+        // +N表示のイベントを追加（右上端に配置）
         events.push({
           id: `more-${date}`,
-          title: `+${remainingCount}人`,
-            description: '',
+          title: `+${remainingCount}`,
+          description: '',
           status: 'unavailable' as const,
           backgroundColor: 'bg-blue-100',
           color: 'text-blue-700',
@@ -1497,7 +1966,8 @@ export default function ShiftCalendar({
             utilizationRate: 0,
             timeRange: null,
             isMoreButton: true,
-            allEmployees: activeEmployees
+            allEmployees: activeEmployees,
+            isExpanded: false
           } as any
         });
         
@@ -1505,7 +1975,7 @@ export default function ShiftCalendar({
       }
       
       // 5人以下の場合は通常表示
-      return activeEmployees.filter(employee => employee && employee.name).map(employee => {
+      const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
         const shifts = getShiftsForDate(employee.id, date);
         const utilizationRate = getUtilizationRate(employee.id, date);
         const hasShifts = shifts.length > 0;
@@ -1524,7 +1994,7 @@ export default function ShiftCalendar({
               shifts.forEach(shift => {
                 handleShiftClickForClipboard(shift);
               });
-            } else if (clipboardMode === 'none') {
+            } else {
               // 通常モードの場合、シフト編集モーダルを表示
               handleEmployeeClick(employee, date);
             }
@@ -1537,19 +2007,46 @@ export default function ShiftCalendar({
             }
           };
         });
+
+      // allDatesExpandedがtrueで、この日付がcollapsedDatesに含まれていない場合は「-」ボタンを追加
+      if (allDatesExpanded && !collapsedDates.has(date) && activeEmployees.length > 0) {
+        events.push({
+          id: `collapse-${date}`,
+          title: '-',
+          description: '',
+          status: 'unavailable' as const,
+          backgroundColor: 'bg-red-100',
+          color: 'text-red-700',
+          onClick: () => handleMoreEmployeesClick(date, activeEmployees),
+          metadata: {
+            employee: null,
+            utilizationRate: 0,
+            timeRange: null,
+            isMoreButton: true,
+            allEmployees: activeEmployees,
+            isExpanded: true
+          } as any
+        });
+      }
+
+      return events;
     };
 
     // カスタムイベントレンダリング
     const renderEvent = (event: CalendarEvent, index: number) => {
       const { employee, utilizationRate, timeRange } = event.metadata;
       
-      // employeeがnullの場合（+N人表示など）は特別な表示
+      // employeeがnullの場合（+N人表示など）は特別な表示（右上端に配置）
       if (!employee) {
         return (
           <div
             key={event.id}
-            className={`${event.backgroundColor} ${event.color} border border-gray-200 rounded text-xs p-1 cursor-pointer hover:opacity-80 transition-opacity`}
-            onClick={event.onClick}
+            className={`${event.backgroundColor} ${event.color} rounded px-1 cursor-pointer hover:opacity-80 transition-opacity absolute top-1 right-1 z-10`}
+            style={{ fontSize: '12px', minWidth: '20px', textAlign: 'center', lineHeight: '1.2' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              event.onClick?.();
+            }}
           >
             {event.title}
           </div>
@@ -1565,49 +2062,102 @@ export default function ShiftCalendar({
       const timeRanges = timeRange ? timeRange.split(', ') : [];
       const hasMultipleTimeRanges = timeRanges.length > 1;
       
-      // 従業員名の省略処理（6文字以上の場合）
-      const displayName = employee.name.length > 5 ? employee.name.substring(0, 5) + '...' : employee.name;
+      // 従業員名の省略処理（6文字以上の場合は改行なしで表示）
+      const displayName = employee.name;
       
       return (
         <div
           key={event.id}
-          className={`text-xs px-2 py-1 rounded text-center font-medium cursor-pointer hover:opacity-80 transition-colors w-full flex items-center justify-center gap-1 ${
+          className={`px-1 py-0.5 rounded text-center font-medium cursor-pointer hover:opacity-80 transition-colors w-full flex items-center justify-center gap-1 ${
             event.metadata.utilizationRate > 0 ? event.backgroundColor : 'bg-gray-100'
           }`}
           style={{
             backgroundColor: event.backgroundColor || '#e5e7eb',
             color: event.color || '#374151',
+            fontSize: '10px'
           }}
           onClick={(e) => {
             e.stopPropagation();
+            console.log('Employee clicked:', employee.name);
             event.onClick?.();
           }}
           title={`${employee.name}${timeRange ? ` (${timeRange})` : ''}`}
         >
           {hasMultipleTimeRanges ? (
-            // 複数の時間範囲がある場合：最初の時間は名前と横並び、2つ目以降は縦並び
-            <div className="flex flex-col w-full">
-              <div className="flex w-full items-center justify-between gap-1">
-                <span className="text-xs font-medium">{displayName}</span>
-                <span className="text-xs opacity-75 whitespace-nowrap">
-                  {timeRanges[0]}
-                </span>
+            // 複数の時間範囲がある場合：名前は中央揃え、時間は横並び
+            <div className="flex w-full items-center justify-between gap-1">
+              <span className="font-medium whitespace-nowrap leading-none" style={{ fontSize: '10px' }}>
+                {displayName}
+              </span>
+              <div className="flex flex-col items-end gap-0.5">
+                {timeRanges.map((range, idx) => (
+                  <span key={idx} className="opacity-75 whitespace-nowrap leading-none" style={{ fontSize: '9px' }}>
+                    {range}
+                  </span>
+                ))}
               </div>
-              {timeRanges.slice(1).map((range, idx) => (
-                <span key={idx + 1} className="text-xs opacity-75 text-right">
-                  {range}
-                </span>
-              ))}
             </div>
           ) : (
             // 単一の時間範囲の場合：横並び
             <div className="flex w-full items-center justify-between gap-1">
-              <span className="text-xs font-medium">{displayName}</span>
+              <span className="font-medium whitespace-nowrap leading-none" style={{ fontSize: '10px' }}>
+                {displayName}
+              </span>
               {timeRange && (
-                <span className="text-xs opacity-75 whitespace-nowrap">
+                <span className="opacity-75 whitespace-nowrap leading-none" style={{ fontSize: '9px' }}>
                   {timeRange}
                 </span>
               )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // カスタム日付セルレンダリング（展開機能付き）
+    const renderDateCell = (day: any, events: any[]) => {
+      const isExpanded = expandedDate === day.date;
+      const hasEvents = events.length > 0;
+      
+      // 展開された日付の高さを従業員数に応じて動的に調整（白い部分を完全に削除）
+      const expandedHeight = isExpanded ? Math.max(200, events.length * 16 + 15) : 100;
+
+      return (
+        <div
+          key={day.date}
+          data-date-cell
+          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} px-0.5 pt-0.5 pb-0 border cursor-pointer hover:bg-gray-50 transition-all duration-300 relative ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+            } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
+            expandedDate === day.date 
+              ? 'bg-blue-50 border-blue-400 border-2 shadow-md' 
+              : ''
+            }`}
+          style={isExpanded ? { minHeight: `${expandedHeight}px` } : {}}
+          onClick={(e) => {
+            // +N人ボタンまたは-ボタンがクリックされた場合は日ビューに遷移しない
+            if (e.target !== e.currentTarget && ((e.target as HTMLElement).textContent?.includes('+') || (e.target as HTMLElement).textContent?.includes('-'))) {
+              return;
+            }
+            handleDateClick(day.date, e);
+          }}
+        >
+          <div className={`text-xs font-medium ${
+            expandedDate === day.date 
+              ? 'text-blue-800 font-bold' 
+              : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+            } ${day.isToday ? 'text-blue-600' : ''} ${
+            // 展開されていない場合のみ土曜日・日曜日・祝日の色を適用
+            expandedDate !== day.date && (
+              day.dayOfWeekNumber === 6 ? 'text-blue-600' :
+              (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
+            )
+            }`}>
+            {day.day}
+          </div>
+
+          {hasEvents && (
+            <div className="flex flex-col items-center pt-1">
+              {events.map((event, index) => renderEvent(event, index))}
             </div>
           )}
         </div>
@@ -1621,6 +2171,7 @@ export default function ShiftCalendar({
         onDateClick={(date, day, event) => handleDateClick(date, event)}
         getEventsForDate={getEventsForDate}
         renderEvent={renderEvent}
+        renderDateCell={renderDateCell}
         showNavigation={true}
         showWeekdays={true}
         className=""
@@ -1634,20 +2185,20 @@ export default function ShiftCalendar({
       <div className="flex justify-end gap-4">
         <button
           onClick={() => setShowEmployeeSummary && setShowEmployeeSummary(!showEmployeeSummary)}
-          className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
+          className={`px-3 py-1 rounded font-medium text-xs transition-all duration-300 ${
             showEmployeeSummary
               ? 'bg-green-600 text-white hover:bg-green-700'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           {showEmployeeSummary ? '従業員集計 ON' : '従業員集計 OFF'}
         </button>
         <button
           onClick={() => setShowClipboard && setShowClipboard(!showClipboard)}
-          className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
+          className={`px-3 py-1 rounded font-medium text-xs transition-all duration-300 ${
             showClipboard
               ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           {showClipboard ? 'クリップボード ON' : 'クリップボード OFF'}
@@ -1719,6 +2270,31 @@ export default function ShiftCalendar({
                 <div className="text-xs text-gray-500">
                   {displayEmployees.length}名の従業員を表示中
                 </div>
+                {/* 展開/縮小ボタン（月ビューのみ表示） */}
+                {viewMode === 'month' && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleExpandAllDates}
+                      className={`px-3 py-1 text-xs rounded transition-colors ${
+                        allDatesExpanded
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      展開
+                    </button>
+                    <button
+                      onClick={handleCollapseAllDates}
+                      className={`px-3 py-1 text-xs rounded transition-colors ${
+                        !allDatesExpanded && !expandedDate
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      縮小
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1731,126 +2307,6 @@ export default function ShiftCalendar({
         </div>
       </div>
 
-      {/* シフト編集モーダル */}
-      <Modal
-        isOpen={showShiftModal && !!editingShift}
-        onClose={() => {
-          setShowShiftModal(false);
-          setEditingShift(null);
-          setSelectedShift(null);
-        }}
-        title={selectedShift ? 'シフト編集' : 'シフト追加'}
-        footer={
-          <>
-            <button
-              onClick={handleShiftSave}
-              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              保存
-            </button>
-            {selectedShift && (
-              <button
-                onClick={handleDeleteShift}
-                className="bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                削除
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setShowShiftModal(false);
-                setEditingShift(null);
-                setSelectedShift(null);
-              }}
-              className="bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              キャンセル
-            </button>
-          </>
-        }
-      >
-        {editingShift && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">従業員</label>
-              <div className="p-3 bg-gray-50 rounded-lg border">
-                <span className="text-gray-900 font-medium">
-                  {editingShift ? employees.find(emp => emp.id === editingShift.employeeId)?.name : ''}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">日付</label>
-              <div className="p-3 bg-gray-50 rounded-lg border">
-                <span className="text-gray-900 font-medium">
-                  {editingShift ? new Date(editingShift.date).toLocaleDateString('ja-JP', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    weekday: 'long'
-                  }) : ''}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">開始時間</label>
-              <input
-                type="time"
-                value={editingShift.startTime}
-                onChange={(e) => setEditingShift({
-                  ...editingShift,
-                  startTime: e.target.value
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">終了時間</label>
-              <input
-                type="time"
-                value={editingShift.endTime}
-                onChange={(e) => setEditingShift({
-                  ...editingShift,
-                  endTime: e.target.value
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
-              <select
-                value={editingShift.status}
-                onChange={(e) => setEditingShift({
-                  ...editingShift,
-                  status: e.target.value as 'working' | 'unavailable'
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="working">出勤</option>
-                <option value="unavailable">不在</option>
-              </select>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">メモ</label>
-              <textarea
-                value={editingShift.notes || ''}
-                onChange={(e) => setEditingShift({
-                  ...editingShift,
-                  notes: e.target.value
-                })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="メモを入力してください..."
-              />
-            </div>
-          </>
-        )}
-      </Modal>
     </div>
   );
 }
