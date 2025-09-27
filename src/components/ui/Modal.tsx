@@ -1,202 +1,54 @@
-/**
- * アクセシビリティ対応のモーダルコンポーネント
- * - フォーカストラップ
- * - エスケープキーでの閉じる
- * - スクリーンリーダー対応
- */
-'use client';
+import React from 'react';
 
-import React, { useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
-import { Button } from './Button';
-import { Heading } from './Typography';
-import { createFocusTrap, generateAccessibilityProps } from '@/utils/accessibility';
-
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
-  closeOnOverlayClick?: boolean;
-  showCloseButton?: boolean;
-  className?: string;
-  overlayClassName?: string;
-  id?: string;
-  role?: 'dialog' | 'alertdialog';
-  ariaLabel?: string;
-  ariaLabelledBy?: string;
-  ariaDescribedBy?: string;
+  footer?: React.ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  size = 'md',
-  closeOnOverlayClick = true,
-  showCloseButton = true,
-  className = '',
-  overlayClassName = '',
-  id,
-  role = 'dialog',
-  ariaLabel,
-  ariaLabelledBy,
-  ariaDescribedBy
-}) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-  const cleanupFocusTrapRef = useRef<(() => void) | null>(null);
-
-  // モーダルが開く前にフォーカスされていた要素を保存
-  const savePreviousFocus = useCallback(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement;
-  }, []);
-
-  // モーダルが閉じた後に以前のフォーカスを復元
-  const restorePreviousFocus = useCallback(() => {
-    if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
-    }
-  }, []);
-
-  // エスケープキーでの閉じる処理
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose]);
-
-  // フォーカストラップの設定
-  useEffect(() => {
-    if (!isOpen || !modalRef.current) return;
-
-    savePreviousFocus();
-    cleanupFocusTrapRef.current = createFocusTrap(modalRef.current);
-
-    return () => {
-      if (cleanupFocusTrapRef.current) {
-        cleanupFocusTrapRef.current();
-      }
-      restorePreviousFocus();
-    };
-  }, [isOpen, savePreviousFocus, restorePreviousFocus]);
-
-  // ボディのスクロール制御
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
-    }
-  }, [isOpen]);
-
-  // オーバーレイクリックでの閉じる処理
-  const handleOverlayClick = useCallback((event: React.MouseEvent) => {
-    if (closeOnOverlayClick && event.target === event.currentTarget) {
-      onClose();
-    }
-  }, [closeOnOverlayClick, onClose]);
-
-  // サイズのスタイルクラス
-  const getSizeClasses = (size: string): string => {
-    switch (size) {
-      case 'sm':
-        return 'max-w-md';
-      case 'lg':
-        return 'max-w-4xl';
-      case 'xl':
-        return 'max-w-6xl';
-      case 'full':
-        return 'max-w-full mx-4';
-      default:
-        return 'max-w-2xl';
-    }
-  };
-
-  // アクセシビリティ属性の生成
-  const accessibilityProps = generateAccessibilityProps({
-    label: ariaLabel,
-    labelledBy: ariaLabelledBy || (title ? `${id || 'modal'}-title` : undefined),
-    describedBy: ariaDescribedBy,
-    role
-  });
-
+export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
   if (!isOpen) return null;
 
-  const modalContent = (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center ${overlayClassName}`}
-      onClick={handleOverlayClick}
+  return (
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
     >
-      {/* オーバーレイ */}
       <div 
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        aria-hidden="true"
-      />
-
-      {/* モーダルコンテンツ */}
-      <div
-        ref={modalRef}
-        id={id}
-        className={`
-          relative bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden
-          ${getSizeClasses(size)} w-full mx-4
-          ${className}
-        `}
-        {...accessibilityProps}
+        className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
-        {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            {title && (
-              <Heading
-                level={2}
-                size="xl"
-                id={`${id || 'modal'}-title`}
-                className="text-gray-900"
-              >
-                {title}
-              </Heading>
-            )}
-            {showCloseButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                aria-label="モーダルを閉じる"
-                className="ml-auto"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">
+            {title}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         {/* コンテンツ */}
-        <div className="max-h-[calc(90vh-8rem)] overflow-y-auto">
+        <div className="space-y-4">
           {children}
         </div>
+
+        {/* フッター */}
+        {footer && (
+          <div className="flex gap-3 mt-8">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
+}
 
-  // ポータルを使用してbody直下にレンダリング
-  return createPortal(modalContent, document.body);
-};
-
-export { Modal };
-export type { ModalProps };
-export default Modal; 
+export default Modal;

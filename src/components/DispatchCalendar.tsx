@@ -13,6 +13,7 @@ import { WEEKDAYS_JA } from '@/constants/calendar';
 import CaseDetail from './CaseDetail';
 import DayViewComponent from './dispatch/DayView';
 import StatusFilter from './dispatch/StatusFilter';
+import GridCalendar from './GridCalendar';
 import { CaseDetail as CaseDetailType } from '../types/case';
 import { Truck, Schedule } from '../types/dispatch';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
@@ -795,51 +796,35 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       );
     };
 
-    // 日付ごとのイベントを取得
-    const getEventsForDate = (date: string): CalendarEvent[] => {
+    // 日付ごとのイベントを取得（GridCalendar用）
+    const getEventsForDate = (date: string) => {
       const schedules = getSchedulesForDate(date);
-      
-      // 確定と未確定を分けて表示
-      const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
-      const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
-      
-      const events: CalendarEvent[] = [];
-      
-      // 確定案件のイベント
-      if (confirmedSchedules.length > 0) {
-        events.push({
-          id: `confirmed-${date}`,
-          title: `✅ ${confirmedSchedules.length}件`,
-          description: '確定案件',
-          status: 'confirmed',
-          backgroundColor: 'bg-green-100',
-          color: 'text-green-800',
-          onClick: () => {
-            setExpandedDate(date);
-            setIsExpandedView(true);
-            setMonthViewFilterType('confirmed');
-          }
-        });
-      }
-      
-      // 未確定案件のイベント
-      if (unconfirmedSchedules.length > 0) {
-        events.push({
-          id: `unconfirmed-${date}`,
-          title: `⏳ ${unconfirmedSchedules.length}件`,
-          description: '未確定案件',
-          status: 'estimate',
-          backgroundColor: 'bg-gray-100',
-          color: 'text-gray-700',
-          onClick: () => {
-            setExpandedDate(date);
-            setIsExpandedView(true);
-            setMonthViewFilterType('unconfirmed');
-          }
-        });
-      }
-      
-      return events;
+      return schedules.map(schedule => ({
+        id: schedule.id,
+        title: schedule.title,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        truckId: schedule.truckId,
+        truckName: schedule.truckName,
+        status: schedule.status,
+        contractStatus: schedule.contractStatus,
+        customerName: schedule.customerName,
+        customerPhone: schedule.customerPhone,
+        originAddress: schedule.originAddress,
+        destinationAddress: schedule.destinationAddress,
+        totalPoints: schedule.totalPoints,
+        totalCapacity: schedule.totalCapacity,
+        itemList: schedule.itemList,
+        additionalServices: schedule.additionalServices,
+        estimatedPrice: schedule.estimatedPrice,
+        contractDate: schedule.contractDate,
+        caseStatus: schedule.caseStatus,
+        requestSource: schedule.requestSource,
+        isManualRegistration: schedule.isManualRegistration,
+        registeredBy: schedule.registeredBy,
+        distance: schedule.distance,
+        recommendedTruckTypes: schedule.recommendedTruckTypes
+      }));
     };
 
 
@@ -994,28 +979,21 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       );
     };
 
+    const handleDateClick = (date: string) => {
+      console.log('Date clicked:', date);
+      setSelectedDate(date);
+      setExpandedDate(date);
+      setIsExpandedView(true);
+      setMonthViewFilterType('all');
+    };
+
     return (
-      <UnifiedMonthCalendar
+      <GridCalendar
         currentDate={currentDate}
         onDateChange={setCurrentDate}
-        onDateClick={(date, day) => {
-          console.log('Date clicked:', date);
-          setSelectedDate(date);
-          setViewMode('day');
-          // 日ビューのセクションにスクロール
-          setTimeout(() => {
-            const dayViewElement = document.querySelector('[data-view="day"]');
-            if (dayViewElement) {
-              dayViewElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-              });
-            }
-          }, 200);
-        }}
+        onDateClick={handleDateClick}
+        selectedDate={selectedDate}
         getEventsForDate={getEventsForDate}
-        showNavigation={true}
-        showWeekdays={true}
         showModal={isExpandedView && expandedDate}
         modalTitle={expandedDate ? `${formatDate(expandedDate)} のスケジュール` : ''}
         modalContent={isExpandedView && expandedDate ? (
@@ -1036,7 +1014,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
           setSelectedSchedule(null);
           setMonthViewFilterType('all');
         }}
-        className=""
       />
     );
   };
@@ -1132,36 +1109,25 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
           )}
         </div>
 
-        {/* 凡例 */}
-        <div className="bg-gray-50 rounded p-2">
-          <div className="flex items-center gap-6 text-xs text-gray-700">
-            <div className="flex items-center gap-1">
-              <span>✅</span>
-              <span className="text-gray-700">確定</span>
+        {/* 日ビュー用の凡例のみ表示 */}
+        {viewMode === 'day' && (
+          <div className="bg-gray-50 rounded p-2">
+            <div className="flex items-center gap-6 text-xs text-gray-700">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span className="text-gray-700">50%未満</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                <span className="text-gray-700">50%以上</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded"></div>
+                <span className="text-gray-700">80%以上</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span>⏳</span>
-              <span className="text-gray-700">未確定</span>
-            </div>
-
-            {viewMode === 'day' && (
-              <>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-gray-700">50%未満</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                  <span className="text-gray-700">50%以上</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span className="text-gray-700">80%以上</span>
-                </div>
-              </>
-            )}
           </div>
-        </div>
+        )}
       </div>
 
 

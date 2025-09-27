@@ -5,6 +5,7 @@ import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA, TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
 import TimeRangeDisplaySelector from './TimeRangeDisplaySelector';
+import Modal from './ui/Modal';
 
 interface Employee {
   id: string;
@@ -42,11 +43,12 @@ interface TruckSchedule {
 
 interface ShiftCalendarProps {
   employees: Employee[];
-  truckSchedules: TruckSchedule[];
+  cases?: any[]; // UnifiedCase[]を追加
+  truckSchedules?: TruckSchedule[];
   onUpdateShift: (employeeId: string, shift: EmployeeShift) => void;
   onAddShift: (employeeId: string, shift: Omit<EmployeeShift, 'id'>) => void;
   onDeleteShift: (employeeId: string, shiftId: string) => void;
-  onUpdateTruckSchedules: (schedules: TruckSchedule[]) => void;
+  onUpdateTruckSchedules?: (schedules: TruckSchedule[]) => void;
   timeRangeType?: 'morning' | 'afternoon' | 'evening' | 'full' | 'custom';
   customStartTime?: string;
   customEndTime?: string;
@@ -54,13 +56,31 @@ interface ShiftCalendarProps {
   displayStartTime?: number;
   displayEndTime?: number;
   onDisplayTimeRangeChange?: (start: number, end: number) => void;
+  showClipboard?: boolean;
+  setShowClipboard?: (show: boolean) => void;
+  showEmployeeSummary?: boolean;
+  setShowEmployeeSummary?: (show: boolean) => void;
+  clipboardMode?: 'copy' | 'paste' | 'none' | null;
+  setClipboardMode?: (mode: 'copy' | 'paste' | 'none' | null) => void;
+  clipboardData?: any;
+  setClipboardData?: (data: any) => void;
+  onDateClickForClipboard?: (date: string) => void;
+  selectedShifts?: EmployeeShift[];
+  setSelectedShifts?: (shifts: EmployeeShift[] | ((prev: EmployeeShift[]) => EmployeeShift[])) => void;
+  copiedShifts?: EmployeeShift[];
+  setCopiedShifts?: (shifts: EmployeeShift[]) => void;
+  pendingPasteShifts?: EmployeeShift[];
+  setPendingPasteShifts?: (shifts: EmployeeShift[]) => void;
+  pendingPasteDate?: string | null;
+  setPendingPasteDate?: (date: string) => void;
+  onShiftClickForClipboard?: (shift: EmployeeShift) => void;
 }
 
 type ViewMode = 'day' | 'month';
 
 export default function ShiftCalendar({
   employees,
-  truckSchedules,
+  truckSchedules = [],
   onUpdateShift,
   onAddShift,
   onDeleteShift,
@@ -71,7 +91,25 @@ export default function ShiftCalendar({
   showTimeRangeSelector = false,
   displayStartTime = 8,
   displayEndTime = 20,
-  onDisplayTimeRangeChange
+  onDisplayTimeRangeChange,
+  showClipboard,
+  setShowClipboard,
+  showEmployeeSummary,
+  setShowEmployeeSummary,
+  clipboardMode,
+  setClipboardMode,
+  clipboardData,
+  setClipboardData,
+  onDateClickForClipboard,
+  selectedShifts,
+  setSelectedShifts,
+  copiedShifts,
+  setCopiedShifts,
+  pendingPasteShifts,
+  setPendingPasteShifts,
+  pendingPasteDate,
+  setPendingPasteDate,
+  onShiftClickForClipboard
 }: ShiftCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
@@ -96,12 +134,7 @@ export default function ShiftCalendar({
   const [selectedDateForModal, setSelectedDateForModal] = useState<string>('');
   const [employeesForModal, setEmployeesForModal] = useState<Employee[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [selectedShifts, setSelectedShifts] = useState<EmployeeShift[]>([]);
-  const [copiedShifts, setCopiedShifts] = useState<EmployeeShift[]>([]);
-  const [clipboardMode, setClipboardMode] = useState<'copy' | 'paste' | 'none'>('none');
-  const [showClipboard, setShowClipboard] = useState(false);
-  const [pendingPasteShifts, setPendingPasteShifts] = useState<EmployeeShift[]>([]);
-  const [pendingPasteDate, setPendingPasteDate] = useState<string>('');
+  // クリップボード関連の状態はプロパティから受け取る
 
   const filteredEmployees = employees.filter(emp => emp.status === 'active');
 
@@ -276,28 +309,28 @@ export default function ShiftCalendar({
 
   // クリップボード機能
   const startCopyMode = () => {
-    setClipboardMode('copy');
-    setSelectedShifts([]);
-    setCopiedShifts([]);
-    setShowClipboard(true);
+    setClipboardMode && setClipboardMode('copy');
+    setSelectedShifts && setSelectedShifts([]);
+    setCopiedShifts && setCopiedShifts([]);
+    setShowClipboard && setShowClipboard(true);
   };
 
   const startPasteMode = () => {
-    if (copiedShifts.length === 0) {
+    if (copiedShifts && copiedShifts.length === 0) {
       alert('コピーされたシフトがありません');
       return;
     }
-    setClipboardMode('paste');
-    setSelectedShifts([]);
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
-    setShowClipboard(true);
+    setClipboardMode && setClipboardMode('paste');
+    setSelectedShifts && setSelectedShifts([]);
+    setPendingPasteShifts && setPendingPasteShifts([]);
+    setPendingPasteDate && setPendingPasteDate('');
+    setShowClipboard && setShowClipboard(true);
   };
 
   const handleShiftClickForClipboard = (shift: EmployeeShift) => {
-    if (clipboardMode === 'copy') {
+    if (clipboardMode === 'copy' && setSelectedShifts) {
       // コピーモード：シフトを選択
-      setSelectedShifts(prev => {
+      setSelectedShifts((prev: EmployeeShift[]) => {
         const exists = prev.some(s => s.id === shift.id);
         if (exists) {
           return prev.filter(s => s.id !== shift.id);
@@ -309,14 +342,14 @@ export default function ShiftCalendar({
   };
 
   const handleDateClickForClipboard = (date: string) => {
-    if (clipboardMode === 'paste') {
+    if (clipboardMode === 'paste' && setPendingPasteDate) {
       // ペーストモード：貼り付け先を選択
       setPendingPasteDate(date);
     }
   };
 
   const executeCopy = () => {
-    if (selectedShifts.length === 0) {
+    if (!selectedShifts || selectedShifts.length === 0) {
       alert('コピーするシフトを選択してください');
       return;
     }
@@ -329,10 +362,10 @@ export default function ShiftCalendar({
       return;
     }
 
-    setCopiedShifts(workingShifts);
-    setClipboardMode('none');
-    setSelectedShifts([]);
-    setShowClipboard(false);
+    setCopiedShifts && setCopiedShifts(workingShifts);
+    setClipboardMode && setClipboardMode('none');
+    setSelectedShifts && setSelectedShifts([]);
+    setShowClipboard && setShowClipboard(false);
     alert(`${workingShifts.length}件のシフトをコピーしました`);
   };
 
@@ -342,15 +375,15 @@ export default function ShiftCalendar({
       return;
     }
 
-    setPendingPasteShifts(copiedShifts);
-    setClipboardMode('none');
-    setPendingPasteDate('');
-    setShowClipboard(false);
+    setPendingPasteShifts && setPendingPasteShifts(copiedShifts || []);
+    setClipboardMode && setClipboardMode('none');
+    setPendingPasteDate && setPendingPasteDate('');
+    setShowClipboard && setShowClipboard(false);
     alert('貼り付け準備完了。保存ボタンを押して反映してください。');
   };
 
   const executeSave = () => {
-    if (pendingPasteShifts.length === 0) {
+    if (!pendingPasteShifts || pendingPasteShifts.length === 0) {
       alert('貼り付け待ちのシフトがありません');
       return;
     }
@@ -374,26 +407,26 @@ export default function ShiftCalendar({
       handleShiftAdd(newShift);
     });
     
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
+    setPendingPasteShifts && setPendingPasteShifts([]);
+    setPendingPasteDate && setPendingPasteDate('');
     setHasUnsavedChanges(true);
     alert('シフトを保存しました');
   };
 
   const cancelClipboard = () => {
-    setClipboardMode('none');
-    setSelectedShifts([]);
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
-    setShowClipboard(false);
+    setClipboardMode && setClipboardMode('none');
+    setSelectedShifts && setSelectedShifts([]);
+    setPendingPasteShifts && setPendingPasteShifts([]);
+    setPendingPasteDate && setPendingPasteDate('');
+    setShowClipboard && setShowClipboard(false);
   };
 
   const removeSelectedShift = (shiftIdToRemove: string) => {
-    setSelectedShifts(prev => prev.filter(shift => shift.id !== shiftIdToRemove));
+    setSelectedShifts && setSelectedShifts((prev: EmployeeShift[]) => prev.filter(shift => shift.id !== shiftIdToRemove));
   };
 
   const clearSelectedShifts = () => {
-    setSelectedShifts([]);
+    setSelectedShifts && setSelectedShifts([]);
   };
 
 
@@ -1417,7 +1450,7 @@ export default function ShiftCalendar({
         const displayEmployees = activeEmployees.slice(0, 4);
         const remainingCount = activeEmployees.length - 4;
         
-        const events = displayEmployees.map(employee => {
+        const events = displayEmployees.filter(employee => employee && employee.name).map(employee => {
           const shifts = getShiftsForDate(employee.id, date);
           const utilizationRate = getUtilizationRate(employee.id, date);
           const hasShifts = shifts.length > 0;
@@ -1472,7 +1505,7 @@ export default function ShiftCalendar({
       }
       
       // 5人以下の場合は通常表示
-      return activeEmployees.map(employee => {
+      return activeEmployees.filter(employee => employee && employee.name).map(employee => {
         const shifts = getShiftsForDate(employee.id, date);
         const utilizationRate = getUtilizationRate(employee.id, date);
         const hasShifts = shifts.length > 0;
@@ -1509,6 +1542,24 @@ export default function ShiftCalendar({
     // カスタムイベントレンダリング
     const renderEvent = (event: CalendarEvent, index: number) => {
       const { employee, utilizationRate, timeRange } = event.metadata;
+      
+      // employeeがnullの場合（+N人表示など）は特別な表示
+      if (!employee) {
+        return (
+          <div
+            key={event.id}
+            className={`${event.backgroundColor} ${event.color} border border-gray-200 rounded text-xs p-1 cursor-pointer hover:opacity-80 transition-opacity`}
+            onClick={event.onClick}
+          >
+            {event.title}
+          </div>
+        );
+      }
+      
+      // employeeのnameプロパティがない場合はエラーを回避
+      if (!employee.name) {
+        return null;
+      }
       
       // 時間範囲を解析（カンマ区切りで分割）
       const timeRanges = timeRange ? timeRange.split(', ') : [];
@@ -1578,811 +1629,228 @@ export default function ShiftCalendar({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ビューモード切り替えとコントロール */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center mb-4">
-          {/* 左側：ビューモード切り替え */}
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  console.log('Month button clicked, hasUnsavedChanges:', hasUnsavedChanges);
-                  if (hasUnsavedChanges) {
-                    if (confirm('未保存の変更があります。画面を切り替えると入力が削除されます。続行しますか？')) {
-                      setHasUnsavedChanges(false);
+    <div className="space-y-2">
+      {/* サイドパネル切り替えボタン - 白枠の外に配置 */}
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={() => setShowEmployeeSummary && setShowEmployeeSummary(!showEmployeeSummary)}
+          className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
+            showEmployeeSummary
+              ? 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          {showEmployeeSummary ? '従業員集計 ON' : '従業員集計 OFF'}
+        </button>
+        <button
+          onClick={() => setShowClipboard && setShowClipboard(!showClipboard)}
+          className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
+            showClipboard
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          {showClipboard ? 'クリップボード ON' : 'クリップボード OFF'}
+        </button>
+      </div>
+
+      {/* 白枠セクション */}
+      <div className="bg-white shadow rounded-lg w-full">
+        <div className="px-4 py-2 sm:p-3 w-full">
+          {/* ビュー切り替えとナビゲーション */}
+          <div className="space-y-2">
+            {/* ビューモード選択とフィルター */}
+            <div className="flex items-center justify-between">
+              {/* ビューモード選択 */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    console.log('Month button clicked, hasUnsavedChanges:', hasUnsavedChanges);
+                    if (hasUnsavedChanges) {
+                      if (confirm('未保存の変更があります。画面を切り替えると入力が削除されます。続行しますか？')) {
+                        setHasUnsavedChanges(false);
+                        setViewMode('month');
+                      }
+                    } else {
                       setViewMode('month');
                     }
-                  } else {
-                    setViewMode('month');
-                  }
-                }}
-                className={`px-4 py-1 rounded ${
-                  viewMode === 'month' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                月
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Day button clicked, hasUnsavedChanges:', hasUnsavedChanges);
-                  if (hasUnsavedChanges) {
-                    if (confirm('未保存の変更があります。画面を切り替えると入力が削除されます。続行しますか？')) {
-                      setHasUnsavedChanges(false);
-                      setViewMode('day');
-                    }
-                  } else {
-                    setViewMode('day');
-                  }
-                }}
-                className={`px-4 py-1 rounded ${
-                  viewMode === 'day' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                日
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* フィルターと操作ボタン */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showOnlyShiftEmployees}
-                onChange={(e) => setShowOnlyShiftEmployees(e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm text-gray-700">出勤予定者のみ表示</span>
-            </label>
-            
-            <div className="text-xs text-gray-500">
-              {displayEmployees.length}名の従業員を表示中
-            </div>
-          </div>
-          
-        </div>
-
-        {/* クリップボード機能 */}
-        <div className="fixed top-32 right-4 z-50">
-          {!showClipboard ? (
-            <button
-              onClick={() => setShowClipboard(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
-            >
-              クリップボード
-            </button>
-          ) : (
-            <div className="bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-64">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-gray-800">クリップボード</h3>
-                <button
-                  onClick={() => cancelClipboard()}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                <button
-                  onClick={startCopyMode}
-                  className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
-                    clipboardMode === 'copy' 
-                      ? 'bg-blue-600 text-white' 
+                  }}
+                  className={`px-3 py-1 text-sm rounded transition-colors ${
+                    viewMode === 'month' 
+                      ? 'bg-blue-500 text-white' 
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  コピー
+                  月
                 </button>
-                
                 <button
-                  onClick={startPasteMode}
-                  disabled={copiedShifts.length === 0}
-                  className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
-                    clipboardMode === 'paste'
-                      ? 'bg-green-600 text-white'
-                      : copiedShifts.length === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  onClick={() => {
+                    console.log('Day button clicked, hasUnsavedChanges:', hasUnsavedChanges);
+                    if (hasUnsavedChanges) {
+                      if (confirm('未保存の変更があります。画面を切り替えると入力が削除されます。続行しますか？')) {
+                        setHasUnsavedChanges(false);
+                        setViewMode('day');
+                      }
+                    } else {
+                      setViewMode('day');
+                    }
+                  }}
+                  className={`px-3 py-1 text-sm rounded transition-colors ${
+                    viewMode === 'day' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  貼り付け
+                  日
                 </button>
-                
-                {pendingPasteShifts.length > 0 && (
-                  <button
-                    onClick={executeSave}
-                    className="w-full py-2 px-3 rounded text-sm font-medium bg-orange-600 text-white hover:bg-orange-700 transition-colors"
-                  >
-                    保存
-                  </button>
-                )}
               </div>
-              
-              {clipboardMode === 'copy' && (
-                <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-blue-800">
-                      {selectedShifts.length > 0 ? `選択中: ${selectedShifts.length}件` : 'コピーするシフトを選択してください'}
-                    </div>
-                    {selectedShifts.length > 0 && (
-                      <button
-                        onClick={clearSelectedShifts}
-                        className="text-blue-600 hover:text-blue-800 text-xs underline"
-                      >
-                        すべてクリア
-                      </button>
-                    )}
-                  </div>
-                  
-                  {selectedShifts.length > 0 ? (
-                    <>
-                      <div className="max-h-20 overflow-y-auto space-y-1 mb-2">
-                        {selectedShifts.map(shift => {
-                          const employee = filteredEmployees.find(emp => emp.id === shift.employeeId);
-                          return (
-                            <div key={shift.id} className="flex items-center justify-between bg-white rounded px-2 py-1">
-                              <div className="flex flex-col">
-                                <span className="text-xs font-medium text-gray-800">
-                                  {employee?.name || '不明な従業員'}
-                                </span>
-                                <span className="text-xs text-gray-600">
-                                  {new Date(shift.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} {shift.startTime}-{shift.endTime}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => removeSelectedShift(shift.id)}
-                                className="text-red-500 hover:text-red-700 text-xs"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <button
-                        onClick={executeCopy}
-                        className="w-full py-1 px-2 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                      >
-                        コピー実行
-                      </button>
-                    </>
-                  ) : (
-                    <div className="text-blue-700 text-xs">
-                      カレンダー上のシフトをクリックして選択してください
-                    </div>
-                  )}
+
+              {/* フィルター表示 */}
+              <div className="flex items-center gap-4 text-sm text-gray-700">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyShiftEmployees}
+                    onChange={(e) => setShowOnlyShiftEmployees(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span>出勤予定者のみ表示</span>
+                </label>
+                <div className="text-xs text-gray-500">
+                  {displayEmployees.length}名の従業員を表示中
                 </div>
-              )}
-              
-              {clipboardMode === 'paste' && (
-                <div className="mt-3 p-2 bg-green-50 rounded text-xs">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-green-800">
-                      {pendingPasteDate ? `貼り付け先: ${new Date(pendingPasteDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}` : '貼り付け先の日付を選択してください'}
-                    </div>
-                    {pendingPasteDate && (
-                      <button
-                        onClick={() => setPendingPasteDate('')}
-                        className="text-green-600 hover:text-green-800 text-xs underline"
-                      >
-                        クリア
-                      </button>
-                    )}
-                  </div>
-                  
-                  {pendingPasteDate ? (
-                    <button
-                      onClick={executePaste}
-                      className="w-full py-1 px-2 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                    >
-                      貼り付け実行
-                    </button>
-                  ) : (
-                    <div className="text-green-700 text-xs">
-                      カレンダー上の日付をクリックして選択してください
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="mt-3 p-2 bg-gray-50 rounded text-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium text-gray-700">
-                    {copiedShifts.length > 0 ? 'コピー済み' : 'コピーされたシフトはありません'}
-                  </div>
-                  {copiedShifts.length > 0 && (
-                    <button
-                      onClick={() => setCopiedShifts([])}
-                      className="text-gray-600 hover:text-gray-800 text-xs underline"
-                    >
-                      クリア
-                    </button>
-                  )}
-                </div>
-                
-                {copiedShifts.length > 0 ? (
-                  <>
-                    <div className="text-gray-600 mb-2">
-                      {copiedShifts.length}件のシフト
-                    </div>
-                    <div className="max-h-16 overflow-y-auto space-y-1">
-                      {copiedShifts.map(shift => {
-                        const employee = filteredEmployees.find(emp => emp.id === shift.employeeId);
-                        return (
-                          <div key={shift.id} className="bg-white rounded px-2 py-1">
-                            <div className="text-xs font-medium text-gray-800">
-                              {employee?.name || '不明な従業員'}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {new Date(shift.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} {shift.startTime}-{shift.endTime}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-gray-600 text-xs">
-                    コピー機能を使ってシフトをコピーしてください
-                  </div>
-                )}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* 説明テキストと操作ガイド */}
-        <div className="text-xs text-gray-500 space-y-1">
-          <div>空欄をクリックまたはドラッグしてシフトを登録できます</div>
-          <div className="flex gap-4 text-xs">
-            <span>• シフトブロックをクリック: 編集</span>
-            <span>• 青いハンドルをドラッグ: 時間変更</span>
-            <span>• 空欄をドラッグ: 新規作成</span>
-            <span>• 時間調整ボタン: 一括延長・縮小</span>
-          </div>
-          <div className="flex gap-4 text-xs text-blue-600">
-            <span>• クリップボード: シフトのコピー・貼り付け</span>
-            <span>• コピー→日付選択→貼り付け→保存の順で操作</span>
-          </div>
-          <div className="flex gap-4 text-xs text-green-600">
-            <span>• 重複チェック: 同じ時間の重複を防止</span>
-            <span>• 自動結合: 同じステータスの連続シフトを結合</span>
+            {/* ビューモードに応じた表示 */}
+            <div>
+              {viewMode === 'day' && <DayView />}
+              {viewMode === 'month' && <MonthView />}
+            </div>
           </div>
         </div>
-
       </div>
 
-      {/* ビューモードに応じた表示 */}
-      {viewMode === 'day' && <DayView />}
-      {viewMode === 'month' && <MonthView />}
-
-      {/* 月間集計表示 */}
-      {viewMode === 'month' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">
-            {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月 従業員集計
-          </h3>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    従業員名
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">
-                    出勤日数
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">
-                    当月総労働時間
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">
-                    年間累計労働時間
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {getEmployeeMonthlySummary().map((summary, index) => (
-                  <tr key={summary.employee.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-300 px-4 py-3 text-sm font-medium text-gray-900">
-                      {summary.employee.name}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-700">
-                      {summary.workingDays}日
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-700">
-                      {summary.totalWorkingTime}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-700">
-                      {getEmployeeYearlyWorkingTime(summary.employee.id)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* 全体集計 */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                登録従業員数: {filteredEmployees.length}名
-              </div>
-              <div className="text-sm text-gray-600">
-                出勤予定者数: {getEmployeeMonthlySummary().filter(s => s.workingDays > 0).length}名
-              </div>
-              <div className="text-sm font-medium text-gray-800">
-                当月総労働時間: {
-                  getEmployeeMonthlySummary().reduce((total, summary) => {
-                    const hours = Math.floor(summary.totalWorkingMinutes / 60);
-                    const minutes = summary.totalWorkingMinutes % 60;
-                    return total + hours + (minutes / 60);
-                  }, 0).toFixed(1)
-                }時間
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* シフト編集モーダル */}
-      {showShiftModal && editingShift && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">
-              {selectedShift ? 'シフト編集' : 'シフト追加'}
-            </h3>
+      <Modal
+        isOpen={showShiftModal && !!editingShift}
+        onClose={() => {
+          setShowShiftModal(false);
+          setEditingShift(null);
+          setSelectedShift(null);
+        }}
+        title={selectedShift ? 'シフト編集' : 'シフト追加'}
+        footer={
+          <>
+            <button
+              onClick={handleShiftSave}
+              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              保存
+            </button>
+            {selectedShift && (
               <button
-                onClick={() => setShowShiftModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={handleDeleteShift}
+                className="bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                削除
               </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">従業員</label>
-                <div className="p-3 bg-gray-50 rounded-lg border">
-                  <span className="text-gray-900 font-medium">
-                  {employees.find(emp => emp.id === editingShift.employeeId)?.name}
-                  </span>
-                </div>
+            )}
+            <button
+              onClick={() => {
+                setShowShiftModal(false);
+                setEditingShift(null);
+                setSelectedShift(null);
+              }}
+              className="bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              キャンセル
+            </button>
+          </>
+        }
+      >
+        {editingShift && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">従業員</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <span className="text-gray-900 font-medium">
+                  {editingShift ? employees.find(emp => emp.id === editingShift.employeeId)?.name : ''}
+                </span>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">日付</label>
-                <div className="p-3 bg-gray-50 rounded-lg border">
-                  <span className="text-gray-900">
-                  {formatDate(editingShift.date)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">開始時間</label>
-                  <select
-                    value={editingShift.startTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.start}
-                    onChange={(e) => setEditingShift(prev => prev ? { 
-                      ...prev, 
-                      startTime: e.target.value,
-                      timeSlot: TIME_SLOTS.find(ts => ts.start === e.target.value)?.id || prev.timeSlot
-                    } : null)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  >
-                    {timeOptions.map(time => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">終了時間</label>
-                  <select
-                    value={editingShift.endTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.end}
-                    onChange={(e) => setEditingShift(prev => prev ? { 
-                      ...prev, 
-                      endTime: e.target.value
-                    } : null)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  >
-                    {timeOptions.map(time => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* 時間延長・縮小ボタン */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">時間調整（30分単位）</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-600 font-medium">延長</div>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes + 30;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = newMinutes % 60;
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                      >
-                        +30分
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes + 60;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = newMinutes % 60;
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                      >
-                        +1時間
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes + 120;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = newMinutes % 60;
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                      >
-                        +2時間
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes + 180;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = newMinutes % 60;
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                      >
-                        +3時間
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-600 font-medium">縮小</div>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes - 30;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = ((newMinutes % 60) + 60) % 60;
-                          if (newHours < 0) return; // 負の時間は許可しない
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        -30分
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes - 60;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = ((newMinutes % 60) + 60) % 60;
-                          if (newHours < 0) return; // 負の時間は許可しない
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        -1時間
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes - 120;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = ((newMinutes % 60) + 60) % 60;
-                          if (newHours < 0) return; // 負の時間は許可しない
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        -2時間
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editingShift.startTime || !editingShift.endTime) return;
-                          const currentEnd = editingShift.endTime;
-                          const [hours, minutes] = currentEnd.split(':').map(Number);
-                          const newMinutes = minutes - 180;
-                          const newHours = hours + Math.floor(newMinutes / 60);
-                          const finalMinutes = ((newMinutes % 60) + 60) % 60;
-                          if (newHours < 0) return; // 負の時間は許可しない
-                          const newEndTime = `${newHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
-                          setEditingShift(prev => prev ? { ...prev, endTime: newEndTime } : null);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        -3時間
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">ステータス</label>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                      type="radio"
-                      name="status"
-                      value="working"
-                      checked={editingShift.status === 'working'}
-                      onChange={(e) => setEditingShift(prev => prev ? { ...prev, status: e.target.value as any } : null)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">出勤</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status"
-                      value="unavailable"
-                      checked={editingShift.status === 'unavailable'}
-                      onChange={(e) => setEditingShift(prev => prev ? { ...prev, status: e.target.value as any } : null)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">出勤不可</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">備考</label>
-                <textarea
-                  value={editingShift.notes || ''}
-                  onChange={(e) => setEditingShift(prev => prev ? { ...prev, notes: e.target.value } : null)}
-                  className="w-full p-3 border border-gray-300 rounded-lg h-24 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  placeholder="備考を入力"
-                />
-              </div>
-
-              {/* 時間範囲の可視化 */}
-              {editingShift.startTime && editingShift.endTime && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-blue-900">時間範囲:</span>
-                      <span className="text-lg font-semibold text-blue-900">
-                      {editingShift.startTime} - {editingShift.endTime}
-                      </span>
-                    </div>
-                    <div className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                      {(() => {
-                        const start = editingShift.startTime;
-                        const end = editingShift.endTime;
-                        if (start && end) {
-                          const startMinutes = parseInt(start.split(':')[0]) * 60 + parseInt(start.split(':')[1]);
-                          const endMinutes = parseInt(end.split(':')[0]) * 60 + parseInt(end.split(':')[1]);
-                          const duration = endMinutes - startMinutes;
-                          const hours = Math.floor(duration / 60);
-                          const minutes = duration % 60;
-                          if (hours > 0 && minutes > 0) {
-                            return `${hours}時間${minutes}分`;
-                          } else if (hours > 0) {
-                            return `${hours}時間`;
-                          } else {
-                            return `${minutes}分`;
-                          }
-                        }
-                        return '';
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="flex gap-3 mt-8">
-              <button
-                onClick={handleShiftSave}
-                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                保存
-              </button>
-              {selectedShift && (
-                <button
-                  onClick={handleDeleteShift}
-                  className="bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  削除
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setShowShiftModal(false);
-                  setEditingShift(null);
-                  setSelectedShift(null);
-                }}
-                className="bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 従業員一覧モーダル */}
-      {showEmployeeListModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            {/* モーダルヘッダー */}
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {new Date(selectedDateForModal).toLocaleDateString('ja-JP', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  weekday: 'long'
-                })}の従業員一覧 ({employeesForModal.length}人)
-              </h3>
-              <button
-                onClick={() => setShowEmployeeListModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">日付</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <span className="text-gray-900 font-medium">
+                  {editingShift ? new Date(editingShift.date).toLocaleDateString('ja-JP', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'long'
+                  }) : ''}
+                </span>
+              </div>
             </div>
 
-            {/* モーダルコンテンツ */}
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              <div className="space-y-3">
-                {employeesForModal.map(employee => {
-                  const shifts = employee.shifts.filter(shift => shift.date === selectedDateForModal);
-                  const hasShifts = shifts.length > 0;
-                  const timeRange = (() => {
-                    const shifts = employee.shifts.filter(shift => shift.date === selectedDateForModal);
-                    if (shifts.length === 0) return null;
-
-                    const confirmedShifts = shifts.filter(s => s.status === 'working');
-                    if (confirmedShifts.length === 0) return null;
-
-                    const timeSlots = confirmedShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-                    if (timeSlots.length === 0) return null;
-
-                    const startTime = timeSlots[0]?.start;
-                    const endTime = timeSlots[timeSlots.length - 1]?.end;
-                    
-                    return `${startTime}〜${endTime}`;
-                  })();
-                  
-                  return (
-                    <div
-                      key={employee.id}
-                      className={`p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-all ${
-                        hasShifts 
-                          ? 'bg-lime-50 border-lime-200 hover:bg-lime-100' 
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setSelectedDate(selectedDateForModal);
-                        setEditingShift(null); // 新規作成
-                        setShowShiftModal(true);
-                        setShowEmployeeListModal(false);
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            hasShifts ? 'bg-lime-400' : 'bg-gray-400'
-                          }`}></div>
-                          <div>
-                            <h4 className="font-medium text-gray-900">{employee.name}</h4>
-                            <p className="text-sm text-gray-600">{employee.position}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {hasShifts ? (
-                            <div>
-                              <p className="text-sm font-medium text-lime-700">出勤</p>
-                              {timeRange && (
-                                <p className="text-xs text-lime-600">{timeRange}</p>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">出勤不可</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {hasShifts && shifts.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-lime-200">
-                          <div className="flex flex-wrap gap-1">
-                            {shifts.map(shift => (
-                              <span
-                                key={shift.id}
-                                className="text-xs bg-lime-200 text-lime-800 px-2 py-1 rounded"
-                              >
-                                {TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || shift.timeSlot}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">開始時間</label>
+              <input
+                type="time"
+                value={editingShift.startTime}
+                onChange={(e) => setEditingShift({
+                  ...editingShift,
+                  startTime: e.target.value
                 })}
-              </div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
-            {/* モーダルフッター */}
-            <div className="flex justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => setShowEmployeeListModal(false)}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">終了時間</label>
+              <input
+                type="time"
+                value={editingShift.endTime}
+                onChange={(e) => setEditingShift({
+                  ...editingShift,
+                  endTime: e.target.value
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
+              <select
+                value={editingShift.status}
+                onChange={(e) => setEditingShift({
+                  ...editingShift,
+                  status: e.target.value as 'working' | 'unavailable'
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                閉じる
-              </button>
+                <option value="working">出勤</option>
+                <option value="unavailable">不在</option>
+              </select>
             </div>
-          </div>
-        </div>
-      )}
 
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">メモ</label>
+              <textarea
+                value={editingShift.notes || ''}
+                onChange={(e) => setEditingShift({
+                  ...editingShift,
+                  notes: e.target.value
+                })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="メモを入力してください..."
+              />
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

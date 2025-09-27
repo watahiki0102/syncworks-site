@@ -40,20 +40,24 @@ interface FormSubmission {
 // Employee と EmployeeShift は共通型から import済み
 
 interface TruckAssignmentModalProps {
-  selectedSubmission: FormSubmission | null;
+  selectedCase?: any; // DispatchCase
+  selectedSubmission?: FormSubmission | null; // 後方互換性のため
   trucks: Truck[];
   pricingTrucks: any[];
   setShowTruckModal: (_show: boolean) => void;
-  assignTruckToSubmission: (_submissionId: string, _truckAssignment: TruckAssignment) => void;
-  calculateRecommendedTrucks: (_points: number) => any[];
+  onAssign?: (caseId: string, truckId: string) => void; // 新しいインターフェース
+  assignTruckToSubmission?: (_submissionId: string, _truckAssignment: TruckAssignment) => void; // 後方互換性のため
+  calculateRecommendedTrucks?: (_points: number) => any[];
   calculateEstimatedPrice: (_points: number, _distance?: number) => number;
 }
 
 export default function TruckAssignmentModal({
+  selectedCase,
   selectedSubmission,
   trucks,
   // pricingTrucks, // Currently unused
   setShowTruckModal,
+  onAssign,
   assignTruckToSubmission,
   calculateRecommendedTrucks,
   // calculateEstimatedPrice, // Currently unused
@@ -81,33 +85,37 @@ export default function TruckAssignmentModal({
   }, []);
 
   useEffect(() => {
-    if (selectedSubmission) {
+    const currentCase = selectedCase || selectedSubmission;
+    if (currentCase) {
       // 推奨トラックを自動選択
-      const recommendedTrucks = calculateRecommendedTrucks(selectedSubmission.totalPoints);
-      if (recommendedTrucks.length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          truckId: recommendedTrucks[0].id,
-          capacity: selectedSubmission.totalCapacity.toString(),
-        }));
+      if (calculateRecommendedTrucks) {
+        const recommendedTrucks = calculateRecommendedTrucks(currentCase.totalPoints || currentCase.items?.totalPoints || 0);
+        if (recommendedTrucks.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            truckId: recommendedTrucks[0].id,
+            capacity: (currentCase.totalCapacity || currentCase.items?.totalPoints || 0).toString(),
+          }));
+        }
       }
     }
-  }, [selectedSubmission, calculateRecommendedTrucks]);
+  }, [selectedCase, selectedSubmission, calculateRecommendedTrucks]);
 
   const handleSubmit = () => {
-    if (!selectedSubmission || !formData.truckId) return;
+    const currentCase = selectedCase || selectedSubmission;
+    if (!currentCase || !formData.truckId) return;
 
     const selectedTruck = trucks.find(t => t.id === formData.truckId);
     if (!selectedTruck) return;
 
-    const recommendedTrucks = calculateRecommendedTrucks(selectedSubmission.totalPoints);
+    const recommendedTrucks = calculateRecommendedTrucks ? calculateRecommendedTrucks(currentCase.totalPoints || currentCase.items?.totalPoints || 0) : [];
     const recommendedTruckIds = recommendedTrucks.map(truck => truck.id);
     const isManualSelection = !recommendedTruckIds.includes(formData.truckId);
 
     const truckAssignment: TruckAssignment = {
       truckId: formData.truckId,
       truckName: selectedTruck.name,
-      capacity: parseInt(formData.capacity) || selectedSubmission.totalCapacity,
+      capacity: parseInt(formData.capacity) || currentCase.totalCapacity || currentCase.items?.totalPoints || 0,
       startTime: formData.startTime,
       endTime: formData.endTime,
       workType: formData.workType,
@@ -118,7 +126,11 @@ export default function TruckAssignmentModal({
       selectionTimestamp: new Date().toISOString(),
     };
 
-    assignTruckToSubmission(selectedSubmission.id, truckAssignment);
+    if (onAssign) {
+      onAssign(currentCase.id, formData.truckId);
+    } else if (assignTruckToSubmission) {
+      assignTruckToSubmission(currentCase.id, truckAssignment);
+    }
     setShowTruckModal(false);
   };
   
@@ -167,16 +179,19 @@ export default function TruckAssignmentModal({
     setShowEmployeeModal(false);
   };
 
-  if (!selectedSubmission) return null;
+  if (!selectedCase && !selectedSubmission) return null;
+
+  const currentCase = selectedCase || selectedSubmission;
+  if (!currentCase) return null;
 
   const availableEmployees = getAvailableEmployees(
-    selectedSubmission.moveDate,
+    currentCase.moveDate || currentCase.move?.moveDate,
     formData.startTime,
     formData.endTime
   );
 
   // 推奨トラックを取得
-  const recommendedTrucks = calculateRecommendedTrucks(selectedSubmission.totalPoints);
+  const recommendedTrucks = calculateRecommendedTrucks ? calculateRecommendedTrucks(currentCase.totalPoints || currentCase.items?.totalPoints || 0) : [];
   const recommendedTruckIds = recommendedTrucks.map(truck => truck.id);
   
   // 利用可能なトラックを推奨/非推奨で分類
@@ -193,7 +208,7 @@ export default function TruckAssignmentModal({
 
   // トラック効率性を計算
   const calculateSuitabilityScore = (truck: Truck): number => {
-    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+    const efficiency = calculateTruckEfficiency(truck, currentCase.totalPoints || currentCase.items?.totalPoints || 0);
     // 効率性を0-100のスコアに変換（簡易版）
     return Math.min(100, Math.max(0, 100 - efficiency * 10));
   };
@@ -201,7 +216,7 @@ export default function TruckAssignmentModal({
   return (
     <>
       <FormModal
-        isOpen={!!selectedSubmission}
+        isOpen={!!currentCase}
         onClose={handleClose}
         onSubmit={handleSubmit}
         title="トラック割り当て"
@@ -213,16 +228,16 @@ export default function TruckAssignmentModal({
           <h4 className="font-medium text-gray-900 mb-2">案件情報</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium text-gray-700">顧客名:</span> {selectedSubmission.customerName}
+              <span className="font-medium text-gray-700">顧客名:</span> {currentCase.customerName || currentCase.customer?.customerName}
             </div>
             <div>
-              <span className="font-medium text-gray-700">引越し日:</span> {selectedSubmission.moveDate}
+              <span className="font-medium text-gray-700">引越し日:</span> {currentCase.moveDate || currentCase.move?.moveDate}
             </div>
             <div>
-              <span className="font-medium text-gray-700">総容量:</span> {selectedSubmission.totalCapacity.toLocaleString()}kg
+              <span className="font-medium text-gray-700">総容量:</span> {(currentCase.totalCapacity || currentCase.items?.totalPoints || 0).toLocaleString()}kg
             </div>
             <div>
-              <span className="font-medium text-gray-700">荷物ポイント:</span> {selectedSubmission.totalPoints}pt
+              <span className="font-medium text-gray-700">荷物ポイント:</span> {currentCase.totalPoints || currentCase.items?.totalPoints || 0}pt
             </div>
           </div>
         </div>
@@ -239,7 +254,7 @@ export default function TruckAssignmentModal({
                 </label>
                 <div className="space-y-2">
                   {recommendedAvailableTrucks.map(truck => {
-                    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+                    const efficiency = calculateTruckEfficiency(truck, currentCase.totalPoints || currentCase.items?.totalPoints || 0);
                     const suitabilityScore = calculateSuitabilityScore(truck);
                     const isSelected = formData.truckId === truck.id;
                     
@@ -291,7 +306,7 @@ export default function TruckAssignmentModal({
                 </label>
                 <div className="space-y-2">
                   {otherAvailableTrucks.map(truck => {
-                    const efficiency = calculateTruckEfficiency(truck, selectedSubmission.totalPoints);
+                    const efficiency = calculateTruckEfficiency(truck, currentCase.totalPoints || currentCase.items?.totalPoints || 0);
                     const suitabilityScore = calculateSuitabilityScore(truck);
                     const isSelected = formData.truckId === truck.id;
                     
@@ -404,7 +419,7 @@ export default function TruckAssignmentModal({
               className="w-full px-3 py-2 border rounded text-gray-900"
               placeholder="使用容量を入力"
               min="0"
-              max={selectedSubmission.totalCapacity}
+              max={currentCase.totalCapacity || currentCase.items?.totalPoints || 0}
             />
           </div>
 
@@ -459,7 +474,6 @@ export default function TruckAssignmentModal({
           isOpen={showEmployeeModal}
           onClose={() => setShowEmployeeModal(false)}
           title="従業員選択"
-          size="sm"
           footer={
             <button
               onClick={() => setShowEmployeeModal(false)}
