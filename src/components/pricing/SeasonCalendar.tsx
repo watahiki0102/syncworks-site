@@ -8,35 +8,47 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WEEKDAYS_JA } from '@/constants/calendar';
+import type { SeasonRule } from '@/types/pricing';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from '../UnifiedMonthCalendar';
 
-interface RecurringPattern {
-  weekdays?: number[];
-  monthlyPattern?: 'date' | 'weekday';
-}
-
-interface SeasonRule {
-  id: string;
-  name: string;
-  priceType: 'percentage' | 'absolute';
-  price: number;
-  color: string;
-  startDate: string;
-  endDate: string;
-  description?: string;
-  isRecurring: boolean;
-  recurringPattern?: RecurringPattern;
-}
+type SeasonRuleInput = Omit<SeasonRule, 'id'>;
 
 interface SeasonCalendarProps {
   seasonRules: SeasonRule[];
   onUpdateRule: (rule: SeasonRule) => void;
-  onAddRule: (rule: Omit<SeasonRule, 'id'>) => void;
+  onAddRule: (rule: SeasonRuleInput) => void;
   onRemoveRule: (id: string) => void;
 }
 
 type ViewMode = 'month' | 'list';
+
+const getRuleBackgroundClass = (rule: SeasonRule) => {
+  if (rule.priceType === 'percentage') {
+    if (rule.price > 0) {
+      return 'bg-rose-100';
+    }
+    if (rule.price < 0) {
+      return 'bg-emerald-100';
+    }
+    return 'bg-amber-100';
+  }
+
+  return 'bg-blue-100';
+};
+
+const getRuleBorderClass = (rule: SeasonRule) => {
+  if (rule.priceType === 'percentage') {
+    if (rule.price > 0) {
+      return 'border-rose-400';
+    }
+    if (rule.price < 0) {
+      return 'border-emerald-400';
+    }
+    return 'border-amber-400';
+  }
+
+  return 'border-blue-400';
+};
 
 export default function SeasonCalendar({
   seasonRules,
@@ -122,7 +134,7 @@ export default function SeasonCalendar({
 
     // 複数ルールがある場合は最初のルールの色を使用
     const primaryRule = rules[0];
-    return `${primaryRule.color} hover:opacity-80`;
+    return `${getRuleBackgroundClass(primaryRule)} hover:opacity-80`;
   };
 
   // 日付クリック処理
@@ -163,15 +175,17 @@ export default function SeasonCalendar({
     const startDate = sortedDates[0];
     const endDate = sortedDates[sortedDates.length - 1];
 
-    const newRule: Omit<SeasonRule, 'id'> = {
+    const newRule: SeasonRuleInput = {
       name: `新規シーズン`,
       priceType: 'percentage',
       price: 10,
-      color: 'bg-blue-100',
       startDate,
       endDate,
       description: '',
       isRecurring: false,
+      recurringType: 'none',
+      recurringPattern: undefined,
+      recurringEndYear: undefined,
     };
 
     setEditingRule({ ...newRule, id: `temp-${Date.now()}` });
@@ -372,7 +386,10 @@ export default function SeasonCalendar({
       ) : (
         <div className="space-y-3">
           {seasonRules.map(rule => (
-            <div key={rule.id} className="bg-white p-4 rounded-lg shadow border-l-4" style={{ borderLeftColor: rule.color.replace('bg-', '#') }}>
+            <div
+              key={rule.id}
+              className={`bg-white p-4 rounded-lg shadow border-l-4 ${getRuleBorderClass(rule)}`}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{rule.name}</h3>
@@ -457,11 +474,15 @@ export default function SeasonCalendar({
                 <label className="block text-sm font-medium mb-1">料金タイプ</label>
                 <select
                   value={editingRule.priceType}
-                  onChange={(e) => setEditingRule(prev => prev ? { ...prev, priceType: e.target.value as 'percentage' | 'absolute' } : null)}
+                  onChange={(e) =>
+                    setEditingRule(prev =>
+                      prev ? { ...prev, priceType: e.target.value as 'percentage' | 'fixed' } : null
+                    )
+                  }
                   className="w-full p-2 border rounded"
                 >
                   <option value="percentage">パーセンテージ</option>
-                  <option value="absolute">固定金額</option>
+                  <option value="fixed">固定金額</option>
                 </select>
               </div>
 

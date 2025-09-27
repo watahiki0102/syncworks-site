@@ -4,6 +4,54 @@
  */
 
 /**
+ * シーズン加算設定で使用する料金タイプ
+ */
+export type SeasonPriceType = 'percentage' | 'fixed';
+
+/**
+ * シーズン加算設定の繰り返しタイプ
+ */
+export type SeasonRecurringType = 'yearly' | 'monthly' | 'weekly' | 'none';
+
+/**
+ * シーズン加算設定の繰り返しパターン
+ */
+export interface SeasonRecurringPattern {
+  /** 指定する曜日 (0=日, 1=月, ... 6=土) */
+  weekdays?: number[];
+  /** 月単位の繰り返し方法（日付固定 or 曜日固定） */
+  monthlyPattern?: 'date' | 'weekday';
+}
+
+/**
+ * シーズン加算ルール
+ */
+export interface SeasonRule {
+  /** ルールID */
+  id: string;
+  /** シーズン名 */
+  name: string;
+  /** シーズン開始日 (ISO形式) */
+  startDate: string;
+  /** シーズン終了日 (ISO形式) */
+  endDate: string;
+  /** 料金タイプ（割合 or 固定額） */
+  priceType: SeasonPriceType;
+  /** 料金値 */
+  price: number;
+  /** 説明 */
+  description?: string;
+  /** 繰り返し設定が有効かどうか */
+  isRecurring: boolean;
+  /** 繰り返しタイプ */
+  recurringType: SeasonRecurringType;
+  /** 繰り返しパターンの詳細 */
+  recurringPattern?: SeasonRecurringPattern;
+  /** 繰り返し終了年 */
+  recurringEndYear?: number;
+}
+
+/**
  * 荷物ポイントの型定義
  */
 export interface ItemPoint {
