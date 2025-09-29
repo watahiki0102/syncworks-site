@@ -994,7 +994,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
         onDateClick={handleDateClick}
         selectedDate={selectedDate}
         getEventsForDate={getEventsForDate}
-        showModal={isExpandedView && expandedDate}
+        showModal={isExpandedView && Boolean(expandedDate)}
         modalTitle={expandedDate ? `${formatDate(expandedDate)} のスケジュール` : ''}
         modalContent={isExpandedView && expandedDate ? (
           <MonthScheduleModal
