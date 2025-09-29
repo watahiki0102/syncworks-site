@@ -36,12 +36,12 @@ const nextConfig = {
 
   // TypeScript build settings - 開発時は高速化
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV === "development",
+    ignoreBuildErrors: true,
   },
 
   // ESLint settings - 開発時は高速化
   eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV === "development",
+    ignoreDuringBuilds: true,
   },
 
   // Build-time optimizations

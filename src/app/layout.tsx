@@ -6,18 +6,19 @@
  * - SEO対応
  */
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-/**
- * Interフォントの設定（最適化）
- */
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
+const FALLBACK_FONT_STACK = [
+  "'Inter'",
+  "'Segoe UI'",
+  "system-ui",
+  "-apple-system",
+  "BlinkMacSystemFont",
+  "'Roboto'",
+  "'Helvetica Neue'",
+  "Arial",
+  "sans-serif",
+].join(", ");
 
 /**
  * ビューポート設定
@@ -111,27 +112,22 @@ export default function RootLayout({
   children: React.ReactNode 
 }) {
   return (
-    <html 
-      lang="ja" 
-      className={inter.variable}
+    <html
+      lang="ja"
       suppressHydrationWarning
     >
       <head>
-        {/* プリロード重要リソース */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
         {/* 重要なCSS変数のインライン設定 */}
         <style dangerouslySetInnerHTML={{
           __html: `
             :root {
-              --font-sans: ${inter.style.fontFamily};
+              --font-sans: ${FALLBACK_FONT_STACK};
             }
           `
         }} />
       </head>
-      <body 
-        className={`${inter.className} antialiased`}
+      <body
+        className="antialiased"
         suppressHydrationWarning
       >
         {/* Skip to main content link for accessibility */}

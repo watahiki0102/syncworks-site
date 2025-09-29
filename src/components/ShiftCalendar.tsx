@@ -137,6 +137,9 @@ export default function ShiftCalendar({
   } | null>(null);
   const [showOnlyShiftEmployees, setShowOnlyShiftEmployees] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
+  const [editingShift, setEditingShift] = useState<EmployeeShift | null>(null);
+  const [showShiftModal, setShowShiftModal] = useState(false);
   
   // 月ビュー展開状態管理
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
