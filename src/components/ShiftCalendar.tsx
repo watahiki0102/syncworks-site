@@ -6,6 +6,7 @@ import { WEEKDAYS_JA, TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
 import TimeRangeDisplaySelector from './TimeRangeDisplaySelector';
 import Modal from './ui/Modal';
+import ShiftModal, { ShiftModalData } from './ShiftModal';
 
 interface Employee {
   id: string;
@@ -115,9 +116,11 @@ export default function ShiftCalendar({
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [highlightedEmployee, setHighlightedEmployee] = useState<Employee | null>(null); // 青枠表示用
   const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
   const [editingShift, setEditingShift] = useState<EmployeeShift | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
+  const [shiftModalMode, setShiftModalMode] = useState<'edit' | 'create' | 'bulk' | 'range'>('edit');
   const [dragState, setDragState] = useState<{
     currentEmployee: string;
     startTime: string;
@@ -131,7 +134,7 @@ export default function ShiftCalendar({
     originalEndTime: string;
     currentTime: string;
   } | null>(null);
-  const [showOnlyShiftEmployees, setShowOnlyShiftEmployees] = useState(true);
+  const [recentlyResized, setRecentlyResized] = useState(false); // リサイズ完了後の状態
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // 月ビュー展開状態管理
@@ -144,6 +147,22 @@ export default function ShiftCalendar({
   useEffect(() => {
     console.log('State changed - allDatesExpanded:', allDatesExpanded, 'expandedDate:', expandedDate, 'collapsedDates:', Array.from(collapsedDates), 'expandedWeeks:', Array.from(expandedWeeks));
   }, [allDatesExpanded, expandedDate, collapsedDates, expandedWeeks]);
+
+  // シフト追加後に自動的にシフトを結合する
+  useEffect(() => {
+    // 新しく追加されたシフトがあるかチェック
+    employees.forEach(employee => {
+      // 各従業員の各日付でシフトを結合
+      const dates = [...new Set(employee.shifts.map(shift => shift.date))];
+      dates.forEach(date => {
+        const dayShifts = employee.shifts.filter(shift => shift.date === date);
+        if (dayShifts.length > 1) {
+          // 同じステータスの連続するシフトを結合
+          mergeAdjacentShifts(employee.id, date);
+        }
+      });
+    });
+  }, [employees]); // employeesの変更を監視
 
   // グローバルなマウスイベントリスナー
   useEffect(() => {
@@ -237,6 +256,7 @@ export default function ShiftCalendar({
   const handleEmployeeClick = (employee: Employee, date: string) => {
     console.log('handleEmployeeClick called:', employee.name, date);
     setSelectedEmployee(employee);
+    setHighlightedEmployee(employee); // 青枠表示用
     setSelectedDate(date);
     setViewMode('day'); // 日ビューに遷移
   };
@@ -252,8 +272,105 @@ export default function ShiftCalendar({
     return employee.shifts.filter(shift => shift.date === date);
   };
 
+  // 日跨ぎシフト専用のブロック取得関数
+  const getDayCrossingShiftBlocks = (employeeId: string, date: string, dayShifts: EmployeeShift[]): Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    status: 'working' | 'unavailable';
+    customerName?: string;
+    notes?: string;
+    startIndex: number;
+    endIndex: number;
+    isDayCrossing?: boolean;
+    originalStartTime?: string;
+    originalEndTime?: string;
+  }> => {
+    console.log('🌙 getDayCrossingShiftBlocks called');
+    
+    // 日跨ぎシフトをグループ化（同じnotesを持つシフトをグループ化）
+    const dayCrossingGroups = new Map<string, EmployeeShift[]>();
+    
+    dayShifts.forEach(shift => {
+      if (shift.notes && shift.notes.includes('日跨ぎ')) {
+        // notesから元のメモを抽出（日跨ぎ-1日目、日跨ぎ-2日目を除く）
+        const originalNotes = shift.notes.replace(/ \(日跨ぎ-[12]日目\)/, '');
+        if (!dayCrossingGroups.has(originalNotes)) {
+          dayCrossingGroups.set(originalNotes, []);
+        }
+        dayCrossingGroups.get(originalNotes)!.push(shift);
+      }
+    });
+    
+    const blocks: Array<{
+      id: string;
+      startTime: string;
+      endTime: string;
+      status: 'working' | 'unavailable';
+      customerName?: string;
+      notes?: string;
+      startIndex: number;
+      endIndex: number;
+      isDayCrossing?: boolean;
+      originalStartTime?: string;
+      originalEndTime?: string;
+    }> = [];
+    
+    dayCrossingGroups.forEach((shifts, originalNotes) => {
+      if (shifts.length === 0) return;
+      
+      // 1日目のシフトを探す
+      const day1Shift = shifts.find(shift => shift.notes?.includes('日跨ぎ-1日目'));
+      if (day1Shift) {
+        const timeIndex = TIME_SLOTS.findIndex(ts => ts.id === day1Shift.timeSlot);
+        const timeSlot = TIME_SLOTS[timeIndex];
+        
+        const shiftStartTime = day1Shift.startTime || timeSlot.start;
+        const shiftEndTime = day1Shift.endTime || timeSlot.end;
+        
+        const startIndex = TIME_SLOTS.findIndex(ts => ts.start === shiftStartTime);
+        const endIndex = TIME_SLOTS.findIndex(ts => ts.end === shiftEndTime);
+        
+        // 元の終了時間を取得（2日目のシフトから）
+        const day2Shift = shifts.find(shift => shift.notes?.includes('日跨ぎ-2日目'));
+        const originalEndTime = day2Shift?.endTime || '18:00';
+        
+        const block = {
+          id: day1Shift.id,
+          startTime: shiftStartTime,
+          endTime: shiftEndTime,
+          status: day1Shift.status,
+          customerName: day1Shift.customerName,
+          notes: originalNotes,
+          startIndex: startIndex >= 0 ? startIndex : timeIndex,
+          endIndex: endIndex >= 0 ? endIndex : timeIndex,
+          isDayCrossing: true,
+          originalStartTime: shiftStartTime,
+          originalEndTime: originalEndTime,
+        };
+        
+        blocks.push(block);
+        console.log('🌙 日跨ぎブロック作成:', block);
+      }
+    });
+    
+    return blocks;
+  };
+
   // シフトブロックを取得する関数（連続するシフトをグループ化）
-  const getShiftBlocks = (employeeId: string, date: string) => {
+  const getShiftBlocks = (employeeId: string, date: string): Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    status: 'working' | 'unavailable';
+    customerName?: string;
+    notes?: string;
+    startIndex: number;
+    endIndex: number;
+    isDayCrossing?: boolean;
+    originalStartTime?: string;
+    originalEndTime?: string;
+  }> => {
     console.log(`🚀 getShiftBlocks called for ${employeeId} on ${date}`);
     const dayShifts = getShiftsForDate(employeeId, date);
     
@@ -269,6 +386,17 @@ export default function ShiftCalendar({
         notes: s.notes
       });
     });
+
+    // 日跨ぎシフトの検出と処理
+    const dayCrossingShifts = dayShifts.filter(shift => 
+      shift.notes && shift.notes.includes('日跨ぎ')
+    );
+    
+    if (dayCrossingShifts.length > 0) {
+      console.log('🌙 日跨ぎシフト検出:', dayCrossingShifts.length, '個');
+      // 日跨ぎシフトの場合は特別な表示処理
+      return getDayCrossingShiftBlocks(employeeId, date, dayShifts);
+    }
 
     // 重複したシフトをチェックして警告
     const uniqueShifts = new Map();
@@ -362,6 +490,9 @@ export default function ShiftCalendar({
         notes: shift.notes,
         startIndex: startIndex >= 0 ? startIndex : timeIndex,
         endIndex: endIndex >= 0 ? endIndex : timeIndex,
+        isDayCrossing: false,
+        originalStartTime: undefined,
+        originalEndTime: undefined,
       };
       
       console.log('📊 Returning 1 block:', block);
@@ -374,6 +505,20 @@ export default function ShiftCalendar({
       const timeB = TIME_SLOTS.find(ts => ts.id === b.timeSlot)?.start || '';
       return timeA.localeCompare(timeB);
     });
+
+    const shiftBlocks: Array<{
+      id: string;
+      startTime: string;
+      endTime: string;
+      status: 'working' | 'unavailable';
+      customerName?: string;
+      notes?: string;
+      startIndex: number;
+      endIndex: number;
+      isDayCrossing?: boolean;
+      originalStartTime?: string;
+      originalEndTime?: string;
+    }> = [];
 
     console.log('📊 Sorted shifts for merging:', sortedShifts.map(s => ({
       id: s.id,
@@ -416,11 +561,14 @@ export default function ShiftCalendar({
           id: shift.id,
           startTime: shiftStartTime,
           endTime: shiftEndTime,
-          status: shift.status,
+          status: shift.status as 'working' | 'unavailable',
           customerName: shift.customerName,
           notes: shift.notes,
           startIndex: actualStartIndex,
           endIndex: actualEndIndex,
+          isDayCrossing: false,
+          originalStartTime: undefined,
+          originalEndTime: undefined,
         };
       } else if (
         currentBlock.status === shift.status &&
@@ -452,30 +600,33 @@ export default function ShiftCalendar({
         
         console.log(`✅ Merged result: ${currentBlock.startTime}-${currentBlock.endTime} (${mergedStartIndex}-${mergedEndIndex})`);
       } else {
-        blocks.push(currentBlock);
+        shiftBlocks.push(currentBlock);
         currentBlock = {
           id: shift.id,
           startTime: shiftStartTime,
           endTime: shiftEndTime,
-          status: shift.status,
+          status: shift.status as 'working' | 'unavailable',
           customerName: shift.customerName,
           notes: shift.notes,
           startIndex: actualStartIndex,
           endIndex: actualEndIndex,
+          isDayCrossing: false,
+          originalStartTime: undefined,
+          originalEndTime: undefined,
         };
       }
     });
 
     if (currentBlock) {
-      blocks.push(currentBlock);
+      shiftBlocks.push(currentBlock);
     }
 
-    console.log('📊 getShiftBlocks returning', blocks.length, 'blocks:');
-    blocks.forEach((b, i) => {
+    console.log('📊 getShiftBlocks returning', shiftBlocks.length, 'blocks:');
+    shiftBlocks.forEach((b, i) => {
       console.log(`  Block ${i+1}:`, b.id, b.startTime, '-', b.endTime, `(${((parseTimeToMinutes(b.endTime) - parseTimeToMinutes(b.startTime)) / 60).toFixed(1)}h)`);
     });
 
-    return blocks;
+    return shiftBlocks;
   };
 
   // 時間文字列を分に変換するヘルパー関数
@@ -485,12 +636,24 @@ export default function ShiftCalendar({
   };
 
   // 同一時間帯のシフトを統合する関数
-  const mergeOverlappingShifts = (employeeId: string, date: string) => {
+  const mergeOverlappingShifts = (employeeId: string, date: string): Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    status: 'working' | 'unavailable';
+    customerName?: string;
+    notes?: string;
+    startIndex: number;
+    endIndex: number;
+    isDayCrossing?: boolean;
+    originalStartTime?: string;
+    originalEndTime?: string;
+  }> => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return;
+    if (!employee) return [];
 
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
-    if (dayShifts.length <= 1) return; // シフトが1つ以下の場合は統合不要
+    if (dayShifts.length <= 1) return []; // シフトが1つ以下の場合は統合不要
 
     console.log(`🔍 シフト統合チェック: ${employee.name} - ${date} (${dayShifts.length}個のシフト)`);
 
@@ -575,6 +738,9 @@ export default function ShiftCalendar({
         }
       }
     });
+    
+    // 統合後のブロックを返す
+    return getShiftBlocks(employeeId, date);
   };
 
 
@@ -908,10 +1074,10 @@ export default function ShiftCalendar({
     );
   };
 
-
-  const displayEmployees = showOnlyShiftEmployees 
-    ? getShiftEmployees(selectedDate)
-    : filteredEmployees;
+  // シフトが入っている従業員のみを表示（日ビュー用）
+  const displayEmployees = filteredEmployees.filter(employee => 
+    employee.shifts.some(shift => shift.date === selectedDate)
+  );
 
   const getEmployeesWithShifts = (date: string) => {
     return filteredEmployees.filter(employee => 
@@ -984,9 +1150,11 @@ export default function ShiftCalendar({
     
     // 通常モード：モーダルを開く
     if (existingShift) {
+      setShiftModalMode('edit');
       setSelectedShift(existingShift);
       setEditingShift({ ...existingShift });
     } else {
+      setShiftModalMode('create');
       setSelectedShift(null);
       setEditingShift({
         id: '',
@@ -994,7 +1162,6 @@ export default function ShiftCalendar({
         date,
         timeSlot,
         status: 'working',
-        customerName: '',
         notes: '',
       });
     }
@@ -1103,21 +1270,18 @@ export default function ShiftCalendar({
             const endIndex = TIME_SLOTS.findIndex(ts => ts.end === endTime);
             
             if (startIndex !== -1 && endIndex !== -1) {
-              for (let i = startIndex; i <= endIndex; i++) {
-                const timeSlot = TIME_SLOTS[i];
-                const newShift: Omit<EmployeeShift, 'id'> = {
-                  employeeId,
-                  date,
-                  timeSlot: timeSlot.id,
-                  status: firstShift.status,
-                  customerName: firstShift.customerName,
-                  notes: firstShift.notes,
-                  startTime,
-                  endTime,
-                };
-                console.log(`➕ Adding merged shift slot ${i}:`, newShift);
-                handleShiftAdd(newShift);
-              }
+              const newShift: Omit<EmployeeShift, 'id'> = {
+                employeeId,
+                date,
+                timeSlot: TIME_SLOTS[startIndex].id,
+                status: firstShift.status,
+                customerName: firstShift.customerName,
+                notes: firstShift.notes,
+                startTime,
+                endTime,
+              };
+              console.log('➕ Adding merged single shift:', newShift);
+              handleShiftAdd(newShift);
             }
           }
           currentGroup = [shift];
@@ -1148,21 +1312,18 @@ export default function ShiftCalendar({
       const endIndex = TIME_SLOTS.findIndex(ts => ts.end === endTime);
       
       if (startIndex !== -1 && endIndex !== -1) {
-        for (let i = startIndex; i <= endIndex; i++) {
-          const timeSlot = TIME_SLOTS[i];
-          const newShift: Omit<EmployeeShift, 'id'> = {
-            employeeId,
-            date,
-            timeSlot: timeSlot.id,
-            status: firstShift.status,
-            customerName: firstShift.customerName,
-            notes: firstShift.notes,
-            startTime,
-            endTime,
-          };
-          console.log(`➕ Adding final merged shift slot ${i}:`, newShift);
-          handleShiftAdd(newShift);
-        }
+        const newShift: Omit<EmployeeShift, 'id'> = {
+          employeeId,
+          date,
+          timeSlot: TIME_SLOTS[startIndex].id,
+          status: firstShift.status,
+          customerName: firstShift.customerName,
+          notes: firstShift.notes,
+          startTime,
+          endTime,
+        };
+        console.log('➕ Adding final merged single shift:', newShift);
+        handleShiftAdd(newShift);
       }
     }
 
@@ -1437,6 +1598,12 @@ export default function ShiftCalendar({
     }
     
     setBarResizeState(null);
+    
+    // リサイズ完了後のスクロール防止フラグを設定
+    setRecentlyResized(true);
+    setTimeout(() => {
+      setRecentlyResized(false);
+    }, 1000); // 1秒後にリセット
   };
 
   const handleShiftSave = () => {
@@ -1561,6 +1728,310 @@ export default function ShiftCalendar({
     setSelectedShift(null);
   };
 
+  // 新しいモーダル用のハンドラ
+  const handleShiftModalSave = (data: ShiftModalData) => {
+    console.log('💾 handleShiftModalSave called with:', data);
+
+    // バリデーション
+    if (data.employeeIds.length === 0 || !data.startTime || !data.endTime) {
+      alert('必須項目を入力してください');
+      return;
+    }
+
+    // 日付リストを決定
+    let dates: string[] = [];
+    
+    console.log('📅 Date selection logic:', {
+      hasDates: !!(data.dates && data.dates.length > 0),
+      datesCount: data.dates?.length || 0,
+      hasStartDate: !!data.startDate,
+      hasEndDate: !!data.endDate,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      dates: data.dates
+    });
+    
+    if (data.dates && data.dates.length > 0) {
+      // 一括登録の場合：複数日付を使用
+      dates = data.dates;
+      console.log('📅 Using multiple dates (bulk):', dates);
+    } else if (data.startDate && data.endDate) {
+      // 単日登録の場合：日付範囲を生成
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+      console.log('📅 Using date range (range):', dates);
+      
+      // 日跨ぎ（日をまたぐシフト）の場合は特別な処理が必要
+      if (data.startTime >= data.endTime) {
+        console.log('🌙 日跨ぎシフト検出:', { startTime: data.startTime, endTime: data.endTime });
+      }
+    } else if (data.startDate) {
+      // 編集・作成の場合：単一日付
+      dates = [data.startDate];
+      console.log('📅 Using single date (edit/create):', dates);
+    } else {
+      alert('日付を選択してください');
+      return;
+    }
+
+    // 編集モードの場合は即座に更新
+    if (shiftModalMode === 'edit' && selectedShift) {
+      const employeeId = data.employeeIds[0];
+      const startIndex = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
+      const updatedShift: EmployeeShift = {
+        ...selectedShift,
+        status: data.status,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        notes: data.notes,
+        timeSlot: TIME_SLOTS[startIndex].id,
+      };
+      onUpdateShift(employeeId, updatedShift);
+      
+      // モーダルを閉じる
+      setShowShiftModal(false);
+      setEditingShift(null);
+      setSelectedShift(null);
+      return;
+    }
+
+    // 新規作成モード：全てのシフトを事前に準備
+    const allShifts: Omit<EmployeeShift, 'id'>[] = [];
+    const affectedEmployees: string[] = [];
+    const affectedDates: string[] = [];
+    const skippedShifts: Array<{employeeId: string, date: string}> = [];
+    
+    for (const employeeId of data.employeeIds) {
+      // 日跨ぎシフトかどうかを判定（startTime >= endTime または複数日範囲）
+      const isDayCrossing = (data.startTime >= data.endTime) || (data.mode === 'range' && dates.length > 1);
+      
+      if (isDayCrossing) {
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        
+        // 1) 起点日: 開始時刻 -> 24:00
+        if (!checkShiftOverlap(employeeId, firstDate, data.startTime, '24:00', undefined, data.status)) {
+          const startIdx = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
+          if (startIdx !== -1) {
+            const startShift = {
+              employeeId,
+              date: firstDate,
+              timeSlot: TIME_SLOTS[startIdx].id,
+              status: data.status,
+              notes: `${data.notes} (日跨ぎ-起点)` ,
+              startTime: data.startTime,
+              endTime: '24:00'
+            };
+            allShifts.push(startShift);
+            console.log('📝 Created start shift:', startShift);
+            if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
+            if (!affectedDates.includes(firstDate)) affectedDates.push(firstDate);
+          }
+        } else {
+          const employee = employees.find(emp => emp.id === employeeId);
+          skippedShifts.push({ employeeId: employee?.name || employeeId, date: firstDate });
+        }
+
+        // 2) 中日: 00:00 -> 24:00（存在する場合）
+        if (dates.length > 2) {
+          for (let i = 1; i < dates.length - 1; i++) {
+            const midDate = dates[i];
+            if (!checkShiftOverlap(employeeId, midDate, '00:00', '24:00', undefined, data.status)) {
+              // 00:00のTIME_SLOTを探す（複数の可能性を試す）
+              let zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '00:00');
+              if (zeroIdx === -1) {
+                zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '0:00');
+              }
+              if (zeroIdx === -1) {
+                zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '24:00');
+              }
+              if (zeroIdx === -1) {
+                zeroIdx = 0; // フォールバック
+              }
+              
+              if (zeroIdx >= 0 && zeroIdx < TIME_SLOTS.length) {
+                const midShift = {
+                  employeeId,
+                  date: midDate,
+                  timeSlot: TIME_SLOTS[zeroIdx].id,
+                  status: data.status,
+                  notes: `${data.notes} (日跨ぎ-中日)`,
+                  startTime: '00:00',
+                  endTime: '24:00'
+                };
+                allShifts.push(midShift);
+                console.log('📝 Created middle shift:', midShift);
+                if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
+                if (!affectedDates.includes(midDate)) affectedDates.push(midDate);
+              }
+            } else {
+              const employee = employees.find(emp => emp.id === employeeId);
+              skippedShifts.push({ employeeId: employee?.name || employeeId, date: midDate });
+            }
+          }
+        }
+
+        // 3) 最終日: 00:00 -> endTime
+        if (dates.length > 1) {
+          console.log(`🔍 Checking end shift creation for ${lastDate}:`, {
+            employeeId,
+            lastDate,
+            endTime: data.endTime,
+            datesLength: dates.length
+          });
+          
+          const overlapCheck = checkShiftOverlap(employeeId, lastDate, '00:00', data.endTime, undefined, data.status);
+          console.log(`🔍 Overlap check result for end shift: ${overlapCheck}`);
+          
+          if (!overlapCheck) {
+            // 00:00のTIME_SLOTを探す（複数の可能性を試す）
+            let zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '00:00');
+            
+            // 00:00が見つからない場合、他の形式を試す
+            if (zeroIdx === -1) {
+              zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '0:00');
+            }
+            if (zeroIdx === -1) {
+              zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '24:00');
+            }
+            // 最初のスロットを使用（フォールバック）
+            if (zeroIdx === -1) {
+              zeroIdx = 0;
+              console.log('⚠️ No 00:00 slot found, using first slot as fallback');
+            }
+            
+            console.log(`🔍 Zero index found: ${zeroIdx}`);
+            
+            if (zeroIdx >= 0 && zeroIdx < TIME_SLOTS.length) {
+              const endShift = {
+                employeeId,
+                date: lastDate,
+                timeSlot: TIME_SLOTS[zeroIdx].id,
+                status: data.status,
+                notes: `${data.notes} (日跨ぎ-終点)`,
+                startTime: '00:00',
+                endTime: data.endTime
+              };
+              allShifts.push(endShift);
+              console.log('📝 Created end shift:', endShift);
+              if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
+              if (!affectedDates.includes(lastDate)) affectedDates.push(lastDate);
+            } else {
+              console.error('❌ Could not find valid TIME_SLOTS entry');
+            }
+          } else {
+            const employee = employees.find(emp => emp.id === employeeId);
+            console.log(`⚠️ End shift skipped due to overlap for ${employee?.name || employeeId} on ${lastDate}`);
+            skippedShifts.push({ employeeId: employee?.name || employeeId, date: lastDate });
+          }
+        } else {
+          console.log(`⚠️ End shift not created because dates.length = ${dates.length} (need > 1)`);
+        }
+
+        // 通常ループはスキップ
+        continue;
+      }
+
+      // 通常のシフトの場合のみ、日付ごとのループを実行
+      if (!isDayCrossing) {
+        for (const date of dates) {
+          // 重複チェック
+          if (checkShiftOverlap(employeeId, date, data.startTime, data.endTime, undefined, data.status)) {
+            console.warn(`⚠️ Shift overlap detected for employee ${employeeId} on ${date}`);
+            const employee = employees.find(emp => emp.id === employeeId);
+            skippedShifts.push({
+              employeeId: employee?.name || employeeId,
+              date
+            });
+            continue; // スキップ
+          }
+
+          // 時間範囲内のスロットを取得
+          const startIndex = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
+          const endIndex = TIME_SLOTS.findIndex(ts => ts.end === data.endTime);
+
+          if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
+            console.error('Invalid time range');
+            continue;
+          }
+
+          // 通常のシフトの場合（1レコードのみ作成）
+          const newShift: Omit<EmployeeShift, 'id'> = {
+            employeeId,
+            date,
+            timeSlot: TIME_SLOTS[startIndex].id,
+            status: data.status,
+            notes: data.notes,
+            startTime: data.startTime,
+            endTime: data.endTime,
+          };
+          allShifts.push(newShift);
+          
+          // 影響を受ける従業員と日付を記録
+          if (!affectedEmployees.includes(employeeId)) {
+            affectedEmployees.push(employeeId);
+          }
+          if (!affectedDates.includes(date)) {
+            affectedDates.push(date);
+          }
+        }
+      }
+    }
+    
+    // スキップされたシフトがある場合は警告表示
+    if (skippedShifts.length > 0) {
+      const skippedList = skippedShifts.map(s => `${s.employeeId} (${s.date})`).join('\n');
+      alert(`以下の日付は既にシフトが登録されているため、登録できませんでした：\n\n${skippedList}`);
+    }
+
+    // 全てのシフトを一括で作成
+    if (allShifts.length > 0) {
+      console.log(`📝 Creating ${allShifts.length} shifts in batch for ${affectedEmployees.length} employees across ${affectedDates.length} dates`);
+      console.log('📊 Affected employees:', affectedEmployees);
+      console.log('📊 Affected dates:', affectedDates);
+      
+      // 従業員ごと、日付ごとにグループ化
+      const shiftsByEmployeeAndDate: Record<string, Record<string, Omit<EmployeeShift, 'id'>[]>> = {};
+      
+      allShifts.forEach(shift => {
+        if (!shiftsByEmployeeAndDate[shift.employeeId]) {
+          shiftsByEmployeeAndDate[shift.employeeId] = {};
+        }
+        if (!shiftsByEmployeeAndDate[shift.employeeId][shift.date]) {
+          shiftsByEmployeeAndDate[shift.employeeId][shift.date] = [];
+        }
+        shiftsByEmployeeAndDate[shift.employeeId][shift.date].push(shift);
+      });
+      
+      // 従業員ごと、日付ごとに順次処理（状態更新の競合を避けるため）
+      affectedEmployees.forEach(employeeId => {
+        affectedDates.forEach(date => {
+          const shiftsForEmployeeAndDate = shiftsByEmployeeAndDate[employeeId]?.[date] || [];
+          if (shiftsForEmployeeAndDate.length > 0) {
+            console.log(`📝 Creating ${shiftsForEmployeeAndDate.length} shifts for ${employeeId} on ${date}: ${shiftsForEmployeeAndDate[0].startTime}-${shiftsForEmployeeAndDate[shiftsForEmployeeAndDate.length - 1].endTime}`);
+            
+            // 同じ従業員・同じ日付のシフトを一括で追加
+            shiftsForEmployeeAndDate.forEach(shift => {
+              handleShiftAdd(shift);
+            });
+          }
+        });
+      });
+      
+      // mergeAdjacentShiftsはuseEffectで自動的に実行されるため、ここでは実行しない
+      console.log('✅ Shift creation completed - mergeAdjacentShifts will be triggered by useEffect');
+    }
+
+    // モーダルを閉じる
+    setShowShiftModal(false);
+    setEditingShift(null);
+    setSelectedShift(null);
+  };
+
   const goToPreviousPeriod = () => {
     const newDate = new Date(currentDate);
     if (viewMode === 'month') {
@@ -1603,16 +2074,14 @@ export default function ShiftCalendar({
     <>
       {/* リサイズハンドル - 左端 */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-4 cursor-w-resize opacity-0 group-hover:opacity-100 bg-blue-600 hover:bg-blue-700 transition-all flex items-center justify-center pointer-events-auto"
+        className="absolute left-0 top-0 bottom-0 w-4 cursor-w-resize opacity-0 group-hover:opacity-100 bg-blue-600 hover:bg-blue-700 transition-all flex items-center justify-center pointer-events-auto z-20"
         onMouseDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
           onResizeStart('start', block, employee, index);
         }}
-        onMouseUp={(e) => {
+        onMouseEnter={(e) => {
           e.stopPropagation();
-          e.preventDefault();
-          handleBarResizeEnd();
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -1624,16 +2093,14 @@ export default function ShiftCalendar({
       
       {/* リサイズハンドル - 右端 */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-4 cursor-e-resize opacity-0 group-hover:opacity-100 bg-blue-600 hover:bg-blue-700 transition-all flex items-center justify-center pointer-events-auto"
+        className="absolute right-0 top-0 bottom-0 w-4 cursor-e-resize opacity-0 group-hover:opacity-100 bg-blue-600 hover:bg-blue-700 transition-all flex items-center justify-center pointer-events-auto z-20"
         onMouseDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
           onResizeStart('end', block, employee, index);
         }}
-        onMouseUp={(e) => {
+        onMouseEnter={(e) => {
           e.stopPropagation();
-          e.preventDefault();
-          handleBarResizeEnd();
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -1661,15 +2128,15 @@ export default function ShiftCalendar({
   const DayView = () => {
     const employeeRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
 
-    // 選択された従業員にスクロール
+    // ハイライトされた従業員にスクロール（リサイズ中は無効化）
     useEffect(() => {
-      if (selectedEmployee && employeeRefs.current[selectedEmployee.id]) {
-        employeeRefs.current[selectedEmployee.id]?.scrollIntoView({
+      if (highlightedEmployee && employeeRefs.current[highlightedEmployee.id] && !barResizeState && !dragState && !recentlyResized) {
+        employeeRefs.current[highlightedEmployee.id]?.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         });
       }
-    }, [selectedEmployee]);
+    }, [highlightedEmployee, barResizeState, dragState, recentlyResized]);
 
     const getShiftBlockStyle = (block: any) => {
       const width = ((block.endIndex - block.startIndex + 1) / filteredTimeSlots.length) * 100;
@@ -1745,20 +2212,34 @@ export default function ShiftCalendar({
                 ＞
               </button>
             </div>
-            {/* 保存ボタン（日ビュー） */}
-            {onSave && (
+            <div className="flex items-center gap-2">
+              {/* シフト追加ボタン */}
               <button
-                onClick={onSave}
-                disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
-                className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
-                  unsavedShiftIds && unsavedShiftIds.size > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                onClick={() => {
+                  setShiftModalMode('bulk');
+                  setEditingShift(null);
+                  setSelectedShift(null);
+                  setShowShiftModal(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
-                保存
+                シフト追加
               </button>
-            )}
+              {/* 保存ボタン（日ビュー） */}
+              {onSave && (
+                <button
+                  onClick={onSave}
+                  disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
+                  className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
+                    unsavedShiftIds && unsavedShiftIds.size > 0
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  保存
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1824,11 +2305,44 @@ export default function ShiftCalendar({
                     key={employee.id} 
                     data-employee-id={employee.id}
                     ref={(el) => { employeeRefs.current[employee.id] = el; }}
-                    className={`border-b border-gray-200 hover:bg-gray-50 ${
-                      selectedEmployee?.id === employee.id ? 'bg-blue-50 ring-2 ring-blue-200' : ''
+                    className={`border-b border-gray-200 ${
+                      highlightedEmployee?.id === employee.id 
+                        ? 'bg-blue-50 ring-2 ring-blue-200' 
+                        : 'hover:bg-gray-50'
                     }`}
+                    onClick={(e) => {
+                      // リサイズハンドルやシフトブロックがクリックされた場合は何もしない
+                      if (e.target !== e.currentTarget && !(e.target as HTMLElement).closest('td:first-child')) {
+                        return;
+                      }
+                      // 従業員名部分をクリックした場合のみ選択状態を更新
+                      if (selectedEmployee?.id === employee.id) {
+                        // 既に選択されている場合は解除
+                        setSelectedEmployee(null);
+                      } else {
+                        // 新しく選択
+                        setSelectedEmployee(employee);
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      // リサイズハンドルがクリックされた場合は何もしない
+                      if (e.target !== e.currentTarget) {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('.cursor-w-resize, .cursor-e-resize')) {
+                          return;
+                        }
+                      }
+                      // カーソルが当たったら選択状態だけを解除（青枠は残す）
+                      if (selectedEmployee?.id === employee.id) {
+                        setSelectedEmployee(null);
+                      }
+                    }}
                   >
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200">
+                    <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-10 border-r border-gray-200 cursor-pointer transition-colors ${
+                      highlightedEmployee?.id === employee.id 
+                        ? 'bg-blue-50' 
+                        : 'bg-white hover:bg-blue-50'
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span>{employee.name}</span>
@@ -1874,12 +2388,15 @@ export default function ShiftCalendar({
                           const actualHours = (endMinutes - startMinutes) / 60;
                           console.log(`📊 Bar ${index+1}: ${block.startTime}-${block.endTime}, width=${width.toFixed(1)}%, left=${left.toFixed(1)}% (indices: ${startIndex}-${endIndex}, actual: ${actualHours}h)`);
                           
+                          // 日跨ぎシフトかどうかを判定
+                          const isDayCrossing = block.isDayCrossing;
+                          
                           const statusColors = {
-                            working: 'bg-lime-400',
-                            unavailable: 'bg-gray-400',
+                            working: isDayCrossing ? 'bg-gradient-to-r from-lime-400 to-purple-400' : 'bg-lime-400',
+                            unavailable: isDayCrossing ? 'bg-gradient-to-r from-gray-400 to-red-400' : 'bg-gray-400',
                           };
                           
-                          console.log(`🎨 Block ${index+1} status: ${block.status}, color: ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'}`);
+                          console.log(`🎨 Block ${index+1} status: ${block.status}, isDayCrossing: ${isDayCrossing}, color: ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'}`);
                           
                           // このブロックに該当するシフトを見つける
                           const blockShift = employees
@@ -1891,20 +2408,30 @@ export default function ShiftCalendar({
                             });
                           const isBlockSelected = selectedShifts && blockShift && selectedShifts.some(s => s.id === blockShift.id);
                           
+                          // 日跨ぎシフトのタイトル
+                          const title = isDayCrossing && block.originalStartTime && block.originalEndTime
+                            ? `🌙 日跨ぎ: ${block.originalStartTime} → ${block.originalEndTime} ${SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}`
+                            : `${block.startTime}-${block.endTime} ${SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}`;
+                          
                           return (
                             <div
                               key={index}
                               className={`absolute h-full ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'} group-hover:opacity-80 transition-opacity relative cursor-pointer ${
                                 isBlockSelected ? 'ring-2 ring-blue-500 ring-inset' : ''
-                              }`}
+                              } ${isDayCrossing ? 'border-2 border-purple-300' : ''}`}
                               style={{
                                 width: `${width}%`,
                                 left: `${left}%`,
                               }}
-                              title={`${block.startTime}-${block.endTime} ${SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}`}
+                              title={title}
                               onClick={(e) => {
-                                // リサイズハンドルがクリックされた場合は何もしない
-                                if (e.target !== e.currentTarget) return;
+                                // リサイズハンドルやその子要素がクリックされた場合は何もしない
+                                if (e.target !== e.currentTarget) {
+                                  const target = e.target as HTMLElement;
+                                  if (target.closest('.cursor-w-resize, .cursor-e-resize')) {
+                                    return;
+                                  }
+                                }
                                 
                                 // コピーモードの場合はクリップボード処理
                                 if (clipboardMode === 'copy') {
@@ -1932,6 +2459,7 @@ export default function ShiftCalendar({
                                   });
                                 
                                 if (shift) {
+                                  setShiftModalMode('edit');
                                   setSelectedShift(shift);
                                   setEditingShift({ ...shift });
                                   setShowShiftModal(true);
@@ -2081,6 +2609,7 @@ export default function ShiftCalendar({
                                   
                                   // 通常モード：モーダルを開く
                                   console.log('🔧 Normal mode - opening modal');
+                                  setShiftModalMode('edit');
                                   setSelectedShift(shift);
                                   setEditingShift({ ...shift });
                                   setShowShiftModal(true);
@@ -2214,16 +2743,32 @@ export default function ShiftCalendar({
       return shifts.some(shift => unsavedShiftIds.has(shift.id));
     };
 
-    // シフトの色を決定（未保存=グレー、保存済み=薄い青緑）
+    // シフトの色を決定（未保存=グレー、保存済み=薄い青緑、日跨ぎ=特別色）
     const getShiftColor = (employeeId: string, date: string) => {
       const shifts = getShiftsForDate(employeeId, date);
       if (shifts.length === 0) return { bg: 'bg-gray-100', text: 'text-gray-700' };
       
+      // 日跨ぎシフトをチェック
+      const dayCrossingShifts = shifts.filter(shift => 
+        shift.notes && shift.notes.includes('日跨ぎ')
+      );
+      
       const isUnsaved = hasUnsavedShifts(employeeId, date);
-      if (isUnsaved) {
-        return { bg: 'bg-gray-200', text: 'text-gray-700' }; // 未保存 = 薄いグレー
+      
+      if (dayCrossingShifts.length > 0) {
+        // 日跨ぎシフトの場合（より目立つ色にする）
+        if (isUnsaved) {
+          return { bg: 'bg-gradient-to-r from-orange-200 to-pink-200', text: 'text-orange-900' };
+        } else {
+          return { bg: 'bg-gradient-to-r from-orange-100 to-pink-100', text: 'text-orange-800' };
+        }
       } else {
-        return { bg: 'bg-teal-50', text: 'text-teal-800' }; // 保存済み = 薄い青緑
+        // 通常のシフト
+        if (isUnsaved) {
+          return { bg: 'bg-gray-200', text: 'text-gray-700' }; // 未保存 = 薄いグレー
+        } else {
+          return { bg: 'bg-teal-50', text: 'text-teal-800' }; // 保存済み = 薄い青緑
+        }
       }
     };
 
@@ -2234,68 +2779,214 @@ export default function ShiftCalendar({
       const confirmedShifts = shifts.filter(s => s.status === 'working');
       if (confirmedShifts.length === 0) return null;
 
-      const timeSlots = confirmedShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-      if (timeSlots.length === 0) return null;
+      console.log(`🔍 getShiftTimeRange called for ${employeeId} on ${date}:`, {
+        shiftsCount: shifts.length,
+        confirmedShiftsCount: confirmedShifts.length,
+        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+      });
 
-      // 時間帯をソート
-      const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-      
-      // 連続する時間帯をグループ化
-      const timeGroups: string[][] = [];
-      let currentGroup: string[] = [];
-      
-      sortedTimeSlots.forEach((slot, index) => {
-        if (index === 0) {
-          currentGroup = [slot.start, slot.end];
+      // 日跨ぎシフトの場合は特別な処理
+      const dayCrossingShifts = confirmedShifts.filter(s => 
+        s.notes && s.notes.includes('日跨ぎ')
+      );
+
+      console.log(`🔍 Day crossing detection for ${employeeId} on ${date}:`, {
+        dayCrossingShiftsCount: dayCrossingShifts.length,
+        dayCrossingShifts: dayCrossingShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
+        allConfirmedShifts: confirmedShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
+        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime, status: s.status }))
+      });
+
+      if (dayCrossingShifts.length > 0) {
+        // 日跨ぎシフトの場合：起点から終点までの時間範囲を計算
+        const startShift = dayCrossingShifts.find(s => 
+          s.notes && (s.notes.includes('日跨ぎ-1日目') || s.notes.includes('日跨ぎ-起点'))
+        );
+        
+        if (startShift) {
+          // 終点シフトを探す（次の日から）
+          let endTime = startShift.endTime;
+          let dayCount = 1;
+          
+          // 次の日以降の終点シフトを探す
+          let checkDate = new Date(date);
+          for (let i = 0; i < 10; i++) { // 安全上の上限
+            checkDate.setDate(checkDate.getDate() + 1);
+            const nextDateStr = checkDate.toISOString().split('T')[0];
+            const nextDayShifts = getShiftsForDate(employeeId, nextDateStr);
+            const confirmedNextDayShifts = nextDayShifts.filter(s => s.status === 'working');
+            
+            console.log(`🔍 Checking next day ${nextDateStr}:`, {
+              allShiftsCount: nextDayShifts.length,
+              confirmedShiftsCount: confirmedNextDayShifts.length,
+              shifts: confirmedNextDayShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+            });
+            
+            const endShift = confirmedNextDayShifts.find(s => 
+              s.notes && (s.notes.includes('日跨ぎ-2日目') || s.notes.includes('日跨ぎ-終点'))
+            );
+            
+            if (endShift) {
+              endTime = endShift.endTime;
+              dayCount = i + 2;
+              console.log(`🎯 Found end shift on ${nextDateStr}:`, { endTime, dayCount });
+              break;
+            }
+            
+            // 中日シフトがある場合はカウントを続ける
+            const midShifts = confirmedNextDayShifts.filter(s => 
+              s.notes && s.notes.includes('日跨ぎ-中日')
+            );
+            if (midShifts.length === 0) {
+              console.log(`⚠️ No mid shifts found on ${nextDateStr}, breaking`);
+              break;
+            }
+            dayCount++;
+            console.log(`📅 Found ${midShifts.length} mid shifts on ${nextDateStr}, continuing...`);
+          }
+          
+          console.log(`🌙 Day crossing time range for ${employeeId} on ${date}:`, {
+            startShift: { startTime: startShift.startTime, endTime: startShift.endTime, notes: startShift.notes },
+            endTime,
+            dayCount,
+            result: `1日目 ${startShift.startTime}〜${dayCount}日目 ${endTime}`
+          });
+          
+          return `1日目 ${startShift.startTime}〜${dayCount}日目 ${endTime}`;
         } else {
-          const prevSlot = sortedTimeSlots[index - 1];
-          // 前の時間帯の終了時間と現在の開始時間が同じかチェック
-          if (prevSlot.end === slot.start) {
-            // 連続している場合、終了時間を更新
-            currentGroup[1] = slot.end;
+          // 起点シフトが見つからない場合のフォールバック
+          console.log(`⚠️ No start shift found for day crossing employee ${employeeId} on ${date}, using first shift`);
+          const firstShift = dayCrossingShifts[0];
+          if (firstShift) {
+            return `🌙 ${firstShift.startTime}〜${firstShift.endTime}`;
+          }
+        }
+      }
+
+      // 通常のシフトの場合：直接 startTime/endTime を使用してマージ
+      const ranges = confirmedShifts
+        .map(s => ({
+          start: s.startTime || (TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || ''),
+          end: s.endTime || (TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || ''),
+        }))
+        .filter(r => r.start && r.end)
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      const merged: { start: string; end: string }[] = [];
+      ranges.forEach(r => {
+        if (merged.length === 0) {
+          merged.push({ ...r });
+        } else {
+          const last = merged[merged.length - 1];
+          if (last.end === r.start) {
+            last.end = r.end; // 連結
           } else {
-            // 中抜けがある場合、現在のグループを保存して新しいグループを開始
-            timeGroups.push([...currentGroup]);
-            currentGroup = [slot.start, slot.end];
+            merged.push({ ...r });
           }
         }
       });
-      
-      // 最後のグループを追加
-      timeGroups.push(currentGroup);
-      
-      // 時間帯を文字列に変換
-      const timeRanges = timeGroups.map(group => `${group[0]}〜${group[1]}`);
-      
-      // 総労働時間を計算
-      const totalMinutes = timeGroups.reduce((total, group) => {
-        const startTime = group[0].split(':').map(Number);
-        const endTime = group[1].split(':').map(Number);
-        const startMinutes = startTime[0] * 60 + startTime[1];
-        const endMinutes = endTime[0] * 60 + endTime[1];
-        return total + (endMinutes - startMinutes);
-      }, 0);
-      
-      const totalHours = Math.floor(totalMinutes / 60);
-      const remainingMinutes = totalMinutes % 60;
-      const totalTimeStr = totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
-      
-      // 複数の時間帯がある場合はカンマ区切りで表示
-      if (timeRanges.length > 1) {
-        return timeRanges.join(', ');
-      } else {
-        return timeRanges[0];
-      }
+
+      const timeRanges = merged.map(m => `${m.start}〜${m.end}`);
+      return timeRanges.join(', ');
     };
 
     // 日付ごとのイベントを取得
     const getEventsForDate = (date: string): CalendarEvent[] => {
-      const activeEmployees = showOnlyShiftEmployees 
-        ? filteredEmployees.filter(employee => {
-          const shifts = getShiftsForDate(employee.id, date);
-          return shifts.length > 0; // シフトがある従業員のみ表示
-        })
-        : filteredEmployees; // 全てのアクティブな従業員を表示
+      // 日跨ぎシフトの場合は中日・終点は表示しない（起点のみ表示）
+      const shouldShowDate = (employeeId: string, targetDate: string) => {
+        const shifts = getShiftsForDate(employeeId, targetDate);
+        
+        // 中日・終点シフトのみの場合は表示しない
+        const middleOrEndShifts = shifts.filter(shift => 
+          shift.notes && (
+            shift.notes.includes('日跨ぎ-2日目') || 
+            shift.notes.includes('日跨ぎ-中日') || 
+            shift.notes.includes('日跨ぎ-終点')
+          )
+        );
+        
+        // すべてのシフトが中日・終点の場合は表示しない
+        if (middleOrEndShifts.length === shifts.length && shifts.length > 0) {
+          return false;
+        }
+        
+        // 日跨ぎシフトの起点がある場合、通常シフトは表示しない（重複回避）
+        const hasDayCrossingStart = shifts.some(shift => 
+          shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
+        );
+        
+        if (hasDayCrossingStart) {
+          // 日跨ぎシフトの起点のみ表示（通常シフトは完全に除外）
+          // 日跨ぎシフトの起点シフトのみを返す
+          return true;
+        }
+        
+        // 通常のシフトの場合は表示
+        return shifts.length > 0;
+      };
+
+      // 日跨ぎシフトの結合表示用の関数（複数日対応）
+      const getCombinedDayCrossingShifts = (employeeId: string, date: string) => {
+        const shifts = getShiftsForDate(employeeId, date);
+        const dayCrossingShifts = shifts.filter(shift => 
+          shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
+        );
+        
+        console.log(`🔍 getCombinedDayCrossingShifts: ${employeeId} on ${date}`, {
+          shiftsCount: shifts.length,
+          dayCrossingShiftsCount: dayCrossingShifts.length,
+          allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+        });
+        
+        if (dayCrossingShifts.length > 0) {
+          // 日跨ぎシフトがある場合：起点から連続して「中日/終点」を収集（通常シフトは除外）
+          const collected: EmployeeShift[] = [...dayCrossingShifts]; // 起点シフトのみから開始
+          let d = new Date(date);
+          for (let i = 0; i < 10; i++) { // 安全上の上限
+            d.setDate(d.getDate() + 1);
+            const ds = d.toISOString().split('T')[0];
+            const nextDay = getShiftsForDate(employeeId, ds);
+            const mids = nextDay.filter(s => s.notes && (s.notes.includes('日跨ぎ-中日') || s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')));
+            
+            console.log(`🔍 Checking next day ${ds}:`, {
+              nextDayShiftsCount: nextDay.length,
+              midsCount: mids.length,
+              nextDayShifts: nextDay.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+            });
+            
+            if (mids.length === 0) break;
+            collected.push(...mids);
+            if (mids.some(s => s.notes && (s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')))) break;
+          }
+          
+          console.log(`✅ Collected ${collected.length} shifts for day crossing`, {
+            dates: Array.from(new Set(collected.map(s => s.date))).sort(),
+            collected: collected.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+          });
+          
+          return collected.map(s => ({ ...s, __startDate: date } as any));
+        }
+        
+        // 日跨ぎシフトがない場合のみ通常シフトを返す
+        // 日跨ぎシフトがある場合は通常シフトを除外
+        const hasAnyDayCrossing = shifts.some(s => s.notes && s.notes.includes('日跨ぎ'));
+        if (hasAnyDayCrossing) {
+          // 日跨ぎシフトがある場合は通常シフトを除外
+          const normalShifts = shifts.filter(s => !s.notes || !s.notes.includes('日跨ぎ'));
+          console.log(`🚫 Excluding normal shifts for day crossing employee ${employeeId} on ${date}:`, {
+            normalShiftsCount: normalShifts.length,
+            normalShifts: normalShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+          });
+          return []; // 日跨ぎシフトがある場合は通常シフトは表示しない
+        }
+        
+        return shifts;
+      };
+
+      // シフトが入っている従業員のみを表示（月ビュー用）
+      const activeEmployees = filteredEmployees.filter(employee => {
+        return shouldShowDate(employee.id, date);
+      });
       
       // 展開された日付の場合は全ての従業員を表示
       const weekKey = getWeekKey(date);
@@ -2305,8 +2996,9 @@ export default function ShiftCalendar({
       // 完全に個別の動作：該当日付のみが展開されている場合のみ全表示
       if ((expandedDate === date || (allDatesExpanded && !collapsedDates.has(date)))) {
         const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
-          const shifts = getShiftsForDate(employee.id, date);
-          const hasShifts = shifts.length > 0;
+          // 結合されたシフトを取得
+          const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+          const hasShifts = allShifts.length > 0;
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
           
@@ -2321,7 +3013,7 @@ export default function ShiftCalendar({
               console.log('Expanded event onClick triggered for:', employee.name, 'clipboardMode:', clipboardMode);
               if (clipboardMode === 'copy' && hasShifts && onShiftClickForClipboard) {
                 // コピーモードの場合、各シフトを選択可能にする
-                shifts.forEach(shift => {
+                allShifts.forEach(shift => {
                   onShiftClickForClipboard(shift);
                 });
               } else {
@@ -2332,7 +3024,8 @@ export default function ShiftCalendar({
             metadata: {
               employee,
               timeRange,
-              shifts
+              shifts: allShifts,
+              startDate: date
             }
           };
         });
@@ -2373,8 +3066,9 @@ export default function ShiftCalendar({
         const remainingCount = activeEmployees.length - 4;
         
         const events = displayEmployees.filter(employee => employee && employee.name).map(employee => {
-          const shifts = getShiftsForDate(employee.id, date);
-          const hasShifts = shifts.length > 0;
+          // 結合されたシフトを取得
+          const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+          const hasShifts = allShifts.length > 0;
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
           
@@ -2388,7 +3082,7 @@ export default function ShiftCalendar({
             onClick: () => {
               if (clipboardMode === 'copy' && hasShifts && onShiftClickForClipboard) {
                 // コピーモードの場合、各シフトを選択可能にする
-                shifts.forEach(shift => {
+                allShifts.forEach(shift => {
                   onShiftClickForClipboard(shift);
                 });
               } else {
@@ -2399,7 +3093,8 @@ export default function ShiftCalendar({
             metadata: {
               employee,
               timeRange,
-              shifts
+              shifts: allShifts,
+              startDate: date
             }
           };
         });
@@ -2427,8 +3122,9 @@ export default function ShiftCalendar({
       
       // 5人以下の場合は通常表示
       const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
-        const shifts = getShiftsForDate(employee.id, date);
-        const hasShifts = shifts.length > 0;
+        // 結合されたシフトを取得
+        const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+        const hasShifts = allShifts.length > 0;
         const timeRange = getShiftTimeRange(employee.id, date);
         const shiftColor = getShiftColor(employee.id, date);
         
@@ -2442,7 +3138,7 @@ export default function ShiftCalendar({
           onClick: () => {
             if (clipboardMode === 'copy' && hasShifts && onShiftClickForClipboard) {
               // コピーモードの場合、各シフトを選択可能にする
-              shifts.forEach(shift => {
+              allShifts.forEach(shift => {
                 onShiftClickForClipboard(shift);
               });
             } else {
@@ -2453,7 +3149,8 @@ export default function ShiftCalendar({
             metadata: {
               employee,
             timeRange,
-            shifts
+            shifts: allShifts,
+            startDate: date
             }
           };
         });
@@ -2482,8 +3179,8 @@ export default function ShiftCalendar({
     };
 
     // カスタムイベントレンダリング
-    const renderEvent = (event: CalendarEvent, index: number) => {
-      const { employee, timeRange } = event.metadata;
+    const renderEvent = (event: CalendarEvent, index: number, date?: string) => {
+      const { employee, timeRange, shifts, startDate } = event.metadata;
       
       // employeeがnullの場合（+N人表示など）は特別な表示（右上端に配置）
       if (!employee) {
@@ -2514,10 +3211,88 @@ export default function ShiftCalendar({
       // 従業員名の省略処理（6文字以上の場合は改行なしで表示）
       const displayName = employee.name;
       
+      // 日跨ぎシフトかどうかをチェック
+      const isDayCrossing = shifts && shifts.some((shift: EmployeeShift) => 
+        shift.notes && shift.notes.includes('日跨ぎ')
+      );
+      
+      // 日跨ぎシフトの起点かどうかをチェック
+      const isDayCrossingStart = shifts && shifts.some((shift: EmployeeShift) => 
+        shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))
+      );
+      
+      // 日跨ぎシフトの中日・終点かどうかをチェック
+      const isDayCrossingMiddleOrEnd = shifts && shifts.some((shift: EmployeeShift) => 
+        shift.notes && (
+          shift.notes.includes('日跨ぎ-中日') || 
+          shift.notes.includes('日跨ぎ-終点') || 
+          shift.notes.includes('日跨ぎ-2日目')
+        )
+      );
+
+      // デバッグログ追加
+      if (isDayCrossing || isDayCrossingStart || isDayCrossingMiddleOrEnd) {
+        console.log(`🔍 Day crossing debug for ${employee.name}:`, {
+          isDayCrossing,
+          isDayCrossingStart,
+          isDayCrossingMiddleOrEnd,
+          shifts: shifts?.map(s => ({ notes: s.notes, date: s.date, startTime: s.startTime, endTime: s.endTime })),
+          startDate,
+          date
+        });
+      }
+
+      // 日跨ぎシフトの中日・終点は非表示
+      if (isDayCrossingMiddleOrEnd && !isDayCrossingStart) {
+        return null;
+      }
+
+      // 日跨ぎシフトの起点の場合は結合バーとして表示
+      if (isDayCrossingStart && shifts && startDate) {
+        // getShiftTimeRangeを使用して正確な時間表示を取得
+        const dayCrossingTimeRange = getShiftTimeRange(employee.id, startDate);
+        
+        console.log(`🚀 Rendering day crossing start for ${employee.name}:`, {
+          startDate,
+          dayCrossingTimeRange,
+          shifts: shifts.map(s => ({ date: s.date, startTime: s.startTime, endTime: s.endTime, notes: s.notes }))
+        });
+
+        // getShiftTimeRangeから時間表示を取得（「1日目 09:00〜3日目 18:00」形式）
+        const timeDisplay = dayCrossingTimeRange || timeRange || '';
+
+        // 日跨ぎシフト：通常シフトと同じサイズ・色で表示、時間表示のみ日跨ぎ形式
+        return (
+          <div
+            key={event.id}
+            className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 border-2 border-orange-400 ${event.backgroundColor || 'bg-gradient-to-r from-orange-100 to-pink-100'} ${event.color || 'text-orange-800'}`}
+            style={{
+              fontSize: '9px'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              event.onClick?.();
+            }}
+            title={`${employee.name} ${timeDisplay}（日跨ぎ）`}
+          >
+            <div className="flex w-full items-center justify-between gap-0.5 overflow-hidden min-w-0">
+              <span className="font-medium truncate leading-none" style={{ fontSize: '9px' }}>
+                🌙 {employee.name}
+              </span>
+              <span className="opacity-75 truncate leading-none flex-shrink-0" style={{ fontSize: '7px' }}>
+                {timeDisplay}
+              </span>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div
           key={event.id}
-          className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center overflow-hidden hover:shadow-md hover:scale-105 hover:z-10 ${event.backgroundColor || 'bg-gray-100'} ${event.color || 'text-gray-700'}`}
+          className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 ${
+            isDayCrossing ? 'border-2 border-orange-400' : ''
+          } ${event.backgroundColor || 'bg-gray-100'} ${event.color || 'text-gray-700'}`}
           style={{
             fontSize: '9px'
           }}
@@ -2528,6 +3303,7 @@ export default function ShiftCalendar({
           }}
           title={`${employee.name}${timeRange ? ` (${timeRange})` : ''}`}
         >
+          
           {hasMultipleTimeRanges ? (
             // 複数の時間範囲がある場合：名前は中央揃え、時間は横並び
             <div className="flex w-full items-center justify-between gap-0.5 overflow-hidden min-w-0">
@@ -2559,7 +3335,92 @@ export default function ShiftCalendar({
       );
     };
 
-    // カスタム日付セルレンダリング（展開機能付き）
+
+    // 日跨ぎシフトの結合表示用の関数（外部スコープに移動）
+    const getCombinedDayCrossingShiftsForCell = (employeeId: string, date: string) => {
+      const shifts = getShiftsForDate(employeeId, date);
+      const dayCrossingShifts = shifts.filter(shift => 
+        shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
+      );
+      
+      console.log(`🔍 getCombinedDayCrossingShiftsForCell: ${employeeId} on ${date}`, {
+        shiftsCount: shifts.length,
+        dayCrossingShiftsCount: dayCrossingShifts.length,
+        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+      });
+      
+      if (dayCrossingShifts.length > 0) {
+        // 起点から連続して「中日/終点」を収集
+        const collected: EmployeeShift[] = [...shifts];
+        let d = new Date(date);
+        for (let i = 0; i < 10; i++) { // 安全上の上限
+          d.setDate(d.getDate() + 1);
+          const ds = d.toISOString().split('T')[0];
+          const nextDay = getShiftsForDate(employeeId, ds);
+          const mids = nextDay.filter(s => s.notes && (s.notes.includes('日跨ぎ-中日') || s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')));
+          
+          console.log(`🔍 Checking next day ${ds}:`, {
+            nextDayShiftsCount: nextDay.length,
+            midsCount: mids.length,
+            nextDayShifts: nextDay.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+          });
+          
+          if (mids.length === 0) break;
+          collected.push(...mids);
+          if (mids.some(s => s.notes && (s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')))) break;
+        }
+        
+        console.log(`✅ Collected ${collected.length} shifts for day crossing`, {
+          dates: Array.from(new Set(collected.map(s => s.date))).sort(),
+          collected: collected.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+        });
+        
+        return collected.map(s => ({ ...s, __startDate: date } as any));
+      }
+      return [];
+    };
+
+    // 表示月のすべての日跨ぎシフト起点を収集する関数
+    const getAllDayCrossingStartShifts = () => {
+      const startShifts: Array<{
+        employee: Employee;
+        shift: EmployeeShift;
+        startDate: string;
+        allShifts: EmployeeShift[];
+        dates: string[];
+      }> = [];
+
+      // 現在の月の全日付を取得
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day).toISOString().split('T')[0];
+        
+        filteredEmployees.forEach(employee => {
+          const shifts = getShiftsForDate(employee.id, date);
+          shifts.forEach(shift => {
+            if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
+              const allShifts = getCombinedDayCrossingShiftsForCell(employee.id, date);
+              const dates = Array.from(new Set(allShifts.map((s: any) => s.date))).sort();
+              
+              startShifts.push({
+                employee,
+                shift,
+                startDate: date,
+                allShifts,
+                dates
+              });
+            }
+          });
+        });
+      }
+
+      return startShifts;
+    };
+
+    // カスタム日付セルレンダリング（日跨ぎシフト結合バー付き）
     const renderDateCell = (day: any, events: any[]) => {
       const isExpanded = expandedDate === day.date;
       const hasEvents = events.length > 0;
@@ -2570,11 +3431,15 @@ export default function ShiftCalendar({
       // ペーストモードで選択されているかチェック
       const isSelectedForPaste = clipboardMode === 'paste' && pendingPasteDates && pendingPasteDates.includes(day.date);
       
+      // 日跨ぎシフト情報を取得
+      const dayCrossingShifts = getDayCrossingShiftInfo(day.date);
+      
       return (
         <div
           key={day.date}
           data-date-cell
-          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} px-0.5 pt-0.5 pb-0 border cursor-pointer hover:bg-gray-50 transition-all duration-300 relative ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+          data-date={day.date}
+          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} px-0.5 pt-0.5 pb-0 border cursor-pointer hover:bg-gray-50 transition-all duration-300 relative overflow-visible ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
             } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
             expandedDate === day.date 
               ? 'bg-blue-50 border-blue-400 border-2 shadow-md' 
@@ -2610,6 +3475,36 @@ export default function ShiftCalendar({
             )}
           </div>
 
+          {/* 日跨ぎシフト結合バー（起点セルのみ） */}
+          {dayCrossingShifts.map((crossingShift, index) => (
+            <div
+              key={`day-crossing-${crossingShift.employee.id}-${crossingShift.shift.id}`}
+              className="absolute bg-gradient-to-r from-orange-400 to-red-400 text-white rounded shadow-lg border-2 border-orange-500 flex items-center justify-center cursor-pointer z-50"
+              style={{
+                top: `${25 + index * 26}px`,
+                left: '2px',
+                width: `calc(${crossingShift.dayCount * 100}% + ${(crossingShift.dayCount - 1) * 4}px)`,
+                height: '22px',
+                fontSize: '8px',
+                fontWeight: '600',
+                zIndex: 1000 + index
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedShift(crossingShift.shift);
+                setEditingShift(crossingShift.shift);
+                setShiftModalMode('edit');
+                setShowShiftModal(true);
+              }}
+              title={`🌙 ${crossingShift.employee.name} 日跨ぎシフト: ${crossingShift.startTime}～${crossingShift.endTime} (${crossingShift.dayCount}日間)`}
+            >
+              <div className="flex items-center justify-between w-full px-2">
+                <span className="truncate font-bold text-white">🌙 {crossingShift.employee.name}</span>
+                <span className="text-orange-100 text-xs">{crossingShift.startTime}～{crossingShift.endTime}</span>
+              </div>
+            </div>
+          ))}
+
           {hasEvents && (
             <div className="flex flex-col items-center pt-1">
               {events.map((event, index) => renderEvent(event, index))}
@@ -2629,6 +3524,63 @@ export default function ShiftCalendar({
       const newDate = new Date(currentDate);
       newDate.setMonth(newDate.getMonth() + 1);
       setCurrentDate(newDate);
+    };
+
+    // 日跨ぎシフトレンダリング用のヘルパー関数
+    const getDayCrossingShiftInfo = (date: string) => {
+      const dayCrossingShifts: Array<{
+        employee: Employee;
+        shift: EmployeeShift;
+        startDate: string;
+        dates: string[];
+        dayCount: number;
+        position: number;
+        startTime: string;
+        endTime: string;
+      }> = [];
+
+      console.log(`📊 getDayCrossingShiftInfo called for date: ${date}`);
+
+      filteredEmployees.forEach(employee => {
+        const shifts = getShiftsForDate(employee.id, date);
+        shifts.forEach(shift => {
+          if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
+            console.log(`🔍 Found day crossing start shift for ${employee.name} on ${date}:`, {
+              shiftId: shift.id,
+              notes: shift.notes,
+              startTime: shift.startTime,
+              endTime: shift.endTime
+            });
+            
+            const allShifts = getCombinedDayCrossingShiftsForCell(employee.id, date);
+            const dates = Array.from(new Set(allShifts.map((s: any) => s.date))).sort();
+            
+            console.log(`📅 Day crossing dates for ${employee.name}:`, dates);
+            
+            // 時刻情報を取得
+            const firstShift = allShifts.find((s: any) => s.date === dates[0]);
+            const lastShift = allShifts.find((s: any) => s.date === dates[dates.length - 1]);
+            const startTime = firstShift?.startTime || shift.startTime;
+            const endTime = lastShift?.endTime || shift.endTime;
+
+            console.log(`⏰ Time range for ${employee.name}: ${startTime} - ${endTime} (${dates.length} days)`);
+
+            dayCrossingShifts.push({
+              employee,
+              shift,
+              startDate: date,
+              dates,
+              dayCount: dates.length,
+              position: dayCrossingShifts.length,
+              startTime,
+              endTime
+            });
+          }
+        });
+      });
+
+      console.log(`📊 Total day crossing shifts found for ${date}:`, dayCrossingShifts.length);
+      return dayCrossingShifts;
     };
 
     return (
@@ -2652,20 +3604,34 @@ export default function ShiftCalendar({
               ＞
             </button>
           </div>
-          {/* 保存ボタン */}
-          {onSave && (
+          <div className="flex items-center gap-2">
+            {/* シフト追加ボタン */}
             <button
-              onClick={onSave}
-              disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
-              className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
-                unsavedShiftIds && unsavedShiftIds.size > 0
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              onClick={() => {
+                setShiftModalMode('bulk');
+                setEditingShift(null);
+                setSelectedShift(null);
+                setShowShiftModal(true);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
             >
-              保存
+              シフト追加
             </button>
-          )}
+            {/* 保存ボタン */}
+            {onSave && (
+              <button
+                onClick={onSave}
+                disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
+                className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
+                  unsavedShiftIds && unsavedShiftIds.size > 0
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                保存
+              </button>
+            )}
+          </div>
         </div>
         
         <UnifiedMonthCalendar
@@ -2753,22 +3719,8 @@ export default function ShiftCalendar({
                   </button>
                 </div>
 
-                {/* フィルター表示と展開/縮小ボタン */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-sm text-gray-700">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={showOnlyShiftEmployees}
-                        onChange={(e) => setShowOnlyShiftEmployees(e.target.checked)}
-                        className="rounded"
-                      />
-                      <span>出勤予定者のみ表示</span>
-                    </label>
-                    <div className="text-xs text-gray-500">
-                      {displayEmployees.length}名の従業員を表示中
-                    </div>
-                  </div>
+                {/* 展開/縮小ボタン */}
+                <div className="flex items-center justify-end">
                   {/* 展開/縮小ボタン（月ビューのみ表示） */}
                   {viewMode === 'month' && (
                     <div className="flex items-center gap-2">
@@ -2808,151 +3760,20 @@ export default function ShiftCalendar({
         </div>
       </div>
 
-      {/* シフト登録・編集モーダル */}
-      {showShiftModal && editingShift && (
-        <Modal
-          isOpen={showShiftModal}
-          onClose={() => {
-            setShowShiftModal(false);
-            setEditingShift(null);
-            setSelectedShift(null);
-          }}
-          title={selectedShift ? 'シフト編集' : 'シフト登録'}
-          footer={
-            <>
-              {selectedShift && (
-                <button
-                  onClick={handleDeleteShift}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                >
-                  削除
-                </button>
-              )}
-              <button
-                onClick={handleShiftSave}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                {selectedShift ? '更新' : '登録'}
-              </button>
-            </>
-          }
-        >
-          <div className="space-y-4">
-            {/* 従業員情報 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                従業員
-              </label>
-              <select
-                value={editingShift.employeeId}
-                onChange={(e) => setEditingShift({ ...editingShift, employeeId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={!!selectedShift}
-              >
-                {filteredEmployees.map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.position})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 日付 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                日付
-              </label>
-              <input
-                type="date"
-                value={editingShift.date}
-                onChange={(e) => setEditingShift({ ...editingShift, date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* 時間帯 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  開始時間
-                </label>
-                <select
-                  value={editingShift.startTime || ''}
-                  onChange={(e) => setEditingShift({ ...editingShift, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">選択してください</option>
-                  {timeOptions.map(time => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  終了時間
-                </label>
-                <select
-                  value={editingShift.endTime || ''}
-                  onChange={(e) => setEditingShift({ ...editingShift, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">選択してください</option>
-                  {timeOptions.map(time => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* ステータス */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ステータス
-              </label>
-              <select
-                value={editingShift.status}
-                onChange={(e) => setEditingShift({ ...editingShift, status: e.target.value as 'working' | 'unavailable' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="working">出勤</option>
-                <option value="unavailable">欠勤・休暇</option>
-              </select>
-            </div>
-
-            {/* 顧客名（任意） */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                顧客名（任意）
-              </label>
-              <input
-                type="text"
-                value={editingShift.customerName || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, customerName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="例：田中様"
-              />
-            </div>
-
-            {/* メモ（任意） */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                メモ（任意）
-              </label>
-              <textarea
-                value={editingShift.notes || ''}
-                onChange={(e) => setEditingShift({ ...editingShift, notes: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
-                placeholder="例：引越し作業・2DK"
-              />
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* シフト登録・編集モーダル（統合版） */}
+      <ShiftModal
+        isOpen={showShiftModal}
+        onClose={() => {
+          setShowShiftModal(false);
+          setEditingShift(null);
+          setSelectedShift(null);
+        }}
+        mode={shiftModalMode}
+        employees={filteredEmployees}
+        editingShift={editingShift}
+        onSave={handleShiftModalSave}
+        onDelete={selectedShift ? handleDeleteShift : undefined}
+      />
 
     </div>
   );

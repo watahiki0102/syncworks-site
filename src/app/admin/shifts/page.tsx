@@ -715,16 +715,25 @@ export default function ShiftManagement() {
     console.log('🆔 Generated shift ID:', newShift.id);
     console.log('📋 New shift data:', newShift);
     
-    const updatedEmployees = employees.map(employee => {
-      if (employee.id === employeeId) {
-        const updatedEmployee = { ...employee, shifts: [...employee.shifts, newShift] };
-        console.log(`👤 Updated employee ${employee.name}: ${employee.shifts.length} → ${updatedEmployee.shifts.length} shifts`);
-        return updatedEmployee;
+    // setEmployeesを使用して、前の状態を基に更新（状態更新の競合を回避）
+    setEmployees(prevEmployees => {
+      const updatedEmployees = prevEmployees.map(employee => {
+        if (employee.id === employeeId) {
+          const updatedEmployee = { ...employee, shifts: [...employee.shifts, newShift] };
+          console.log(`👤 Updated employee ${employee.name}: ${employee.shifts.length} → ${updatedEmployee.shifts.length} shifts`);
+          return updatedEmployee;
+        }
+        return employee;
+      });
+      
+      // ローカルストレージに保存
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('employees', JSON.stringify(updatedEmployees));
       }
-      return employee;
+      
+      return updatedEmployees;
     });
     
-    saveEmployees(updatedEmployees);
     // 未保存シフトとして記録
     setUnsavedShiftIds(prev => new Set(prev).add(newShift.id));
     

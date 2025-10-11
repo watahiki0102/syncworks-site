@@ -271,10 +271,10 @@ export default function UnifiedMonthCalendar({
           </div>
         )}
 
-        {/* カレンダーグリッド - レスポンシブ対応 */}
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <div className="w-full">
+        {/* カレンダーグリッド - レスポンシブ対応 + 日跨ぎシフトバー対応 */}
+        <div className="p-6 overflow-visible">
+          <div className="overflow-x-auto overflow-y-visible">
+            <div className="w-full overflow-visible">
               {/* 曜日ヘッダー */}
               {showWeekdays && (
                 <div className="grid grid-cols-7 gap-1 mb-1">
@@ -288,7 +288,7 @@ export default function UnifiedMonthCalendar({
 
               {/* 日付グリッド */}
               {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5">
+                <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5 overflow-visible">
                   {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                     const events = getEventsForDate(day.date);
 

@@ -24,6 +24,22 @@ export const VIEW_MODE_LABELS = {
  * 時間帯定義（30分単位）
  */
 export const TIME_SLOTS = [
+  { id: '00:00', label: '00:00-00:30', start: '00:00', end: '00:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '00:30', label: '00:30-01:00', start: '00:30', end: '01:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '01:00', label: '01:00-01:30', start: '01:00', end: '01:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '01:30', label: '01:30-02:00', start: '01:30', end: '02:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '02:00', label: '02:00-02:30', start: '02:00', end: '02:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '02:30', label: '02:30-03:00', start: '02:30', end: '03:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '03:00', label: '03:00-03:30', start: '03:00', end: '03:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '03:30', label: '03:30-04:00', start: '03:30', end: '04:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '04:00', label: '04:00-04:30', start: '04:00', end: '04:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '04:30', label: '04:30-05:00', start: '04:30', end: '05:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '05:00', label: '05:00-05:30', start: '05:00', end: '05:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '05:30', label: '05:30-06:00', start: '05:30', end: '06:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '06:00', label: '06:00-06:30', start: '06:00', end: '06:30', color: 'bg-gray-200 text-gray-700' },
+  { id: '06:30', label: '06:30-07:00', start: '06:30', end: '07:00', color: 'bg-gray-200 text-gray-700' },
+  { id: '07:00', label: '07:00-07:30', start: '07:00', end: '07:30', color: 'bg-blue-100 text-blue-800' },
+  { id: '07:30', label: '07:30-08:00', start: '07:30', end: '08:00', color: 'bg-blue-100 text-blue-800' },
   { id: '08:00', label: '08:00-08:30', start: '08:00', end: '08:30', color: 'bg-blue-100 text-blue-800' },
   { id: '08:30', label: '08:30-09:00', start: '08:30', end: '09:00', color: 'bg-blue-100 text-blue-800' },
   { id: '09:00', label: '09:00-09:30', start: '09:00', end: '09:30', color: 'bg-green-100 text-green-800' },
@@ -50,6 +66,12 @@ export const TIME_SLOTS = [
   { id: '19:30', label: '19:30-20:00', start: '19:30', end: '20:00', color: 'bg-gray-100 text-gray-800' },
   { id: '20:00', label: '20:00-20:30', start: '20:00', end: '20:30', color: 'bg-gray-100 text-gray-800' },
   { id: '20:30', label: '20:30-21:00', start: '20:30', end: '21:00', color: 'bg-gray-100 text-gray-800' },
+  { id: '21:00', label: '21:00-21:30', start: '21:00', end: '21:30', color: 'bg-gray-300 text-gray-800' },
+  { id: '21:30', label: '21:30-22:00', start: '21:30', end: '22:00', color: 'bg-gray-300 text-gray-800' },
+  { id: '22:00', label: '22:00-22:30', start: '22:00', end: '22:30', color: 'bg-gray-300 text-gray-800' },
+  { id: '22:30', label: '22:30-23:00', start: '22:30', end: '23:00', color: 'bg-gray-300 text-gray-800' },
+  { id: '23:00', label: '23:00-23:30', start: '23:00', end: '23:30', color: 'bg-gray-300 text-gray-800' },
+  { id: '23:30', label: '23:30-24:00', start: '23:30', end: '24:00', color: 'bg-gray-300 text-gray-800' },
 ];
 
 /**
