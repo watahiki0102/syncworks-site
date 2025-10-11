@@ -133,9 +133,6 @@ export default function ShiftCalendar({
   } | null>(null);
   const [showOnlyShiftEmployees, setShowOnlyShiftEmployees] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
-  const [editingShift, setEditingShift] = useState<EmployeeShift | null>(null);
-  const [showShiftModal, setShowShiftModal] = useState(false);
   
   // 月ビュー展開状態管理
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
@@ -1145,7 +1142,8 @@ export default function ShiftCalendar({
       const timeOverlap = (startTime < shiftEnd && endTime > shiftStart);
       
       // 同じステータスの場合のみ重複として扱う
-      const statusMatch = currentStatus ? shift.status === currentStatus : true;
+      // currentStatusがundefinedの場合は、既存シフトのステータスと比較しない（常に重複として扱わない）
+      const statusMatch = currentStatus ? shift.status === currentStatus : false;
       const overlap = timeOverlap && statusMatch;
       
       if (timeOverlap) {
@@ -1170,7 +1168,11 @@ export default function ShiftCalendar({
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) return;
 
+    console.log(`🔗 mergeAdjacentShifts called for ${employeeId} on ${date}`);
+
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
+    console.log(`📋 Found ${dayShifts.length} shifts for the day:`, dayShifts.map(s => ({ id: s.id, timeSlot: s.timeSlot, startTime: s.startTime, endTime: s.endTime, status: s.status })));
+
     const sortedShifts = dayShifts.sort((a, b) => {
       const timeA = TIME_SLOTS.find(ts => ts.id === a.timeSlot)?.start || '';
       const timeB = TIME_SLOTS.find(ts => ts.id === b.timeSlot)?.start || '';
@@ -1180,6 +1182,7 @@ export default function ShiftCalendar({
     // 同じステータスの連続するシフトを結合
     const mergedShifts: EmployeeShift[] = [];
     let currentGroup: EmployeeShift[] = [];
+    let hasMerges = false;
 
     sortedShifts.forEach((shift, index) => {
       if (currentGroup.length === 0) {
@@ -1189,19 +1192,30 @@ export default function ShiftCalendar({
         const lastEndTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
         const currentStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
         
+        console.log(`🔍 Comparing shifts: ${lastShift.id} (${lastEndTime}) vs ${shift.id} (${currentStartTime}), status: ${lastShift.status} vs ${shift.status}`);
+        
         // 同じステータスで連続している場合
         if (lastShift.status === shift.status && lastEndTime === currentStartTime) {
+          console.log(`✅ Shifts are adjacent and same status, adding to group`);
           currentGroup.push(shift);
         } else {
           // グループを結合して新しいシフトを作成
           if (currentGroup.length > 1) {
+            console.log(`🔗 Merging group of ${currentGroup.length} shifts`);
+            hasMerges = true;
+            
             const firstShift = currentGroup[0];
             const lastShift = currentGroup[currentGroup.length - 1];
             const startTime = firstShift.startTime || TIME_SLOTS.find(ts => ts.id === firstShift.timeSlot)?.start || '';
             const endTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
             
+            console.log(`📝 Creating merged shift: ${startTime}-${endTime} [${firstShift.status}]`);
+            
             // 既存のシフトを削除
-            currentGroup.forEach(s => onDeleteShift(employeeId, s.id));
+            currentGroup.forEach(s => {
+              console.log(`🗑️ Deleting shift: ${s.id}`);
+              onDeleteShift(employeeId, s.id);
+            });
             
             // 結合されたシフトを作成
             const startIndex = TIME_SLOTS.findIndex(ts => ts.start === startTime);
@@ -1220,6 +1234,7 @@ export default function ShiftCalendar({
                   startTime,
                   endTime,
                 };
+                console.log(`➕ Adding merged shift slot ${i}:`, newShift);
                 handleShiftAdd(newShift);
               }
             }
@@ -1231,13 +1246,21 @@ export default function ShiftCalendar({
 
     // 最後のグループも処理
     if (currentGroup.length > 1) {
+      console.log(`🔗 Merging final group of ${currentGroup.length} shifts`);
+      hasMerges = true;
+      
       const firstShift = currentGroup[0];
       const lastShift = currentGroup[currentGroup.length - 1];
       const startTime = firstShift.startTime || TIME_SLOTS.find(ts => ts.id === firstShift.timeSlot)?.start || '';
       const endTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
       
+      console.log(`📝 Creating final merged shift: ${startTime}-${endTime} [${firstShift.status}]`);
+      
       // 既存のシフトを削除
-      currentGroup.forEach(s => onDeleteShift(employeeId, s.id));
+      currentGroup.forEach(s => {
+        console.log(`🗑️ Deleting final shift: ${s.id}`);
+        onDeleteShift(employeeId, s.id);
+      });
       
       // 結合されたシフトを作成
       const startIndex = TIME_SLOTS.findIndex(ts => ts.start === startTime);
@@ -1256,9 +1279,14 @@ export default function ShiftCalendar({
             startTime,
             endTime,
           };
+          console.log(`➕ Adding final merged shift slot ${i}:`, newShift);
           handleShiftAdd(newShift);
         }
       }
+    }
+
+    if (!hasMerges) {
+      console.log(`ℹ️ No merges needed for ${employeeId} on ${date}`);
     }
   };
 
@@ -1461,7 +1489,7 @@ export default function ShiftCalendar({
       
       if (blockShift) {
         // 重複チェック：新しい時間範囲が他のシフトと重複しないかチェック
-        if (checkShiftOverlap(barResizeState.employeeId, selectedDate, newStartTime, newEndTime, blockShift.id)) {
+        if (checkShiftOverlap(barResizeState.employeeId, selectedDate, newStartTime, newEndTime, blockShift.id, blockShift.status)) {
           alert('選択した時間帯に既にシフトが登録されています。時間を調整してください。');
           setBarResizeState(null);
           return;
