@@ -80,7 +80,7 @@ export default function PricingMainPage() {
 
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* ページヘッダー */}
       <AdminPageHeader
         title="⚙️ 料金設定"
@@ -90,10 +90,9 @@ export default function PricingMainPage() {
         ]}
       />
 
-      <div className="w-full max-w-4xl mx-auto py-10 px-2 sm:px-4 lg:px-6 xl:px-8">
-
-
-        {/* 設定項目一覧 */}
+      <main className="w-full py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* 設定項目一覧 */}
         <div className="flex justify-center">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
             {settings.map((setting) => (
@@ -143,8 +142,8 @@ export default function PricingMainPage() {
             <p>• 各設定は独立して行うことができ、完了した設定は緑色で表示されます</p>
           </div>
         </div>
-
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

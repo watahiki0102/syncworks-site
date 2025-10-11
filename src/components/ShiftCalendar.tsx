@@ -1125,7 +1125,7 @@ export default function ShiftCalendar({
     setShowShiftModal(true);
   };
 
-  // シフトの重複チェック関数
+  // シフトの重複チェック関数（隣接シフト結合を考慮）
   const checkShiftOverlap = (employeeId: string, date: string, startTime: string, endTime: string, excludeShiftId?: string, currentStatus?: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) return false;
@@ -1141,15 +1141,20 @@ export default function ShiftCalendar({
       // 時間の重複をチェック（完全に同じ時間帯は除外）
       const timeOverlap = (startTime < shiftEnd && endTime > shiftStart);
       
+      // 隣接シフトの結合を許可するため、同じステータスで隣接している場合は重複としない
+      const isAdjacent = (endTime === shiftStart) || (startTime === shiftEnd);
+      
       // 同じステータスの場合のみ重複として扱う
       // currentStatusがundefinedの場合は、既存シフトのステータスと比較しない（常に重複として扱わない）
       const statusMatch = currentStatus ? shift.status === currentStatus : false;
-      const overlap = timeOverlap && statusMatch;
+      
+      // 隣接している場合は重複としない
+      const overlap = timeOverlap && statusMatch && !isAdjacent;
       
       if (timeOverlap) {
         console.warn(`⚠️ 時間重複検出: 新規(${startTime}-${endTime}) [${currentStatus}] vs 既存(${shiftStart}-${shiftEnd}) [${shift.status}]`);
         console.warn(`   判定式: (${startTime} < ${shiftEnd}) && (${endTime} > ${shiftStart}) = (${startTime < shiftEnd}) && (${endTime > shiftStart}) = ${timeOverlap}`);
-        console.warn(`   ステータス一致: ${statusMatch}, 重複判定: ${overlap}`);
+        console.warn(`   ステータス一致: ${statusMatch}, 隣接判定: ${isAdjacent}, 重複判定: ${overlap}`);
         console.warn(`   既存シフト詳細:`, { id: shift.id, status: shift.status, timeSlot: shift.timeSlot });
       }
       
@@ -1494,15 +1499,61 @@ export default function ShiftCalendar({
           setBarResizeState(null);
           return;
         }
-        // シフトの時間を更新
-        const updatedShift: EmployeeShift = {
-          ...blockShift,
-          startTime: newStartTime,
-          endTime: newEndTime,
-          timeSlot: TIME_SLOTS.find(ts => ts.start === newStartTime)?.id || blockShift.timeSlot,
-        };
+
+        // 隣接シフトの結合チェック
+        const adjacentShift = dayShifts.find(shift => {
+          if (shift.id === blockShift.id) return false;
+          const shiftStart = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
+          const shiftEnd = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
+          
+          // 同じステータスで隣接しているシフトを探す
+          return shift.status === blockShift.status && 
+                 ((newEndTime === shiftStart) || (newStartTime === shiftEnd));
+        });
+
+        if (adjacentShift) {
+          // 隣接シフトを結合
+          const shiftStart = adjacentShift.startTime || TIME_SLOTS.find(ts => ts.id === adjacentShift.timeSlot)?.start || '';
+          const shiftEnd = adjacentShift.endTime || TIME_SLOTS.find(ts => ts.id === adjacentShift.timeSlot)?.end || '';
+          
+          const mergedStartTime = Math.min(
+            TIME_SLOTS.findIndex(ts => ts.start === newStartTime),
+            TIME_SLOTS.findIndex(ts => ts.start === shiftStart)
+          );
+          const mergedEndTime = Math.max(
+            TIME_SLOTS.findIndex(ts => ts.end === newEndTime),
+            TIME_SLOTS.findIndex(ts => ts.end === shiftEnd)
+          );
+          
+          const finalStartTime = TIME_SLOTS[mergedStartTime]?.start || newStartTime;
+          const finalEndTime = TIME_SLOTS[mergedEndTime]?.end || newEndTime;
+          
+          console.log(`🔗 隣接シフト結合: ${blockShift.id} (${newStartTime}-${newEndTime}) + ${adjacentShift.id} (${shiftStart}-${shiftEnd}) = ${finalStartTime}-${finalEndTime}`);
+          
+          // 隣接シフトを削除
+          onDeleteShift(employee.id, adjacentShift.id);
+          
+          // メインシフトを結合後の時間に更新
+          const mergedShift: EmployeeShift = {
+            ...blockShift,
+            startTime: finalStartTime,
+            endTime: finalEndTime,
+            timeSlot: TIME_SLOTS.find(ts => ts.start === finalStartTime)?.id || blockShift.timeSlot,
+          };
+          
+          onUpdateShift(employee.id, mergedShift);
+        } else {
+          // 通常のシフト時間更新
+          const updatedShift: EmployeeShift = {
+            ...blockShift,
+            startTime: newStartTime,
+            endTime: newEndTime,
+            timeSlot: TIME_SLOTS.find(ts => ts.start === newStartTime)?.id || blockShift.timeSlot,
+          };
+          
+          onUpdateShift(employee.id, updatedShift);
+        }
         
-        onUpdateShift(employee.id, updatedShift);
         console.warn('✅ BAR RESIZE - SHIFT TIME UPDATED!');
       } else {
         console.error('❌ Target shift not found for bar resize');

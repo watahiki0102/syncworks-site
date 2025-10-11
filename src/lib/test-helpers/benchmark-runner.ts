@@ -397,7 +397,7 @@ export class MemoryProfiler {
 export class BenchmarkSuite {
   private benchmarks: Array<{
     name: string;
-    fn: Function;
+    fn: (...args: any[]) => any;
     args: any[];
     category: string;
   }> = [];

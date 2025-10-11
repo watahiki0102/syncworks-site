@@ -234,7 +234,7 @@ export const renderOptimizationChecker = {
   /**
    * メモ化されていないコールバックを検出
    */
-  checkUnmemoizedCallbacks(componentName: string, callbacks: Record<string, Function>): void {
+  checkUnmemoizedCallbacks(componentName: string, callbacks: Record<string, (...args: unknown[]) => unknown>): void {
     if (!isDevelopment) return;
 
     Object.entries(callbacks).forEach(([name, callback]) => {
