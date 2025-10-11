@@ -58,10 +58,22 @@ export default function ShiftManagement() {
   // クリップボード機能のstate
   const [showClipboard, setShowClipboard] = useState(false);
   const [selectedShifts, setSelectedShifts] = useState<EmployeeShift[]>([]);
-  const [copiedShifts, setCopiedShifts] = useState<EmployeeShift[]>([]);
+  const [copiedShifts, setCopiedShifts] = useState<EmployeeShift[]>(() => {
+    // ローカルストレージから読み込み
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('copiedShifts');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
   const [clipboardMode, setClipboardMode] = useState<'copy' | 'paste' | 'none'>('none');
-  const [pendingPasteShifts, setPendingPasteShifts] = useState<EmployeeShift[]>([]);
-  const [pendingPasteDate, setPendingPasteDate] = useState<string>('');
+  const [pendingPasteDates, setPendingPasteDates] = useState<string[]>([]);
   
   // 従業員集計表示のstate
   const [showEmployeeSummary, setShowEmployeeSummary] = useState(false);
@@ -69,7 +81,17 @@ export default function ShiftManagement() {
   // サイドパネル内のアクティブなタブ
   const [activeSidePanelTab, setActiveSidePanelTab] = useState<'employeeSummary' | 'clipboard' | null>(null);
   
+  // 未保存のシフトIDを管理
+  const [unsavedShiftIds, setUnsavedShiftIds] = useState<Set<string>>(new Set());
+  
   // サイドパネルのタブ状態を自動管理
+  // copiedShiftsをローカルストレージに保存
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('copiedShifts', JSON.stringify(copiedShifts));
+    }
+  }, [copiedShifts]);
+
   useEffect(() => {
     if (showEmployeeSummary && showClipboard) {
       // 両方ONの場合、アクティブなタブがない場合は従業員集計をデフォルトに
@@ -108,8 +130,7 @@ export default function ShiftManagement() {
     }
     setClipboardMode('paste');
     setSelectedShifts([]);
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
+    setPendingPasteDates([]);
     setShowClipboard(true);
   };
 
@@ -129,8 +150,15 @@ export default function ShiftManagement() {
 
   const handleDateClickForClipboard = (date: string) => {
     if (clipboardMode === 'paste') {
-      // ペーストモード：貼り付け先を選択
-      setPendingPasteDate(date);
+      // ペーストモード：貼り付け先を複数選択可能
+      setPendingPasteDates(prev => {
+        const exists = prev.includes(date);
+        if (exists) {
+          return prev.filter(d => d !== date);
+        } else {
+          return [...prev, date];
+        }
+      });
     }
   };
 
@@ -149,60 +177,173 @@ export default function ShiftManagement() {
     }
 
     setCopiedShifts(workingShifts);
-    setClipboardMode('none');
     setSelectedShifts([]);
-    setShowClipboard(false);
-    alert(`${workingShifts.length}件のシフトをコピーしました`);
+    // コピー後、自動的に貼り付けモードに移行
+    setClipboardMode('paste');
+    setPendingPasteDates([]);
   };
 
   const executePaste = () => {
-    if (!pendingPasteDate) {
+    if (pendingPasteDates.length === 0) {
       alert('貼り付け先の日付を選択してください');
       return;
     }
 
-    setPendingPasteShifts(copiedShifts);
-    setClipboardMode('none');
-    setPendingPasteDate('');
-    setShowClipboard(false);
-    alert('貼り付け準備完了。保存ボタンを押して反映してください。');
-  };
+    // 重複チェック
+    const conflicts: Array<{
+      employeeName: string;
+      date: string;
+      timeRange: string;
+      reason: string;
+    }> = [];
 
-  const executeSave = () => {
-    if (pendingPasteShifts.length === 0) {
-      alert('貼り付け待ちのシフトがありません');
+    // 貼り付け予定のシフトを従業員・日付ごとに整理
+    const pendingShiftsByEmployeeAndDate: {
+      [key: string]: {
+        employeeId: string;
+        date: string;
+        shifts: Array<{ startTime: string; endTime: string; shift: EmployeeShift }>
+      }
+    } = {};
+
+    pendingPasteDates.forEach(date => {
+      copiedShifts.forEach(shift => {
+        const employee = employees.find(emp => emp.id === shift.employeeId);
+        if (!employee) return;
+
+        const key = `${shift.employeeId}|||${date}`;
+        const newStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
+        const newEndTime = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
+
+        if (!pendingShiftsByEmployeeAndDate[key]) {
+          pendingShiftsByEmployeeAndDate[key] = {
+            employeeId: shift.employeeId,
+            date: date,
+            shifts: []
+          };
+        }
+
+        // 貼り付け予定のシフト同士の重複チェック
+        const hasPendingConflict = pendingShiftsByEmployeeAndDate[key].shifts.some(pending => {
+          return (newStartTime < pending.endTime && newEndTime > pending.startTime);
+        });
+
+        if (hasPendingConflict) {
+          conflicts.push({
+            employeeName: employee.name,
+            date: new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
+            timeRange: `${newStartTime}-${newEndTime}`,
+            reason: '貼り付け予定のシフト同士が重複'
+          });
+        }
+
+        // 既存シフトとの重複チェック
+        const existingShifts = employee.shifts.filter(s => s.date === date);
+        const hasExistingConflict = existingShifts.some(existingShift => {
+          const existingStartTime = existingShift.startTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.start || '';
+          const existingEndTime = existingShift.endTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.end || '';
+          
+          return (newStartTime < existingEndTime && newEndTime > existingStartTime);
+        });
+
+        if (hasExistingConflict) {
+          conflicts.push({
+            employeeName: employee.name,
+            date: new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
+            timeRange: `${newStartTime}-${newEndTime}`,
+            reason: '既存のシフトと重複'
+          });
+        }
+
+        // 重複がない場合は貼り付け予定リストに追加
+        if (!hasPendingConflict && !hasExistingConflict) {
+          pendingShiftsByEmployeeAndDate[key].shifts.push({
+            startTime: newStartTime,
+            endTime: newEndTime,
+            shift
+          });
+        }
+      });
+    });
+
+    // 重複がある場合はエラーを表示して中断
+    if (conflicts.length > 0) {
+      const pendingConflicts = conflicts.filter(c => c.reason === '貼り付け予定のシフト同士が重複');
+      const existingConflicts = conflicts.filter(c => c.reason === '既存のシフトと重複');
+      
+      let message = '以下のシフトが重複しているため、貼り付けできません：\n\n';
+      
+      if (pendingConflicts.length > 0) {
+        message += '【同じ担当者・同じ時間のシフトを複数貼り付けようとしています】\n';
+        pendingConflicts.forEach(c => {
+          message += `・${c.employeeName} (${c.date} ${c.timeRange})\n`;
+        });
+        message += '\nコピー元のシフトに重複がないか確認してください。\n';
+      }
+      
+      if (existingConflicts.length > 0) {
+        message += '【既に登録されているシフトと重複しています】\n';
+        existingConflicts.forEach(c => {
+          message += `・${c.employeeName} (${c.date} ${c.timeRange})\n`;
+        });
+        message += '\n以下の方法で解決してください：\n';
+        message += '• 既存のシフトを削除してから再度貼り付ける\n';
+        message += '• 貼り付け先またはコピー元のシフトを変更する\n';
+      }
+      
+      alert(message);
       return;
     }
 
-    if (!pendingPasteDate) {
-      alert('貼り付け先の日付が設定されていません');
-      return;
-    }
-
-    pendingPasteShifts.forEach(shift => {
-      const newShift: Omit<EmployeeShift, 'id'> = {
-        employeeId: shift.employeeId,
-        date: pendingPasteDate,
-        timeSlot: shift.timeSlot,
-        status: shift.status,
-        customerName: shift.customerName,
-        notes: shift.notes,
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-      };
-      addShift(shift.employeeId, newShift);
+    // 重複がない場合のみ貼り付けを実行
+    const newShiftsByEmployee: { [employeeId: string]: EmployeeShift[] } = {};
+    const newShiftIds: string[] = [];
+    
+    Object.keys(pendingShiftsByEmployeeAndDate).forEach(key => {
+      const group = pendingShiftsByEmployeeAndDate[key];
+      group.shifts.forEach(pending => {
+        const newShift: EmployeeShift = {
+          ...pending.shift,
+          id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          date: group.date,
+        };
+        
+        if (!newShiftsByEmployee[group.employeeId]) {
+          newShiftsByEmployee[group.employeeId] = [];
+        }
+        newShiftsByEmployee[group.employeeId].push(newShift);
+        newShiftIds.push(newShift.id); // 新しいシフトIDを記録
+      });
     });
     
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
-    alert('シフトを保存しました');
+    // 一度にすべての従業員のシフトを更新
+    const updatedEmployees = employees.map(employee => {
+      if (newShiftsByEmployee[employee.id]) {
+        return {
+          ...employee,
+          shifts: [...employee.shifts, ...newShiftsByEmployee[employee.id]]
+        };
+      }
+      return employee;
+    });
+    
+    saveEmployees(updatedEmployees);
+    
+    // 貼り付けたシフトを未保存として記録
+    setUnsavedShiftIds(prev => {
+      const newSet = new Set(prev);
+      newShiftIds.forEach(id => newSet.add(id));
+      return newSet;
+    });
+    
+    setPendingPasteDates([]);
+    setClipboardMode('none');
   };
 
   const cancelClipboard = () => {
     setClipboardMode('none');
     setSelectedShifts([]);
-    setPendingPasteShifts([]);
-    setPendingPasteDate('');
+    setPendingPasteDates([]);
     setShowClipboard(false);
   };
 
@@ -220,9 +361,6 @@ export default function ShiftManagement() {
     // 統合案件データを取得
     const unifiedData = generateUnifiedTestData();
     setCases(unifiedData);
-    
-    // テストデータを確実に読み込むためにローカルストレージをクリア
-    localStorage.removeItem('employees');
     
     // ローカルストレージから従業員データを読み込み
     const savedEmployees = localStorage.getItem('employees');
@@ -247,18 +385,8 @@ export default function ShiftManagement() {
               timeSlot: '08:00',
               status: 'working',
               startTime: '08:00',
-              endTime: '12:00',
-              notes: '新宿区→渋谷区（引越し作業・2DK）',
-            },
-            {
-              id: 'shift-2',
-              employeeId: 'emp-1',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '14:00',
-              status: 'working',
-              startTime: '14:00',
-              endTime: '18:00',
-              notes: '品川区→大田区（引越し作業・3LDK）',
+              endTime: '17:00',
+              notes: '新宿区→渋谷区（引越し作業・2DK・終日）',
             },
           ],
         },
@@ -278,18 +406,8 @@ export default function ShiftManagement() {
               timeSlot: '08:00',
               status: 'working',
               startTime: '08:00',
-              endTime: '12:00',
-              notes: '田中さんと同行（引越し作業）',
-            },
-            {
-              id: 'shift-4',
-              employeeId: 'emp-2',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '14:00',
-              status: 'working',
-              startTime: '14:00',
-              endTime: '18:00',
-              notes: '田中さんと同行（引越し作業）',
+              endTime: '17:00',
+              notes: '田中さんと同行（引越し作業・終日）',
             },
           ],
         },
@@ -303,23 +421,13 @@ export default function ShiftManagement() {
           hireDate: '2022-11-10',
           shifts: [
             {
-              id: 'shift-5',
-              employeeId: 'emp-3',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '08:00',
-              status: 'unavailable',
-              startTime: '08:00',
-              endTime: '12:00',
-              notes: '有給休暇取得',
-            },
-            {
               id: 'shift-6',
               employeeId: 'emp-3',
               date: new Date().toISOString().split('T')[0],
               timeSlot: '13:00',
               status: 'working',
               startTime: '13:00',
-              endTime: '17:00',
+              endTime: '18:00',
               notes: '目黒区→世田谷区（引越し作業・1LDK）',
             },
           ],
@@ -340,7 +448,7 @@ export default function ShiftManagement() {
               timeSlot: '09:00',
               status: 'working',
               startTime: '09:00',
-              endTime: '17:00',
+              endTime: '18:00',
               notes: '中野区→杉並区（引越し作業・4LDK・終日作業）',
             },
           ],
@@ -361,7 +469,7 @@ export default function ShiftManagement() {
               timeSlot: '09:00',
               status: 'working',
               startTime: '09:00',
-              endTime: '17:00',
+              endTime: '18:00',
               notes: '鈴木さんと同行（引越し作業・終日作業）',
             },
           ],
@@ -382,18 +490,8 @@ export default function ShiftManagement() {
               timeSlot: '10:00',
               status: 'working',
               startTime: '10:00',
-              endTime: '14:00',
-              notes: '足立区→葛飾区（引越し作業・2DK）',
-            },
-            {
-              id: 'shift-10',
-              employeeId: 'emp-6',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '15:00',
-              status: 'working',
-              startTime: '15:00',
               endTime: '19:00',
-              notes: '北区→荒川区（引越し作業・3LDK）',
+              notes: '足立区→葛飾区→北区（引越し作業・2件・終日）',
             },
           ],
         },
@@ -413,18 +511,8 @@ export default function ShiftManagement() {
               timeSlot: '10:00',
               status: 'working',
               startTime: '10:00',
-              endTime: '14:00',
-              notes: '渡辺さんと同行（引越し作業）',
-            },
-            {
-              id: 'shift-12',
-              employeeId: 'emp-7',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '15:00',
-              status: 'working',
-              startTime: '15:00',
               endTime: '19:00',
-              notes: '渡辺さんと同行（引越し作業）',
+              notes: '渡辺さんと同行（引越し作業・終日）',
             },
           ],
         },
@@ -444,18 +532,8 @@ export default function ShiftManagement() {
               timeSlot: '08:30',
               status: 'working',
               startTime: '08:30',
-              endTime: '12:30',
-              notes: '中央区→港区（引越し作業・3LDK）',
-            },
-            {
-              id: 'shift-14',
-              employeeId: 'emp-8',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '14:00',
-              status: 'working',
-              startTime: '14:00',
               endTime: '18:00',
-              notes: '千代田区→新宿区（引越し作業・オフィス移転）',
+              notes: '中央区→港区→千代田区（引越し作業・2件・終日）',
             },
           ],
         },
@@ -475,7 +553,7 @@ export default function ShiftManagement() {
               timeSlot: '11:00',
               status: 'working',
               startTime: '11:00',
-              endTime: '15:00',
+              endTime: '16:00',
               notes: '豊島区→北区（引越し作業・2DK）',
             },
           ],
@@ -496,7 +574,7 @@ export default function ShiftManagement() {
               timeSlot: '11:00',
               status: 'working',
               startTime: '11:00',
-              endTime: '15:00',
+              endTime: '16:00',
               notes: '小林さんと同行（引越し作業）',
             },
           ],
@@ -547,11 +625,21 @@ export default function ShiftManagement() {
       setEmployees(testEmployees);
       localStorage.setItem('employees', JSON.stringify(testEmployees));
     }
+    
+    // 初期データ読み込み後、未保存状態をクリア
+    setUnsavedShiftIds(new Set());
   }, []);
 
   const saveEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
-    localStorage.setItem('employees', JSON.stringify(newEmployees));
+    // 即座にlocalStorageには保存せず、メモリ内のstateのみ更新
+  };
+
+  // 明示的な保存処理（保存ボタン用）
+  const handleSaveToStorage = () => {
+    localStorage.setItem('employees', JSON.stringify(employees));
+    setUnsavedShiftIds(new Set()); // 未保存IDをクリア
+    alert('シフトを保存しました');
   };
 
   const addEmployee = (employee: Omit<Employee, 'id'>) => {
@@ -582,30 +670,65 @@ export default function ShiftManagement() {
   };
 
   const updateShift = (employeeId: string, shift: EmployeeShift) => {
+    console.warn('═══════════════════════════════════════');
+    console.warn('📝 PAGE.TSX - updateShift called');
+    console.warn('Employee ID:', employeeId);
+    console.warn('Shift ID:', shift.id);
+    console.warn('New time:', shift.startTime, '-', shift.endTime);
+    console.warn('═══════════════════════════════════════');
+    
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
         const updatedShifts = employee.shifts.map(s => 
           s.id === shift.id ? shift : s
         );
+        console.warn('Updated employee shifts count:', updatedShifts.length);
         return { ...employee, shifts: updatedShifts };
       }
       return employee;
     });
+    
+    console.warn('Calling saveEmployees with', updatedEmployees.length, 'employees');
     saveEmployees(updatedEmployees);
+    
+    // 未保存シフトとして記録
+    setUnsavedShiftIds(prev => new Set(prev).add(shift.id));
+    
+    console.warn('✅ PAGE.TSX - updateShift completed');
   };
 
   const addShift = (employeeId: string, shift: Omit<EmployeeShift, 'id'>) => {
+    console.log('➕ PAGE.TSX - addShift called:', {
+      employeeId,
+      shift: {
+        ...shift,
+        status: shift.status
+      }
+    });
+
+    // ID重複を防ぐためランダム値を追加
     const newShift: EmployeeShift = {
       ...shift,
-      id: `shift-${Date.now()}`,
+      id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
+    
+    console.log('🆔 Generated shift ID:', newShift.id);
+    console.log('📋 New shift data:', newShift);
+    
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
-        return { ...employee, shifts: [...employee.shifts, newShift] };
+        const updatedEmployee = { ...employee, shifts: [...employee.shifts, newShift] };
+        console.log(`👤 Updated employee ${employee.name}: ${employee.shifts.length} → ${updatedEmployee.shifts.length} shifts`);
+        return updatedEmployee;
       }
       return employee;
     });
+    
     saveEmployees(updatedEmployees);
+    // 未保存シフトとして記録
+    setUnsavedShiftIds(prev => new Set(prev).add(newShift.id));
+    
+    console.log('✅ PAGE.TSX - addShift completed');
   };
 
   const deleteShift = (employeeId: string, shiftId: string) => {
@@ -620,6 +743,12 @@ export default function ShiftManagement() {
     });
     
     saveEmployees(updatedEmployees);
+    // 削除したシフトを未保存リストから削除
+    setUnsavedShiftIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(shiftId);
+      return newSet;
+    });
   };
 
 
@@ -692,10 +821,11 @@ export default function ShiftManagement() {
                 clipboardMode={clipboardMode}
                 selectedShifts={selectedShifts}
                 copiedShifts={copiedShifts}
-                pendingPasteShifts={pendingPasteShifts}
-                pendingPasteDate={pendingPasteDate}
+                pendingPasteDates={pendingPasteDates}
                 onShiftClickForClipboard={handleShiftClickForClipboard}
                 onDateClickForClipboard={handleDateClickForClipboard}
+                unsavedShiftIds={unsavedShiftIds}
+                onSave={handleSaveToStorage}
                   />
                 </div>
               </div>
@@ -939,28 +1069,19 @@ export default function ShiftManagement() {
                       >
                         📌 貼り付け
                       </button>
-                      
-                      {pendingPasteShifts.length > 0 && (
-                        <button
-                          onClick={executeSave}
-                          className="w-full py-3 px-4 rounded-lg text-sm font-medium bg-orange-600 text-white hover:bg-orange-700 transition-colors"
-                        >
-                          💾 保存
-                        </button>
-                      )}
                     </div>
                     
                     {/* コピーモードの内容 */}
                     {clipboardMode === 'copy' && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <div className="font-medium text-blue-800">
+                          <div className="font-medium text-blue-900">
                             {selectedShifts.length > 0 ? `選択中: ${selectedShifts.length}件` : 'コピーするシフトを選択してください'}
                           </div>
                           {selectedShifts.length > 0 && (
                             <button
                               onClick={clearSelectedShifts}
-                              className="text-blue-600 hover:text-blue-800 text-sm underline"
+                              className="text-blue-700 hover:text-blue-900 text-sm underline font-medium"
                             >
                               すべてクリア
                             </button>
@@ -969,13 +1090,13 @@ export default function ShiftManagement() {
                         
                         {selectedShifts.length > 0 ? (
                           <>
-                            <div className="max-h-32 overflow-y-auto space-y-2 mb-3">
+                            <div className="max-h-80 overflow-y-auto space-y-2 mb-3">
                             {selectedShifts.map(shift => {
                               const employee = employees.find(emp => emp.id === shift.employeeId);
                                 return (
-                                  <div key={shift.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200">
+                                  <div key={shift.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200 shadow-sm">
                                     <div className="flex flex-col">
-                                      <span className="text-sm font-medium text-gray-800">
+                                      <span className="text-sm font-medium text-gray-900">
                                         {employee?.name || '不明な従業員'}
                                       </span>
                                       <span className="text-xs text-gray-600">
@@ -984,7 +1105,7 @@ export default function ShiftManagement() {
                                     </div>
                                     <button
                                       onClick={() => removeSelectedShift(shift.id)}
-                                      className="text-red-500 hover:text-red-700 text-sm"
+                                      className="text-red-600 hover:text-red-800 text-sm font-bold"
                                     >
                                       ✕
                                     </button>
@@ -994,13 +1115,13 @@ export default function ShiftManagement() {
                             </div>
                             <button
                               onClick={executeCopy}
-                              className="w-full py-2 px-3 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                              className="w-full py-2.5 px-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                             >
                               コピー実行
                             </button>
                           </>
                         ) : (
-                          <div className="text-blue-700 text-sm">
+                          <div className="text-blue-800 text-sm font-medium">
                             カレンダー上のシフトをクリックして選択してください
                           </div>
                         )}
@@ -1011,77 +1132,89 @@ export default function ShiftManagement() {
                     {clipboardMode === 'paste' && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <div className="font-medium text-green-800">
-                            {pendingPasteDate ? `貼り付け先: ${new Date(pendingPasteDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}` : '貼り付け先の日付を選択してください'}
+                          <div className="font-medium text-green-900">
+                            {pendingPasteDates.length > 0 ? `選択中: ${pendingPasteDates.length}日` : '貼り付け先の日付を選択してください'}
                           </div>
-                          {pendingPasteDate && (
+                          {pendingPasteDates.length > 0 && (
                             <button
-                              onClick={() => setPendingPasteDate('')}
-                              className="text-green-600 hover:text-green-800 text-sm underline"
+                              onClick={() => setPendingPasteDates([])}
+                              className="text-green-700 hover:text-green-900 text-sm underline font-medium"
                             >
-                              クリア
+                              すべてクリア
                             </button>
                           )}
                         </div>
                         
-                        {pendingPasteDate ? (
-                          <button
-                            onClick={executePaste}
-                            className="w-full py-2 px-3 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
-                          >
-                            貼り付け実行
-                          </button>
+                        {pendingPasteDates.length > 0 ? (
+                          <>
+                            <div className="max-h-80 overflow-y-auto space-y-2 mb-3">
+                              {pendingPasteDates.map(date => (
+                                <div key={date} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-green-200 shadow-sm">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
+                                  </span>
+                                  <button
+                                    onClick={() => setPendingPasteDates(prev => prev.filter(d => d !== date))}
+                                    className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              onClick={executePaste}
+                              className="w-full py-2.5 px-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                            >
+                              貼り付け実行
+                            </button>
+                          </>
                         ) : (
-                          <div className="text-green-700 text-sm">
-                            カレンダー上の日付をクリックして選択してください
+                          <div className="text-green-800 text-sm font-medium">
+                            カレンダー上の日付をクリックして選択してください（複数選択可）
                           </div>
                         )}
                       </div>
                     )}
                     
-                    {/* コピー済みシフト表示 */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="font-medium text-gray-700">
-                          {copiedShifts.length > 0 ? 'コピー済み' : 'コピーされたシフトはありません'}
-                        </div>
-                        {copiedShifts.length > 0 && (
+                    {/* コピー済みシフト表示（コピーモード以外の時で、かつコピー済みシフトがある場合のみ表示） */}
+                    {clipboardMode !== 'copy' && copiedShifts.length > 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="font-medium text-gray-900">
+                            コピー済み
+                          </div>
                           <button
-                            onClick={() => setCopiedShifts([])}
-                            className="text-gray-600 hover:text-gray-800 text-sm underline"
+                            onClick={() => {
+                              setCopiedShifts([]);
+                              localStorage.removeItem('copiedShifts');
+                            }}
+                            className="text-gray-700 hover:text-gray-900 text-sm underline font-medium"
                           >
                             クリア
                           </button>
-                        )}
-                      </div>
-                      
-                      {copiedShifts.length > 0 ? (
-                        <>
-                          <div className="text-gray-600 mb-3">
-                            {copiedShifts.length}件のシフト
-                          </div>
-                          <div className="max-h-24 overflow-y-auto space-y-2">
-                          {copiedShifts.map(shift => {
-                            const employee = employees.find(emp => emp.id === shift.employeeId);
-                              return (
-                                <div key={shift.id} className="bg-white rounded-lg px-3 py-2 border border-gray-200">
-                                  <div className="text-sm font-medium text-gray-800">
-                                    {employee?.name || '不明な従業員'}
-                                  </div>
-                                  <div className="text-xs text-gray-600">
-                                    {new Date(shift.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} {shift.startTime}-{shift.endTime}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-gray-600 text-sm">
-                          コピー機能を使ってシフトをコピーしてください
                         </div>
-                      )}
-                    </div>
+                        
+                        <div className="text-gray-700 mb-2 font-medium">
+                          {copiedShifts.length}件のシフト
+                        </div>
+                        <div className="max-h-64 overflow-y-auto space-y-2">
+                        {copiedShifts.map(shift => {
+                          const employee = employees.find(emp => emp.id === shift.employeeId);
+                            return (
+                              <div key={shift.id} className="bg-white rounded-lg px-3 py-2 border border-gray-200 shadow-sm">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {employee?.name || '不明な従業員'}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {new Date(shift.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} {shift.startTime}-{shift.endTime}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1091,4 +1224,4 @@ export default function ShiftManagement() {
       </div>
     </AdminAuthGuard>
   );
-} 
+}
