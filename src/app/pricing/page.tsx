@@ -90,7 +90,10 @@ export default function PricingMainPage() {
         ]}
       />
 
-      <main className="w-full py-6 px-2 sm:px-4 lg:px-6 xl:px-8">
+      {/* 間隔調整用のスペーサー */}
+      <div className="h-6"></div>
+
+      <main className="w-full max-w-7xl mx-auto py-2 px-2 sm:px-4 lg:px-6 xl:px-8">
         <div className="max-w-4xl mx-auto">
           {/* 設定項目一覧 */}
         <div className="flex justify-center">

@@ -233,50 +233,50 @@ export default function AdminDashboard() {
                  </AdminCard>
                </Link>
 
-               {/* シフト管理 */}
-               <Link href="/admin/shifts" className="block">
-                 <AdminCard
-                   title="シフト管理"
-                   subtitle="従業員スケジュール"
-                   icon="👥"
-                   className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white dark:from-gray-800 dark:to-gray-800 border-teal-200 dark:border-teal-700 min-h-[120px]"
-                   padding="sm"
-                 >
-                   <div className="text-gray-900 dark:text-gray-100">
-                     <AdminBadge variant="info" size="sm">5人稼働中</AdminBadge>
-                   </div>
-                 </AdminCard>
-               </Link>
-
-               {/* 配車管理 */}
-               <Link href="/admin/dispatch" className="block">
+              {/* 従業員管理 */}
+              <Link href="/admin/shifts" className="block">
                 <AdminCard
-                  title="配車管理"
-                  subtitle="トラック配車・稼働"
-                  icon="🚚"
-                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-indigo-200 dark:border-indigo-700 min-h-[120px]"
+                  title="従業員管理"
+                  subtitle="従業員の稼働スケジュール管理"
+                  icon="👥"
+                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-teal-50 to-white dark:from-gray-800 dark:to-gray-800 border-teal-200 dark:border-teal-700 min-h-[120px]"
                   padding="sm"
                 >
                   <div className="text-gray-900 dark:text-gray-100">
-                    <AdminBadge variant="success" size="sm">3台稼働中</AdminBadge>
+                    <AdminBadge variant="info" size="sm">5人稼働中</AdminBadge>
                   </div>
                 </AdminCard>
-               </Link>
+              </Link>
 
-               {/* 集計管理 */}
-               <Link href="/admin/analytics" className="block">
-                <AdminCard
-                  title="集計管理"
-                  subtitle="売上・受注率分析"
-                  icon="📊"
-                  className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-800 border-purple-200 dark:border-purple-700 min-h-[120px]"
-                  padding="sm"
-                >
-                  <div className="text-gray-900 dark:text-gray-100">
-                    <AdminBadge variant="info" size="sm">今月{contractRate}%</AdminBadge>
-                  </div>
-                </AdminCard>
-               </Link>
+              {/* 配車管理 */}
+              <Link href="/admin/dispatch" className="block">
+               <AdminCard
+                 title="配車管理"
+                 subtitle="トラックの稼働スケジュール管理"
+                 icon="🚚"
+                 className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-indigo-200 dark:border-indigo-700 min-h-[120px]"
+                 padding="sm"
+               >
+                 <div className="text-gray-900 dark:text-gray-100">
+                   <AdminBadge variant="success" size="sm">3台稼働中</AdminBadge>
+                 </div>
+               </AdminCard>
+              </Link>
+
+              {/* 受注実績管理 */}
+              <Link href="/admin/analytics" className="block">
+               <AdminCard
+                 title="受注実績管理"
+                 subtitle="引越し受注件数と売上実績の確認"
+                 icon="📊"
+                 className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-800 border-purple-200 dark:border-purple-700 min-h-[120px]"
+                 padding="sm"
+               >
+                 <div className="text-gray-900 dark:text-gray-100">
+                   <AdminBadge variant="info" size="sm">今月{contractRate}%</AdminBadge>
+                 </div>
+               </AdminCard>
+              </Link>
             </div>
           </div>
 

@@ -1006,6 +1006,81 @@ export default function ShiftManagement() {
                                 </tr>
                               ));
                             })()}
+                            
+                            {/* 合計行 */}
+                            {(() => {
+                              const year = new Date().getFullYear();
+                              const month = new Date().getMonth();
+                              const firstDay = new Date(year, month, 1);
+                              const lastDay = new Date(year, month + 1, 0);
+                              
+                              let totalWorkingDays = 0;
+                              let totalWorkingMinutes = 0;
+                              
+                              // 全従業員の合計を計算
+                              employees.filter(emp => emp.status === 'active').forEach(employee => {
+                                for (let day = 1; day <= lastDay.getDate(); day++) {
+                                  const date = new Date(year, month, day).toISOString().split('T')[0];
+                                  const dayShifts = employee.shifts.filter(shift => shift.date === date);
+                                  const workingShifts = dayShifts.filter(shift => shift.status === 'working');
+                                  
+                                  if (workingShifts.length > 0) {
+                                    totalWorkingDays++;
+                                    
+                                    // その日の総労働時間を計算
+                                    const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
+                                    const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
+                                    
+                                    // 連続する時間帯をグループ化
+                                    const timeGroups: string[][] = [];
+                                    let currentGroup: string[] = [];
+                                    
+                                    sortedTimeSlots.forEach((slot, index) => {
+                                      if (index === 0) {
+                                        currentGroup = [slot.start, slot.end];
+                                      } else {
+                                        const prevSlot = sortedTimeSlots[index - 1];
+                                        if (prevSlot.end === slot.start) {
+                                          currentGroup[1] = slot.end;
+                                        } else {
+                                          timeGroups.push([...currentGroup]);
+                                          currentGroup = [slot.start, slot.end];
+                                        }
+                                      }
+                                    });
+                                    
+                                    timeGroups.push(currentGroup);
+                                    
+                                    // 各グループの労働時間を計算
+                                    timeGroups.forEach(group => {
+                                      const startTime = group[0].split(':').map(Number);
+                                      const endTime = group[1].split(':').map(Number);
+                                      const startMinutes = startTime[0] * 60 + startTime[1];
+                                      const endMinutes = endTime[0] * 60 + endTime[1];
+                                      totalWorkingMinutes += (endMinutes - startMinutes);
+                                    });
+                                  }
+                                }
+                              });
+                              
+                              const totalHours = Math.floor(totalWorkingMinutes / 60);
+                              const remainingMinutes = totalWorkingMinutes % 60;
+                              const totalTimeStr = totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
+                              
+                              return (
+                                <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
+                                  <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-gray-900">
+                                    合計
+                                  </td>
+                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
+                                    {totalWorkingDays}日
+                                  </td>
+                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
+                                    {totalTimeStr}
+                                  </td>
+                                </tr>
+                              );
+                            })()}
                           </tbody>
                         </table>
                       </div>

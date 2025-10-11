@@ -50,6 +50,8 @@ export interface UnifiedMonthCalendarProps {
   modalTitle?: string;
   modalContent?: React.ReactNode;
   onCloseModal?: () => void;
+  // カスタムアクションボタン
+  navigationActions?: React.ReactNode;
 }
 
 /**
@@ -161,6 +163,7 @@ export default function UnifiedMonthCalendar({
   modalTitle = '',
   modalContent,
   onCloseModal,
+  navigationActions,
 }: UnifiedMonthCalendarProps) {
   const monthDays = getMonthDays(currentDate);
 
@@ -241,7 +244,7 @@ export default function UnifiedMonthCalendar({
         {/* 月次ナビゲーション */}
         {showNavigation && (
           <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-start items-center">
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrevMonth}
@@ -259,6 +262,11 @@ export default function UnifiedMonthCalendar({
                   ＞
                 </button>
               </div>
+              {navigationActions && (
+                <div className="flex items-center gap-2">
+                  {navigationActions}
+                </div>
+              )}
             </div>
           </div>
         )}

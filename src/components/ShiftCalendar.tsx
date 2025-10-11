@@ -19,12 +19,12 @@ interface EmployeeShift {
   id: string;
   employeeId: string;
   date: string;
-  timeSlot: string;
+  startTime?: string;
+  endTime?: string;
   status: 'working' | 'unavailable';
   customerName?: string;
   notes?: string;
-  startTime?: string;
-  endTime?: string;
+  timeSlot?: string;
 }
 
 interface TruckSchedule {
@@ -577,131 +577,7 @@ export default function ShiftCalendar({
     });
   };
 
-  // 従業員の年間累計労働時間を計算する関数
-  const getEmployeeYearlyWorkingTime = (employeeId: string) => {
-    const currentYear = currentDate.getFullYear();
-    let totalWorkingMinutes = 0;
-    
-    // 1月から12月まで各月をチェック
-    for (let month = 0; month < 12; month++) {
-      const firstDay = new Date(currentYear, month, 1);
-      const lastDay = new Date(currentYear, month + 1, 0);
-      
-      // 月の各日をチェック
-      for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(currentYear, month, day).toISOString().split('T')[0];
-        const dayShifts = getShiftsForDate(employeeId, date);
-        const workingShifts = dayShifts.filter(shift => shift.status === 'working');
-        
-        if (workingShifts.length > 0) {
-          // その日の総労働時間を計算
-          const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-          const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-          
-          // 連続する時間帯をグループ化
-          const timeGroups: string[][] = [];
-          let currentGroup: string[] = [];
-          
-          sortedTimeSlots.forEach((slot, index) => {
-            if (index === 0) {
-              currentGroup = [slot.start, slot.end];
-            } else {
-              const prevSlot = sortedTimeSlots[index - 1];
-              if (prevSlot.end === slot.start) {
-                currentGroup[1] = slot.end;
-              } else {
-                timeGroups.push([...currentGroup]);
-                currentGroup = [slot.start, slot.end];
-              }
-            }
-          });
-          
-          timeGroups.push(currentGroup);
-          
-          // 各グループの労働時間を計算
-          timeGroups.forEach(group => {
-            const startTime = group[0].split(':').map(Number);
-            const endTime = group[1].split(':').map(Number);
-            const startMinutes = startTime[0] * 60 + startTime[1];
-            const endMinutes = endTime[0] * 60 + endTime[1];
-            totalWorkingMinutes += (endMinutes - startMinutes);
-          });
-        }
-      }
-    }
-    
-    const totalHours = Math.floor(totalWorkingMinutes / 60);
-    const remainingMinutes = totalWorkingMinutes % 60;
-    return totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
-  };
 
-  // 従業員の月間集計を計算する関数
-  const getEmployeeMonthlySummary = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    return filteredEmployees.map(employee => {
-      let totalWorkingDays = 0;
-      let totalWorkingMinutes = 0;
-      
-      // 月の各日をチェック
-      for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(year, month, day).toISOString().split('T')[0];
-        const dayShifts = getShiftsForDate(employee.id, date);
-        const workingShifts = dayShifts.filter(shift => shift.status === 'working');
-        
-        if (workingShifts.length > 0) {
-          totalWorkingDays++;
-          
-          // その日の総労働時間を計算
-          const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-          const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-          
-          // 連続する時間帯をグループ化
-          const timeGroups: string[][] = [];
-          let currentGroup: string[] = [];
-          
-          sortedTimeSlots.forEach((slot, index) => {
-            if (index === 0) {
-              currentGroup = [slot.start, slot.end];
-            } else {
-              const prevSlot = sortedTimeSlots[index - 1];
-              if (prevSlot.end === slot.start) {
-                currentGroup[1] = slot.end;
-              } else {
-                timeGroups.push([...currentGroup]);
-                currentGroup = [slot.start, slot.end];
-              }
-            }
-          });
-          
-          timeGroups.push(currentGroup);
-          
-          // 各グループの労働時間を計算
-          timeGroups.forEach(group => {
-            const startTime = group[0].split(':').map(Number);
-            const endTime = group[1].split(':').map(Number);
-            const startMinutes = startTime[0] * 60 + startTime[1];
-            const endMinutes = endTime[0] * 60 + endTime[1];
-            totalWorkingMinutes += (endMinutes - startMinutes);
-          });
-        }
-      }
-      
-      const totalHours = Math.floor(totalWorkingMinutes / 60);
-      const remainingMinutes = totalWorkingMinutes % 60;
-      const totalTimeStr = totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
-      
-      return {
-        employee,
-        workingDays: totalWorkingDays,
-        totalWorkingTime: totalTimeStr,
-        totalWorkingMinutes
-      };
-    }).sort((a, b) => b.totalWorkingMinutes - a.totalWorkingMinutes); // 労働時間の多い順にソート
-  };
 
   // シフトの変更を追跡する関数
   const handleShiftUpdate = (shiftId: string, updatedShift: Partial<EmployeeShift>) => {
