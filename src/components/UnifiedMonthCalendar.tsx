@@ -37,7 +37,7 @@ export interface UnifiedMonthCalendarProps {
   onDateChange: (date: Date) => void;
   onDateClick: (date: string, day: CalendarDay, event?: React.MouseEvent) => void;
   getEventsForDate: (date: string) => CalendarEvent[];
-  renderDateCell?: (day: CalendarDay, events: CalendarEvent[]) => React.ReactNode;
+  renderDateCell?: (day: CalendarDay, events: CalendarEvent[], week?: any) => React.ReactNode;
   renderEvent?: (event: CalendarEvent, index: number) => React.ReactNode;
   showNavigation?: boolean;
   showWeekdays?: boolean;
@@ -289,11 +289,17 @@ export default function UnifiedMonthCalendar({
               {/* 日付グリッド */}
               {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
                 <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5 overflow-visible">
-                  {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
+                  {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
                     const events = getEventsForDate(day.date);
+                    const weekDays = monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
+                    const week = {
+                      startDate: weekDays[0]?.date,
+                      endDate: weekDays[weekDays.length - 1]?.date,
+                      days: weekDays
+                    };
 
                     return renderDateCell ?
-                      renderDateCell(day, events) :
+                      renderDateCell(day, events, week) :
                       defaultRenderDateCell(day, events);
                   })}
                 </div>

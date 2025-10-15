@@ -7,6 +7,12 @@ import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonth
 import TimeRangeDisplaySelector from './TimeRangeDisplaySelector';
 import Modal from './ui/Modal';
 import ShiftModal, { ShiftModalData } from './ShiftModal';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import minMax from 'dayjs/plugin/minMax';
+
+dayjs.extend(isBetween);
+dayjs.extend(minMax);
 
 interface Employee {
   id: string;
@@ -267,9 +273,25 @@ export default function ShiftCalendar({
   // 共通のシフトデータ取得関数
   const getShiftsForDate = (employeeId: string, date: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return [];
+    if (!employee) {
+      console.log(`❌ Employee not found: ${employeeId}`);
+      return [];
+    }
     
-    return employee.shifts.filter(shift => shift.date === date);
+    const shifts = employee.shifts.filter(shift => shift.date === date);
+    
+    // デバッグログを追加（特定の従業員と日付のみ）
+    if (employee.name === '田中 一郎' && (date === '2025-10-13' || date === '2025-10-14')) {
+      console.log(`🔍 getShiftsForDate: ${employee.name} on ${date}:`, {
+        employeeId,
+        totalShifts: employee.shifts.length,
+        filteredShifts: shifts.length,
+        allShifts: employee.shifts.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
+        filteredShiftsDetails: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
+      });
+    }
+    
+    return shifts;
   };
 
   // 日跨ぎシフト専用のブロック取得関数
@@ -1822,7 +1844,7 @@ export default function ShiftCalendar({
               date: firstDate,
               timeSlot: TIME_SLOTS[startIdx].id,
               status: data.status,
-              notes: `${data.notes} (日跨ぎ-起点)` ,
+              notes: data.notes ? `${data.notes} (日跨ぎ-1日目)` : '(日跨ぎ-1日目)',
               startTime: data.startTime,
               endTime: '24:00'
             };
@@ -1859,7 +1881,7 @@ export default function ShiftCalendar({
                   date: midDate,
                   timeSlot: TIME_SLOTS[zeroIdx].id,
                   status: data.status,
-                  notes: `${data.notes} (日跨ぎ-中日)`,
+                  notes: data.notes ? `${data.notes} (日跨ぎ-中日)` : '(日跨ぎ-中日)',
                   startTime: '00:00',
                   endTime: '24:00'
                 };
@@ -1907,12 +1929,14 @@ export default function ShiftCalendar({
             console.log(`🔍 Zero index found: ${zeroIdx}`);
             
             if (zeroIdx >= 0 && zeroIdx < TIME_SLOTS.length) {
+              // 2日間の場合は「2日目」、3日以上の場合は「終点」
+              const endLabel = dates.length === 2 ? '日跨ぎ-2日目' : '日跨ぎ-終点';
               const endShift = {
                 employeeId,
                 date: lastDate,
                 timeSlot: TIME_SLOTS[zeroIdx].id,
                 status: data.status,
-                notes: `${data.notes} (日跨ぎ-終点)`,
+                notes: data.notes ? `${data.notes} (${endLabel})` : `(${endLabel})`,
                 startTime: '00:00',
                 endTime: data.endTime
               };
@@ -2892,100 +2916,12 @@ export default function ShiftCalendar({
 
     // 日付ごとのイベントを取得
     const getEventsForDate = (date: string): CalendarEvent[] => {
-      // 日跨ぎシフトの場合は中日・終点は表示しない（起点のみ表示）
-      const shouldShowDate = (employeeId: string, targetDate: string) => {
-        const shifts = getShiftsForDate(employeeId, targetDate);
-        
-        // 中日・終点シフトのみの場合は表示しない
-        const middleOrEndShifts = shifts.filter(shift => 
-          shift.notes && (
-            shift.notes.includes('日跨ぎ-2日目') || 
-            shift.notes.includes('日跨ぎ-中日') || 
-            shift.notes.includes('日跨ぎ-終点')
-          )
-        );
-        
-        // すべてのシフトが中日・終点の場合は表示しない
-        if (middleOrEndShifts.length === shifts.length && shifts.length > 0) {
-          return false;
-        }
-        
-        // 日跨ぎシフトの起点がある場合、通常シフトは表示しない（重複回避）
-        const hasDayCrossingStart = shifts.some(shift => 
-          shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
-        );
-        
-        if (hasDayCrossingStart) {
-          // 日跨ぎシフトの起点のみ表示（通常シフトは完全に除外）
-          // 日跨ぎシフトの起点シフトのみを返す
-          return true;
-        }
-        
-        // 通常のシフトの場合は表示
-        return shifts.length > 0;
-      };
+      // shouldShowDate and getCombinedDayCrossingShifts removed - logic moved to renderEvent
 
-      // 日跨ぎシフトの結合表示用の関数（複数日対応）
-      const getCombinedDayCrossingShifts = (employeeId: string, date: string) => {
-        const shifts = getShiftsForDate(employeeId, date);
-        const dayCrossingShifts = shifts.filter(shift => 
-          shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
-        );
-        
-        console.log(`🔍 getCombinedDayCrossingShifts: ${employeeId} on ${date}`, {
-          shiftsCount: shifts.length,
-          dayCrossingShiftsCount: dayCrossingShifts.length,
-          allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-        });
-        
-        if (dayCrossingShifts.length > 0) {
-          // 日跨ぎシフトがある場合：起点から連続して「中日/終点」を収集（通常シフトは除外）
-          const collected: EmployeeShift[] = [...dayCrossingShifts]; // 起点シフトのみから開始
-          let d = new Date(date);
-          for (let i = 0; i < 10; i++) { // 安全上の上限
-            d.setDate(d.getDate() + 1);
-            const ds = d.toISOString().split('T')[0];
-            const nextDay = getShiftsForDate(employeeId, ds);
-            const mids = nextDay.filter(s => s.notes && (s.notes.includes('日跨ぎ-中日') || s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')));
-            
-            console.log(`🔍 Checking next day ${ds}:`, {
-              nextDayShiftsCount: nextDay.length,
-              midsCount: mids.length,
-              nextDayShifts: nextDay.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-            });
-            
-            if (mids.length === 0) break;
-            collected.push(...mids);
-            if (mids.some(s => s.notes && (s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')))) break;
-          }
-          
-          console.log(`✅ Collected ${collected.length} shifts for day crossing`, {
-            dates: Array.from(new Set(collected.map(s => s.date))).sort(),
-            collected: collected.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-          });
-          
-          return collected.map(s => ({ ...s, __startDate: date } as any));
-        }
-        
-        // 日跨ぎシフトがない場合のみ通常シフトを返す
-        // 日跨ぎシフトがある場合は通常シフトを除外
-        const hasAnyDayCrossing = shifts.some(s => s.notes && s.notes.includes('日跨ぎ'));
-        if (hasAnyDayCrossing) {
-          // 日跨ぎシフトがある場合は通常シフトを除外
-          const normalShifts = shifts.filter(s => !s.notes || !s.notes.includes('日跨ぎ'));
-          console.log(`🚫 Excluding normal shifts for day crossing employee ${employeeId} on ${date}:`, {
-            normalShiftsCount: normalShifts.length,
-            normalShifts: normalShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-          });
-          return []; // 日跨ぎシフトがある場合は通常シフトは表示しない
-        }
-        
-        return shifts;
-      };
-
-      // シフトが入っている従業員のみを表示（月ビュー用）
+      // Return all employees with shifts for the day - renderEvent will handle filtering/display logic
       const activeEmployees = filteredEmployees.filter(employee => {
-        return shouldShowDate(employee.id, date);
+        const shifts = getShiftsForDate(employee.id, date);
+        return shifts.length > 0;
       });
       
       // 展開された日付の場合は全ての従業員を表示
@@ -2996,11 +2932,20 @@ export default function ShiftCalendar({
       // 完全に個別の動作：該当日付のみが展開されている場合のみ全表示
       if ((expandedDate === date || (allDatesExpanded && !collapsedDates.has(date)))) {
         const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
-          // 結合されたシフトを取得
-          const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+          // Get all shifts for the day
+          const allShifts = getShiftsForDate(employee.id, date);
           const hasShifts = allShifts.length > 0;
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
+          
+          // デバッグログ追加
+          if (employee.name === '佐藤 花子' && date === '2025-10-07') {
+            console.log(`🔍 Event creation for ${employee.name} on ${date}:`, {
+              allShifts: allShifts.map(s => ({ notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
+              timeRange,
+              hasShifts
+            });
+          }
           
           return {
             id: `${employee.id}-${date}`,
@@ -3066,11 +3011,20 @@ export default function ShiftCalendar({
         const remainingCount = activeEmployees.length - 4;
         
         const events = displayEmployees.filter(employee => employee && employee.name).map(employee => {
-          // 結合されたシフトを取得
-          const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+          // Get all shifts for the day
+          const allShifts = getShiftsForDate(employee.id, date);
           const hasShifts = allShifts.length > 0;
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
+          
+          // デバッグログ追加
+          if (employee.name === '佐藤 花子' && date === '2025-10-07') {
+            console.log(`🔍 Event creation (5+) for ${employee.name} on ${date}:`, {
+              allShifts: allShifts.map(s => ({ notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
+              timeRange,
+              hasShifts
+            });
+          }
           
           return {
             id: `${employee.id}-${date}`,
@@ -3122,8 +3076,8 @@ export default function ShiftCalendar({
       
       // 5人以下の場合は通常表示
       const events = activeEmployees.filter(employee => employee && employee.name).map(employee => {
-        // 結合されたシフトを取得
-        const allShifts = getCombinedDayCrossingShifts(employee.id, date);
+        // Get all shifts for the day
+        const allShifts = getShiftsForDate(employee.id, date);
         const hasShifts = allShifts.length > 0;
         const timeRange = getShiftTimeRange(employee.id, date);
         const shiftColor = getShiftColor(employee.id, date);
@@ -3179,8 +3133,18 @@ export default function ShiftCalendar({
     };
 
     // カスタムイベントレンダリング
-    const renderEvent = (event: CalendarEvent, index: number, date?: string) => {
-      const { employee, timeRange, shifts, startDate } = event.metadata;
+    const renderEvent = (event: CalendarEvent, index: number, currentDate?: string, weekStartDate?: string, weekEndDate?: string) => {
+      const { employee, timeRange, shifts, startDate } = event.metadata || {};
+      const shift = event.metadata?.shift; // Access original shift data from metadata
+      
+      // デバッグログ追加
+      console.log(`🎨 renderEvent called for ${employee?.name} on ${currentDate}:`, {
+        eventId: event.id,
+        timeRange,
+        shiftsCount: shifts?.length || 0,
+        shiftData: shift,
+        metadata: event.metadata
+      });
       
       // employeeがnullの場合（+N人表示など）は特別な表示（右上端に配置）
       if (!employee) {
@@ -3211,174 +3175,175 @@ export default function ShiftCalendar({
       // 従業員名の省略処理（6文字以上の場合は改行なしで表示）
       const displayName = employee.name;
       
-      // 日跨ぎシフトかどうかをチェック
-      const isDayCrossing = shifts && shifts.some((shift: EmployeeShift) => 
-        shift.notes && shift.notes.includes('日跨ぎ')
-      );
-      
-      // 日跨ぎシフトの起点かどうかをチェック
-      const isDayCrossingStart = shifts && shifts.some((shift: EmployeeShift) => 
-        shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))
-      );
-      
-      // 日跨ぎシフトの中日・終点かどうかをチェック
-      const isDayCrossingMiddleOrEnd = shifts && shifts.some((shift: EmployeeShift) => 
+      // Check if it's a day-crossing shift based on notes
+      const isDayCrossingShift = (shifts && shifts.some((shift: EmployeeShift) => 
         shift.notes && (
-          shift.notes.includes('日跨ぎ-中日') || 
-          shift.notes.includes('日跨ぎ-終点') || 
-          shift.notes.includes('日跨ぎ-2日目')
+          shift.notes.includes('日跨ぎ-1日目') ||
+          shift.notes.includes('日跨ぎ-起点') ||
+          shift.notes.includes('日跨ぎ-中日') ||
+          shift.notes.includes('日跨ぎ-2日目') ||
+          shift.notes.includes('日跨ぎ-終点')
         )
-      );
+      )) || (shift && shift.notes && (
+        shift.notes.includes('日跨ぎ-1日目') ||
+        shift.notes.includes('日跨ぎ-起点') ||
+        shift.notes.includes('日跨ぎ-中日') ||
+        shift.notes.includes('日跨ぎ-2日目') ||
+        shift.notes.includes('日跨ぎ-終点')
+      ));
 
-      // デバッグログ追加
-      if (isDayCrossing || isDayCrossingStart || isDayCrossingMiddleOrEnd) {
-        console.log(`🔍 Day crossing debug for ${employee.name}:`, {
-          isDayCrossing,
-          isDayCrossingStart,
-          isDayCrossingMiddleOrEnd,
-          shifts: shifts?.map(s => ({ notes: s.notes, date: s.date, startTime: s.startTime, endTime: s.endTime })),
-          startDate,
-          date
+      // If it's a normal shift, render it as before.
+      if (!isDayCrossingShift) {
+        console.log(`✅ Returning normal shift JSX for ${employee.name} on ${currentDate}:`, {
+          timeRange,
+          eventId: event.id,
+          shiftNotes: shifts?.[0]?.notes
         });
-      }
-
-      // 日跨ぎシフトの中日・終点は非表示
-      if (isDayCrossingMiddleOrEnd && !isDayCrossingStart) {
-        return null;
-      }
-
-      // 日跨ぎシフトの起点の場合は結合バーとして表示
-      if (isDayCrossingStart && shifts && startDate) {
-        // getShiftTimeRangeを使用して正確な時間表示を取得
-        const dayCrossingTimeRange = getShiftTimeRange(employee.id, startDate);
-        
-        console.log(`🚀 Rendering day crossing start for ${employee.name}:`, {
-          startDate,
-          dayCrossingTimeRange,
-          shifts: shifts.map(s => ({ date: s.date, startTime: s.startTime, endTime: s.endTime, notes: s.notes }))
-        });
-
-        // getShiftTimeRangeから時間表示を取得（「1日目 09:00〜3日目 18:00」形式）
-        const timeDisplay = dayCrossingTimeRange || timeRange || '';
-
-        // 日跨ぎシフト：通常シフトと同じサイズ・色で表示、時間表示のみ日跨ぎ形式
         return (
           <div
             key={event.id}
-            className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 border-2 border-orange-400 ${event.backgroundColor || 'bg-gradient-to-r from-orange-100 to-pink-100'} ${event.color || 'text-orange-800'}`}
+            data-shift-type="normal"
+            className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 ${event.backgroundColor || 'bg-gray-100'} ${event.color || 'text-gray-700'}`}
             style={{
-              fontSize: '9px'
+              fontSize: '9px',
+              zIndex: 10 + index // Lower z-index for normal shifts
             }}
             onClick={(e) => {
               e.stopPropagation();
+              console.log('Employee clicked:', employee.name);
               event.onClick?.();
             }}
-            title={`${employee.name} ${timeDisplay}（日跨ぎ）`}
+            title={`${employee.name}${timeRange ? ` (${timeRange})` : ''}`}
           >
             <div className="flex w-full items-center justify-between gap-0.5 overflow-hidden min-w-0">
               <span className="font-medium truncate leading-none" style={{ fontSize: '9px' }}>
-                🌙 {employee.name}
+                {employee.name}
               </span>
               <span className="opacity-75 truncate leading-none flex-shrink-0" style={{ fontSize: '7px' }}>
-                {timeDisplay}
+                {timeRange}
               </span>
             </div>
           </div>
         );
       }
 
+      // --- Day-crossing shift logic ---
+      const dayCrossingShift = shift || shifts?.[0]; // Get the shift from event.shiftData or shifts[0]
+      
+      // For day-crossing shifts, we need to find all related shifts to determine the date range
+      let shiftStartDate: string | undefined;
+      let shiftEndDate: string | undefined;
+      
+      if (dayCrossingShift) {
+        // Find all related day-crossing shifts for this employee
+        const employee = employees.find(emp => emp.id === dayCrossingShift.employeeId);
+        if (employee) {
+          const allDayCrossingShifts = employee.shifts.filter(s => 
+            s.notes && s.notes.includes('日跨ぎ')
+          );
+          
+          if (allDayCrossingShifts.length > 0) {
+            // Find the start shift (1日目 or 起点)
+            const startShift = allDayCrossingShifts.find(s => 
+              s.notes && (s.notes.includes('日跨ぎ-1日目') || s.notes.includes('日跨ぎ-起点'))
+            );
+            
+            // Find the end shift (2日目 or 終点)
+            const endShift = allDayCrossingShifts.find(s => 
+              s.notes && (s.notes.includes('日跨ぎ-2日目') || s.notes.includes('日跨ぎ-終点'))
+            );
+            
+            shiftStartDate = startShift?.date;
+            shiftEndDate = endShift?.date || startShift?.date; // Fallback to start date if no end shift found
+          }
+        }
+      }
+
+      if (!shiftStartDate || !shiftEndDate || !currentDate || !weekStartDate || !weekEndDate) {
+        console.log(`⚠️ Missing date information for day-crossing shift:`, {
+          shiftStartDate,
+          shiftEndDate,
+          currentDate,
+          weekStartDate,
+          weekEndDate
+        });
+        return null;
+      }
+
+      const currentMoment = dayjs(currentDate);
+      const weekStartMoment = dayjs(weekStartDate);
+      const weekEndMoment = dayjs(weekEndDate);
+
+      const isOverallShiftStart = currentMoment.isSame(shiftStartDate, 'day');
+      const isWeekSegmentStart = currentMoment.isSame(weekStartMoment, 'day') && currentMoment.isAfter(dayjs(shiftStartDate), 'day');
+
+      // Determine if this specific event should render a bar segment.
+      // A bar segment should render if:
+      // 1. It's the overall start day of the day-crossing shift.
+      // 2. It's the first day of a new week, AND the day-crossing shift is active on this day.
+      const shouldRenderSegment = (isOverallShiftStart || isWeekSegmentStart) &&
+                                  currentMoment.isBetween(dayjs(shiftStartDate), dayjs(shiftEndDate).add(1, 'day'), 'day', '[)');
+
+      if (!shouldRenderSegment) {
+        // If it's a day-crossing shift but not a segment start, return null.
+        // This day will be covered by a bar starting earlier in the week.
+        return null;
+      }
+
+      // Calculate how many days this segment should span within the current week.
+      const actualShiftEndMoment = dayjs(shiftEndDate);
+      const segmentEndInWeek = dayjs.min(actualShiftEndMoment, weekEndMoment);
+      let segmentDayCount = segmentEndInWeek.diff(currentMoment, 'day') + 1;
+
+      // Ensure segmentDayCount is at least 1
+      segmentDayCount = Math.max(1, segmentDayCount);
+
+      // Get the full time display for the *entire* day-crossing shift (e.g., "1日目 09:00〜3日目 18:00")
+      const timeDisplay = getShiftTimeRange(employee.id, shiftStartDate);
+
+      console.log(`🚀 Rendering day crossing segment for ${employee.name} on ${currentDate}:`, {
+        isOverallShiftStart,
+        isWeekSegmentStart,
+        segmentDayCount,
+        timeDisplay,
+        shiftStartDate,
+        shiftEndDate,
+        weekStartDate,
+        weekEndDate
+      });
+
       return (
         <div
           key={event.id}
-          className={`px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 ${
-            isDayCrossing ? 'border-2 border-orange-400' : ''
-          } ${event.backgroundColor || 'bg-gray-100'} ${event.color || 'text-gray-700'}`}
+          data-shift-type="day-crossing"
+          data-employee={employee.name}
+          data-time-display={timeDisplay}
+          className={`absolute bg-gradient-to-r from-orange-400 to-red-400 text-white rounded shadow-lg border-2 border-orange-500 flex items-center justify-center cursor-pointer`}
           style={{
-            fontSize: '9px'
+            top: `${25 + index * 26}px`, // Adjust vertical position based on index
+            left: '2px',
+            width: `calc(${segmentDayCount} * 100% + ${(segmentDayCount - 1) * 4}px)`, // Dynamic width
+            height: '22px',
+            fontSize: '8px',
+            fontWeight: '600',
+            zIndex: 20 + index // Lower z-index for shift bars
           }}
           onClick={(e) => {
             e.stopPropagation();
-            console.log('Employee clicked:', employee.name);
             event.onClick?.();
           }}
-          title={`${employee.name}${timeRange ? ` (${timeRange})` : ''}`}
+          title={`${employee.name} ${timeDisplay}（日跨ぎ）`}
         >
-          
-          {hasMultipleTimeRanges ? (
-            // 複数の時間範囲がある場合：名前は中央揃え、時間は横並び
-            <div className="flex w-full items-center justify-between gap-0.5 overflow-hidden min-w-0">
-              <span className="font-medium truncate leading-none" style={{ fontSize: '9px' }}>
-                {displayName}
-              </span>
-              <div className="flex flex-col items-end gap-0.5 flex-shrink-0 overflow-hidden">
-                {timeRanges.map((range, idx) => (
-                  <span key={idx} className="opacity-75 truncate leading-none" style={{ fontSize: '7px' }}>
-                    {range}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // 単一の時間範囲の場合：横並び
-            <div className="flex w-full items-center justify-between gap-0.5 overflow-hidden min-w-0">
-              <span className="font-medium truncate leading-none" style={{ fontSize: '9px' }}>
-                {displayName}
-              </span>
-              {timeRange && (
-                <span className="opacity-75 truncate leading-none flex-shrink-0" style={{ fontSize: '7px' }}>
-                  {timeRange}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex w-full items-center justify-between px-2">
+            <span className="truncate font-bold text-white">🌙 {employee.name}</span>
+            {isOverallShiftStart && <span className="text-orange-100 text-xs">{timeDisplay}</span>}
+          </div>
         </div>
       );
     };
 
 
-    // 日跨ぎシフトの結合表示用の関数（外部スコープに移動）
-    const getCombinedDayCrossingShiftsForCell = (employeeId: string, date: string) => {
-      const shifts = getShiftsForDate(employeeId, date);
-      const dayCrossingShifts = shifts.filter(shift => 
-        shift.notes && (shift.notes.includes('日跨ぎ-1日目') || shift.notes.includes('日跨ぎ-起点'))
-      );
-      
-      console.log(`🔍 getCombinedDayCrossingShiftsForCell: ${employeeId} on ${date}`, {
-        shiftsCount: shifts.length,
-        dayCrossingShiftsCount: dayCrossingShifts.length,
-        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-      });
-      
-      if (dayCrossingShifts.length > 0) {
-        // 起点から連続して「中日/終点」を収集
-        const collected: EmployeeShift[] = [...shifts];
-        let d = new Date(date);
-        for (let i = 0; i < 10; i++) { // 安全上の上限
-          d.setDate(d.getDate() + 1);
-          const ds = d.toISOString().split('T')[0];
-          const nextDay = getShiftsForDate(employeeId, ds);
-          const mids = nextDay.filter(s => s.notes && (s.notes.includes('日跨ぎ-中日') || s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')));
-          
-          console.log(`🔍 Checking next day ${ds}:`, {
-            nextDayShiftsCount: nextDay.length,
-            midsCount: mids.length,
-            nextDayShifts: nextDay.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-          });
-          
-          if (mids.length === 0) break;
-          collected.push(...mids);
-          if (mids.some(s => s.notes && (s.notes.includes('日跨ぎ-終点') || s.notes.includes('日跨ぎ-2日目')))) break;
-        }
-        
-        console.log(`✅ Collected ${collected.length} shifts for day crossing`, {
-          dates: Array.from(new Set(collected.map(s => s.date))).sort(),
-          collected: collected.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-        });
-        
-        return collected.map(s => ({ ...s, __startDate: date } as any));
-      }
-      return [];
-    };
+    // getCombinedDayCrossingShiftsForCell removed - logic moved to renderEvent
 
     // 表示月のすべての日跨ぎシフト起点を収集する関数
     const getAllDayCrossingStartShifts = () => {
@@ -3402,7 +3367,7 @@ export default function ShiftCalendar({
           const shifts = getShiftsForDate(employee.id, date);
           shifts.forEach(shift => {
             if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
-              const allShifts = getCombinedDayCrossingShiftsForCell(employee.id, date);
+              const allShifts = getShiftsForDate(employee.id, date);
               const dates = Array.from(new Set(allShifts.map((s: any) => s.date))).sort();
               
               startShifts.push({
@@ -3421,7 +3386,7 @@ export default function ShiftCalendar({
     };
 
     // カスタム日付セルレンダリング（日跨ぎシフト結合バー付き）
-    const renderDateCell = (day: any, events: any[]) => {
+    const renderDateCell = (day: CalendarDay, events: CalendarEvent[], week?: any) => {
       const isExpanded = expandedDate === day.date;
       const hasEvents = events.length > 0;
       
@@ -3475,39 +3440,11 @@ export default function ShiftCalendar({
             )}
           </div>
 
-          {/* 日跨ぎシフト結合バー（起点セルのみ） */}
-          {dayCrossingShifts.map((crossingShift, index) => (
-            <div
-              key={`day-crossing-${crossingShift.employee.id}-${crossingShift.shift.id}`}
-              className="absolute bg-gradient-to-r from-orange-400 to-red-400 text-white rounded shadow-lg border-2 border-orange-500 flex items-center justify-center cursor-pointer z-50"
-              style={{
-                top: `${25 + index * 26}px`,
-                left: '2px',
-                width: `calc(${crossingShift.dayCount * 100}% + ${(crossingShift.dayCount - 1) * 4}px)`,
-                height: '22px',
-                fontSize: '8px',
-                fontWeight: '600',
-                zIndex: 1000 + index
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedShift(crossingShift.shift);
-                setEditingShift(crossingShift.shift);
-                setShiftModalMode('edit');
-                setShowShiftModal(true);
-              }}
-              title={`🌙 ${crossingShift.employee.name} 日跨ぎシフト: ${crossingShift.startTime}～${crossingShift.endTime} (${crossingShift.dayCount}日間)`}
-            >
-              <div className="flex items-center justify-between w-full px-2">
-                <span className="truncate font-bold text-white">🌙 {crossingShift.employee.name}</span>
-                <span className="text-orange-100 text-xs">{crossingShift.startTime}～{crossingShift.endTime}</span>
-              </div>
-            </div>
-          ))}
+          {/* 古い日跨ぎシフト結合バーロジックを削除 - renderEventで処理 */}
 
           {hasEvents && (
             <div className="flex flex-col items-center pt-1">
-              {events.map((event, index) => renderEvent(event, index))}
+              {events.map((event, index) => renderEvent(event, index, day.date, week.startDate, week.endDate))}
             </div>
           )}
         </div>
@@ -3543,6 +3480,13 @@ export default function ShiftCalendar({
 
       filteredEmployees.forEach(employee => {
         const shifts = getShiftsForDate(employee.id, date);
+        console.log(`🔍 Checking shifts for ${employee.name} on ${date}:`, shifts.map(s => ({
+          id: s.id,
+          notes: s.notes,
+          startTime: s.startTime,
+          endTime: s.endTime
+        })));
+        
         shifts.forEach(shift => {
           if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
             console.log(`🔍 Found day crossing start shift for ${employee.name} on ${date}:`, {
@@ -3552,7 +3496,7 @@ export default function ShiftCalendar({
               endTime: shift.endTime
             });
             
-            const allShifts = getCombinedDayCrossingShiftsForCell(employee.id, date);
+            const allShifts = getShiftsForDate(employee.id, date);
             const dates = Array.from(new Set(allShifts.map((s: any) => s.date))).sort();
             
             console.log(`📅 Day crossing dates for ${employee.name}:`, dates);
