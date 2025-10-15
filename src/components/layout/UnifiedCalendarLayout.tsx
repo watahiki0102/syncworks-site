@@ -78,7 +78,7 @@ export default function UnifiedCalendarLayout({
       />
 
       {/* メインコンテンツ */}
-      <main className={`w-full ${showSidePanel ? 'max-w-[75%]' : 'max-w-7xl'} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
+      <main className={`w-full ${showSidePanel ? 'max-w-[75%]' : ''} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
         <div className="px-4 py-2 sm:px-0">
           {/* タブコンテンツ */}
           <div className="bg-white">

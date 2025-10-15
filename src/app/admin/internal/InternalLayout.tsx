@@ -13,6 +13,7 @@ const navigation = [
   { name: '利用業者管理', href: '/admin/internal/partners' },
   { name: 'お問い合わせ', href: '/admin/internal/contacts' },
   { name: 'ニュース編集', href: '/admin/internal/news' },
+  { name: '祝日管理', href: '/admin/internal/holidays' },
 ];
 
 export default function InternalLayout({ children }: InternalLayoutProps) {

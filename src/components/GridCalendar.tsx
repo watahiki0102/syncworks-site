@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA } from '@/constants/calendar';
+import { fetchHolidays, isHoliday, getHolidayName, isSaturday, isSunday, type Holiday } from '@/utils/holidayUtils';
 
 interface StatusBox {
   type: 'completed' | 'pending';
@@ -16,13 +17,17 @@ interface CalendarCell {
   dayNumber: number;
   isToday: boolean;
   isCurrentMonth: boolean;
+  isHoliday: boolean;
+  holidayName: string | null;
+  isSaturday: boolean;
+  isSunday: boolean;
   statusBoxes: StatusBox[];
 }
 
 interface GridCalendarProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
-  onDateClick: (date: string) => void;
+  onDateClick: (date: string, filterType?: 'confirmed' | 'unconfirmed') => void;
   selectedDate?: string;
   getEventsForDate?: (date: string) => any[];
   showModal?: boolean;
@@ -43,6 +48,12 @@ export default function GridCalendar({
   onCloseModal
 }: GridCalendarProps) {
   const [calendarData, setCalendarData] = useState<CalendarCell[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+  // 祝日データを取得
+  useEffect(() => {
+    fetchHolidays().then(setHolidays);
+  }, []);
 
   // カレンダーデータを生成
   useEffect(() => {
@@ -72,12 +83,12 @@ export default function GridCalendar({
         const events = getEventsForDate ? getEventsForDate(dateString) : [];
         
         // ステータスボックスの生成（実際のデータに基づく）
-        const completedCount = events.filter(event => 
-          event.contractStatus === 'contracted' || event.status === 'confirmed'
+        const completedCount = events.filter(event =>
+          event.contractStatus === 'confirmed'
         ).length;
-        
-        const pendingCount = events.filter(event => 
-          event.contractStatus === 'estimate' || event.status !== 'confirmed'
+
+        const pendingCount = events.filter(event =>
+          event.contractStatus === 'estimate'
         ).length;
         
         const statusBoxes: StatusBox[] = [];
@@ -95,7 +106,7 @@ export default function GridCalendar({
           statusBoxes.push({
             type: 'pending',
             count: pendingCount,
-            color: 'bg-orange-100 border-orange-200',
+            color: 'bg-gray-100 border-gray-200',
             icon: '⏳'
           });
         }
@@ -105,15 +116,19 @@ export default function GridCalendar({
           dayNumber: date.getDate(),
           isToday: dateString === todayString,
           isCurrentMonth: date.getMonth() === month,
+          isHoliday: isHoliday(dateString, holidays),
+          holidayName: getHolidayName(dateString, holidays),
+          isSaturday: isSaturday(dateString),
+          isSunday: isSunday(dateString),
           statusBoxes: statusBoxes
         });
       }
-      
+
       setCalendarData(cells);
     };
 
     generateCalendarData();
-  }, [currentDate, getEventsForDate]);
+  }, [currentDate, getEventsForDate, holidays]);
 
   const handlePreviousMonth = () => {
     const newDate = new Date(currentDate);
@@ -132,103 +147,103 @@ export default function GridCalendar({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* ヘッダー - UnifiedMonthCalendarと同じレイアウトに統一 */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex justify-start items-center">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePreviousMonth}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              ＜
-            </button>
-            <h3 className="text-xl font-semibold text-gray-900">
-              {formatMonthYear(currentDate)}
-            </h3>
-            <button
-              onClick={handleNextMonth}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-            >
-              ＞
-            </button>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto overflow-y-visible">
+      <div className="w-full" style={{ minWidth: '900px', maxWidth: 'min(1800px, 100%)' }}>
+        {/* ヘッダー - UnifiedMonthCalendarと同じレイアウトに統一 */}
+        <div className="p-1.5 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="flex justify-start items-center">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handlePreviousMonth}
+                className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              >
+                ＜
+              </button>
+              <h3 className="text-sm font-semibold text-gray-900">
+                {formatMonthYear(currentDate)}
+              </h3>
+              <button
+                onClick={handleNextMonth}
+                className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              >
+                ＞
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 曜日ヘッダー */}
-      <div className="grid grid-cols-7 border-b border-gray-200">
-        {WEEKDAYS_JA.map((day) => (
-          <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 bg-gray-50">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* カレンダーグリッド */}
-      <div className="grid grid-cols-7">
-        {calendarData.map((cell) => (
-          <div
-            key={cell.date}
-            onClick={() => onDateClick(cell.date)}
-            className={`
-              min-h-[120px] p-2 border-r border-b border-gray-200 cursor-pointer
-              hover:bg-gray-50 transition-colors relative
-              ${cell.isToday ? 'bg-blue-50' : ''}
-              ${selectedDate === cell.date ? 'ring-2 ring-blue-500 ring-inset' : ''}
-              ${!cell.isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''}
-            `}
-          >
-            {/* 日付 */}
-            <div className={`
-              text-sm font-medium mb-2
-              ${cell.isToday ? 'text-blue-600' : ''}
-              ${!cell.isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
-            `}>
-              {cell.dayNumber}
+        {/* 曜日ヘッダー */}
+        <div className="grid grid-cols-7 border-b border-gray-200 sticky top-[38px] bg-white z-10">
+          {WEEKDAYS_JA.map((day) => (
+            <div key={day} className="p-0.5 text-center text-xs font-medium text-gray-500 bg-gray-50">
+              {day}
             </div>
+          ))}
+        </div>
 
-            {/* ステータスボックス */}
-            <div className="space-y-1">
-              {cell.statusBoxes.map((box, index) => (
-                <div
-                  key={index}
-                  className={`
-                    flex items-center px-2 py-1 rounded-md text-xs border
-                    ${box.color}
-                  `}
-                >
-                  <span className="mr-1">{box.icon}</span>
-                  <span className="font-medium">
-                    {box.type === 'completed' ? '確定' : '未確定'} {box.count}件
-                  </span>
+        {/* カレンダーグリッド */}
+        <div className="grid grid-cols-7">
+          {calendarData.map((cell) => (
+            <div
+              key={cell.date}
+              onClick={() => onDateClick(cell.date)}
+              className={`
+                p-1 border-r border-b border-gray-200 cursor-pointer
+                hover:bg-gray-50 transition-colors relative
+                aspect-[1/0.7]
+                ${cell.isToday ? 'bg-blue-50' : ''}
+                ${selectedDate === cell.date ? 'ring-2 ring-blue-500 ring-inset' : ''}
+                ${!cell.isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''}
+                ${cell.isHoliday && cell.isCurrentMonth ? 'bg-red-50' : cell.isSunday && cell.isCurrentMonth ? 'bg-red-50' : cell.isSaturday && cell.isCurrentMonth ? 'bg-blue-50' : ''}
+              `}
+            >
+              {/* 日付と祝日名 */}
+              <div className="flex items-center gap-1 mb-0.5">
+                <div className={`
+                  text-xs font-medium
+                  ${cell.isToday ? 'text-blue-600' : ''}
+                  ${!cell.isCurrentMonth ? 'text-gray-400' : cell.isHoliday ? 'text-red-600' : cell.isSunday ? 'text-red-500' : cell.isSaturday ? 'text-blue-500' : 'text-gray-900'}
+                `}>
+                  {cell.dayNumber}
                 </div>
-              ))}
+                {cell.holidayName && cell.isCurrentMonth && (
+                  <div className="text-[8px] text-red-600 font-medium truncate">
+                    {cell.holidayName}
+                  </div>
+                )}
+              </div>
+
+              {/* ステータスボックス */}
+              <div className="flex flex-col justify-center h-[calc(100%-1.5rem)] space-y-0.5">
+                {cell.statusBoxes.map((box, index) => (
+                  <div
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDateClick(cell.date, box.type === 'completed' ? 'confirmed' : 'unconfirmed');
+                    }}
+                    className={`
+                      flex items-center justify-center px-1 py-0.5 rounded text-[9px] border cursor-pointer hover:opacity-80
+                      ${box.color}
+                    `}
+                  >
+                    <span className="mr-0.5">{box.icon}</span>
+                    <span className="font-medium truncate">
+                      {box.type === 'completed' ? '確定' : '未確定'} {box.count}件
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* モーダル */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {modalTitle}
-              </h3>
-              <button
-                onClick={onCloseModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              {modalContent}
-            </div>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onCloseModal}>
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto border-2 border-gray-300" onClick={(e) => e.stopPropagation()}>
+            {modalContent}
           </div>
         </div>
       )}
