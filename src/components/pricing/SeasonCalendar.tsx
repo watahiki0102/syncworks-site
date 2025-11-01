@@ -18,6 +18,7 @@ interface SeasonCalendarProps {
   onUpdateRule: (rule: SeasonRule) => void;
   onAddRule: (rule: SeasonRuleInput) => void;
   onRemoveRule: (id: string) => void;
+  onSave?: () => void;
 }
 
 type ViewMode = 'month' | 'list';
@@ -54,7 +55,8 @@ export default function SeasonCalendar({
   seasonRules,
   onUpdateRule,
   onAddRule,
-  onRemoveRule
+  onRemoveRule,
+  onSave
 }: SeasonCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
@@ -353,6 +355,17 @@ export default function SeasonCalendar({
           showNavigation={true}
           showWeekdays={true}
           className=""
+          navigationActions={
+            onSave && (
+              <button
+                onClick={onSave}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+              >
+                <span>💾</span>
+                <span>保存</span>
+              </button>
+            )
+          }
         />
       </div>
     );

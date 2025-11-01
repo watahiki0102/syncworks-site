@@ -321,6 +321,7 @@ export default function SeasonPage() {
           onUpdateRule={updateRule}
           onAddRule={addRule}
           onRemoveRule={removeRule}
+          onSave={handleSave}
         />
       )}
       {activeTab === 'settings' && (

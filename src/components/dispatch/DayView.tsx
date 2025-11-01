@@ -348,34 +348,35 @@ export default function DayView({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6" data-view="day">
-      {/* 日付ヘッダー */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900">
-            {new Date(selectedDate).getMonth() + 1}月{new Date(selectedDate).getDate()}日
-          </h3>
-          <div className="mt-2">
-            <p className="text-sm font-medium text-gray-700 mb-1">
-              総計対応件数: {getTotalSchedulesForDay()}件
-            </p>
-            {getTruckSchedulesForDay().length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {getTruckSchedulesForDay().map((truck, index) => (
-                  <span key={index} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {truck.truckName}: {truck.count}件
-                  </span>
-                ))}
-              </div>
-            )}
+    <div className="bg-white rounded-lg shadow overflow-x-auto overflow-y-visible" data-view="day">
+      <div className="w-full p-2 md:p-3" style={{ minWidth: '900px', maxWidth: 'min(1800px, 100%)' }}>
+        {/* 日付ヘッダー */}
+        <div className="flex justify-between items-start mb-2 md:mb-3 sticky top-0 bg-white z-20 pb-2">
+          <div>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900">
+              {new Date(selectedDate).getMonth() + 1}月{new Date(selectedDate).getDate()}日
+            </h3>
+            <div className="mt-1">
+              <p className="text-xs font-medium text-gray-700 mb-0.5">
+                総計対応件数: {getTotalSchedulesForDay()}件
+              </p>
+              {getTruckSchedulesForDay().length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {getTruckSchedulesForDay().map((truck, index) => (
+                    <span key={index} className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                      {truck.truckName}: {truck.count}件
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
       {/* 表示期間選択 */}
-      <div className="flex items-center gap-4 mb-4">
-        <span className="text-sm font-medium text-gray-700">表示期間:</span>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-medium text-gray-700">表示期間:</span>
+        <div className="flex items-center gap-1">
           <select
             value={displayTimeRange.start}
             onChange={(e) => {
@@ -385,17 +386,17 @@ export default function DayView({
                 end: Math.max(newStart + 1, displayTimeRange.end)
               });
             }}
-            className="px-3 py-1 border rounded text-sm text-gray-900"
+            className="px-2 py-0.5 border rounded text-xs text-gray-900"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
             ))}
           </select>
-          <span className="text-sm text-gray-500">～</span>
+          <span className="text-xs text-gray-500">～</span>
           <select
             value={displayTimeRange.end}
             onChange={(e) => setDisplayTimeRange({ ...displayTimeRange, end: parseInt(e.target.value) })}
-            className="px-3 py-1 border rounded text-sm text-gray-900"
+            className="px-2 py-0.5 border rounded text-xs text-gray-900"
           >
             {Array.from({ length: 24 }, (_, i) => (
               i > displayTimeRange.start && (
@@ -405,7 +406,7 @@ export default function DayView({
           </select>
           <button
             onClick={() => setDisplayTimeRange({ start: 8, end: 20 })}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+            className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
           >
             リセット
           </button>
@@ -413,11 +414,11 @@ export default function DayView({
       </div>
 
       {/* 時間帯ヘッダー - 固定表示 */}
-      <div className="grid grid-cols-[200px_1fr] gap-1 mb-2 sticky top-0 bg-white z-10">
-        <div className="p-2 font-medium text-gray-600 bg-gray-50 border rounded">時間帯</div>
+      <div className="grid grid-cols-[120px_1fr] md:grid-cols-[150px_1fr] gap-1 mb-1 sticky top-0 bg-white z-10">
+        <div className="p-0.5 md:p-1 font-medium text-gray-600 bg-gray-50 border rounded text-xs">時間帯</div>
         <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
           {timeSlots.map(slot => (
-            <div key={slot.time} className="p-2 text-center text-sm font-medium text-gray-600 border bg-gray-50 rounded">
+            <div key={slot.time} className="p-0.5 md:p-1 text-center text-[10px] md:text-xs font-medium text-gray-600 border bg-gray-50 rounded">
               {slot.time}
             </div>
           ))}
@@ -425,19 +426,19 @@ export default function DayView({
       </div>
 
       {/* 人数表示行 */}
-      <div className="grid grid-cols-[200px_1fr] gap-1 mb-2">
-        <div className="p-2 font-medium text-gray-600 bg-blue-50 border rounded text-center">
-          <span className="text-sm">人数</span>
+      <div className="grid grid-cols-[120px_1fr] md:grid-cols-[150px_1fr] gap-1 mb-1">
+        <div className="p-0.5 md:p-1 font-medium text-gray-600 bg-blue-50 border rounded text-center">
+          <span className="text-xs">人数</span>
         </div>
         <div className={`grid gap-px`} style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)` }}>
           {timeSlots.map(slot => {
             const personnelCount = getPersonnelCountForTimeSlot(slot);
             return (
-              <div 
-                key={`personnel-${slot.time}`} 
-                className={`p-2 text-center text-sm font-medium border rounded ${
-                  personnelCount > 0 
-                    ? 'bg-blue-100 text-blue-800 border-blue-200' 
+              <div
+                key={`personnel-${slot.time}`}
+                className={`p-0.5 md:p-1 text-center text-[10px] md:text-xs font-medium border rounded ${
+                  personnelCount > 0
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
                     : 'bg-gray-50 text-gray-500 border-gray-200'
                 }`}
                 title={`${slot.time}の稼働人数: ${personnelCount}人`}
@@ -450,7 +451,7 @@ export default function DayView({
       </div>
 
       {/* トラック行 - スクロール対応 */}
-      <div className="overflow-y-auto max-h-[600px]">
+      <div className="overflow-y-auto max-h-[350px] md:max-h-[450px]">
         {trucks.map(truck => {
           // トラック全体の使用容量を計算
           const totalUsed = getFilteredSchedules(truck.schedules)
@@ -459,17 +460,17 @@ export default function DayView({
           const totalPercent = truck.capacityKg > 0 ? (totalUsed / truck.capacityKg) * 100 : 0;
 
           return (
-            <div key={truck.id} className="grid grid-cols-[200px_1fr] gap-1 mb-1">
+            <div key={truck.id} className="grid grid-cols-[120px_1fr] md:grid-cols-[150px_1fr] gap-1 mb-1">
               {/* トラック情報 - 左側固定 */}
-              <div className="p-3 border bg-gray-50 rounded relative">
+              <div className="p-1.5 md:p-2 border bg-gray-50 rounded relative">
                 {/* トラック情報左側の容量バー */}
-                <div className="absolute left-1 top-1 bottom-1 w-2 bg-gray-300 rounded border border-gray-400">
+                <div className="absolute left-0.5 md:left-1 top-0.5 md:top-1 bottom-0.5 md:bottom-1 w-1.5 md:w-2 bg-gray-300 rounded border border-gray-400">
                   <div
                     className={`rounded transition-all duration-200 ${getBarColor(totalPercent)}`}
                     style={{
                       height: `${Math.min(totalPercent, 100)}%`,
                       width: '100%',
-                      minHeight: totalPercent > 0 ? '4px' : '0px',
+                      minHeight: totalPercent > 0 ? '3px' : '0px',
                       position: 'absolute',
                       bottom: '0'
                     }}
@@ -479,10 +480,10 @@ export default function DayView({
                         .reduce((sum, s) => sum + (s.points || 0), 0)}pt`}
                   />
                 </div>
-                <div className="ml-4">
-                  <div className="font-medium text-gray-900">{truck.name}</div>
-                  <div className="text-xs text-gray-600">{truck.plateNumber}</div>
-                  <div className="text-xs text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
+                <div className="ml-2 md:ml-3">
+                  <div className="font-medium text-[10px] md:text-xs text-gray-900 truncate">{truck.name}</div>
+                  <div className="text-[9px] md:text-[10px] text-gray-600 truncate">{truck.plateNumber}</div>
+                  <div className="text-[9px] md:text-[10px] text-gray-500">{truck.capacityKg.toLocaleString()}kg</div>
                 </div>
               </div>
 
@@ -504,7 +505,7 @@ export default function DayView({
                   const percent = truck.capacityKg > 0 ? (used / truck.capacityKg) * 100 : 0;
 
                   // スケジュール数に応じて高さを調整
-                  const cellHeight = schedules.length > 1 ? 'h-20' : schedules.length === 1 ? 'h-16' : 'h-12';
+                  const cellHeight = schedules.length > 1 ? 'h-14 md:h-16' : schedules.length === 1 ? 'h-10 md:h-12' : 'h-8 md:h-10';
 
                   return (
                     <div
@@ -526,13 +527,13 @@ export default function DayView({
                       }
                     >
                       {/* トラック毎の縦軸容量バー */}
-                      <div className="absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded z-10 border border-gray-400">
+                      <div className="absolute left-0.5 top-0.5 bottom-0.5 w-2 bg-gray-300 rounded z-10 border border-gray-400">
                         <div
                           className={`rounded transition-all duration-200 ${getBarColor(percent)}`}
                           style={{
                             height: `${Math.min(percent, 100)}%`,
                             width: '100%',
-                            minHeight: percent > 0 ? '4px' : '0px',
+                            minHeight: percent > 0 ? '3px' : '0px',
                             position: 'absolute',
                             bottom: '0'
                           }}
@@ -543,7 +544,7 @@ export default function DayView({
 
                       {/* 重なり回避レイアウトでスケジュール表示 */}
                       {overlappingLayout.length > 0 && (
-                        <div className="absolute inset-0 flex flex-col justify-start p-1 gap-1 ml-4">
+                        <div className="absolute inset-0 flex flex-col justify-start p-0.5 gap-0.5 ml-3">
                           {overlappingLayout.map(({ schedule, column, totalColumns, caseId }, index) => {
                             // 顧客ごとの色を取得
                             const customerColor = schedule.customerName ?
@@ -566,8 +567,8 @@ export default function DayView({
                                   width: `calc(${widthPercent}% - 2px)`,
                                   maxWidth: `calc(${widthPercent}% - 2px)`,
                                   position: 'absolute',
-                                  top: `${index * 20}px`,
-                                  height: '18px',
+                                  top: `${index * 14}px`,
+                                  height: '14px',
                                   zIndex: index + 1
                                 }}
                                 onClick={(e) => {
@@ -583,11 +584,11 @@ export default function DayView({
                                 }}
                                 title={`${schedule.customerName || '予約済み'} ${schedule.contractStatus === 'confirmed' ? '(確定)' : '(未確定)'} ${schedule.startTime}-${schedule.endTime} ${schedule.capacity ? `(${schedule.capacity}kg)` : ''} ${schedule.points ? `(${schedule.points}pt)` : ''}`}
                               >
-                                <div className="text-xs text-gray-600 text-center leading-[18px] px-1">
+                                <div className="text-[10px] text-gray-600 text-center leading-[14px] px-0.5">
                                   <PlaceLabels
                                     origin={schedule.origin || ''}
                                     destination={schedule.destination || ''}
-                                    className="text-xs"
+                                    className="text-[10px]"
                                   />
                                 </div>
                               </div>
@@ -598,13 +599,13 @@ export default function DayView({
 
                       {/* 時間帯の契約ステータス表示 */}
                       {schedules.length > 0 && (
-                        <div className="absolute top-1 right-1 flex flex-col gap-1">
+                        <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5">
                           {schedules.map((schedule, index) => (
-                            <div key={`status-${schedule.id}`} className="flex items-center gap-1">
+                            <div key={`status-${schedule.id}`} className="flex items-center gap-0.5">
                               {schedule.contractStatus === 'confirmed' ? (
-                                <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅</span>
+                                <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-[10px] bg-green-100 text-green-800 px-0.5 py-0 rounded">✅</span>
                               ) : schedule.contractStatus === 'estimate' ? (
-                                <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">⏳</span>
+                                <span title={`${schedule.customerName || '予約済み'} - 未確定`} className="text-[10px] bg-orange-100 text-orange-800 px-0.5 py-0 rounded">⏳</span>
                               ) : null}
                             </div>
                           ))}
@@ -619,62 +620,63 @@ export default function DayView({
         })}
       </div>
 
-      {/* 案件詳細（ステータスごとに色分け） */}
-      <div className="mt-8">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
-        <div className="space-y-3">
-          {visibleCases
-            .filter(c => c.confirmedDate === selectedDate)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime))
-            .map((caseDetail, index) => {
-              const isHighlighted = highlightedScheduleId === caseDetail.id;
+        {/* 案件詳細（ステータスごとに色分け） */}
+        <div className="mt-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">案件詳細</h4>
+          <div className="space-y-3">
+            {visibleCases
+              .filter(c => c.confirmedDate === selectedDate)
+              .sort((a, b) => a.startTime.localeCompare(b.startTime))
+              .map((caseDetail, index) => {
+                const isHighlighted = highlightedScheduleId === caseDetail.id;
 
-              return (
-                <div
-                  key={caseDetail.id}
-                  id={`case-${caseDetail.id}`}
-                  data-case-id={caseDetail.id}
-                  className={`scroll-mt-[var(--header-h,80px)] ${isHighlighted ? 'ring-2 ring-blue-400' : ''}`}
-                >
-                  <CaseDetail
-                    schedule={{
-                      id: caseDetail.id,
-                      date: caseDetail.confirmedDate || '',
-                      startTime: caseDetail.startTime,
-                      endTime: caseDetail.endTime,
-                      status: 'available',
-                      contractStatus: caseDetail.contractStatus,
-                      customerName: caseDetail.customerName,
-                      description: caseDetail.options?.join(', '),
-                      capacity: 0,
-                      points: 0,
-                      origin: '', // 出発地は現在の型では利用不可
-                      destination: caseDetail.arrivalAddress,
-                      assignedEmployees: caseDetail.assignedEmployees || []
-                    }}
-                    truck={{
-                      id: caseDetail.truckId || '',
-                      name: caseDetail.truckName || '未割当',
-                      plateNumber: '',
-                      capacityKg: 0,
-                      inspectionExpiry: '',
-                      status: 'available',
-                      truckType: ''
-                    }}
-                    isHighlighted={isHighlighted}
-                    onEdit={() => {
-                      // 直接編集画面に遷移
-                      router.push(`/admin/cases/${caseDetail.id}/edit?from=dispatch-day&caseId=${caseDetail.id}`);
-                    }}
-                  />
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={caseDetail.id}
+                    id={`case-${caseDetail.id}`}
+                    data-case-id={caseDetail.id}
+                    className={`scroll-mt-[var(--header-h,80px)] ${isHighlighted ? 'ring-2 ring-blue-400' : ''}`}
+                  >
+                    <CaseDetail
+                      schedule={{
+                        id: caseDetail.id,
+                        date: caseDetail.confirmedDate || '',
+                        startTime: caseDetail.startTime,
+                        endTime: caseDetail.endTime,
+                        status: 'available',
+                        contractStatus: caseDetail.contractStatus,
+                        customerName: caseDetail.customerName,
+                        description: caseDetail.options?.join(', '),
+                        capacity: 0,
+                        points: 0,
+                        origin: '', // 出発地は現在の型では利用不可
+                        destination: caseDetail.arrivalAddress,
+                        assignedEmployees: caseDetail.assignedEmployees || []
+                      }}
+                      truck={{
+                        id: caseDetail.truckId || '',
+                        name: caseDetail.truckName || '未割当',
+                        plateNumber: '',
+                        capacityKg: 0,
+                        inspectionExpiry: '',
+                        status: 'available',
+                        truckType: ''
+                      }}
+                      isHighlighted={isHighlighted}
+                      onEdit={() => {
+                        // 直接編集画面に遷移
+                        router.push(`/admin/cases/${caseDetail.id}/edit?from=dispatch-day&caseId=${caseDetail.id}`);
+                      }}
+                    />
+                  </div>
+                );
+              })}
+          </div>
         </div>
-      </div>
 
-      {/* TODO: 新規作成モーダル - 空きセルクリック時に表示 */}
-      {/* 日ビューでは案件詳細パネルは使用しない - 直接編集画面に遷移するため */}
+        {/* TODO: 新規作成モーダル - 空きセルクリック時に表示 */}
+        {/* 日ビューでは案件詳細パネルは使用しない - 直接編集画面に遷移するため */}
+      </div>
     </div>
   );
 }

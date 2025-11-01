@@ -13,6 +13,7 @@ const navigation = [
   { name: '利用業者管理', href: '/admin/internal/partners' },
   { name: 'お問い合わせ', href: '/admin/internal/contacts' },
   { name: 'ニュース編集', href: '/admin/internal/news' },
+  { name: '祝日管理', href: '/admin/internal/holidays' },
 ];
 
 export default function InternalLayout({ children }: InternalLayoutProps) {
@@ -35,7 +36,7 @@ export default function InternalLayout({ children }: InternalLayoutProps) {
           <div className="flex justify-between items-center h-16 px-4">
             <div className="flex items-center">
               <h1 className="text-lg md:text-xl font-semibold text-gray-900">
-                内部管理画面
+              、「1日目 09:00〜3日目 18:00」形式の時間表示画面
               </h1>
             </div>
             <div className="text-sm text-gray-500">

@@ -850,6 +850,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       // フィルター状態を管理（月ビューの状態を使用）
       const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>(monthViewFilterType);
 
+      // monthViewFilterTypeが変わったときにfilterTypeを更新
+      useEffect(() => {
+        setFilterType(monthViewFilterType);
+      }, [monthViewFilterType]);
+
       // 確定と未確定を分けて表示
       const confirmedSchedules = schedules.filter(s => s.contractStatus === 'confirmed');
       const unconfirmedSchedules = schedules.filter(s => s.contractStatus !== 'confirmed');
@@ -867,15 +872,8 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       }
 
       return (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50"
-          data-month-modal="true"
-          onClick={onClose}
-        >
-          <div
-            className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl border"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div data-month-modal="true" className="p-6">
+          <div>
             <div className="flex justify-between items-start mb-6">
               <h3 className="text-xl font-semibold text-gray-900">
                 {title}
@@ -979,12 +977,22 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       );
     };
 
-    const handleDateClick = (date: string) => {
-      console.log('Date clicked:', date);
+    const handleDateClick = (date: string, filterType?: 'confirmed' | 'unconfirmed') => {
+      console.log('Date clicked:', date, 'filterType:', filterType);
+
+      // その日のスケジュールを取得
+      const schedules = getSchedulesForDate(date);
+
+      // スケジュールがない場合はモーダルを開かない
+      if (schedules.length === 0) {
+        console.log('No schedules for this date, modal will not open');
+        return;
+      }
+
       setSelectedDate(date);
       setExpandedDate(date);
       setIsExpandedView(true);
-      setMonthViewFilterType('all');
+      setMonthViewFilterType(filterType || 'all');
     };
 
     return (
