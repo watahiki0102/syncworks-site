@@ -22,15 +22,17 @@ interface SimulationPanelProps {
   onUpdateQuantity: (id: string, quantity: number) => void;
   onClearAll: () => void;
   onAddItem?: (itemId: string, itemName: string, points: number) => void;
+  onClose?: () => void; // パネルを閉じるコールバック
   enableToggle?: boolean; // トグル機能の有無を制御
 }
 
-export default function SimulationPanel({ 
-  items, 
-  onRemoveItem, 
-  onUpdateQuantity, 
+export default function SimulationPanel({
+  items,
+  onRemoveItem,
+  onUpdateQuantity,
   onClearAll,
   onAddItem,
+  onClose,
   enableToggle = true
 }: SimulationPanelProps) {
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
@@ -130,12 +132,25 @@ export default function SimulationPanel({
   };
 
   return (
-    <div className="fixed top-0 right-0 w-1/3 h-screen bg-white border-l border-gray-200 shadow-lg z-40">
+    <div className="fixed top-0 right-0 w-1/3 h-screen bg-white border-l border-gray-200 shadow-lg overflow-hidden" style={{ zIndex: 9998 }}>
       <div className="h-full flex flex-col">
         {/* ヘッダー - 固定部分 */}
-        <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">📊 料金シミュレーション</h2>
-          <p className="text-sm text-gray-600">荷物を選択してトラックサイズを確認</p>
+        <div className="sticky top-0 z-10 flex-shrink-0 bg-gray-50 border-b border-gray-200 p-6">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">📊 料金シミュレーション</h2>
+              <p className="text-sm text-gray-600 mt-1">荷物を選択してトラックサイズを確認</p>
+            </div>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors text-2xl font-bold leading-none"
+                title="閉じる"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 結果表示エリア - 固定部分 */}

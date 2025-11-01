@@ -133,17 +133,12 @@ export default function PricingRatesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // セクションの開閉状態管理
-  const [isItemPointsOpen, setIsItemPointsOpen] = useState(false);
-  const [isPricingOpen, setIsPricingOpen] = useState(false);
-  const [isTruckCoefficientOpen, setIsTruckCoefficientOpen] = useState(false);
-  const [isDistanceOpen, setIsDistanceOpen] = useState(false);
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-  const [isDispatchOpen, setIsDispatchOpen] = useState(false);
-
   // シミュレーション機能用のstate
   const [isSimulationEnabled, setIsSimulationEnabled] = useState(false);
   const [simulationItems, setSimulationItems] = useState<Array<{ id: string, name: string, points: number, quantity: number }>>([]);
+
+  // サイドバーの折りたたみ状態
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // オプション追加フォーム用のreducer
   interface OptionFormState {
@@ -951,140 +946,120 @@ export default function PricingRatesPage() {
     );
   }
 
+  // スクロール関数
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const yOffset = -80; // ヘッダーの高さを考慮
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ページヘッダー */}
-      <AdminPageHeader
-        title="⚙️ 料金基準設定"
-        breadcrumbs={[
-          { label: '料金設定', href: '/pricing' },
-          { label: '料金基準設定' }
-        ]}
-        backUrl="/pricing"
-      />
+      <div className="bg-white shadow-sm">
+        <AdminPageHeader
+          title="⚙️ 料金基準設定"
+          breadcrumbs={[
+            { label: '料金設定', href: '/pricing' },
+            { label: '料金基準設定' }
+          ]}
+          backUrl="/pricing"
+        />
+      </div>
 
+      {/* シミュレーション切り替えボタン（固定位置） */}
+      <button
+        onClick={() => setIsSimulationEnabled(!isSimulationEnabled)}
+        className={`fixed top-24 transition-all duration-300 shadow-lg z-50 px-6 py-3 rounded-lg font-semibold text-sm ${
+          isSimulationEnabled
+            ? 'bg-blue-600 text-white hover:bg-blue-700 right-[calc(33.333%+1rem)]'
+            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 right-4'
+        }`}
+      >
+        {isSimulationEnabled ? 'シミュレーション ON' : 'シミュレーション OFF'}
+      </button>
 
-      <div className={`${isSimulationEnabled ? 'pr-[33.333333%]' : ''} transition-all duration-300`}>
-        <main className="py-10 px-4">
-          <div className="max-w-6xl mx-auto">
+      <div className="flex">
+        {/* サイドメニュー */}
+        <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-56'} bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 fixed left-0 top-[100px] bottom-0 overflow-y-auto transition-all duration-300`} style={{ zIndex: 40 }}>
+          {/* 折りたたみボタン */}
+          <div className="p-3 border-b border-gray-200">
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="w-full flex items-center justify-center p-2 rounded-md hover:bg-gray-200 transition-colors text-gray-500 hover:text-gray-700"
+              title={isSidebarCollapsed ? 'メニューを開く' : 'メニューを閉じる'}
+            >
+              {isSidebarCollapsed ? '»' : '«'}
+            </button>
+          </div>
 
-            {/* シミュレーション切り替えボタン（上部右寄せ） */}
-            <div className="flex justify-end mb-6">
-              <button
-                onClick={() => setIsSimulationEnabled(!isSimulationEnabled)}
-                className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-md ${
-                  isSimulationEnabled
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                }`}
-              >
-                {isSimulationEnabled ? 'シミュレーション ON' : 'シミュレーション OFF'}
-              </button>
-            </div>
+          <nav className="p-2 space-y-1">
+            <button
+              onClick={() => scrollToSection('item-points')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="荷物ポイント設定"
+            >
+              <span className="text-lg mr-2.5">📦</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">荷物ポイント設定</span>}
+            </button>
+            <button
+              onClick={() => scrollToSection('pricing')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="料金設定"
+            >
+              <span className="text-lg mr-2.5">💰</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">料金設定</span>}
+            </button>
+            <button
+              onClick={() => scrollToSection('truck-coefficient')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="車種係数設定"
+            >
+              <span className="text-lg mr-2.5">🚛</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">車種係数設定</span>}
+            </button>
+            <button
+              onClick={() => scrollToSection('distance')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="距離加算額設定"
+            >
+              <span className="text-lg mr-2.5">📍</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">距離加算額設定</span>}
+            </button>
+            <button
+              onClick={() => scrollToSection('options')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="オプション料金設定"
+            >
+              <span className="text-lg mr-2.5">🛠️</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">オプション料金設定</span>}
+            </button>
+            <button
+              onClick={() => scrollToSection('truck-management')}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
+              title="トラック管理"
+            >
+              <span className="text-lg mr-2.5">🚚</span>
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">トラック管理</span>}
+            </button>
+          </nav>
+        </aside>
 
-            {/* 設定項目を2列レイアウトで配置 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* メインコンテンツ */}
+        <div className={`flex-1 ${isSidebarCollapsed ? 'ml-16' : 'ml-56'} ${isSimulationEnabled ? 'pr-[33.333333%]' : ''} transition-all duration-300`}>
+          <main className="py-10 px-4">
+            <div className="max-w-6xl mx-auto">
+
               {/* 荷物ポイント設定 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsItemPointsOpen(!isItemPointsOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">📦</span>
-                    <h2 className="text-xl font-semibold text-gray-800">荷物ポイント設定</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isItemPointsOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
+              <div id="item-points" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">📦</span>
+                  荷物ポイント設定
+                </h2>
 
-              {/* 料金設定 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsPricingOpen(!isPricingOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">💰</span>
-                    <h2 className="text-xl font-semibold text-gray-800">料金設定</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isPricingOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
-
-              {/* 車種係数設定 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsTruckCoefficientOpen(!isTruckCoefficientOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">🚛</span>
-                    <h2 className="text-xl font-semibold text-gray-800">車種係数設定</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isTruckCoefficientOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
-
-              {/* 距離加算額設定 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsDistanceOpen(!isDistanceOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">📍</span>
-                    <h2 className="text-xl font-semibold text-gray-800">距離加算額設定</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isDistanceOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
-
-              {/* オプション料金設定 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsOptionsOpen(!isOptionsOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">🛠️</span>
-                    <h2 className="text-xl font-semibold text-gray-800">オプション料金設定</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isOptionsOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
-
-              {/* トラック管理 */}
-              <div className="bg-white shadow-md rounded-lg">
-                <button
-                  onClick={() => setIsDispatchOpen(!isDispatchOpen)}
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">🚚</span>
-                    <h2 className="text-xl font-semibold text-gray-800">トラック管理</h2>
-                  </div>
-                  <span className="text-2xl font-bold text-gray-600">
-                    {isDispatchOpen ? '−' : '+'}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {isItemPointsOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6">
                   {/* 説明 */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
@@ -1235,14 +1210,14 @@ export default function PricingRatesPage() {
                       💾 荷物ポイント設定を保存
                     </button>
                   </div>
-                </div>
               </div>
-            )}
 
-
-            {isPricingOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6">
+              {/* 料金設定 */}
+              <div id="pricing" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">💰</span>
+                  料金設定
+                </h2>
                   {/* 説明 */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
@@ -1442,13 +1417,14 @@ export default function PricingRatesPage() {
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
-            )}
 
-            {isTruckCoefficientOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6">
+              {/* 車種係数設定 */}
+              <div id="truck-coefficient" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">🚛</span>
+                  車種係数設定
+                </h2>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
                     <p className="text-gray-700">
@@ -1527,13 +1503,14 @@ export default function PricingRatesPage() {
                       ＋ 車種追加
                     </button>
                   </div>
-                </div>
               </div>
-            )}
 
-            {isDistanceOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6">
+              {/* 距離加算額設定 */}
+              <div id="distance" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">📍</span>
+                  距離加算額設定
+                </h2>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
                     <p className="text-gray-700">
@@ -1623,13 +1600,14 @@ export default function PricingRatesPage() {
                       ＋ 距離範囲追加
                     </button>
                   </div>
-                </div>
               </div>
-            )}
 
-            {isOptionsOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6">
+              {/* オプション料金設定 */}
+              <div id="options" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">🛠️</span>
+                  オプション料金設定
+                </h2>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
@@ -1811,13 +1789,15 @@ export default function PricingRatesPage() {
                     >追加</button>
                   </div>
                   {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
-                </div>
               </div>
-            )}
 
-            {isDispatchOpen && (
-              <div className="bg-white shadow-md rounded-lg mb-6">
-                <div className="px-6 pb-6 text-center">
+              {/* トラック管理 */}
+              <div id="truck-management" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">🚚</span>
+                  トラック管理
+                </h2>
+                <div className="text-center">
                   <p className="text-gray-600 mb-6">
                     トラックの登録・管理は配車管理画面で行います
                   </p>
@@ -1829,10 +1809,10 @@ export default function PricingRatesPage() {
                   </button>
                 </div>
               </div>
-            )}
 
-          </div>
-        </main>
+            </div>
+          </main>
+        </div>
 
       {isSimulationEnabled && (
         <SimulationPanel
@@ -1840,6 +1820,7 @@ export default function PricingRatesPage() {
           onRemoveItem={removeSimulationItem}
           onUpdateQuantity={updateSimulationQuantity}
           onClearAll={clearSimulation}
+          onClose={() => setIsSimulationEnabled(false)}
           onAddItem={(itemId: string, itemName: string, points: number) => {
             addSimulationItem({ id: itemId, name: itemName, points });
           }}
