@@ -16,12 +16,19 @@
       "Bash(mkdir:*)",
       "Bash(git checkout:*)",
       "Bash(npm run typecheck:*)",
+<<<<<<< HEAD
       "Bash(npx next build:*)",
       "Bash(cp:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(tasklist)",
       "Bash(taskkill:*)"
+=======
+      "Bash(git fetch:*)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
+>>>>>>> 457682371ecd246bf5b27454065d6adeabd9d10e
     ],
     "deny": [],
     "ask": [],

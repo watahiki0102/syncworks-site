@@ -239,14 +239,8 @@ export default function GridCalendar({
         </div>
       </div>
 
-      {/* モーダル */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onCloseModal}>
-          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto border-2 border-gray-300" onClick={(e) => e.stopPropagation()}>
-            {modalContent}
-          </div>
-        </div>
-      )}
+      {/* モーダル - MonthScheduleModal already has its own modal wrapper */}
+      {showModal && modalContent}
     </div>
   );
 }

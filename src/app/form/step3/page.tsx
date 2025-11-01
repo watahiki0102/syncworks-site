@@ -230,13 +230,16 @@ const createNotificationData = (completeData: CompleteFormData) => {
     customerName: `${completeData.step1.lastName} ${completeData.step1.firstName}`,
     customerEmail: completeData.step1.email,
     customerPhone: completeData.step1.phone,
-    moveDate: completeData.step1.date1,
+    moveDate: completeData.step1.date1, // 第一希望日（互換性のため残す）
+    preferredDate1: completeData.step1.date1, // 第一希望日
+    preferredDate2: completeData.step1.date2, // 第二希望日
+    preferredDate3: completeData.step1.date3, // 第三希望日
     originAddress: completeData.step1.fromAddress,
     destinationAddress: completeData.step1.toAddress,
     totalPoints: completeData.totalPoints,
     totalCapacity: completeData.totalPoints * 10, // 簡易計算
     distance: completeData.distance,
-    itemList: Object.keys(completeData.step2.items || {}).filter(key => 
+    itemList: Object.keys(completeData.step2.items || {}).filter(key =>
       completeData.step2.items[key] > 0
     ),
     additionalServices: completeData.step3.options || [],
