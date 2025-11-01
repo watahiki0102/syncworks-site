@@ -153,10 +153,6 @@ export default function ShiftModal({
     setSelectedEmployeeIds(selectedEmployeeIds.filter(id => id !== employeeId));
   };
 
-  const handleSingleSelect = (employeeId: string) => {
-    setSelectedEmployeeIds([employeeId]);
-  };
-
   // モーダルタイトル
   const getTitle = () => {
     if (mode === 'edit') return 'シフト編集';
@@ -187,6 +183,70 @@ export default function ShiftModal({
     return true;
   };
 
+  const formatDateLabel = (date: string) => {
+    if (!date) return '';
+    const [year, month, day] = date.split('-');
+    return `${year}/${month}/${day}`;
+  };
+
+  interface TimeBlockProps {
+    title: string;
+    badgeLabel: string;
+    date: string;
+    time: string;
+    onTimeChange: React.Dispatch<React.SetStateAction<string>>;
+    options: string[];
+  }
+
+  const TimeBlock: React.FC<TimeBlockProps> = ({
+    title,
+    badgeLabel,
+    date,
+    time,
+    onTimeChange,
+    options,
+  }) => (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+      <div className="flex items-center justify-between text-xs font-semibold text-gray-600">
+        <span>{title}</span>
+        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-600">
+          {badgeLabel}
+        </span>
+      </div>
+      <div className="mt-2 text-lg font-semibold text-gray-900">
+        {date ? formatDateLabel(date) : '—'}
+      </div>
+      <div className="mt-3">
+        <select
+          value={time}
+          onChange={(e) => onTimeChange(e.target.value)}
+          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {options.map(option => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
+  const isRangeTab = (mode === 'bulk' || mode === 'range') && activeTab === 'range';
+  const isEditOrCreate = mode === 'edit' || mode === 'create';
+  const isTabMode = showTabs;
+
+  const employeeSelectMode: 'single' | 'multiple' = isTabMode ? 'multiple' : 'single';
+  const handleEmployeeSelect = (employeeId: string) => {
+    if (employeeSelectMode === 'multiple') {
+      handleAddEmployee(employeeId);
+    } else {
+      setSelectedEmployeeIds([employeeId]);
+    }
+  };
+  const handleEmployeeRemove = employeeSelectMode === 'multiple' ? handleRemoveEmployee : undefined;
+  const employeeLabelSuffix = employeeSelectMode === 'multiple' ? '（複数選択可能）' : '';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -213,6 +273,35 @@ export default function ShiftModal({
       }
     >
       <div className="space-y-4">
+        {/* 従業員選択 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            従業員{employeeLabelSuffix}
+          </label>
+          {mode === 'edit' ? (
+            // 編集モードでは選択された従業員の情報のみ表示
+            <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+              {selectedEmployeeIds.length > 0 && (() => {
+                const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeIds[0]);
+                return selectedEmployee ? (
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">{selectedEmployee.name}</span>
+                    <span className="text-gray-500 ml-2">({selectedEmployee.position})</span>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          ) : (
+            <EmployeeSearchSelect
+              employees={employees}
+              selectedEmployeeIds={selectedEmployeeIds}
+              onSelect={handleEmployeeSelect}
+              onRemove={handleEmployeeRemove}
+              mode={employeeSelectMode}
+            />
+          )}
+        </div>
+
         {/* タブUI（bulk/rangeモードのみ） */}
         {showTabs && (
           <div className="flex border-b border-gray-200">
@@ -238,35 +327,6 @@ export default function ShiftModal({
             </button>
           </div>
         )}
-
-        {/* 従業員選択 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            従業員{activeTab === 'bulk' ? '（複数選択可能）' : ''}
-          </label>
-          {mode === 'edit' ? (
-            // 編集モードでは選択された従業員の情報のみ表示
-            <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
-              {selectedEmployeeIds.length > 0 && (() => {
-                const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeIds[0]);
-                return selectedEmployee ? (
-                  <div className="text-sm text-gray-700">
-                    <span className="font-medium">{selectedEmployee.name}</span>
-                    <span className="text-gray-500 ml-2">({selectedEmployee.position})</span>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          ) : (
-            <EmployeeSearchSelect
-              employees={employees}
-              selectedEmployeeIds={selectedEmployeeIds}
-              onSelect={activeTab === 'bulk' ? handleAddEmployee : handleSingleSelect}
-              onRemove={activeTab === 'bulk' ? handleRemoveEmployee : undefined}
-              mode={activeTab === 'bulk' ? 'multiple' : 'single'}
-            />
-          )}
-        </div>
 
         {/* 日付選択 */}
         {mode === 'edit' || mode === 'create' ? (
@@ -320,40 +380,100 @@ export default function ShiftModal({
         )}
 
         {/* 時間帯 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              開始時間
-            </label>
-            <select
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {timeOptions.map(time => (
-                <option key={time} value={time}>
-                  {time}
-                </option>
-              ))}
-            </select>
+        {isRangeTab ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TimeBlock
+              title="開始"
+              badgeLabel="開始日"
+              date={startDate}
+              time={startTime}
+              onTimeChange={setStartTime}
+              options={timeOptions}
+            />
+            <TimeBlock
+              title="終了"
+              badgeLabel="終了日"
+              date={endDate}
+              time={endTime}
+              onTimeChange={setEndTime}
+              options={timeOptions}
+            />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              終了時間
-            </label>
-            <select
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {timeOptions.map(time => (
-                <option key={time} value={time}>
-                  {time}
-                </option>
-              ))}
-            </select>
+        ) : isEditOrCreate ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-gray-600">
+              <span>対象日</span>
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-600">
+                {startDate ? formatDateLabel(startDate) : '—'}
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <span className="mb-1 block text-xs font-semibold text-gray-500">開始</span>
+                <select
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {timeOptions.map(time => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <span className="mb-1 block text-xs font-semibold text-gray-500">終了</span>
+                <select
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {timeOptions.map(time => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                開始時間
+              </label>
+              <select
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {timeOptions.map(time => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                終了時間
+              </label>
+              <select
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {timeOptions.map(time => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* ステータス */}
         <div>
@@ -366,7 +486,7 @@ export default function ShiftModal({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="working">出勤</option>
-            <option value="unavailable">欠勤・休暇</option>
+            <option value="unavailable">出勤不可</option>
           </select>
         </div>
 

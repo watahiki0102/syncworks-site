@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
@@ -37,6 +37,125 @@ interface EmployeeShift {
   endTime?: string;
 }
 
+// 従業員の月間集計データの型定義
+interface EmployeeMonthlySummary {
+  employee: Employee; // 従業員情報
+  workingDays: number; // 出勤日数
+  totalWorkingTime: string; // 総労働時間（表示用文字列）
+  totalWorkingMinutes: number; // 総労働時間（分単位、ソート用）
+}
+
+/**
+ * 従業員の月間勤務統計を計算する共通関数
+ * 【パフォーマンス改善】重複していたロジックを一箇所にまとめました
+ */
+function calculateEmployeeMonthlyStats(employee: Employee, year: number, month: number): { workingDays: number; totalWorkingMinutes: number } {
+  const lastDay = new Date(year, month + 1, 0);
+  let totalWorkingDays = 0;
+  let totalWorkingMinutes = 0;
+
+  // 月の各日をチェック
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const date = new Date(year, month, day).toISOString().split('T')[0];
+    const dayShifts = employee.shifts.filter(shift => shift.date === date);
+    const workingShifts = dayShifts.filter(shift => shift.status === 'working');
+
+    if (workingShifts.length > 0) {
+      totalWorkingDays++;
+
+      // その日の総労働時間を計算
+      const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
+      const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
+
+      // 連続する時間帯をグループ化（例: 9:00-12:00と12:00-17:00 → 9:00-17:00）
+      const timeGroups: string[][] = [];
+      let currentGroup: string[] = [];
+
+      sortedTimeSlots.forEach((slot, index) => {
+        if (index === 0) {
+          currentGroup = [slot.start, slot.end];
+        } else {
+          const prevSlot = sortedTimeSlots[index - 1];
+          if (prevSlot.end === slot.start) {
+            // 連続している場合は終了時刻を更新
+            currentGroup[1] = slot.end;
+          } else {
+            // 連続していない場合は新しいグループを開始
+            timeGroups.push([...currentGroup]);
+            currentGroup = [slot.start, slot.end];
+          }
+        }
+      });
+
+      timeGroups.push(currentGroup);
+
+      // 各グループの労働時間を計算（分単位）
+      timeGroups.forEach(group => {
+        const startTime = group[0].split(':').map(Number);
+        const endTime = group[1].split(':').map(Number);
+        const startMinutes = startTime[0] * 60 + startTime[1];
+        const endMinutes = endTime[0] * 60 + endTime[1];
+        totalWorkingMinutes += (endMinutes - startMinutes);
+      });
+    }
+  }
+
+  return {
+    workingDays: totalWorkingDays,
+    totalWorkingMinutes
+  };
+}
+
+/**
+ * 総労働時間（分）を「○時間○分」形式に変換
+ */
+function formatWorkingTime(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}時間${minutes > 0 ? minutes + '分' : ''}` : `${minutes}分`;
+}
+
+/**
+ * 時刻文字列（HH:MM）を分単位の数値に変換
+ * 【バグ修正】文字列比較ではなく数値比較を行うために使用
+ * @param time - 時刻文字列（例: "09:00", "17:30"）
+ * @returns 0時からの経過分数（例: "09:00" → 540）
+ */
+function timeToMinutes(time: string): number {
+  const [hours, mins] = time.split(':').map(Number);
+  return hours * 60 + mins;
+}
+
+/**
+ * 2つの時間帯が重複しているかチェック
+ * 【バグ修正】文字列比較から数値比較に変更
+ * @param start1 - 時間帯1の開始時刻
+ * @param end1 - 時間帯1の終了時刻
+ * @param start2 - 時間帯2の開始時刻
+ * @param end2 - 時間帯2の終了時刻
+ * @returns 重複している場合true
+ */
+function isTimeOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+  const start1Min = timeToMinutes(start1);
+  const end1Min = timeToMinutes(end1);
+  const start2Min = timeToMinutes(start2);
+  const end2Min = timeToMinutes(end2);
+
+  return start1Min < end2Min && end1Min > start2Min;
+}
+
+/**
+ * 一意のシフトIDを生成
+ * 【コード重複削減】タイムスタンプとランダム文字列を組み合わせてユニークなIDを生成
+ *
+ * 生成されるID形式: "shift-{タイムスタンプ}-{ランダム文字列}"
+ * 例: "shift-1704067200000-a1b2c3d4e"
+ *
+ * @returns 一意のシフトID
+ */
+function generateShiftId(): string {
+  return `shift-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+}
 
 
 export default function ShiftManagement() {
@@ -80,35 +199,116 @@ export default function ShiftManagement() {
   
   // サイドパネル内のアクティブなタブ
   const [activeSidePanelTab, setActiveSidePanelTab] = useState<'employeeSummary' | 'clipboard' | null>(null);
-  
+
   // 未保存のシフトIDを管理
   const [unsavedShiftIds, setUnsavedShiftIds] = useState<Set<string>>(new Set());
-  
-  // サイドパネルのタブ状態を自動管理
-  // copiedShiftsをローカルストレージに保存
+
+  /**
+   * 従業員の月間集計をメモ化
+   * 【パフォーマンス改善】employeesが変更された時のみ再計算
+   */
+  const monthlySummary = useMemo(() => {
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth();
+
+    return employees
+      .filter(emp => emp.status === 'active')
+      .map(employee => {
+        const stats = calculateEmployeeMonthlyStats(employee, year, month);
+        return {
+          employee,
+          workingDays: stats.workingDays,
+          totalWorkingTime: formatWorkingTime(stats.totalWorkingMinutes),
+          totalWorkingMinutes: stats.totalWorkingMinutes
+        };
+      })
+      .sort((a, b) => b.totalWorkingMinutes - a.totalWorkingMinutes); // 労働時間の多い順にソート
+  }, [employees]);
+
+  /**
+   * 全従業員の合計統計をメモ化
+   * 【パフォーマンス改善】monthlySummaryが変更された時のみ再計算
+   */
+  const totalStats = useMemo(() => {
+    const totalWorkingDays = monthlySummary.reduce((sum, s) => sum + s.workingDays, 0);
+    const totalWorkingMinutes = monthlySummary.reduce((sum, s) => sum + s.totalWorkingMinutes, 0);
+    const workingEmployeeCount = monthlySummary.filter(s => s.workingDays > 0).length;
+
+    return {
+      totalWorkingDays,
+      totalWorkingTime: formatWorkingTime(totalWorkingMinutes),
+      workingEmployeeCount,
+      activeEmployeeCount: employees.filter(emp => emp.status === 'active').length
+    };
+  }, [monthlySummary, employees]);
+
+  /**
+   * copiedShiftsをローカルストレージに自動保存
+   * 【エラーハンドリング追加】容量オーバーなどのエラーに対応
+   */
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('copiedShifts', JSON.stringify(copiedShifts));
+      try {
+        localStorage.setItem('copiedShifts', JSON.stringify(copiedShifts));
+      } catch (error) {
+        // LocalStorageの容量オーバーや無効化などのエラーをハンドリング
+        console.error('LocalStorageへの保存に失敗しました:', error);
+
+        // 容量オーバーの場合は古いデータをクリアして再試行
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          try {
+            // コピー済みシフトをクリアして再試行
+            localStorage.removeItem('copiedShifts');
+            localStorage.setItem('copiedShifts', JSON.stringify(copiedShifts));
+            console.warn('LocalStorageの容量が不足していたため、古いデータをクリアしました');
+          } catch (retryError) {
+            console.error('再試行も失敗しました:', retryError);
+            // ユーザーには通知しない（UX的に邪魔にならないように）
+          }
+        }
+      }
     }
   }, [copiedShifts]);
 
+  /**
+   * サイドパネルのタブ状態を自動管理
+   * 【バグ修正】依存配列からactiveSidePanelTabを削除して無限ループを防止
+   *
+   * activeSidePanelTabを依存配列に含めると、以下の問題が発生します：
+   * 1. setActiveSidePanelTabを呼び出す
+   * 2. activeSidePanelTabが変更される
+   * 3. useEffectが再実行される
+   * 4. 条件によっては再度setActiveSidePanelTabを呼び出す
+   * 5. 無限ループ
+   *
+   * この実装では、showEmployeeSummaryとshowClipboardの変更時のみ実行され、
+   * 現在のactiveSidePanelTabの値を読み取るだけなので、依存配列に含める必要はありません。
+   */
   useEffect(() => {
-    if (showEmployeeSummary && showClipboard) {
-      // 両方ONの場合、アクティブなタブがない場合は従業員集計をデフォルトに
-      if (!activeSidePanelTab) {
-        setActiveSidePanelTab('employeeSummary');
-      }
-    } else if (showEmployeeSummary && !showClipboard) {
-      // 従業員集計のみON
-      setActiveSidePanelTab('employeeSummary');
-    } else if (!showEmployeeSummary && showClipboard) {
-      // クリップボードのみON
-      setActiveSidePanelTab('clipboard');
-    } else {
-      // 両方OFF
+    // 両方OFFの場合は何も表示しない
+    if (!showEmployeeSummary && !showClipboard) {
       setActiveSidePanelTab(null);
+      return;
     }
-  }, [showEmployeeSummary, showClipboard, activeSidePanelTab]);
+
+    // タブが既に選択されている場合は、そのタブがまだ有効かチェック
+    if (activeSidePanelTab === 'employeeSummary' && showEmployeeSummary) {
+      // 従業員集計タブが選択されていて、まだ有効な場合は何もしない
+      return;
+    }
+    if (activeSidePanelTab === 'clipboard' && showClipboard) {
+      // クリップボードタブが選択されていて、まだ有効な場合は何もしない
+      return;
+    }
+
+    // デフォルトタブを設定（優先順位: 従業員集計 > クリップボード）
+    if (showEmployeeSummary) {
+      setActiveSidePanelTab('employeeSummary');
+    } else if (showClipboard) {
+      setActiveSidePanelTab('clipboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEmployeeSummary, showClipboard]); // activeSidePanelTabは意図的に依存配列から除外
   
   const handleDisplayTimeRangeChange = (start: number, end: number) => {
     setDisplayStartTime(start);
@@ -223,9 +423,9 @@ export default function ShiftManagement() {
           };
         }
 
-        // 貼り付け予定のシフト同士の重複チェック
+        // 貼り付け予定のシフト同士の重複チェック【バグ修正】文字列比較→数値比較
         const hasPendingConflict = pendingShiftsByEmployeeAndDate[key].shifts.some(pending => {
-          return (newStartTime < pending.endTime && newEndTime > pending.startTime);
+          return isTimeOverlap(newStartTime, newEndTime, pending.startTime, pending.endTime);
         });
 
         if (hasPendingConflict) {
@@ -237,13 +437,13 @@ export default function ShiftManagement() {
           });
         }
 
-        // 既存シフトとの重複チェック
+        // 既存シフトとの重複チェック【バグ修正】文字列比較→数値比較
         const existingShifts = employee.shifts.filter(s => s.date === date);
         const hasExistingConflict = existingShifts.some(existingShift => {
           const existingStartTime = existingShift.startTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.start || '';
           const existingEndTime = existingShift.endTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.end || '';
-          
-          return (newStartTime < existingEndTime && newEndTime > existingStartTime);
+
+          return isTimeOverlap(newStartTime, newEndTime, existingStartTime, existingEndTime);
         });
 
         if (hasExistingConflict) {
@@ -304,7 +504,7 @@ export default function ShiftManagement() {
       group.shifts.forEach(pending => {
         const newShift: EmployeeShift = {
           ...pending.shift,
-          id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: generateShiftId(), // 【コード重複削減】共通関数を使用
           date: group.date,
         };
         
@@ -327,7 +527,7 @@ export default function ShiftManagement() {
       return employee;
     });
     
-    saveEmployees(updatedEmployees);
+    updateEmployeesState(updatedEmployees);
     
     // 貼り付けたシフトを未保存として記録
     setUnsavedShiftIds(prev => {
@@ -361,12 +561,28 @@ export default function ShiftManagement() {
     // 統合案件データを取得
     const unifiedData = generateUnifiedTestData();
     setCases(unifiedData);
-    
-    // ローカルストレージから従業員データを読み込み
-    const savedEmployees = localStorage.getItem('employees');
-    if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
-    } else {
+
+    // ローカルストレージから従業員データを読み込み【エラーハンドリング強化】
+    try {
+      const savedEmployees = localStorage.getItem('employees');
+      if (savedEmployees) {
+        setEmployees(JSON.parse(savedEmployees));
+      } else {
+        // 保存データがない場合はテストデータで初期化
+        initializeTestData();
+      }
+    } catch (error) {
+      console.error('従業員データの読み込みに失敗しました:', error);
+      // データが破損している場合もテストデータで初期化
+      initializeTestData();
+    }
+
+    // 初期データ読み込み後、未保存状態をクリア
+    setUnsavedShiftIds(new Set());
+  }, []);
+
+  // テストデータ初期化関数【コード整理】
+  const initializeTestData = () => {
       // テストデータを初期化（現実的な引越し作業スケジュール）
       const testEmployees: Employee[] = [
         {
@@ -623,23 +839,43 @@ export default function ShiftManagement() {
         },
       ];
       setEmployees(testEmployees);
-      localStorage.setItem('employees', JSON.stringify(testEmployees));
-    }
-    
-    // 初期データ読み込み後、未保存状態をクリア
-    setUnsavedShiftIds(new Set());
-  }, []);
 
-  const saveEmployees = (newEmployees: Employee[]) => {
+      // テストデータもLocalStorageに保存【エラーハンドリング追加】
+      try {
+        localStorage.setItem('employees', JSON.stringify(testEmployees));
+      } catch (error) {
+        console.error('テストデータの保存に失敗しました:', error);
+        // 初期データなので保存に失敗しても続行
+      }
+    };
+
+  const updateEmployeesState = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
     // 即座にlocalStorageには保存せず、メモリ内のstateのみ更新
   };
 
-  // 明示的な保存処理（保存ボタン用）
+  /**
+   * 明示的な保存処理（保存ボタン用）
+   * 【エラーハンドリング追加】保存失敗時にユーザーに通知
+   */
   const handleSaveToStorage = () => {
-    localStorage.setItem('employees', JSON.stringify(employees));
-    setUnsavedShiftIds(new Set()); // 未保存IDをクリア
-    alert('シフトを保存しました');
+    try {
+      localStorage.setItem('employees', JSON.stringify(employees));
+      setUnsavedShiftIds(new Set()); // 未保存IDをクリア
+      alert('シフトを保存しました');
+    } catch (error) {
+      console.error('シフトの保存に失敗しました:', error);
+
+      // 容量オーバーの場合
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        alert(
+          'ローカルストレージの容量が不足しています。\n' +
+          'ブラウザのデータを削除するか、古いシフトデータを整理してください。'
+        );
+      } else {
+        alert('シフトの保存に失敗しました。再度お試しください。');
+      }
+    }
   };
 
   const addEmployee = (employee: Omit<Employee, 'id'>) => {
@@ -648,21 +884,21 @@ export default function ShiftManagement() {
       id: `emp-${Date.now()}`,
     };
     const updatedEmployees = [...employees, newEmployee];
-    saveEmployees(updatedEmployees);
+    updateEmployeesState(updatedEmployees);
   };
 
   const updateEmployee = (updatedEmployee: Employee) => {
     const updatedEmployees = employees.map(employee => 
       employee.id === updatedEmployee.id ? updatedEmployee : employee
     );
-    saveEmployees(updatedEmployees);
+    updateEmployeesState(updatedEmployees);
     setSelectedEmployee(null);
   };
 
   const deleteEmployee = (employeeId: string) => {
     if (window.confirm('この従業員を削除しますか？')) {
       const updatedEmployees = employees.filter(employee => employee.id !== employeeId);
-      saveEmployees(updatedEmployees);
+      updateEmployeesState(updatedEmployees);
       if (selectedEmployee?.id === employeeId) {
         setSelectedEmployee(null);
       }
@@ -688,8 +924,8 @@ export default function ShiftManagement() {
       return employee;
     });
     
-    console.warn('Calling saveEmployees with', updatedEmployees.length, 'employees');
-    saveEmployees(updatedEmployees);
+    console.warn('Calling updateEmployeesState with', updatedEmployees.length, 'employees');
+    updateEmployeesState(updatedEmployees);
     
     // 未保存シフトとして記録
     setUnsavedShiftIds(prev => new Set(prev).add(shift.id));
@@ -706,10 +942,10 @@ export default function ShiftManagement() {
       }
     });
 
-    // ID重複を防ぐためランダム値を追加
+    // ID重複を防ぐため一意のIDを生成【コード重複削減】共通関数を使用
     const newShift: EmployeeShift = {
       ...shift,
-      id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateShiftId(),
     };
     
     console.log('🆔 Generated shift ID:', newShift.id);
@@ -726,9 +962,14 @@ export default function ShiftManagement() {
         return employee;
       });
       
-      // ローカルストレージに保存
+      // ローカルストレージに保存【エラーハンドリング追加】
       if (typeof window !== 'undefined') {
-        localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+        try {
+          localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+        } catch (error) {
+          console.error('シフト追加時のLocalStorage保存に失敗しました:', error);
+          // 追加自体は成功しているので、ユーザーには通知しない
+        }
       }
       
       return updatedEmployees;
@@ -751,7 +992,7 @@ export default function ShiftManagement() {
       return employee;
     });
     
-    saveEmployees(updatedEmployees);
+    updateEmployeesState(updatedEmployees);
     // 削除したシフトを未保存リストから削除
     setUnsavedShiftIds(prev => {
       const newSet = new Set(prev);
@@ -932,191 +1173,45 @@ export default function ShiftManagement() {
                             </tr>
                           </thead>
                           <tbody>
-                            {(() => {
-                              // 月間集計を計算する関数
-                              const getEmployeeMonthlySummary = () => {
-                                const year = new Date().getFullYear();
-                                const month = new Date().getMonth();
-                                const firstDay = new Date(year, month, 1);
-                                const lastDay = new Date(year, month + 1, 0);
-                                
-                                return employees.filter(emp => emp.status === 'active').map(employee => {
-                                  let totalWorkingDays = 0;
-                                  let totalWorkingMinutes = 0;
-                                  
-                                  // 月の各日をチェック
-                                  for (let day = 1; day <= lastDay.getDate(); day++) {
-                                    const date = new Date(year, month, day).toISOString().split('T')[0];
-                                    const dayShifts = employee.shifts.filter(shift => shift.date === date);
-                                    const workingShifts = dayShifts.filter(shift => shift.status === 'working');
-                                    
-                                    if (workingShifts.length > 0) {
-                                      totalWorkingDays++;
-                                      
-                                      // その日の総労働時間を計算
-                                      const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-                                      const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-                                      
-                                      // 連続する時間帯をグループ化
-                                      const timeGroups: string[][] = [];
-                                      let currentGroup: string[] = [];
-                                      
-                                      sortedTimeSlots.forEach((slot, index) => {
-                                        if (index === 0) {
-                                          currentGroup = [slot.start, slot.end];
-                                        } else {
-                                          const prevSlot = sortedTimeSlots[index - 1];
-                                          if (prevSlot.end === slot.start) {
-                                            currentGroup[1] = slot.end;
-                                          } else {
-                                            timeGroups.push([...currentGroup]);
-                                            currentGroup = [slot.start, slot.end];
-                                          }
-                                        }
-                                      });
-                                      
-                                      timeGroups.push(currentGroup);
-                                      
-                                      // 各グループの労働時間を計算
-                                      timeGroups.forEach(group => {
-                                        const startTime = group[0].split(':').map(Number);
-                                        const endTime = group[1].split(':').map(Number);
-                                        const startMinutes = startTime[0] * 60 + startTime[1];
-                                        const endMinutes = endTime[0] * 60 + endTime[1];
-                                        totalWorkingMinutes += (endMinutes - startMinutes);
-                                      });
-                                    }
-                                  }
-                                  
-                                  const totalHours = Math.floor(totalWorkingMinutes / 60);
-                                  const remainingMinutes = totalWorkingMinutes % 60;
-                                  const totalTimeStr = totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
-                                  
-                                  return {
-                                    employee,
-                                    workingDays: totalWorkingDays,
-                                    totalWorkingTime: totalTimeStr,
-                                    totalWorkingMinutes
-                                  };
-                                }).sort((a, b) => b.totalWorkingMinutes - a.totalWorkingMinutes);
-                              };
-                              
-                              return getEmployeeMonthlySummary().map((summary, index) => (
-                                <tr key={summary.employee.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900">
-                                    {summary.employee.name}
-                                  </td>
-                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm text-gray-700">
-                                    {summary.workingDays}日
-                                  </td>
-                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm text-gray-700">
-                                    {summary.totalWorkingTime}
-                                  </td>
-                                </tr>
-                              ));
-                            })()}
+                            {/* 【パフォーマンス改善】メモ化された月間集計を使用 */}
+                            {monthlySummary.map((summary, index) => (
+                              <tr key={summary.employee.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900">
+                                  {summary.employee.name}
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2 text-center text-sm text-gray-700">
+                                  {summary.workingDays}日
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2 text-center text-sm text-gray-700">
+                                  {summary.totalWorkingTime}
+                                </td>
+                              </tr>
+                            ))}
                             
-                            {/* 合計行 */}
-                            {(() => {
-                              const year = new Date().getFullYear();
-                              const month = new Date().getMonth();
-                              const firstDay = new Date(year, month, 1);
-                              const lastDay = new Date(year, month + 1, 0);
-                              
-                              let totalWorkingDays = 0;
-                              let totalWorkingMinutes = 0;
-                              
-                              // 全従業員の合計を計算
-                              employees.filter(emp => emp.status === 'active').forEach(employee => {
-                                for (let day = 1; day <= lastDay.getDate(); day++) {
-                                  const date = new Date(year, month, day).toISOString().split('T')[0];
-                                  const dayShifts = employee.shifts.filter(shift => shift.date === date);
-                                  const workingShifts = dayShifts.filter(shift => shift.status === 'working');
-                                  
-                                  if (workingShifts.length > 0) {
-                                    totalWorkingDays++;
-                                    
-                                    // その日の総労働時間を計算
-                                    const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-                                    const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-                                    
-                                    // 連続する時間帯をグループ化
-                                    const timeGroups: string[][] = [];
-                                    let currentGroup: string[] = [];
-                                    
-                                    sortedTimeSlots.forEach((slot, index) => {
-                                      if (index === 0) {
-                                        currentGroup = [slot.start, slot.end];
-                                      } else {
-                                        const prevSlot = sortedTimeSlots[index - 1];
-                                        if (prevSlot.end === slot.start) {
-                                          currentGroup[1] = slot.end;
-                                        } else {
-                                          timeGroups.push([...currentGroup]);
-                                          currentGroup = [slot.start, slot.end];
-                                        }
-                                      }
-                                    });
-                                    
-                                    timeGroups.push(currentGroup);
-                                    
-                                    // 各グループの労働時間を計算
-                                    timeGroups.forEach(group => {
-                                      const startTime = group[0].split(':').map(Number);
-                                      const endTime = group[1].split(':').map(Number);
-                                      const startMinutes = startTime[0] * 60 + startTime[1];
-                                      const endMinutes = endTime[0] * 60 + endTime[1];
-                                      totalWorkingMinutes += (endMinutes - startMinutes);
-                                    });
-                                  }
-                                }
-                              });
-                              
-                              const totalHours = Math.floor(totalWorkingMinutes / 60);
-                              const remainingMinutes = totalWorkingMinutes % 60;
-                              const totalTimeStr = totalHours > 0 ? `${totalHours}時間${remainingMinutes > 0 ? remainingMinutes + '分' : ''}` : `${remainingMinutes}分`;
-                              
-                              return (
-                                <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
-                                  <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-gray-900">
-                                    合計
-                                  </td>
-                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
-                                    {totalWorkingDays}日
-                                  </td>
-                                  <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
-                                    {totalTimeStr}
-                                  </td>
-                                </tr>
-                              );
-                            })()}
+                            {/* 合計行【パフォーマンス改善】メモ化された合計統計を使用 */}
+                            <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
+                              <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-gray-900">
+                                合計
+                              </td>
+                              <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
+                                {totalStats.totalWorkingDays}日
+                              </td>
+                              <td className="border border-gray-300 px-3 py-2 text-center text-sm font-bold text-gray-900">
+                                {totalStats.totalWorkingTime}
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
                       
-                      {/* 全体集計 */}
+                      {/* 全体集計【パフォーマンス改善】メモ化された統計を使用 */}
                       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                         <div className="flex justify-between items-center text-sm">
                           <div className="text-gray-600">
-                            登録従業員数: {employees.filter(emp => emp.status === 'active').length}名
+                            登録従業員数: {totalStats.activeEmployeeCount}名
                           </div>
                           <div className="text-gray-600">
-                            出勤予定者数: {employees.filter(emp => emp.status === 'active').filter(emp => {
-                              const year = new Date().getFullYear();
-                              const month = new Date().getMonth();
-                              const firstDay = new Date(year, month, 1);
-                              const lastDay = new Date(year, month + 1, 0);
-                              let hasWorkingDays = false;
-                              for (let day = 1; day <= lastDay.getDate(); day++) {
-                                const date = new Date(year, month, day).toISOString().split('T')[0];
-                                const dayShifts = emp.shifts.filter(shift => shift.date === date);
-                                if (dayShifts.filter(shift => shift.status === 'working').length > 0) {
-                                  hasWorkingDays = true;
-                                  break;
-                                }
-                              }
-                              return hasWorkingDays;
-                            }).length}名
+                            出勤予定者数: {totalStats.workingEmployeeCount}名
                           </div>
                         </div>
                       </div>

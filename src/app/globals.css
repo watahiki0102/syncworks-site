@@ -370,6 +370,24 @@ body {
   color: var(--foreground-muted);
 }
 
+/* === DATE INPUT LAYOUT === */
+input[type="date"] {
+  min-width: 10rem;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-year-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field {
+  white-space: nowrap;
+}
+
 .form-select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
