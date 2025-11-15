@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { EMPLOYEE_POSITIONS } from '@/constants/calendar';
 
 interface Employee {
@@ -43,6 +43,27 @@ export default function EmployeeManagement({
     status: 'active' as 'active' | 'inactive',
     hireDate: '',
   });
+
+  // フィルタ用のstate
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPosition, setFilterPosition] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // フィルタリングされた従業員リスト
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(employee => {
+      // 名前で検索
+      const matchesSearch = !searchQuery || employee.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // 役職でフィルタ
+      const matchesPosition = !filterPosition || employee.position === filterPosition;
+      
+      // ステータスでフィルタ
+      const matchesStatus = !filterStatus || employee.status === filterStatus;
+      
+      return matchesSearch && matchesPosition && matchesStatus;
+    });
+  }, [employees, searchQuery, filterPosition, filterStatus]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

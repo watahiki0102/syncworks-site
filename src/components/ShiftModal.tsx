@@ -70,6 +70,9 @@ export default function ShiftModal({
   const [status, setStatus] = useState<'working' | 'unavailable'>('working');
   const [notes, setNotes] = useState('');
 
+  // バリデーション結果を状態として管理
+  const [isFormValid, setIsFormValid] = useState(false);
+
   // 30分単位の時間オプションを生成
   const generateTimeOptions = () => {
     const times: string[] = [];
@@ -93,6 +96,7 @@ export default function ShiftModal({
         
         // 日マタギシフトの場合（__endDateプロパティが存在する場合）
         const isDayCrossing = (editingShift as any).__endDate !== undefined;
+        
         if (isDayCrossing) {
           setStartDate(editingShift.date);
           setEndDate((editingShift as any).__endDate);
@@ -137,8 +141,64 @@ export default function ShiftModal({
     }
   }, [mode]);
 
+  // バリデーションをリアルタイムで実行
+  useEffect(() => {
+    const valid = isValid();
+    setIsFormValid(valid);
+  }, [selectedEmployeeIds, startDate, endDate, startTime, endTime, selectedDates, activeTab, mode, editingShift]);
+
 
   const handleSave = () => {
+    // 過去日付への追加チェック（編集モードは除外）
+    if (mode !== 'edit') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // 時刻をリセットして日付のみで比較
+      
+      let hasPastDate = false;
+      let pastDateMessage = '';
+      
+      // 各モードに応じて過去日付をチェック
+      if (mode === 'create') {
+        const targetDate = new Date(startDate);
+        targetDate.setHours(0, 0, 0, 0);
+        if (targetDate < today) {
+          hasPastDate = true;
+          pastDateMessage = `選択した日付（${new Date(startDate).toLocaleDateString('ja-JP')}）は過去の日付です。`;
+        }
+      } else if (mode === 'bulk' || mode === 'range') {
+        if (activeTab === 'bulk') {
+          // 一括登録：選択された日付の中に過去日付があるかチェック
+          const pastDates = selectedDates.filter(date => {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d < today;
+          });
+          if (pastDates.length > 0) {
+            hasPastDate = true;
+            pastDateMessage = `選択した日付の中に過去の日付が${pastDates.length}件含まれています。`;
+          }
+        } else if (activeTab === 'range') {
+          // 範囲登録：開始日が過去かチェック
+          const targetDate = new Date(startDate);
+          targetDate.setHours(0, 0, 0, 0);
+          if (targetDate < today) {
+            hasPastDate = true;
+            pastDateMessage = `開始日（${new Date(startDate).toLocaleDateString('ja-JP')}）は過去の日付です。`;
+          }
+        }
+      }
+      
+      // 過去日付がある場合は確認ダイアログを表示
+      if (hasPastDate) {
+        const confirmed = window.confirm(
+          `${pastDateMessage}\n\n過去の日付にシフトを追加しますか？`
+        );
+        if (!confirmed) {
+          return; // キャンセルされた場合は処理を中断
+        }
+      }
+    }
+    
     // 編集モードで日マタギシフトの場合（開始日と終了日が異なる場合）はrangeモードとして扱う
     const isDayCrossingEdit = mode === 'edit' && editingShift && startDate !== endDate;
     
@@ -185,14 +245,85 @@ export default function ShiftModal({
 
   // バリデーション
   const isValid = () => {
-    if (selectedEmployeeIds.length === 0) return false;
-    // 一括登録の場合は複数日付をチェック
-    if (activeTab === 'bulk' && selectedDates.length === 0) return false;
-    // 単日登録の場合は開始日と終了日をチェック
-    if (activeTab === 'range' && (!startDate || !endDate)) return false;
-    // 編集・作成モードの場合は開始日をチェック
-    if ((mode === 'edit' || mode === 'create') && !startDate) return false;
-    if (!startTime || !endTime) return false;
+    if (selectedEmployeeIds.length === 0) {
+      return false;
+    }
+
+    // 編集・作成モードの場合
+    if (mode === 'edit' || mode === 'create') {
+      if (!startDate) {
+        return false;
+      }
+      // 日付の妥当性チェック
+      const startDateObj = new Date(startDate);
+      if (isNaN(startDateObj.getTime())) {
+        return false;
+      }
+      
+      // 日マタギシフトの場合（開始日と終了日が異なる場合）は終了日もチェック
+      const isDayCrossingEdit = mode === 'edit' && editingShift && startDate !== endDate;
+      if (isDayCrossingEdit) {
+        if (!endDate) {
+          return false;
+        }
+        // 終了日の妥当性チェック
+        const endDateObj = new Date(endDate);
+        if (isNaN(endDateObj.getTime())) {
+          return false;
+        }
+        // 終了日が開始日より前の場合
+        if (endDateObj < startDateObj) {
+          return false;
+        }
+      }
+    }
+
+    // bulkまたはrangeモードの場合のみタブチェックを実行
+    if (mode === 'bulk' || mode === 'range') {
+      // 一括登録の場合は複数日付をチェック
+      if (activeTab === 'bulk' && selectedDates.length === 0) {
+        return false;
+      }
+      // 単日登録の場合は開始日と終了日をチェック
+      if (activeTab === 'range') {
+        if (!startDate || !endDate) {
+          return false;
+        }
+        // 日付の妥当性チェック
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+          return false;
+        }
+        // 終了日が開始日より前の場合
+        if (endDateObj < startDateObj) {
+          return false;
+        }
+      }
+    }
+
+    if (!startTime || !endTime) {
+      return false;
+    }
+
+    // 時刻の形式チェック（HH:MM形式、00:00-23:59または24:00）
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$|^24:00$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      return false;
+    }
+
+    // 通常シフトの場合（日マタギでない場合）、開始時刻 < 終了時刻をチェック
+    const isDayCrossing = (mode === 'edit' && editingShift && startDate !== endDate) || 
+                          (mode === 'range' && startDate && endDate && startDate !== endDate) ||
+                          (startTime >= endTime);
+    
+    if (!isDayCrossing && startTime >= endTime) {
+      // 日マタギシフトの場合は許容するが、通常シフトの場合は不可
+      // ただし、startTime >= endTime の場合は日マタギシフトとして扱われるため、ここでのチェックは不要
+      // しかし、明確にするためにチェックを追加
+      return false;
+    }
+
     return true;
   };
 
@@ -277,7 +408,7 @@ export default function ShiftModal({
           )}
           <button
             onClick={handleSave}
-            disabled={!isValid()}
+            disabled={!isFormValid}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {getSaveLabel()}

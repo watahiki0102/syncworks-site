@@ -93,6 +93,7 @@ interface ShiftCalendarProps {
   onShiftClickForClipboard?: (shift: EmployeeShift) => void;
   unsavedShiftIds?: Set<string>;
   onSave?: () => void;
+  onCurrentMonthChange?: (year: number, month: number) => void;
 }
 
 type ViewMode = 'day' | 'month';
@@ -129,11 +130,33 @@ export default function ShiftCalendar({
   setPendingPasteDates,
   onShiftClickForClipboard,
   unsavedShiftIds,
-  onSave
+  onSave,
+  onCurrentMonthChange
 }: ShiftCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  
+  // 前回の年月を記録して無限ループを防ぐ
+  const lastNotifiedMonthRef = useRef<{ year: number; month: number } | null>(null);
+  
+  // 現在表示中の月が変更されたら親コンポーネントに通知
+  useEffect(() => {
+    if (onCurrentMonthChange && viewMode === 'month') {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      // 前回と同じ年月の場合は通知しない
+      const lastNotified = lastNotifiedMonthRef.current;
+      if (lastNotified && lastNotified.year === year && lastNotified.month === month) {
+        return;
+      }
+      
+      // 年月が変更された場合のみ通知
+      lastNotifiedMonthRef.current = { year, month };
+      onCurrentMonthChange(year, month);
+    }
+  }, [currentDate, viewMode]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [highlightedEmployee, setHighlightedEmployee] = useState<Employee | null>(null); // 青枠表示用
   const [selectedShift, setSelectedShift] = useState<EmployeeShift | null>(null);
@@ -168,39 +191,109 @@ export default function ShiftCalendar({
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set()); // 展開された週を管理
 
-  // デバッグ用：状態変化を監視
-  useEffect(() => {
-    console.log('State changed - allDatesExpanded:', allDatesExpanded, 'expandedDates:', Array.from(expandedDates), 'collapsedDates:', Array.from(collapsedDates), 'expandedWeeks:', Array.from(expandedWeeks));
-  }, [allDatesExpanded, expandedDates, collapsedDates, expandedWeeks]);
-
+  // マージが必要かどうかをチェックする関数
+  const needsMerging = (employeeId: string, date: string): boolean => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee) return false;
+    
+    const dayShifts = employee.shifts.filter(shift => shift.date === date);
+    if (dayShifts.length < 2) return false;
+    
+    // ソートして連続するシフトがあるかチェック
+    const sortedShifts = [...dayShifts].sort((a, b) => {
+      const timeA = TIME_SLOTS.find(ts => ts.id === a.timeSlot)?.start || '';
+      const timeB = TIME_SLOTS.find(ts => ts.id === b.timeSlot)?.start || '';
+      return timeA.localeCompare(timeB);
+    });
+    
+    // 連続する同じステータスのシフトがあるかチェック
+    for (let i = 0; i < sortedShifts.length - 1; i++) {
+      const currentShift = sortedShifts[i];
+      const nextShift = sortedShifts[i + 1];
+      const currentEndTime = currentShift.endTime || TIME_SLOTS.find(ts => ts.id === currentShift.timeSlot)?.end || '';
+      const nextStartTime = nextShift.startTime || TIME_SLOTS.find(ts => ts.id === nextShift.timeSlot)?.start || '';
+      
+      if (currentShift.status === nextShift.status && currentEndTime === nextStartTime) {
+        return true; // マージが必要
+      }
+    }
+    
+    return false; // マージ不要
+  };
+  
+  // 前回のemployeesの状態を記録して無限ループを防ぐ
+  const previousEmployeesRef = useRef<string>('');
+  // マージ処理の実行中フラグ（無限ループを防ぐ）
+  const isMergingRef = useRef<boolean>(false);
+  
   // シフト追加後に自動的にシフトを結合する
   useEffect(() => {
-    // 新しく追加されたシフトがあるかチェック
+    // マージ処理が実行中の場合はスキップ
+    if (isMergingRef.current) {
+      return;
+    }
+    
+    // employeesの状態をシリアライズして比較
+    const employeesKey = JSON.stringify(
+      employees.map(emp => ({
+        id: emp.id,
+        shiftsCount: emp.shifts.length,
+        shifts: emp.shifts.map(s => ({ id: s.id, date: s.date, timeSlot: s.timeSlot }))
+      }))
+    );
+    
+    // 前回と同じ状態の場合はスキップ（無限ループを防ぐ）
+    if (previousEmployeesRef.current === employeesKey) {
+      return;
+    }
+    
+    // マージが必要な場合のみ実行
+    let hasMerges = false;
+    const needsMergeCheck = employees.some(employee => {
+      const dates = [...new Set(employee.shifts.map(shift => shift.date))];
+      return dates.some(date => needsMerging(employee.id, date));
+    });
+    
+    if (!needsMergeCheck) {
+      // マージが不要な場合は、前回の状態を更新
+      previousEmployeesRef.current = employeesKey;
+      return;
+    }
+    
+    // マージ処理開始
+    isMergingRef.current = true;
+    
     employees.forEach(employee => {
-      // 各従業員の各日付でシフトを結合
       const dates = [...new Set(employee.shifts.map(shift => shift.date))];
       dates.forEach(date => {
-        const dayShifts = employee.shifts.filter(shift => shift.date === date);
-        if (dayShifts.length > 1) {
-          // 同じステータスの連続するシフトを結合
-          mergeAdjacentShifts(employee.id, date);
+        if (needsMerging(employee.id, date)) {
+          const merged = mergeAdjacentShifts(employee.id, date);
+          if (merged) {
+            hasMerges = true;
+          }
         }
       });
     });
+    
+    // マージ処理完了
+    isMergingRef.current = false;
+    
+    // マージが実行された場合、employeesが更新されるため、
+    // previousEmployeesRefを更新しない（次のレンダリングで再度チェック）
+    // マージが実行されなかった場合のみ、前回の状態を更新
+    if (!hasMerges) {
+      previousEmployeesRef.current = employeesKey;
+    }
   }, [employees]); // employeesの変更を監視
 
   // グローバルなマウスイベントリスナー
   useEffect(() => {
     const handleGlobalMouseUp = (e: MouseEvent) => {
-      console.log('Global mouseup detected', { dragState: !!dragState, barResizeState: !!barResizeState });
-      
       if (dragState) {
-        console.log('Calling handleMouseUp');
         handleMouseUp();
-      } else         if (barResizeState) {
-          console.log('Calling handleBarResizeEnd');
-          handleBarResizeEnd();
-        }
+      } else if (barResizeState) {
+        handleBarResizeEnd();
+      }
     };
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
@@ -250,7 +343,6 @@ export default function ShiftCalendar({
 
   // すべての日付を展開/縮小する処理
   const handleExpandAllDates = () => {
-    console.log('handleExpandAllDates called - setting allDatesExpanded to true');
     setAllDatesExpanded(true);
     setExpandedDates(new Set()); // 個別展開をクリア
     setCollapsedDates(new Set()); // 個別縮小もクリア
@@ -258,7 +350,6 @@ export default function ShiftCalendar({
   };
 
   const handleCollapseAllDates = () => {
-    console.log('handleCollapseAllDates called - setting allDatesExpanded to false');
     setAllDatesExpanded(false);
     setExpandedDates(new Set()); // 個別展開もクリア
     setCollapsedDates(new Set()); // 個別縮小もクリア
@@ -267,7 +358,6 @@ export default function ShiftCalendar({
 
   // 個別の日付を縮小する関数
   const handleCollapseDate = (date: string) => {
-    console.log('handleCollapseDate called:', date);
     setExpandedDates(prev => {
       const newSet = new Set(prev);
       newSet.delete(date); // 個別展開から削除
@@ -282,7 +372,6 @@ export default function ShiftCalendar({
 
   // 従業員をクリックした時の処理（日ビューに遷移）
   const handleEmployeeClick = (employee: Employee, date: string) => {
-    console.log('handleEmployeeClick called:', employee.name, date);
     setSelectedEmployee(employee);
     setHighlightedEmployee(employee); // 青枠表示用
     setSelectedDate(date);
@@ -296,22 +385,10 @@ export default function ShiftCalendar({
   const getShiftsForDate = (employeeId: string, date: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) {
-      console.log(`❌ Employee not found: ${employeeId}`);
       return [];
     }
     
     const shifts = employee.shifts.filter(shift => shift.date === date);
-    
-    // デバッグログを追加（特定の従業員と日付のみ）
-    if (employee.name === '田中 一郎' && (date === '2025-10-13' || date === '2025-10-14')) {
-      console.log(`🔍 getShiftsForDate: ${employee.name} on ${date}:`, {
-        employeeId,
-        totalShifts: employee.shifts.length,
-        filteredShifts: shifts.length,
-        allShifts: employee.shifts.map(s => ({ date: s.date, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
-        filteredShiftsDetails: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-      });
-    }
     
     return shifts;
   };
@@ -381,15 +458,6 @@ export default function ShiftCalendar({
       stripDayCrossingTag(shift.notes) === baseNotes &&
       groupDates.has(shift.date)
     );
-
-    console.log(`📋 Getting all shifts in day-crossing group:`, {
-      clickedShiftId: clickedShift.id,
-      clickedDate: clickedShift.date,
-      baseNotes,
-      dateGroups: dateGroups.map(g => g.date),
-      totalGroupShifts: allGroupShifts.length,
-      shifts: allGroupShifts.map(s => ({ date: s.date, notes: s.notes }))
-    });
 
     return allGroupShifts;
   };
@@ -486,8 +554,6 @@ export default function ShiftCalendar({
     originalStartTime?: string;
     originalEndTime?: string;
   }> => {
-    console.log('🌙 getDayCrossingShiftBlocks called');
-
     const blocks: Array<{
       id: string;
       startTime: string;
@@ -505,7 +571,6 @@ export default function ShiftCalendar({
     const dayCrossingShifts = dayShifts.filter(shift => shift.notes && shift.notes.includes('日跨ぎ'));
 
     if (dayCrossingShifts.length === 0) {
-      console.log('🌙 No day crossing shifts found for date:', date);
       return blocks;
     }
 
@@ -569,7 +634,6 @@ export default function ShiftCalendar({
       };
 
       blocks.push(block);
-      console.log('🌙 日跨ぎブロック作成:', block);
     });
 
     return blocks;
@@ -589,21 +653,7 @@ export default function ShiftCalendar({
     originalStartTime?: string;
     originalEndTime?: string;
   }> => {
-    console.log(`🚀 getShiftBlocks called for ${employeeId} on ${date}`);
     const dayShifts = getShiftsForDate(employeeId, date);
-    
-    console.log('🔍 getShiftBlocks:', employeeId, date, 'found', dayShifts.length, 'shifts');
-    dayShifts.forEach((s, i) => {
-      console.log(`  Shift ${i+1}:`, {
-        id: s.id,
-        timeSlot: s.timeSlot,
-        startTime: s.startTime,
-        endTime: s.endTime,
-        status: s.status,
-        customerName: s.customerName,
-        notes: s.notes
-      });
-    });
 
     // 日跨ぎシフトの検出と処理
     const dayCrossingShifts = dayShifts.filter(shift => 
@@ -611,7 +661,6 @@ export default function ShiftCalendar({
     );
     
     if (dayCrossingShifts.length > 0) {
-      console.log('🌙 日跨ぎシフト検出:', dayCrossingShifts.length, '個');
       // 日跨ぎシフトの場合は特別な表示処理
       return getDayCrossingShiftBlocks(employeeId, date, dayShifts);
     }
@@ -633,14 +682,12 @@ export default function ShiftCalendar({
 
     let processedShifts = dayShifts;
     if (duplicateShifts.length > 0) {
-      console.log(`🔄 ${duplicateShifts.length}個の重複したシフトが検出されました。表示用に統合します...`);
       processedShifts = Array.from(uniqueShifts.values());
     }
 
     const validShifts = processedShifts.filter(isValidShiftDuration);
 
     if (validShifts.length === 0) {
-      console.log('⚠️ 表示可能なシフトがありません（時間が0または未設定）');
       return [];
     }
 
@@ -675,7 +722,6 @@ export default function ShiftCalendar({
         originalEndTime: undefined,
       };
       
-      console.log('📊 Returning 1 block:', block);
       return [block];
     }
 
@@ -700,14 +746,6 @@ export default function ShiftCalendar({
       originalEndTime?: string;
     }> = [];
 
-    console.log('📊 Sorted shifts for merging:', sortedShifts.map(s => ({
-      id: s.id,
-      timeSlot: s.timeSlot,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      status: s.status
-    })));
-
     let currentBlock: any = null;
     
     sortedShifts.forEach((shift, shiftIndex) => {
@@ -727,18 +765,6 @@ export default function ShiftCalendar({
       const actualStartIndex = startIndex >= 0 ? startIndex : fallbackIndex;
       const actualEndIndex = endIndex >= 0 ? endIndex : fallbackIndex;
 
-      console.log(`🔄 Processing shift ${shiftIndex + 1}/${sortedShifts.length}:`, {
-        id: shift.id,
-        timeSlot: shift.timeSlot,
-        startTime: shiftStartTime,
-        endTime: shiftEndTime,
-        status: shift.status,
-        actualStartIndex,
-        actualEndIndex,
-        hasCurrentBlock: !!currentBlock,
-        currentBlockEndIndex: currentBlock?.endIndex
-      });
-      
       if (!currentBlock) {
         currentBlock = {
           id: shift.id,
@@ -765,8 +791,6 @@ export default function ShiftCalendar({
         )
       ) {
         // 連続するシフトまたは重複するシフトを結合
-        console.log(`🔗 Merging shift blocks: ${currentBlock.startTime}-${currentBlock.endTime} + ${shiftStartTime}-${shiftEndTime}`);
-        
         // より長い時間帯に拡張
         const currentDuration = currentBlock.endIndex - currentBlock.startIndex;
         const newDuration = actualEndIndex - actualStartIndex;
@@ -780,8 +804,6 @@ export default function ShiftCalendar({
         currentBlock.endIndex = mergedEndIndex;
         currentBlock.startTime = TIME_SLOTS[mergedStartIndex]?.start || currentBlock.startTime;
         currentBlock.endTime = TIME_SLOTS[mergedEndIndex]?.end || currentBlock.endTime;
-        
-        console.log(`✅ Merged result: ${currentBlock.startTime}-${currentBlock.endTime} (${mergedStartIndex}-${mergedEndIndex})`);
       } else {
         shiftBlocks.push(currentBlock);
         currentBlock = {
@@ -804,11 +826,6 @@ export default function ShiftCalendar({
       shiftBlocks.push(currentBlock);
     }
 
-    console.log('📊 getShiftBlocks returning', shiftBlocks.length, 'blocks:');
-    shiftBlocks.forEach((b, i) => {
-      console.log(`  Block ${i+1}:`, b.id, b.startTime, '-', b.endTime, `(${((parseTimeToMinutes(b.endTime) - parseTimeToMinutes(b.startTime)) / 60).toFixed(1)}h)`);
-    });
-
     return shiftBlocks;
   };
 
@@ -830,9 +847,7 @@ export default function ShiftCalendar({
   };
 
   const handleShiftAdd = (newShift: Omit<EmployeeShift, 'id'>) => {
-    console.log(`➕ handleShiftAdd called for ${newShift.employeeId}:`, newShift);
     onAddShift(newShift.employeeId, newShift);
-    console.log(`✅ handleShiftAdd completed for ${newShift.employeeId}`);
   };
 
   const handleShiftDelete = (shiftId: string) => {
@@ -1247,15 +1262,22 @@ export default function ShiftCalendar({
     date: string,
     startTime: string,
     endTime: string,
-    excludeShiftId?: string,
+    excludeShiftId?: string | string[],
     currentStatus?: string,
     isDayCrossingShift: boolean = false
   ) => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (!employee) return false;
 
+    // 除外するシフトIDのセットを作成
+    const excludeIds = Array.isArray(excludeShiftId) 
+      ? new Set(excludeShiftId) 
+      : excludeShiftId 
+        ? new Set([excludeShiftId]) 
+        : new Set<string>();
+
     const dayShifts = employee.shifts.filter(shift => 
-      shift.date === date && shift.id !== excludeShiftId
+      shift.date === date && !excludeIds.has(shift.id)
     );
 
     const hasOverlap = dayShifts.some(shift => {
@@ -1301,15 +1323,12 @@ export default function ShiftCalendar({
     return hasOverlap;
   };
 
-  // 同じステータスのシフトを結合する関数
-  const mergeAdjacentShifts = (employeeId: string, date: string) => {
+  // 同じステータスのシフトを結合する関数（マージが実行されたかどうかを返す）
+  const mergeAdjacentShifts = (employeeId: string, date: string): boolean => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return;
-
-    console.log(`🔗 mergeAdjacentShifts called for ${employeeId} on ${date}`);
+    if (!employee) return false;
 
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
-    console.log(`📋 Found ${dayShifts.length} shifts for the day:`, dayShifts.map(s => ({ id: s.id, timeSlot: s.timeSlot, startTime: s.startTime, endTime: s.endTime, status: s.status })));
 
     const sortedShifts = dayShifts.sort((a, b) => {
       const timeA = TIME_SLOTS.find(ts => ts.id === a.timeSlot)?.start || '';
@@ -1330,16 +1349,12 @@ export default function ShiftCalendar({
         const lastEndTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
         const currentStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
         
-        console.log(`🔍 Comparing shifts: ${lastShift.id} (${lastEndTime}) vs ${shift.id} (${currentStartTime}), status: ${lastShift.status} vs ${shift.status}`);
-        
         // 同じステータスで連続している場合
         if (lastShift.status === shift.status && lastEndTime === currentStartTime) {
-          console.log(`✅ Shifts are adjacent and same status, adding to group`);
           currentGroup.push(shift);
         } else {
           // グループを結合して新しいシフトを作成
           if (currentGroup.length > 1) {
-            console.log(`🔗 Merging group of ${currentGroup.length} shifts`);
             hasMerges = true;
             
             const firstShift = currentGroup[0];
@@ -1347,11 +1362,8 @@ export default function ShiftCalendar({
             const startTime = firstShift.startTime || TIME_SLOTS.find(ts => ts.id === firstShift.timeSlot)?.start || '';
             const endTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
             
-            console.log(`📝 Creating merged shift: ${startTime}-${endTime} [${firstShift.status}]`);
-            
             // 既存のシフトを削除
             currentGroup.forEach(s => {
-              console.log(`🗑️ Deleting shift: ${s.id}`);
               onDeleteShift(employeeId, s.id);
             });
             
@@ -1370,7 +1382,6 @@ export default function ShiftCalendar({
                 startTime,
                 endTime,
               };
-              console.log('➕ Adding merged single shift:', newShift);
               handleShiftAdd(newShift);
             }
           }
@@ -1381,7 +1392,6 @@ export default function ShiftCalendar({
 
     // 最後のグループも処理
     if (currentGroup.length > 1) {
-      console.log(`🔗 Merging final group of ${currentGroup.length} shifts`);
       hasMerges = true;
       
       const firstShift = currentGroup[0];
@@ -1389,11 +1399,8 @@ export default function ShiftCalendar({
       const startTime = firstShift.startTime || TIME_SLOTS.find(ts => ts.id === firstShift.timeSlot)?.start || '';
       const endTime = lastShift.endTime || TIME_SLOTS.find(ts => ts.id === lastShift.timeSlot)?.end || '';
       
-      console.log(`📝 Creating final merged shift: ${startTime}-${endTime} [${firstShift.status}]`);
-      
       // 既存のシフトを削除
       currentGroup.forEach(s => {
-        console.log(`🗑️ Deleting final shift: ${s.id}`);
         onDeleteShift(employeeId, s.id);
       });
       
@@ -1412,14 +1419,11 @@ export default function ShiftCalendar({
           startTime,
           endTime,
         };
-        console.log('➕ Adding final merged single shift:', newShift);
         handleShiftAdd(newShift);
       }
     }
-
-    if (!hasMerges) {
-      console.log(`ℹ️ No merges needed for ${employeeId} on ${date}`);
-    }
+    
+    return hasMerges;
   };
 
   const handleMouseDown = (employeeId: string, date: string, timeSlot: string) => {
@@ -1444,30 +1448,17 @@ export default function ShiftCalendar({
       const startIndex = filteredTimeSlots.findIndex(ts => ts.id === dragState.startTime);
       const endIndex = filteredTimeSlots.findIndex(ts => ts.id === dragState.currentTime);
       
-      console.log('Drag completed - startIndex:', startIndex, 'endIndex:', endIndex);
-      
       if (startIndex !== -1 && endIndex !== -1) {
         const [minIndex, maxIndex] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)];
         const selectedSlots = maxIndex - minIndex + 1;
         
-        console.log('Selected slots:', selectedSlots);
-        
         // ドラッグした範囲にシフトを作成（長さに関わらず統一）
-        console.log('Creating shifts for selected slots');
         const startTimeSlot = filteredTimeSlots[minIndex];
         const endTimeSlot = filteredTimeSlots[maxIndex];
         const startTime = startTimeSlot.start;
         const endTime = endTimeSlot.end;
         
-        console.log('Creating shift from', startTime, 'to', endTime);
-        
         // 重複チェック：ドラッグした時間範囲全体で既存シフトとの重複をチェック
-        console.log('🔍 Checking overlap for drag:', {
-          employeeId: dragState.currentEmployee,
-          date: selectedDate,
-          timeRange: `${startTime}-${endTime}`,
-          status: 'working' // ドラッグで作成されるシフトは通常workingステータス
-        });
         
         if (checkShiftOverlap(dragState.currentEmployee, selectedDate, startTime, endTime, undefined, 'working')) {
           alert('選択した時間帯に既にシフトが登録されています。時間を調整してください。');
@@ -1499,33 +1490,8 @@ export default function ShiftCalendar({
         
         // 全てのシフトを一括作成
         shiftsToCreate.forEach((shift, index) => {
-          console.log(`📝 Creating shift ${index + 1}/${shiftsToCreate.length}:`, shift);
           handleShiftAdd(shift);
         });
-        
-        console.log(`📝 Created ${shiftsToCreate.length} shifts for ${dragState.currentEmployee}`);
-        
-        // シフト作成直後に、実際にシフトが追加されているかチェック
-        setTimeout(() => {
-          const employee = employees.find(emp => emp.id === dragState.currentEmployee);
-          if (employee) {
-            const dayShifts = employee.shifts.filter(s => s.date === selectedDate);
-            console.log(`🔍 After creation: ${dayShifts.length} shifts found for ${employee.name}`);
-            dayShifts.forEach((s, i) => {
-              console.log(`  Shift ${i + 1}:`, s.id, s.startTime, '-', s.endTime);
-            });
-            
-            // シフトブロックを再計算してチェック
-            const updatedBlocks = getShiftBlocks(dragState.currentEmployee, selectedDate);
-            console.log(`📊 Updated blocks: ${updatedBlocks.length} blocks found`);
-            updatedBlocks.forEach((b, i) => {
-              console.log(`  Block ${i + 1}:`, b.startTime, '-', b.endTime);
-            });
-          }
-        }, 100);
-        
-        // シフト作成完了
-        console.log('✅ ドラッグ操作でシフト作成完了');
         
         // 状態をクリア
         setDragState(null);
@@ -1655,8 +1621,6 @@ export default function ShiftCalendar({
           const finalStartTime = TIME_SLOTS[mergedStartTime]?.start || newStartTime;
           const finalEndTime = TIME_SLOTS[mergedEndTime]?.end || newEndTime;
 
-          console.log(`🔗 隣接シフト結合: ${blockShift.id} (${newStartTime}-${newEndTime}) + ${adjacentShift.id} (${shiftStart}-${shiftEnd}) = ${finalStartTime}-${finalEndTime}`);
-
           // 隣接シフトを削除
           onDeleteShift(employee.id, adjacentShift.id);
 
@@ -1700,19 +1664,8 @@ export default function ShiftCalendar({
   const handleShiftSave = () => {
     if (!editingShift) return;
 
-    console.log('💾 handleShiftSave called with:', {
-      employeeId: editingShift.employeeId,
-      date: editingShift.date,
-      status: editingShift.status,
-      startTime: editingShift.startTime,
-      endTime: editingShift.endTime,
-      timeSlot: editingShift.timeSlot
-    });
-
     const startTime = editingShift.startTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.start;
     const endTime = editingShift.endTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.end;
-
-    console.log('⏰ Calculated times:', { startTime, endTime });
 
     if (!startTime || !endTime) {
       alert('開始時間と終了時間を設定してください');
@@ -1732,10 +1685,6 @@ export default function ShiftCalendar({
     const updateExistingShift = () => {
       if (!selectedShift) return;
       
-      console.log('🔄 Updating existing shift:', selectedShift.id);
-      console.log('   From:', selectedShift.startTime, '-', selectedShift.endTime, '[', selectedShift.status, ']');
-      console.log('   To  :', startTime, '-', endTime, '[', editingShift.status, ']');
-      
       // 既存のシフトを新しい情報で更新
       const updatedShift: EmployeeShift = {
         ...selectedShift,
@@ -1750,7 +1699,6 @@ export default function ShiftCalendar({
       // シフトを更新
       onUpdateShift(editingShift.employeeId, updatedShift);
       
-      console.log('✅ Shift updated successfully');
       
       // モーダルを閉じる
       setShowShiftModal(false);
@@ -1775,7 +1723,6 @@ export default function ShiftCalendar({
         endTime,
       };
 
-      console.log('📝 Creating consolidated shift:', newShift);
       handleShiftAdd(newShift);
 
       // 同じステータスのシフトを結合
@@ -1789,7 +1736,6 @@ export default function ShiftCalendar({
     // 条件分岐で関数を呼び出し
     if (selectedShift) {
       // 既存のシフトを更新
-      console.log('🔄 Updating existing shift:', selectedShift.id);
       
       // 重複チェック（更新対象のシフトは除外）
       if (checkShiftOverlap(editingShift.employeeId, editingShift.date, startTime, endTime, selectedShift.id, editingShift.status)) {
@@ -1807,61 +1753,71 @@ export default function ShiftCalendar({
       }
       
       // 時間範囲内の各スロットにシフトを作成
-      console.log(`📝 Creating shifts for ${startIndex} to ${endIndex} time slots`);
       createNewShifts();
     }
   };
 
   const handleDeleteShift = () => {
-    if (selectedShift?.id) {
-      const employeeId = selectedShift.employeeId;
-      const isDayCrossing = selectedShift.notes && selectedShift.notes.includes('日跨ぎ');
-      
-      if (isDayCrossing) {
-        // 日マタギシフトの場合はグループ全体を取得
-        const groupShifts = getAllShiftsInDayCrossingGroup(employeeId, selectedShift);
-        const groupDates = Array.from(new Set(groupShifts.map(s => s.date))).sort();
-        
-        const datesStr = groupDates.map(d => {
-          const date = new Date(d);
-          return `${date.getMonth() + 1}/${date.getDate()}`;
-        }).join('、');
-        
-        const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\nグループ全体を削除しますか？\n\n削除されるシフト:\n${groupShifts.map(s => {
-          const d = new Date(s.date);
-          return `  • ${d.getMonth() + 1}/${d.getDate()} ${s.startTime}-${s.endTime}`;
-        }).join('\n')}`;
-        
-        if (window.confirm(confirmMessage)) {
-          // グループ全体を削除（一度に削除）
-          const shiftIds = groupShifts.map(s => s.id);
-          if (onDeleteMultipleShifts) {
-            onDeleteMultipleShifts(employeeId, shiftIds);
-          } else {
-            // フォールバック：個別削除（通常は使われない）
-            groupShifts.forEach(shift => {
-              onDeleteShift(employeeId, shift.id);
-            });
-          }
-        } else {
-          // キャンセルされた場合はモーダルも閉じない
-          return;
-        }
-      } else {
-        // 通常シフトの場合は単一削除
-        handleShiftDelete(selectedShift.id);
-      }
-    }
+    if (!selectedShift?.id) return;
     
-    setShowShiftModal(false);
-    setEditingShift(null);
-    setSelectedShift(null);
+    const employeeId = selectedShift.employeeId;
+    const isDayCrossing = selectedShift.notes && selectedShift.notes.includes('日跨ぎ');
+    
+    if (isDayCrossing) {
+      // 日マタギシフトの場合はグループ全体を取得
+      const groupShifts = getAllShiftsInDayCrossingGroup(employeeId, selectedShift);
+      const groupDates = Array.from(new Set(groupShifts.map(s => s.date))).sort();
+      
+      const datesStr = groupDates.map(d => {
+        const date = new Date(d);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }).join('、');
+      
+      const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\nこの期間のすべてのシフトを削除しますか？\n\n削除されるシフト:\n${groupShifts.map(s => {
+        const d = new Date(s.date);
+        return `  • ${d.getMonth() + 1}/${d.getDate()} ${s.startTime}-${s.endTime}`;
+      }).join('\n')}`;
+      
+      if (window.confirm(confirmMessage)) {
+        // グループ全体を削除（一度に削除）
+        const shiftIds = groupShifts.map(s => s.id);
+        if (onDeleteMultipleShifts) {
+          onDeleteMultipleShifts(employeeId, shiftIds);
+        } else {
+          // フォールバック：個別削除（通常は使われない）
+          groupShifts.forEach(shift => {
+            onDeleteShift(employeeId, shift.id);
+          });
+        }
+        // 削除後にモーダルを閉じる
+        setShowShiftModal(false);
+        setEditingShift(null);
+        setSelectedShift(null);
+      }
+      // キャンセルされた場合は何もしない（モーダルも開いたまま）
+    } else {
+      // 通常シフトの場合は確認ダイアログを表示
+      const shiftDate = new Date(selectedShift.date);
+      const dateStr = `${shiftDate.getMonth() + 1}/${shiftDate.getDate()}`;
+      const timeStr = selectedShift.startTime && selectedShift.endTime 
+        ? `${selectedShift.startTime}-${selectedShift.endTime}`
+        : '時間未設定';
+      const confirmMessage = `シフトを削除しますか？\n\n日付: ${dateStr}\n時間: ${timeStr}`;
+      
+      if (window.confirm(confirmMessage)) {
+        // 単一削除
+        handleShiftDelete(selectedShift.id);
+        // 削除後にモーダルを閉じる
+        setShowShiftModal(false);
+        setEditingShift(null);
+        setSelectedShift(null);
+      }
+      // キャンセルされた場合は何もしない（モーダルも開いたまま）
+    }
   };
 
   // 新しいモーダル用のハンドラ
   const handleShiftModalSave = (data: ShiftModalData) => {
-    console.log('💾 handleShiftModalSave called with:', data);
-
     // バリデーション
     if (data.employeeIds.length === 0 || !data.startTime || !data.endTime) {
       alert('必須項目を入力してください');
@@ -1871,20 +1827,9 @@ export default function ShiftCalendar({
     // 日付リストを決定
     let dates: string[] = [];
     
-    console.log('📅 Date selection logic:', {
-      hasDates: !!(data.dates && data.dates.length > 0),
-      datesCount: data.dates?.length || 0,
-      hasStartDate: !!data.startDate,
-      hasEndDate: !!data.endDate,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      dates: data.dates
-    });
-    
     if (data.dates && data.dates.length > 0) {
       // 一括登録の場合：複数日付を使用
       dates = data.dates;
-      console.log('📅 Using multiple dates (bulk):', dates);
     } else if (data.startDate && data.endDate) {
       // 単日登録の場合：日付範囲を生成
       const start = new Date(data.startDate);
@@ -1893,16 +1838,9 @@ export default function ShiftCalendar({
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         dates.push(d.toISOString().split('T')[0]);
       }
-      console.log('📅 Using date range (range):', dates);
-      
-      // 日跨ぎ（日をまたぐシフト）の場合は特別な処理が必要
-      if (data.startTime >= data.endTime) {
-        console.log('🌙 日跨ぎシフト検出:', { startTime: data.startTime, endTime: data.endTime });
-      }
     } else if (data.startDate) {
       // 編集・作成の場合：単一日付
       dates = [data.startDate];
-      console.log('📅 Using single date (edit/create):', dates);
     } else {
       alert('日付を選択してください');
       return;
@@ -1926,7 +1864,7 @@ export default function ShiftCalendar({
           return `${date.getMonth() + 1}/${date.getDate()}`;
         }).join('、');
         
-        const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\nグループ全体を削除して再作成します。よろしいですか？\n\n注意：シフトIDが変更されます。`;
+        const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\n編集内容を反映するため、この期間のすべてのシフトを削除して新しく作成します。よろしいですか？`;
         
         if (!window.confirm(confirmMessage)) {
           return; // キャンセルされた場合は何もしない
@@ -1954,12 +1892,15 @@ export default function ShiftCalendar({
         const firstDate = newDates[0];
         const lastDate = newDates[newDates.length - 1];
         
+        // 削除したシフトIDのリストを保持（重複チェックで除外するため）
+        const deletedShiftIds = shiftIds;
+        
         // 日マタギシフトとして判定（startTime >= endTime または複数日範囲）
         const isDayCrossingNew = (data.startTime >= data.endTime) || newDates.length > 1;
         
         if (isDayCrossingNew) {
           // 1) 起点日: 開始時刻 -> 24:00
-          if (!checkShiftOverlap(employeeId, firstDate, data.startTime, '24:00', undefined, data.status, true)) {
+          if (!checkShiftOverlap(employeeId, firstDate, data.startTime, '24:00', deletedShiftIds, data.status, true)) {
             const startIdx = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
             if (startIdx !== -1) {
               const startShift = {
@@ -1979,7 +1920,7 @@ export default function ShiftCalendar({
           if (newDates.length > 2) {
             for (let i = 1; i < newDates.length - 1; i++) {
               const midDate = newDates[i];
-              if (!checkShiftOverlap(employeeId, midDate, '00:00', '24:00', undefined, data.status, true)) {
+              if (!checkShiftOverlap(employeeId, midDate, '00:00', '24:00', deletedShiftIds, data.status, true)) {
                 let zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '00:00');
                 if (zeroIdx === -1) {
                   zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '0:00');
@@ -2009,7 +1950,7 @@ export default function ShiftCalendar({
 
           // 3) 最終日: 00:00 -> endTime
           if (newDates.length > 1) {
-            if (!checkShiftOverlap(employeeId, lastDate, '00:00', data.endTime, undefined, data.status, true)) {
+            if (!checkShiftOverlap(employeeId, lastDate, '00:00', data.endTime, deletedShiftIds, data.status, true)) {
               let zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '00:00');
               if (zeroIdx === -1) {
                 zeroIdx = TIME_SLOTS.findIndex(ts => ts.start === '0:00');
@@ -2039,7 +1980,7 @@ export default function ShiftCalendar({
         } else {
           // 通常シフトとして再作成（日跨ぎでなくなった場合）
           for (const date of newDates) {
-            if (!checkShiftOverlap(employeeId, date, data.startTime, data.endTime, undefined, data.status)) {
+            if (!checkShiftOverlap(employeeId, date, data.startTime, data.endTime, deletedShiftIds, data.status)) {
               const startIndex = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
               const endIndex = TIME_SLOTS.findIndex(ts => ts.end === data.endTime);
               
@@ -2058,6 +1999,11 @@ export default function ShiftCalendar({
             }
           }
         }
+        
+        // 日マタギシフトの更新処理完了後、モーダルを閉じる
+        setShowShiftModal(false);
+        setEditingShift(null);
+        setSelectedShift(null);
       } else {
         // 通常シフトの場合は既存の処理
         const startIndex = TIME_SLOTS.findIndex(ts => ts.start === data.startTime);
@@ -2107,7 +2053,6 @@ export default function ShiftCalendar({
               endTime: '24:00'
             };
             allShifts.push(startShift);
-            console.log('📝 Created start shift:', startShift);
             if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
             if (!affectedDates.includes(firstDate)) affectedDates.push(firstDate);
           }
@@ -2144,7 +2089,6 @@ export default function ShiftCalendar({
                   endTime: '24:00'
                 };
                 allShifts.push(midShift);
-                console.log('📝 Created middle shift:', midShift);
                 if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
                 if (!affectedDates.includes(midDate)) affectedDates.push(midDate);
               }
@@ -2157,15 +2101,7 @@ export default function ShiftCalendar({
 
         // 3) 最終日: 00:00 -> endTime
         if (dates.length > 1) {
-          console.log(`🔍 Checking end shift creation for ${lastDate}:`, {
-            employeeId,
-            lastDate,
-            endTime: data.endTime,
-            datesLength: dates.length
-          });
-          
           const overlapCheck = checkShiftOverlap(employeeId, lastDate, '00:00', data.endTime, undefined, data.status, true);
-          console.log(`🔍 Overlap check result for end shift: ${overlapCheck}`);
           
           if (!overlapCheck) {
             // 00:00のTIME_SLOTを探す（複数の可能性を試す）
@@ -2181,10 +2117,8 @@ export default function ShiftCalendar({
             // 最初のスロットを使用（フォールバック）
             if (zeroIdx === -1) {
               zeroIdx = 0;
-              console.log('⚠️ No 00:00 slot found, using first slot as fallback');
             }
             
-            console.log(`🔍 Zero index found: ${zeroIdx}`);
             
             if (zeroIdx >= 0 && zeroIdx < TIME_SLOTS.length) {
               // 2日間の場合は「2日目」、3日以上の場合は「終点」
@@ -2199,7 +2133,6 @@ export default function ShiftCalendar({
                 endTime: data.endTime
               };
               allShifts.push(endShift);
-              console.log('📝 Created end shift:', endShift);
               if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
               if (!affectedDates.includes(lastDate)) affectedDates.push(lastDate);
             } else {
@@ -2207,11 +2140,9 @@ export default function ShiftCalendar({
             }
           } else {
             const employee = employees.find(emp => emp.id === employeeId);
-            console.log(`⚠️ End shift skipped due to overlap for ${employee?.name || employeeId} on ${lastDate}`);
             skippedShifts.push({ employeeId: employee?.name || employeeId, date: lastDate });
           }
         } else {
-          console.log(`⚠️ End shift not created because dates.length = ${dates.length} (need > 1)`);
         }
 
         // 通常ループはスキップ
@@ -2272,20 +2203,14 @@ export default function ShiftCalendar({
 
     // 全てのシフトを一括で作成
     if (allShifts.length > 0) {
-      console.log(`📝 Creating ${allShifts.length} shifts in batch for ${affectedEmployees.length} employees across ${affectedDates.length} dates`);
-      console.log('📊 Affected employees:', affectedEmployees);
-      console.log('📊 Affected dates:', affectedDates);
-
       // 各シフトを個別に追加
       // 【バグ修正】従業員ごと・日付ごとにグループ化せずに、各シフトを直接追加する
       // これにより、単日登録時も正しく1つのシフトとして扱われる
       allShifts.forEach(shift => {
-        console.log(`📝 Creating shift for ${shift.employeeId} on ${shift.date}: ${shift.startTime}-${shift.endTime}`);
         handleShiftAdd(shift);
       });
 
       // mergeAdjacentShiftsはuseEffectで自動的に実行されるため、ここでは実行しない
-      console.log('✅ Shift creation completed - mergeAdjacentShifts will be triggered by useEffect');
     }
 
     // モーダルを閉じる
@@ -2376,6 +2301,22 @@ export default function ShiftCalendar({
 
   // 共通リサイズ開始処理
   const handleResizeStart = (direction: 'start' | 'end', block: any, employee: any, index: number) => {
+    // 日マタギシフトの場合はリサイズを無効化（モーダルからのみ編集可能）
+    const shift = employees
+      .find(emp => emp.id === employee.id)
+      ?.shifts.find(s => {
+        const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
+        const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
+        return s.date === block.date &&
+               shiftStartTime >= block.startTime &&
+               shiftEndTime <= block.endTime;
+      });
+    
+    if (shift && shift.notes && shift.notes.includes('日跨ぎ')) {
+      // 日マタギシフトの場合はリサイズ処理をスキップ
+      return;
+    }
+    
     setBarResizeState({
       employeeId: employee.id,
       blockIndex: index,
@@ -2632,23 +2573,13 @@ export default function ShiftCalendar({
                         <div className="flex items-center gap-2">
                           <span>{employee.name}</span>
                           {(() => {
-                            console.log(`🔍 Calculating hours for ${employee.name} - ${shiftBlocks.length} blocks`);
-                            shiftBlocks.forEach((block, i) => {
-                              console.log(`  Block ${i + 1}: ${block.startTime}-${block.endTime}`);
-                            });
-                            
                             const totalHours = shiftBlocks.reduce((total, block) => {
                               // 時間文字列を分に変換して正確な時間差を計算
                               const startMinutes = parseTimeToMinutes(block.startTime);
                               const endMinutes = parseTimeToMinutes(block.endTime);
                               const blockHours = (endMinutes - startMinutes) / 60;
-                              
-                              console.log(`⏰ Block hours: ${block.startTime}-${block.endTime} = ${blockHours}h (${startMinutes}-${endMinutes} minutes)`);
                               return total + blockHours;
                             }, 0);
-                            
-                            console.log(`⏰ Total hours for ${employee.name}:`, totalHours, 'h (from', shiftBlocks.length, 'blocks)');
-                            console.log(`🎯 Rendered hours display: ${totalHours.toFixed(1)}h`);
                             
                             return (
                               <span className="text-xs text-gray-500 bg-gray-100 px-1 rounded">
@@ -2671,7 +2602,6 @@ export default function ShiftCalendar({
                           const startMinutes = parseTimeToMinutes(block.startTime);
                           const endMinutes = parseTimeToMinutes(block.endTime);
                           const actualHours = (endMinutes - startMinutes) / 60;
-                          console.log(`📊 Bar ${index+1}: ${block.startTime}-${block.endTime}, width=${width.toFixed(1)}%, left=${left.toFixed(1)}% (indices: ${startIndex}-${endIndex}, actual: ${actualHours}h)`);
                           
                           // 日跨ぎシフトかどうかを判定
                           const isDayCrossing = block.isDayCrossing;
@@ -2681,7 +2611,6 @@ export default function ShiftCalendar({
                             unavailable: isDayCrossing ? 'bg-gradient-to-r from-gray-400 to-red-400' : 'bg-gray-400',
                           };
                           
-                          console.log(`🎨 Block ${index+1} status: ${block.status}, isDayCrossing: ${isDayCrossing}, color: ${statusColors[block.status as keyof typeof statusColors] || 'bg-gray-400'}`);
                           
                           // このブロックに該当するシフトを見つける
                           const blockShift = employees
@@ -2846,13 +2775,6 @@ export default function ShiftCalendar({
                         {/* シフトブロック */}
                         {shiftBlocks.map((block, blockIndex) => {
                           const style = getShiftBlockStyle(block);
-                          console.log(`🔍 Rendering shift block:`, {
-                            id: block.id,
-                            status: block.status,
-                            timeRange: `${block.startTime}-${block.endTime}`,
-                            style: style,
-                            hasResizeHandles: true
-                          });
                           
                           // シフトが選択されているかチェック
                           const shift = employees
@@ -2872,18 +2794,9 @@ export default function ShiftCalendar({
                                 isSelected ? 'ring-4 ring-blue-500 ring-offset-1' : ''
                               }`}
                               onClick={(e) => {
-                                console.log('🖱️ Shift block clicked:', {
-                                  target: e.target,
-                                  currentTarget: e.currentTarget,
-                                  targetEqualsCurrent: e.target === e.currentTarget,
-                                  clipboardMode,
-                                  blockId: block.id
-                                });
-                                
                                 // リサイズハンドルがクリックされた場合は何もしない
                                 const target = e.target as HTMLElement;
                                 if (target.classList.contains('cursor-ew-resize') || target.closest('.cursor-ew-resize')) {
-                                  console.log('🚫 Click blocked - resize handle clicked');
                                   return;
                                 }
                                 
@@ -2891,12 +2804,9 @@ export default function ShiftCalendar({
                                   .find(emp => emp.id === employee.id)
                                   ?.shifts.find(s => s.id === block.id);
                                 
-                                console.log('📋 Found shift:', shift);
-                                
                                 if (shift) {
                                   // コピーモードの場合はクリップボード処理
                                   if (clipboardMode === 'copy' && onShiftClickForClipboard) {
-                                    console.log('📋 Clipboard mode - calling onShiftClickForClipboard');
                                     
                                     // 日マタギシフトの場合、グループ全体を取得（月ビューと同様のロジック）
                                     const groupShifts = getAllShiftsInDayCrossingGroup(employee.id, shift);
@@ -2912,7 +2822,6 @@ export default function ShiftCalendar({
                                   }
                                   
                                   // 通常モード：モーダルを開く
-                                  console.log('🔧 Normal mode - opening modal');
                                   setShiftModalMode('edit');
                                   setSelectedShift(shift);
                                   
@@ -2947,18 +2856,19 @@ export default function ShiftCalendar({
                                   }
                                   setShowShiftModal(true);
                                 } else {
-                                  console.log('❌ No shift found');
                                 }
                               }}
                               title={`${block.startTime}-${block.endTime} ${SHIFT_STATUS[block.status as keyof typeof SHIFT_STATUS]?.label || ''}`}
                             >
-                              {/* 共通リサイズハンドル */}
-                              <ResizeHandles 
-                                block={block}
-                                employee={employee}
-                                index={blockIndex}
-                                onResizeStart={handleResizeStart}
-                              />
+                              {/* 共通リサイズハンドル（日マタギシフトの場合は非表示） */}
+                              {shift && !(shift.notes && shift.notes.includes('日跨ぎ')) && (
+                                <ResizeHandles 
+                                  block={block}
+                                  employee={employee}
+                                  index={blockIndex}
+                                  onResizeStart={handleResizeStart}
+                                />
+                              )}
 
                               <div className="h-full flex items-center justify-between p-1">
                                 <div className="text-xs font-medium text-center truncate flex-1">
@@ -2990,7 +2900,7 @@ export default function ShiftCalendar({
                                           return `${date.getMonth() + 1}/${date.getDate()}`;
                                         }).join('、');
                                         
-                                        const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\nグループ全体を削除しますか？\n\n削除されるシフト:\n${groupShifts.map(s => {
+                                        const confirmMessage = `このシフトは日マタギシフトです（${groupDates.length}日間: ${datesStr}）。\n\nこの期間のすべてのシフトを削除しますか？\n\n削除されるシフト:\n${groupShifts.map(s => {
                                           const d = new Date(s.date);
                                           return `  • ${d.getMonth() + 1}/${d.getDate()} ${s.startTime}-${s.endTime}`;
                                         }).join('\n')}`;
@@ -3058,12 +2968,10 @@ export default function ShiftCalendar({
 
     // +N表示をクリックした時の処理（日のマスを展開）
     const handleMoreEmployeesClick = (date: string, allEmployees: Employee[]) => {
-      console.log('handleMoreEmployeesClick called:', date, 'allDatesExpanded:', allDatesExpanded, 'collapsedDates:', Array.from(collapsedDates));
       const weekKey = getWeekKey(date);
 
       if (allDatesExpanded) {
         // 全て展開されている場合は、個別に閉じる
-        console.log('Adding date to collapsedDates:', date);
         handleCollapseDate(date);
         // 週の展開状態は変更しない（週全体は連動させない）
       } else {
@@ -3212,25 +3120,10 @@ export default function ShiftCalendar({
 
       if (primaryShifts.length === 0) return null;
 
-      console.log(`🔍 getShiftTimeRange called for ${employeeId} on ${date}:`, {
-        shiftsCount: shifts.length,
-        primaryShiftsCount: primaryShifts.length,
-        hasWorking: workingShifts.length > 0,
-        statuses: shifts.map(s => ({ id: s.id, status: s.status })),
-        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime }))
-      });
-
       // 日跨ぎシフトの場合は特別な処理
       const dayCrossingShifts = primaryShifts.filter(s =>
         s.notes && s.notes.includes('日跨ぎ')
       );
-
-      console.log(`🔍 Day crossing detection for ${employeeId} on ${date}:`, {
-        dayCrossingShiftsCount: dayCrossingShifts.length,
-        dayCrossingShifts: dayCrossingShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
-        allPrimaryShifts: primaryShifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
-        allShifts: shifts.map(s => ({ id: s.id, notes: s.notes, startTime: s.startTime, endTime: s.endTime, status: s.status }))
-      });
 
       if (dayCrossingShifts.length > 0) {
         const descriptions: string[] = [];
@@ -3264,21 +3157,11 @@ export default function ShiftCalendar({
             endLabel = `${totalDays}日目 ${dateGroups[totalDays - 1].end}`;
           }
 
-          console.log(`🔍 Day crossing label generation for ${employeeId} on ${date}:`, {
-            baseNotes,
-            totalDays,
-            currentIndex,
-            startLabel,
-            endLabel,
-            dateGroups: dateGroups.map(g => ({ date: g.date, start: g.start, end: g.end }))
-          });
-
           descriptions.push(`${startLabel}〜${endLabel}`);
         });
 
         if (descriptions.length > 0) {
           const result = descriptions.join(', ');
-          console.log(`🌙 Day crossing time range (computed):`, result);
           // 日跨ぎシフトがある場合は、それだけを返して通常シフトの処理をスキップ
           return result;
         }
@@ -3332,7 +3215,6 @@ export default function ShiftCalendar({
       // 展開された日付の場合は全ての従業員を表示
       const weekKey = getWeekKey(date);
       const isWeekExpanded = expandedWeeks.has(weekKey);
-      console.log('getEventsForDate:', date, 'expandedDates:', Array.from(expandedDates), 'allDatesExpanded:', allDatesExpanded, 'collapsedDates:', Array.from(collapsedDates), 'activeEmployees.length:', activeEmployees.length, 'weekKey:', weekKey, 'isWeekExpanded:', isWeekExpanded);
 
       // 完全に個別の動作：該当日付が展開されている場合のみ全表示
       if ((expandedDates.has(date) || (allDatesExpanded && !collapsedDates.has(date)))) {
@@ -3343,14 +3225,6 @@ export default function ShiftCalendar({
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
           
-          // デバッグログ追加
-          if (employee.name === '佐藤 花子' && date === '2025-10-07') {
-            console.log(`🔍 Event creation for ${employee.name} on ${date}:`, {
-              allShifts: allShifts.map(s => ({ notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
-              timeRange,
-              hasShifts
-            });
-          }
           
           const eventStatus = shiftColor.status === 'unavailable' ? 'unavailable' as const : 'working' as const;
 
@@ -3362,7 +3236,6 @@ export default function ShiftCalendar({
             backgroundColor: shiftColor.bg,
             color: shiftColor.text,
             onClick: () => {
-              console.log('Expanded event onClick triggered for:', employee.name, 'clipboardMode:', clipboardMode);
               if (clipboardMode === 'copy' && hasShifts && onShiftClickForClipboard) {
                 // コピーモードの場合、日マタギシフトならグループ全体を、通常シフトなら個別に選択
                 const selectedShiftIds = new Set<string>(); // 重複を避ける
@@ -3420,7 +3293,6 @@ export default function ShiftCalendar({
       }
 
       // 5人以上の場合の処理（展開状態でない場合のみ）
-      console.log('Checking 5+ condition for date:', date, 'activeEmployees.length:', activeEmployees.length, 'expandedDates:', Array.from(expandedDates), 'allDatesExpanded:', allDatesExpanded, 'collapsedDates.has(date):', collapsedDates.has(date), 'isWeekExpanded:', isWeekExpanded);
       // 完全に個別の動作：該当日付が展開されていない場合のみ+N表示
       if (activeEmployees.length > 5 && !expandedDates.has(date) && (!allDatesExpanded || collapsedDates.has(date))) {
         const hasDayCrossingShiftForDate = (employee: Employee) => {
@@ -3471,15 +3343,6 @@ export default function ShiftCalendar({
           const hasShifts = allShifts.length > 0;
           const timeRange = getShiftTimeRange(employee.id, date);
           const shiftColor = getShiftColor(employee.id, date);
-          
-          // デバッグログ追加
-          if (employee.name === '佐藤 花子' && date === '2025-10-07') {
-            console.log(`🔍 Event creation (5+) for ${employee.name} on ${date}:`, {
-              allShifts: allShifts.map(s => ({ notes: s.notes, startTime: s.startTime, endTime: s.endTime })),
-              timeRange,
-              hasShifts
-            });
-          }
           
           const eventStatus = shiftColor.status === 'unavailable' ? 'unavailable' as const : 'working' as const;
 
@@ -3625,15 +3488,6 @@ export default function ShiftCalendar({
       const shift = event.metadata?.shift; // Access original shift data from metadata
       const visual = event.metadata?.visual as ShiftVisualStyle | undefined;
       
-      // デバッグログ追加
-      console.log(`🎨 renderEvent called for ${employee?.name} on ${currentDate}:`, {
-        eventId: event.id,
-        timeRange,
-        shiftsCount: shifts?.length || 0,
-        shiftData: shift,
-        metadata: event.metadata
-      });
-      
       // employeeがnullの場合（+N人表示など）は特別な表示（右上端に配置）
       if (!employee) {
         return (
@@ -3666,9 +3520,9 @@ export default function ShiftCalendar({
       const iconClassName = visual?.iconClass ?? 'text-yellow-500';
 
       // 日マタギシフトを上部に配置し、通常シフトはその下に配置
-      // これにより、日マタギシフトと通常シフトが重ならないようにする
-      const dayCrossingTop = dayCrossingIndex * 18;
-      const normalTop = (totalDayCrossingShifts + normalIndex) * 18;
+      // 日付表示との間隔を最小化（14px → 15pxへ、日付の直下に配置）
+      const dayCrossingTop = (dayCrossingIndex * 18);
+      const normalTop =  (totalDayCrossingShifts + normalIndex) * 18;
 
       const baseNormalClass = `px-0.5 py-0.5 rounded text-center font-medium cursor-pointer transition-all w-full flex items-center justify-center hover:shadow-md hover:scale-105 hover:z-10 ${event.backgroundColor || 'bg-gray-100'} ${event.color || 'text-gray-700'} ${visual?.borderClass || ''}`;
       const baseNormalStyle: React.CSSProperties = {
@@ -3691,7 +3545,6 @@ export default function ShiftCalendar({
             style={{ ...baseNormalStyle, ...(style || {}) }}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Employee clicked:', employee.name);
               event.onClick?.();
             }}
             title={title || `${employee.name}${displayTimeRange ? ` (${displayTimeRange})` : ''}`}
@@ -3741,23 +3594,12 @@ export default function ShiftCalendar({
       const renderAsNormalShift = !hasDayCrossingShift;
 
       if (renderAsNormalShift) {
-        console.log(`✅ Returning normal shift JSX for ${employee.name} on ${currentDate}:`, {
-          timeRange,
-          eventId: event.id,
-          shiftNotes: shifts?.[0]?.notes
-        });
         return renderStandardShift();
       }
 
       // --- Day-crossing shift logic ---
       const dayCrossingShift = shift || shifts?.[0]; // Get the shift from event.shiftData or shifts[0]
       if (!dayCrossingShift || !currentDate || !weekStartDate || !weekEndDate) {
-        console.log('⚠️ Missing base day-crossing data, falling back to standard rendering:', {
-          hasShift: !!dayCrossingShift,
-          currentDate,
-          weekStartDate,
-          weekEndDate
-        });
       return renderStandardShift({
         dataShiftType: 'day-crossing-fallback',
         style: { zIndex: 30 + dayCrossingIndex, top: `${normalTop}px` },
@@ -3768,11 +3610,6 @@ export default function ShiftCalendar({
       const dateGroups = buildDayCrossingDateGroups(dayCrossingShift.employeeId, baseNotes, currentDate);
 
       if (dateGroups.length === 0) {
-        console.log('⚠️ No date groups found for day-crossing shift, falling back to standard rendering:', {
-          dayCrossingShift,
-          baseNotes,
-          currentDate
-        });
         return renderStandardShift({
           dataShiftType: 'day-crossing-fallback',
           style: { zIndex: 30 + dayCrossingIndex, top: `${dayCrossingTop}px` },
@@ -3781,10 +3618,6 @@ export default function ShiftCalendar({
 
       const groupIndex = dateGroups.findIndex(group => group.date === currentDate);
       if (groupIndex === -1) {
-        console.log('⚠️ Current date not included in day-crossing groups, falling back to standard rendering:', {
-          currentDate,
-          dateGroups
-        });
         return renderStandardShift({
           dataShiftType: 'day-crossing-fallback',
           style: { zIndex: 30 + dayCrossingIndex, top: `${normalTop}px` },
@@ -3811,73 +3644,43 @@ export default function ShiftCalendar({
                                   currentMoment.isBetween(dayjs(shiftStartDate), dayjs(shiftEndDate).add(1, 'day'), 'day', '[)');
 
       if (!shouldRenderSegment) {
-        console.log(`⏭️ Skipping render for ${employee.name} on ${currentDate} (day-crossing continuation, already covered by bar)`);
         return null;
       }
 
-      // Calculate how many days this segment should span within the current week.
+      // Calculate how many days this segment should span within the current calendar grid row.
+      // カレンダーグリッド内での現在のセルの位置を取得（0-6, 日曜が0）
+      const currentDayOfWeek = currentMoment.day(); // 0=日曜, 1=月曜, ..., 6=土曜
+      const daysUntilRowEnd = 6 - currentDayOfWeek; // 土曜日（行の終わり）までのセル数
+      
       const daysUntilShiftEnd = shiftEndMoment.diff(currentMoment, 'day');
-      const daysUntilWeekEnd = weekEndMoment.diff(currentMoment, 'day');
-      let segmentDayCount = Math.min(daysUntilShiftEnd, daysUntilWeekEnd) + 1;
+      let segmentDayCount = Math.min(daysUntilShiftEnd, daysUntilRowEnd) + 1;
       segmentDayCount = Math.max(1, segmentDayCount);
 
       // Calculate the time display for this specific week segment
-      const segmentStartDate = currentDate;
       const segmentEndMoment = currentMoment.add(segmentDayCount - 1, 'day');
-      const segmentEndDate = segmentEndMoment.format('YYYY-MM-DD');
 
-      // Get day indices (1-indexed) within the overall shift
-      const segmentStartDayIndex = currentMoment.diff(shiftStartMoment, 'day') + 1;
-      const segmentEndDayIndex = segmentEndMoment.diff(shiftStartMoment, 'day') + 1;
-
-      // セグメント範囲内のすべてのシフトを取得
-      const segmentShifts = dateGroups.filter(g => {
-        const gDate = dayjs(g.date);
-        return (gDate.isSame(currentMoment, 'day') || gDate.isAfter(currentMoment, 'day')) &&
-               (gDate.isSame(segmentEndMoment, 'day') || gDate.isBefore(segmentEndMoment, 'day'));
-      });
-
-      console.log('🔍 Debug segmentShifts:', {
-        currentDate,
-        segmentEndDate,
-        segmentShiftsCount: segmentShifts.length,
-        segmentShifts: segmentShifts.map(s => ({
-          date: s.date,
-          start: s.start,
-          end: s.end
-        })),
-        allDateGroups: dateGroups.map(g => ({
-          date: g.date,
-          start: g.start,
-          end: g.end
-        }))
-      });
-
-      // セグメントの開始時刻は最初のシフトのstart、終了時刻は最後のシフトのend
-      const startTime = segmentShifts[0]?.start || '00:00';
-      const endTime = segmentShifts[segmentShifts.length - 1]?.end || '00:00';
-
-      // Build the time display for this segment
-      // 同じ日の場合は日数を1回だけ表示
-      const timeDisplay = segmentStartDayIndex === segmentEndDayIndex
-        ? `${segmentStartDayIndex}日目 ${startTime}〜${endTime}`
-        : `${segmentStartDayIndex}日目 ${startTime}〜${segmentEndDayIndex}日目 ${endTime}`;
+      // 日付をMM/DD形式でフォーマット
+      const formatDateForDisplay = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        return `${month}/${day}`;
+      };
 
       // Build the full shift time display for tooltip
       const fullShiftStartTime = dateGroups[0]?.start || '00:00';
       const fullShiftEndTime = dateGroups[dateGroups.length - 1]?.end || '00:00';
-      const fullTimeDisplay = `1日目 ${fullShiftStartTime}〜${dateGroups.length}日目 ${fullShiftEndTime}`;
+      const fullShiftStartDateDisplay = formatDateForDisplay(dateGroups[0]?.date || shiftStartDate);
+      const fullShiftEndDateDisplay = formatDateForDisplay(dateGroups[dateGroups.length - 1]?.date || shiftEndDate);
+      const fullTimeDisplay = `${fullShiftStartDateDisplay} ${fullShiftStartTime}〜${fullShiftEndDateDisplay} ${fullShiftEndTime}`;
 
-      console.log(`🚀 Rendering day crossing segment for ${employee.name} on ${currentDate}:`, {
-        isOverallShiftStart,
-        isWeekSegmentStart,
-        segmentDayCount,
-        timeDisplay,
-        shiftStartDate,
-        shiftEndDate,
-        weekStartDate,
-        weekEndDate
-      });
+      // このセグメントがシフト全体の最後の週かどうかを判定
+      const isLastWeekSegment = segmentEndMoment.isSame(shiftEndMoment, 'day') || segmentEndMoment.isAfter(shiftEndMoment, 'day');
+
+      // Build the time display for this segment
+      // 最後の週のみ全体の期間を表示、それ以外は何も表示しない
+      const timeDisplay = isLastWeekSegment ? fullTimeDisplay : '';
+
 
       const dayCrossingVisual = (() => {
         const borderClass = visual?.borderClass ? ` ${visual.borderClass}` : '';
@@ -3908,21 +3711,44 @@ export default function ShiftCalendar({
           data-shift-type="day-crossing"
           data-employee={employee.name}
           data-time-display={timeDisplay}
-          className={`${dayCrossingVisual.container} rounded shadow-md flex items-center justify-between cursor-pointer px-0.5 py-0.5 w-full`}
+          className={`${dayCrossingVisual.container} rounded flex items-center justify-between cursor-pointer px-0.5 py-0.5`}
           style={{
             position: 'absolute',
             top: `${dayCrossingTop}px`,
-            left: '2px',
-            width: `calc(${segmentDayCount} * 100% + ${(segmentDayCount - 1) * 4}px)`,
+            left: '4px',
+            width: `calc(${segmentDayCount * 100}% + ${(segmentDayCount - 1) * 9}px - 8px)`,
             fontSize: '9px',
             fontWeight: '600',
             height: '18px',
             lineHeight: '18px',
-            zIndex: 30 + dayCrossingIndex  // 日マタギシフトは高いz-indexで通常シフトの上に表示
+            zIndex: 30 + dayCrossingIndex,
+            pointerEvents: 'auto'
           }}
           onClick={(e) => {
             e.stopPropagation();
-            event.onClick?.();
+            
+            // クリップボードモードの場合は、シフトを選択
+            if (clipboardMode === 'copy' && onShiftClickForClipboard) {
+              // 日マタギシフトグループ全体を取得して選択
+              const groupShifts = getAllShiftsInDayCrossingGroup(employee.id, dayCrossingShift);
+              groupShifts.forEach(shift => {
+                onShiftClickForClipboard(shift);
+              });
+              return;
+            }
+            
+            // 通常モード：日マタギシフトをクリックした場合は、開始日の日ビューに遷移
+            const groupShifts = getAllShiftsInDayCrossingGroup(employee.id, dayCrossingShift);
+            if (groupShifts.length > 0) {
+              const startDate = groupShifts
+                .map(s => s.date)
+                .sort()[0]; // 開始日を取得
+              setSelectedDate(startDate);
+              setViewMode('day');
+            } else if (event.onClick) {
+              // フォールバック：通常のonClick処理
+              event.onClick();
+            }
           }}
           title={`${employee.name} ${fullTimeDisplay}（日跨ぎ）\n表示中: ${timeDisplay}`}
         >
@@ -4036,18 +3862,20 @@ export default function ShiftCalendar({
           key={day.date}
           data-date-cell
           data-date={day.date}
-          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} p-1 border cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative overflow-visible ${
+          className={`p-1 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative min-h-24 ${
+            !day.isCurrentMonth ? 'bg-gray-50' :
+            day.isToday ? 'bg-blue-50' :
+            day.isHoliday ? 'bg-red-50' :
+            day.dayOfWeekNumber === 0 ? 'bg-red-50' :
+            day.dayOfWeekNumber === 6 ? 'bg-blue-50' :
+            'bg-white'
+          } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
             isSelectedForPaste
-              ? 'bg-green-100 border-green-500 border-2 shadow-sm'
+              ? 'ring-2 ring-green-500 ring-inset bg-green-50'
               : expandedDates.has(day.date)
-              ? 'bg-blue-50 border-blue-400 border-2 shadow-md'
-              : !day.isCurrentMonth ? 'bg-gray-50'
-              : day.isToday ? 'bg-blue-50 border-blue-500 border-2'
-              : day.isHoliday ? 'bg-red-50'
-              : day.dayOfWeekNumber === 0 ? 'bg-red-50'
-              : day.dayOfWeekNumber === 6 ? 'bg-blue-50'
-              : 'bg-white'
-            } ${!day.isToday && !expandedDates.has(day.date) && !isSelectedForPaste ? 'border-gray-200' : ''}`}
+              ? 'ring-2 ring-blue-500 ring-inset'
+              : ''
+          }`}
           style={isExpanded ? { minHeight: `${expandedHeight}px` } : {}}
           onClick={(e) => {
             // +N人ボタンまたは-ボタンがクリックされた場合は日ビューに遷移しない
@@ -4058,7 +3886,7 @@ export default function ShiftCalendar({
           }}
         >
           {/* 日付と祝日名 */}
-          <div className="flex items-center gap-1 mb-0.5">
+          <div className="flex items-center gap-1 mb-0 relative z-40">
             <div className={`text-xs font-medium ${
               isSelectedForPaste
                 ? 'text-green-800 font-bold'
@@ -4106,20 +3934,9 @@ export default function ShiftCalendar({
             // 事前に日マタギシフトの総数をカウント
             const totalDayCrossingShifts = sortedEvents.filter(event => isDayCrossingEvent(event)).length;
 
-            console.log(`📊 Total day-crossing shifts on ${day.date}: ${totalDayCrossingShifts}`);
-
             sortedEvents.forEach((event) => {
               const consumesSlot = Boolean(event.metadata?.employee?.name);
               const isDayCrossing = isDayCrossingEvent(event);
-
-              console.log(`📍 Rendering event for ${event.metadata?.employee?.name} on ${day.date}:`, {
-                isDayCrossing,
-                dayCrossingIndex,
-                normalIndex,
-                overallIndex,
-                totalDayCrossingShifts,
-                eventId: event.id
-              });
 
               const rendered = renderEvent(
                 event,
@@ -4138,7 +3955,6 @@ export default function ShiftCalendar({
                 renderedEvents.push(rendered);
 
                 if (isDayCrossing) {
-                  console.log(`✅ Day crossing shift detected for ${event.metadata?.employee?.name}, incrementing dayCrossingIndex from ${dayCrossingIndex} to ${dayCrossingIndex + 1}`);
                   dayCrossingIndex += 1;
                 } else if (consumesSlot) {
                   normalIndex += 1;
@@ -4179,11 +3995,8 @@ export default function ShiftCalendar({
     const getDayCrossingShiftGroup = (employeeId: string, shiftId: string) => {
       const employee = employees.find(emp => emp.id === employeeId);
       if (!employee) {
-        console.log(`❌ Employee not found for ID: ${employeeId}`);
         return [];
       }
-
-      console.log(`🔍 getDayCrossingShiftGroup called for shiftId: ${shiftId}`);
 
       // シフトIDから日跨ぎグループIDを抽出
       // パターン1: "shift-123-day-1" -> "shift-123"
@@ -4192,21 +4005,13 @@ export default function ShiftCalendar({
       const dayMatch = shiftId.match(/^(.+)-day-\d+$/);
       if (dayMatch) {
         groupId = dayMatch[1];
-        console.log(`📝 Extracted group ID from day pattern: ${groupId}`);
-      } else {
-        console.log(`📝 Using full shiftId as group ID: ${groupId}`);
       }
 
       // 同じグループIDを持つ全てのシフトを取得
       const groupShifts = employee.shifts.filter(s => {
         const isMatch = s.id === groupId || s.id.startsWith(groupId + '-day-');
-        if (isMatch) {
-          console.log(`✅ Found matching shift: ${s.id} for group: ${groupId}`);
-        }
         return isMatch;
       });
-
-      console.log(`📊 Total group shifts found: ${groupShifts.length}`);
       return groupShifts.sort((a, b) => a.date.localeCompare(b.date));
     };
 
@@ -4223,40 +4028,21 @@ export default function ShiftCalendar({
         endTime: string;
       }> = [];
 
-      console.log(`📊 getDayCrossingShiftInfo called for date: ${date}`);
-
       filteredEmployees.forEach(employee => {
         const shifts = getShiftsForDate(employee.id, date);
-        console.log(`🔍 Checking shifts for ${employee.name} on ${date}:`, shifts.map(s => ({
-          id: s.id,
-          notes: s.notes,
-          startTime: s.startTime,
-          endTime: s.endTime
-        })));
         
         shifts.forEach(shift => {
           // 日跨ぎシフトの起点のみを検出（起点または1日目）
           if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
-            console.log(`🔍 Found day crossing start shift for ${employee.name} on ${date}:`, {
-              shiftId: shift.id,
-              notes: shift.notes,
-              startTime: shift.startTime,
-              endTime: shift.endTime
-            });
-
             // 日跨ぎシフトグループ全体を取得
             const groupShifts = getDayCrossingShiftGroup(employee.id, shift.id);
             const dates = Array.from(new Set(groupShifts.map(s => s.date))).sort();
-
-            console.log(`📅 Day crossing dates for ${employee.name}:`, dates);
 
             // 時刻情報を取得
             const firstShift = groupShifts.find(s => s.date === dates[0]);
             const lastShift = groupShifts.find(s => s.date === dates[dates.length - 1]);
             const startTime = firstShift?.startTime || shift.startTime;
             const endTime = lastShift?.endTime || shift.endTime;
-
-            console.log(`⏰ Time range for ${employee.name}: ${startTime} - ${endTime} (${dates.length} days)`);
 
             dayCrossingShifts.push({
               employee,
@@ -4272,7 +4058,6 @@ export default function ShiftCalendar({
         });
       });
 
-      console.log(`📊 Total day crossing shifts found for ${date}:`, dayCrossingShifts.length);
       return dayCrossingShifts;
     };
 
