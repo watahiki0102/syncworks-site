@@ -90,10 +90,20 @@ export default function ShiftModal({
     if (isOpen) {
       if (mode === 'edit' && editingShift) {
         setSelectedEmployeeIds([editingShift.employeeId]);
-        setStartDate(editingShift.date);
-        setEndDate(editingShift.date);
-        setStartTime(editingShift.startTime || '09:00');
-        setEndTime(editingShift.endTime || '18:00');
+        
+        // 日マタギシフトの場合（__endDateプロパティが存在する場合）
+        const isDayCrossing = (editingShift as any).__endDate !== undefined;
+        if (isDayCrossing) {
+          setStartDate(editingShift.date);
+          setEndDate((editingShift as any).__endDate);
+          setStartTime(editingShift.startTime || '09:00');
+          setEndTime(editingShift.endTime || '18:00');
+        } else {
+          setStartDate(editingShift.date);
+          setEndDate(editingShift.date);
+          setStartTime(editingShift.startTime || '09:00');
+          setEndTime(editingShift.endTime || '18:00');
+        }
         setStatus(editingShift.status);
         setNotes(editingShift.notes || '');
       } else if (mode === 'create' && editingShift) {
@@ -129,11 +139,14 @@ export default function ShiftModal({
 
 
   const handleSave = () => {
+    // 編集モードで日マタギシフトの場合（開始日と終了日が異なる場合）はrangeモードとして扱う
+    const isDayCrossingEdit = mode === 'edit' && editingShift && startDate !== endDate;
+    
     const data: ShiftModalData = {
-      mode: mode === 'bulk' || mode === 'range' ? activeTab : mode,
+      mode: isDayCrossingEdit ? 'range' : (mode === 'bulk' || mode === 'range' ? activeTab : mode),
       employeeIds: selectedEmployeeIds,
       startDate,
-      endDate: activeTab === 'range' ? endDate : startDate,
+      endDate: (activeTab === 'range' || isDayCrossingEdit) ? endDate : startDate,
       dates: activeTab === 'bulk' ? selectedDates : undefined, // 一括登録の場合は複数日付
       startTime,
       endTime,
@@ -330,17 +343,48 @@ export default function ShiftModal({
 
         {/* 日付選択 */}
         {mode === 'edit' || mode === 'create' ? (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              日付
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          // 日マタギシフトの場合（終了日が開始日と異なる場合）は範囲選択を表示
+          (mode === 'edit' && editingShift && startDate !== endDate) ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  開始日
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  終了日
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                日付
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setEndDate(e.target.value);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          )
         ) : activeTab === 'bulk' ? (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -380,7 +424,8 @@ export default function ShiftModal({
         )}
 
         {/* 時間帯 */}
-        {isRangeTab ? (
+        {isRangeTab || (mode === 'edit' && editingShift && startDate !== endDate) ? (
+          // 範囲登録モードまたは日マタギシフト編集モードの場合
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TimeBlock
               title="開始"

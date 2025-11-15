@@ -48,6 +48,7 @@ interface EmployeeMonthlySummary {
 /**
  * 従業員の月間勤務統計を計算する共通関数
  * 【パフォーマンス改善】重複していたロジックを一箇所にまとめました
+ * 【修正】startTime/endTimeを優先使用し、日マタギシフトにも正確に対応
  */
 function calculateEmployeeMonthlyStats(employee: Employee, year: number, month: number): { workingDays: number; totalWorkingMinutes: number } {
   const lastDay = new Date(year, month + 1, 0);
@@ -63,38 +64,62 @@ function calculateEmployeeMonthlyStats(employee: Employee, year: number, month: 
     if (workingShifts.length > 0) {
       totalWorkingDays++;
 
-      // その日の総労働時間を計算
-      const timeSlots = workingShifts.map(s => TIME_SLOTS.find(ts => ts.id === s.timeSlot)).filter(Boolean);
-      const sortedTimeSlots = timeSlots.sort((a, b) => a.start.localeCompare(b.start));
+      // startTime/endTimeを直接使用（優先）、timeSlotはフォールバック
+      // これにより日マタギシフト（startTime: 09:00, endTime: 24:00など）も正確に計算できる
+      const timeRanges: Array<{ start: string; end: string }> = workingShifts.map(shift => {
+        // startTime/endTimeが存在する場合はそれを使用
+        if (shift.startTime && shift.endTime) {
+          return { start: shift.startTime, end: shift.endTime };
+        }
+        
+        // フォールバック：timeSlotから取得
+        const timeSlot = TIME_SLOTS.find(ts => ts.id === shift.timeSlot);
+        if (timeSlot) {
+          return { start: timeSlot.start, end: timeSlot.end };
+        }
+        
+        // 最後のフォールバック：デフォルト値
+        return { start: '09:00', end: '18:00' };
+      });
+
+      // 時刻でソート
+      const sortedRanges = timeRanges.sort((a, b) => {
+        return timeToMinutes(a.start) - timeToMinutes(b.start);
+      });
 
       // 連続する時間帯をグループ化（例: 9:00-12:00と12:00-17:00 → 9:00-17:00）
-      const timeGroups: string[][] = [];
-      let currentGroup: string[] = [];
+      const timeGroups: Array<{ start: string; end: string }> = [];
+      let currentGroup: { start: string; end: string } | null = null;
 
-      sortedTimeSlots.forEach((slot, index) => {
-        if (index === 0) {
-          currentGroup = [slot.start, slot.end];
+      sortedRanges.forEach(range => {
+        if (!currentGroup) {
+          currentGroup = { ...range };
         } else {
-          const prevSlot = sortedTimeSlots[index - 1];
-          if (prevSlot.end === slot.start) {
-            // 連続している場合は終了時刻を更新
-            currentGroup[1] = slot.end;
+          const currentEndMinutes = timeToMinutes(currentGroup.end);
+          const rangeStartMinutes = timeToMinutes(range.start);
+          
+          // 連続している場合（終了時刻 = 開始時刻、または1分以内の差）
+          if (rangeStartMinutes <= currentEndMinutes + 1) {
+            // 終了時刻を延長（より後ろの時刻を使用）
+            if (timeToMinutes(range.end) > currentEndMinutes) {
+              currentGroup.end = range.end;
+            }
           } else {
             // 連続していない場合は新しいグループを開始
-            timeGroups.push([...currentGroup]);
-            currentGroup = [slot.start, slot.end];
+            timeGroups.push(currentGroup);
+            currentGroup = { ...range };
           }
         }
       });
 
-      timeGroups.push(currentGroup);
+      if (currentGroup) {
+        timeGroups.push(currentGroup);
+      }
 
       // 各グループの労働時間を計算（分単位）
       timeGroups.forEach(group => {
-        const startTime = group[0].split(':').map(Number);
-        const endTime = group[1].split(':').map(Number);
-        const startMinutes = startTime[0] * 60 + startTime[1];
-        const endMinutes = endTime[0] * 60 + endTime[1];
+        const startMinutes = timeToMinutes(group.start);
+        const endMinutes = timeToMinutes(group.end);
         totalWorkingMinutes += (endMinutes - startMinutes);
       });
     }
@@ -389,6 +414,33 @@ export default function ShiftManagement() {
       return;
     }
 
+    // 日マタギシフトのタグを除去する関数
+    const stripDayCrossingTag = (notes?: string) =>
+      notes ? notes.replace(/\s*\(日跨ぎ-(?:\d+日目|中日|起点|終点)\)\s*/g, '').trim() : '';
+
+    // コピーされたシフトを日マタギグループごとに分類
+    const dayCrossingGroups: Map<string, EmployeeShift[]> = new Map();
+    const normalShifts: EmployeeShift[] = [];
+
+    copiedShifts.forEach(shift => {
+      if (shift.notes && shift.notes.includes('日跨ぎ')) {
+        const baseNotes = stripDayCrossingTag(shift.notes);
+        const groupKey = `${shift.employeeId}|||${baseNotes}`;
+
+        if (!dayCrossingGroups.has(groupKey)) {
+          dayCrossingGroups.set(groupKey, []);
+        }
+        dayCrossingGroups.get(groupKey)!.push(shift);
+      } else {
+        normalShifts.push(shift);
+      }
+    });
+
+    // 日マタギグループを日付順にソート
+    dayCrossingGroups.forEach(group => {
+      group.sort((a, b) => a.date.localeCompare(b.date));
+    });
+
     // 重複チェック
     const conflicts: Array<{
       employeeName: string;
@@ -406,8 +458,9 @@ export default function ShiftManagement() {
       }
     } = {};
 
+    // 通常シフトの処理
     pendingPasteDates.forEach(date => {
-      copiedShifts.forEach(shift => {
+      normalShifts.forEach(shift => {
         const employee = employees.find(emp => emp.id === shift.employeeId);
         if (!employee) return;
 
@@ -462,6 +515,78 @@ export default function ShiftManagement() {
             endTime: newEndTime,
             shift
           });
+        }
+      });
+    });
+
+    // 日マタギシフトの処理
+    pendingPasteDates.forEach(startDate => {
+      dayCrossingGroups.forEach((groupShifts, groupKey) => {
+        const employee = employees.find(emp => emp.id === groupShifts[0].employeeId);
+        if (!employee) return;
+
+        // グループの日数を計算
+        const dayCount = groupShifts.length;
+
+        // 貼り付け先の日付範囲を計算
+        for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
+          const targetDate = new Date(startDate);
+          targetDate.setDate(targetDate.getDate() + dayOffset);
+          const targetDateStr = targetDate.toISOString().split('T')[0];
+
+          const originalShift = groupShifts[dayOffset];
+          const key = `${originalShift.employeeId}|||${targetDateStr}`;
+          const newStartTime = originalShift.startTime || TIME_SLOTS.find(ts => ts.id === originalShift.timeSlot)?.start || '';
+          const newEndTime = originalShift.endTime || TIME_SLOTS.find(ts => ts.id === originalShift.timeSlot)?.end || '';
+
+          if (!pendingShiftsByEmployeeAndDate[key]) {
+            pendingShiftsByEmployeeAndDate[key] = {
+              employeeId: originalShift.employeeId,
+              date: targetDateStr,
+              shifts: []
+            };
+          }
+
+          // 貼り付け予定のシフト同士の重複チェック
+          const hasPendingConflict = pendingShiftsByEmployeeAndDate[key].shifts.some(pending => {
+            return isTimeOverlap(newStartTime, newEndTime, pending.startTime, pending.endTime);
+          });
+
+          if (hasPendingConflict) {
+            conflicts.push({
+              employeeName: employee.name,
+              date: new Date(targetDateStr).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
+              timeRange: `${newStartTime}-${newEndTime}`,
+              reason: '貼り付け予定のシフト同士が重複'
+            });
+          }
+
+          // 既存シフトとの重複チェック
+          const existingShifts = employee.shifts.filter(s => s.date === targetDateStr);
+          const hasExistingConflict = existingShifts.some(existingShift => {
+            const existingStartTime = existingShift.startTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.start || '';
+            const existingEndTime = existingShift.endTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.end || '';
+
+            return isTimeOverlap(newStartTime, newEndTime, existingStartTime, existingEndTime);
+          });
+
+          if (hasExistingConflict) {
+            conflicts.push({
+              employeeName: employee.name,
+              date: new Date(targetDateStr).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
+              timeRange: `${newStartTime}-${newEndTime}`,
+              reason: '既存のシフトと重複'
+            });
+          }
+
+          // 重複がない場合は貼り付け予定リストに追加
+          if (!hasPendingConflict && !hasExistingConflict) {
+            pendingShiftsByEmployeeAndDate[key].shifts.push({
+              startTime: newStartTime,
+              endTime: newEndTime,
+              shift: originalShift
+            });
+          }
         }
       });
     });
@@ -1001,6 +1126,35 @@ export default function ShiftManagement() {
     });
   };
 
+  /**
+   * 複数のシフトを一度に削除する関数
+   * 【日マタギシフト対応】グループ全体を一度に削除するために使用
+   * @param employeeId - 従業員ID
+   * @param shiftIds - 削除するシフトIDの配列
+   */
+  const deleteMultipleShifts = (employeeId: string, shiftIds: string[]) => {
+    if (shiftIds.length === 0) return;
+    
+    const shiftIdSet = new Set(shiftIds);
+    const updatedEmployees = employees.map(employee => {
+      if (employee.id === employeeId) {
+        return { 
+          ...employee, 
+          shifts: employee.shifts.filter(s => !shiftIdSet.has(s.id)) 
+        };
+      }
+      return employee;
+    });
+    
+    updateEmployeesState(updatedEmployees);
+    // 削除したシフトを未保存リストから削除
+    setUnsavedShiftIds(prev => {
+      const newSet = new Set(prev);
+      shiftIds.forEach(id => newSet.delete(id));
+      return newSet;
+    });
+  };
+
 
 
 
@@ -1057,6 +1211,7 @@ export default function ShiftManagement() {
                 onUpdateShift={updateShift}
                 onAddShift={addShift}
                 onDeleteShift={deleteShift}
+                onDeleteMultipleShifts={deleteMultipleShifts}
                 timeRangeType={timeRangeType}
                 customStartTime={customStartTime}
                 customEndTime={customEndTime}
