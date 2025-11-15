@@ -1109,10 +1109,6 @@ export default function PricingRatesPage() {
 
                   {/* ポイント設定 */}
                   <div className="bg-white shadow-md rounded-lg p-6">
-                    <div className="mb-4">
-                      <h2 className="text-xl font-semibold text-gray-800">📦 荷物ポイント設定</h2>
-                    </div>
-
                     {filteredItems.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
                         該当する荷物が見つかりません。

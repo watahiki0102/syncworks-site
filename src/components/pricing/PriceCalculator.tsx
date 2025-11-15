@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ITEM_CATEGORIES } from '@/constants/items';
 import { 
   calculateEstimate, 
@@ -46,15 +46,14 @@ const WORK_OPTIONS: WorkOption[] = [
   { name: '特殊車両手配', price: 20000, selected: false },
 ];
 
-export default function PriceCalculator({ 
-  items, 
-  boxOption = '', 
+export default function PriceCalculator({
+  items,
+  boxOption = '',
   boxCount = 0,
   distance = 0,
   selectedOptions = [],
-  onCalculate 
+  onCalculate
 }: PriceCalculatorProps) {
-  const [calculationResult, setCalculationResult] = useState<PriceCalculationResult | null>(null);
   const [savedItemPoints, setSavedItemPoints] = useState<ItemPoint[]>([]);
   const [savedPricingRules, setSavedPricingRules] = useState<PricingRule[]>([]);
   const [savedOptions, setSavedOptions] = useState<OptionItem[]>([]);
@@ -80,13 +79,13 @@ export default function PriceCalculator({
   }, []);
 
   // アイテムのポイントを取得（保存された設定を優先）
-  const getItemPoints = (itemName: string): number => {
+  const getItemPoints = useCallback((itemName: string): number => {
     // まず保存された設定から探す
     const savedItem = savedItemPoints.find(item => item.name === itemName);
     if (savedItem) {
       return savedItem.points;
     }
-    
+
     // 保存された設定がない場合はデフォルト値を使用
     for (const category of ITEM_CATEGORIES) {
       const item = category.items.find(i => i.name === itemName);
@@ -95,10 +94,10 @@ export default function PriceCalculator({
       }
     }
     return 0;
-  };
+  }, [savedItemPoints]);
 
   // 段ボールポイントの計算
-  const getDanballPoints = (danballOption: string): number => {
+  const getDanballPoints = useCallback((danballOption: string): number => {
     if (danballOption.includes('10箱未満')) return 5;
     if (danballOption.includes('10〜20箱')) return 10;
     if (danballOption.includes('21〜30箱')) return 15;
@@ -106,28 +105,28 @@ export default function PriceCalculator({
     if (danballOption.includes('41〜50箱')) return 25;
     if (danballOption.includes('51箱以上')) return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
     return 0;
-  };
+  }, [boxCount]);
 
   // 推奨トラック種別を取得（保存された料金ルールから）
-  const getRecommendedTruck = (totalPoints: number): string => {
+  const getRecommendedTruck = useCallback((totalPoints: number): string => {
     if (savedPricingRules.length > 0) {
       // 保存された料金ルールから最適なトラックを選択
-      const suitableRule = savedPricingRules.find(rule => 
-        totalPoints >= rule.minPoint && 
+      const suitableRule = savedPricingRules.find(rule =>
+        totalPoints >= rule.minPoint &&
         (rule.maxPoint === undefined || totalPoints <= rule.maxPoint)
       );
       if (suitableRule) {
         return suitableRule.truckType;
       }
     }
-    
+
     // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
     return recommendations.length > 0 ? recommendations[0] : '軽トラック';
-  };
+  }, [savedPricingRules]);
 
   // 料金計算
-  const calculateEstimateResult = (): PriceCalculationResult => {
+  const calculateEstimateResult = useCallback((): PriceCalculationResult => {
     // CargoItem配列を作成
     const cargoItems: CargoItem[] = Object.entries(items)
       .filter(([_, quantity]) => quantity > 0)
@@ -152,7 +151,7 @@ export default function PriceCalculator({
     }
 
     // 作業オプションを設定（保存された設定を優先）
-    const workOptions: WorkOption[] = savedOptions.length > 0 
+    const workOptions: WorkOption[] = savedOptions.length > 0
       ? savedOptions.map(option => ({
           name: option.label,
           price: option.price || 0,
@@ -183,16 +182,19 @@ export default function PriceCalculator({
       truckSize: recommendedTruck,
       detailedEstimate
     };
-  };
+  }, [items, boxOption, distance, selectedOptions, savedOptions, getItemPoints, getDanballPoints, getRecommendedTruck]);
 
-  // 自動計算
+  // 自動計算（useMemoを使用して無限ループを防止）
+  const calculationResult = useMemo(() => {
+    return calculateEstimateResult();
+  }, [calculateEstimateResult]);
+
+  // 計算結果が変わったときにコールバックを実行
   useEffect(() => {
-    const result = calculateEstimateResult();
-    setCalculationResult(result);
-    if (onCalculate) {
-      onCalculate(result);
+    if (calculationResult && onCalculate) {
+      onCalculate(calculationResult);
     }
-  }, [items, boxOption, boxCount, distance, selectedOptions, savedItemPoints, savedPricingRules, savedOptions]);
+  }, [calculationResult, onCalculate]);
 
   return {
     calculationResult,
@@ -202,13 +204,12 @@ export default function PriceCalculator({
 
 // フックとして使用する場合
 export function usePriceCalculator(
-  items: Record<string, number>, 
-  boxOption?: string, 
+  items: Record<string, number>,
+  boxOption?: string,
   boxCount?: number,
   distance?: number,
   selectedOptions?: string[]
 ) {
-  const [calculationResult, setCalculationResult] = useState<PriceCalculationResult | null>(null);
   const [savedItemPoints, setSavedItemPoints] = useState<ItemPoint[]>([]);
   const [savedPricingRules, setSavedPricingRules] = useState<PricingRule[]>([]);
   const [savedOptions, setSavedOptions] = useState<OptionItem[]>([]);
@@ -234,13 +235,13 @@ export function usePriceCalculator(
   }, []);
 
   // アイテムのポイントを取得（保存された設定を優先）
-  const getItemPoints = (itemName: string): number => {
+  const getItemPoints = useCallback((itemName: string): number => {
     // まず保存された設定から探す
     const savedItem = savedItemPoints.find(item => item.name === itemName);
     if (savedItem) {
       return savedItem.points;
     }
-    
+
     // 保存された設定がない場合はデフォルト値を使用
     for (const category of ITEM_CATEGORIES) {
       const item = category.items.find(i => i.name === itemName);
@@ -249,10 +250,10 @@ export function usePriceCalculator(
       }
     }
     return 0;
-  };
+  }, [savedItemPoints]);
 
   // 段ボールポイントの計算
-  const getDanballPoints = (danballOption: string): number => {
+  const getDanballPoints = useCallback((danballOption: string): number => {
     if (danballOption.includes('10箱未満')) return 5;
     if (danballOption.includes('10〜20箱')) return 10;
     if (danballOption.includes('21〜30箱')) return 15;
@@ -260,28 +261,28 @@ export function usePriceCalculator(
     if (danballOption.includes('41〜50箱')) return 25;
     if (danballOption.includes('51箱以上')) return boxCount && boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
     return 0;
-  };
+  }, [boxCount]);
 
   // 推奨トラック種別を取得（保存された料金ルールから）
-  const getRecommendedTruck = (totalPoints: number): string => {
+  const getRecommendedTruck = useCallback((totalPoints: number): string => {
     if (savedPricingRules.length > 0) {
       // 保存された料金ルールから最適なトラックを選択
-      const suitableRule = savedPricingRules.find(rule => 
-        totalPoints >= rule.minPoint && 
+      const suitableRule = savedPricingRules.find(rule =>
+        totalPoints >= rule.minPoint &&
         (rule.maxPoint === undefined || totalPoints <= rule.maxPoint)
       );
       if (suitableRule) {
         return suitableRule.truckType;
       }
     }
-    
+
     // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
     return recommendations.length > 0 ? recommendations[0] : '軽トラック';
-  };
+  }, [savedPricingRules]);
 
   // 料金計算
-  const calculateEstimateResult = (): PriceCalculationResult => {
+  const calculateEstimateResult = useCallback((): PriceCalculationResult => {
     // CargoItem配列を作成
     const cargoItems: CargoItem[] = Object.entries(items)
       .filter(([_, quantity]) => quantity > 0)
@@ -337,13 +338,12 @@ export function usePriceCalculator(
       truckSize: recommendedTruck,
       detailedEstimate
     };
-  };
+  }, [items, boxOption, distance, selectedOptions, savedOptions, getItemPoints, getDanballPoints, getRecommendedTruck]);
 
-  // 自動計算
-  useEffect(() => {
-    const result = calculateEstimateResult();
-    setCalculationResult(result);
-  }, [items, boxOption, boxCount, distance, selectedOptions, savedItemPoints, savedPricingRules, savedOptions]);
+  // 自動計算（useMemoを使用して無限ループを防止）
+  const calculationResult = useMemo(() => {
+    return calculateEstimateResult();
+  }, [calculateEstimateResult]);
 
   return {
     calculationResult,

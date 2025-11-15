@@ -170,7 +170,7 @@ export default function UnifiedMonthCalendar({
       <div
         key={day.date}
         data-date-cell
-        className={`min-h-[100px] p-1 border cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative ${
+        className={`p-1 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative aspect-[1/0.7] ${
           !day.isCurrentMonth ? 'bg-gray-50' :
           day.isToday ? 'bg-blue-50' :
           day.isHoliday ? 'bg-red-50' :
@@ -236,100 +236,97 @@ export default function UnifiedMonthCalendar({
   return (
     <div className={className || ''}>
       {/* 統合されたカレンダーセクション */}
-      <div className="bg-white rounded-lg shadow">
-        {/* 月次ナビゲーション */}
-        {showNavigation && (
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrevMonth}
-                  className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                >
-                  ＜
-                </button>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
-                </h3>
-                <button
-                  onClick={handleNextMonth}
-                  className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                >
-                  ＞
-                </button>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto overflow-y-visible">
+        <div className="w-full" style={{ minWidth: '900px', maxWidth: 'min(1800px, 100%)' }}>
+          {/* 月次ナビゲーション */}
+          {showNavigation && (
+            <div className="p-1.5 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <div className="flex justify-start items-center">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    ＜
+                  </button>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
+                  </h3>
+                  <button
+                    onClick={handleNextMonth}
+                    className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    ＞
+                  </button>
+                </div>
+                {navigationActions && (
+                  <div className="flex items-center gap-2 ml-auto">
+                    {navigationActions}
+                  </div>
+                )}
               </div>
-              {navigationActions && (
-                <div className="flex items-center gap-2">
-                  {navigationActions}
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* カレンダーグリッド - レスポンシブ対応 + 日跨ぎシフトバー対応 */}
-        <div className="p-6 overflow-visible">
-          <div className="overflow-x-auto overflow-y-visible">
-            <div className="w-full overflow-visible">
-              {/* 曜日ヘッダー */}
-              {showWeekdays && (
-                <div className="grid grid-cols-7 gap-1 mb-1">
-                  {WEEKDAYS_JA.map(weekday => (
-                    <div key={weekday} className="p-1 text-center text-sm font-medium text-gray-600">
-                      {weekday}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 日付グリッド */}
-              {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 gap-1 mb-0.5 overflow-visible">
-                  {monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
-                    const events = getEventsForDate(day.date);
-                    const weekDays = monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
-                    const week = {
-                      startDate: weekDays[0]?.date,
-                      endDate: weekDays[weekDays.length - 1]?.date,
-                      days: weekDays
-                    };
-
-                    return renderDateCell ?
-                      renderDateCell(day, events, week) :
-                      defaultRenderDateCell(day, events);
-                  })}
+          {/* 曜日ヘッダー */}
+          {showWeekdays && (
+            <div className="grid grid-cols-7 border-b border-gray-200 sticky top-[38px] bg-white z-10">
+              {WEEKDAYS_JA.map(weekday => (
+                <div key={weekday} className="p-0.5 text-center text-xs font-medium text-gray-500 bg-gray-50">
+                  {weekday}
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* モーダル表示 */}
-        {showModal && modalContent && (
-          <div
-            className="fixed inset-0 flex items-center justify-center z-50"
-            data-month-modal="true"
-            onClick={onCloseModal}
-          >
-            <div
-              className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl border"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {modalTitle}
-                </h3>
-                <button
-                  onClick={onCloseModal}
-                  className="text-gray-400 hover:text-gray-600 text-lg"
-                >
-                  ✕
-                </button>
-              </div>
-              {modalContent}
-            </div>
+          {/* 日付グリッド */}
+          <div className="grid grid-cols-7">
+            {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
+              monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
+                const events = getEventsForDate(day.date);
+                const weekDays = monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
+                const week = {
+                  startDate: weekDays[0]?.date,
+                  endDate: weekDays[weekDays.length - 1]?.date,
+                  days: weekDays
+                };
+
+                return renderDateCell ?
+                  renderDateCell(day, events, week) :
+                  defaultRenderDateCell(day, events);
+              })
+            ))}
           </div>
-        )}
+
+          {/* モーダル表示 */}
+          {showModal && modalContent && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              data-month-modal="true"
+              onClick={onCloseModal}
+            >
+              <div
+                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto m-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {modalTitle}
+                    </h3>
+                    <button
+                      onClick={onCloseModal}
+                      className="text-gray-400 hover:text-gray-600 text-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {modalContent}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
