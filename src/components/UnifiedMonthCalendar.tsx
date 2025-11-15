@@ -6,9 +6,10 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WEEKDAYS_JA } from '@/constants/calendar';
 import { toLocalDateString } from '@/utils/dateTimeUtils';
+import { fetchHolidays, isHoliday as checkIsHoliday, getHolidayName, type Holiday } from '@/utils/holidayUtils';
 
 export interface CalendarDay {
   date: string;
@@ -18,6 +19,7 @@ export interface CalendarDay {
   isCurrentMonth: boolean;
   isToday: boolean;
   isHoliday: boolean;
+  holidayName?: string;
 }
 
 export interface CalendarEvent {
@@ -55,41 +57,9 @@ export interface UnifiedMonthCalendarProps {
 }
 
 /**
- * 祝日かどうかを判定する関数（簡易版）
- */
-const isHoliday = (date: Date) => {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-
-  // 主要な祝日（簡易版）
-  const holidays = [
-    { month: 1, day: 1 },   // 元日
-    { month: 1, day: 2 },   // 振替休日
-    { month: 1, day: 3 },   // 振替休日
-    { month: 1, day: 9 },   // 成人の日
-    { month: 2, day: 11 },  // 建国記念の日
-    { month: 2, day: 23 },  // 天皇誕生日
-    { month: 3, day: 21 },  // 春分の日
-    { month: 4, day: 29 },  // 昭和の日
-    { month: 5, day: 3 },   // 憲法記念日
-    { month: 5, day: 4 },   // みどりの日
-    { month: 5, day: 5 },   // こどもの日
-    { month: 7, day: 17 },  // 海の日
-    { month: 8, day: 11 },  // 山の日
-    { month: 9, day: 21 },  // 敬老の日
-    { month: 9, day: 23 },  // 秋分の日
-    { month: 10, day: 14 }, // スポーツの日
-    { month: 11, day: 3 },  // 文化の日
-    { month: 11, day: 23 }, // 勤労感謝の日
-  ];
-
-  return holidays.some(holiday => holiday.month === month && holiday.day === day);
-};
-
-/**
  * 指定月のカレンダー表示用日付配列を返す
  */
-const getMonthDays = (date: Date): CalendarDay[] => {
+const getMonthDays = (date: Date, holidays: Holiday[]): CalendarDay[] => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
@@ -103,28 +73,32 @@ const getMonthDays = (date: Date): CalendarDay[] => {
   for (let i = startingDayOfWeek - 1; i >= 0; i--) {
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     const prevDate = new Date(year, month - 1, prevMonthLastDay - i);
+    const dateString = toLocalDateString(prevDate);
     days.push({
-      date: toLocalDateString(prevDate),
+      date: dateString,
       day: prevDate.getDate(),
       dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
       dayOfWeekNumber: prevDate.getDay(),
       isCurrentMonth: false,
       isToday: prevDate.toDateString() === new Date().toDateString(),
-      isHoliday: isHoliday(prevDate),
+      isHoliday: checkIsHoliday(dateString, holidays),
+      holidayName: getHolidayName(dateString, holidays) || undefined,
     });
   }
 
   // 当月の日付を追加
   for (let day = 1; day <= daysInMonth; day++) {
     const currentDate = new Date(year, month, day);
+    const dateString = toLocalDateString(currentDate);
     days.push({
-      date: toLocalDateString(currentDate),
+      date: dateString,
       day: day,
       dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
       dayOfWeekNumber: currentDate.getDay(),
       isCurrentMonth: true,
       isToday: currentDate.toDateString() === new Date().toDateString(),
-      isHoliday: isHoliday(currentDate),
+      isHoliday: checkIsHoliday(dateString, holidays),
+      holidayName: getHolidayName(dateString, holidays) || undefined,
     });
   }
 
@@ -132,14 +106,16 @@ const getMonthDays = (date: Date): CalendarDay[] => {
   const remainingDays = 42 - days.length;
   for (let day = 1; day <= remainingDays; day++) {
     const nextDate = new Date(year, month + 1, day);
+    const dateString = toLocalDateString(nextDate);
     days.push({
-      date: toLocalDateString(nextDate),
+      date: dateString,
       day: nextDate.getDate(),
       dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
       dayOfWeekNumber: nextDate.getDay(),
       isCurrentMonth: false,
       isToday: nextDate.toDateString() === new Date().toDateString(),
-      isHoliday: isHoliday(nextDate),
+      isHoliday: checkIsHoliday(dateString, holidays),
+      holidayName: getHolidayName(dateString, holidays) || undefined,
     });
   }
 
@@ -165,7 +141,14 @@ export default function UnifiedMonthCalendar({
   onCloseModal,
   navigationActions,
 }: UnifiedMonthCalendarProps) {
-  const monthDays = getMonthDays(currentDate);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+  // 祝日データを取得
+  useEffect(() => {
+    fetchHolidays().then(setHolidays);
+  }, []);
+
+  const monthDays = getMonthDays(currentDate, holidays);
 
   const handlePrevMonth = () => {
     const prevMonth = new Date(currentDate);
@@ -187,26 +170,39 @@ export default function UnifiedMonthCalendar({
       <div
         key={day.date}
         data-date-cell
-        className={`min-h-[100px] p-0.5 border cursor-pointer hover:bg-gray-50 transition-colors ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+        className={`min-h-[100px] p-1 border cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative ${
+          !day.isCurrentMonth ? 'bg-gray-50' :
+          day.isToday ? 'bg-blue-50' :
+          day.isHoliday ? 'bg-red-50' :
+          day.dayOfWeekNumber === 0 ? 'bg-red-50' :
+          day.dayOfWeekNumber === 6 ? 'bg-blue-50' :
+          'bg-white'
           } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-          selectedDates.includes(day.date) 
-            ? 'bg-blue-200 border-blue-400 border-2 shadow-md ring-2 ring-blue-300 ring-opacity-50' 
+          selectedDates.includes(day.date)
+            ? 'ring-2 ring-blue-500 ring-inset'
             : ''
           } ${cellClassName}`}
         onClick={(e) => onDateClick(day.date, day, e)}
       >
-        <div className={`text-xs font-medium ${
-          selectedDates.includes(day.date) 
-            ? 'text-blue-800 font-bold' 
-            : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-          } ${day.isToday ? 'text-blue-600' : ''} ${
-          // 選択されていない場合のみ土曜日・日曜日・祝日の色を適用
-          !selectedDates.includes(day.date) && (
-            day.dayOfWeekNumber === 6 ? 'text-blue-600' :
-            (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
-          )
-          }`}>
-          {day.day}
+        {/* 日付と祝日名 */}
+        <div className="flex items-center gap-1 mb-0.5">
+          <div className={`text-xs font-medium ${
+            selectedDates.includes(day.date)
+              ? 'text-blue-800 font-bold'
+              : !day.isCurrentMonth ? 'text-gray-400'
+              : day.isToday ? 'text-blue-600'
+              : day.isHoliday ? 'text-red-600'
+              : day.dayOfWeekNumber === 0 ? 'text-red-500'
+              : day.dayOfWeekNumber === 6 ? 'text-blue-500'
+              : 'text-gray-900'
+            }`}>
+            {day.day}
+          </div>
+          {day.holidayName && day.isCurrentMonth && (
+            <div className="text-[8px] text-red-600 font-medium truncate">
+              {day.holidayName}
+            </div>
+          )}
         </div>
 
         {hasEvents && (

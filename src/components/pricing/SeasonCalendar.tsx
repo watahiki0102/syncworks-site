@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import type { SeasonRule } from '@/types/pricing';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from '../UnifiedMonthCalendar';
+import { fetchHolidays, type Holiday } from '@/utils/holidayUtils';
 
 type SeasonRuleInput = Omit<SeasonRule, 'id'>;
 
@@ -66,6 +67,12 @@ export default function SeasonCalendar({
   const [editingRule, setEditingRule] = useState<SeasonRule | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
+
+  // 祝日データを取得
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  useEffect(() => {
+    fetchHolidays().then(setHolidays);
+  }, []);
 
   // 月の日付を生成
   const getMonthDays = (date: Date) => {
@@ -131,12 +138,12 @@ export default function SeasonCalendar({
   const getDateCellStyle = (date: string, isCurrentMonth: boolean) => {
     const rules = getRulesForDate(date);
     if (rules.length === 0) {
-      return isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100';
+      return isCurrentMonth ? 'bg-white hover:bg-blue-100 hover:border-blue-300 transition-all duration-150' : 'bg-gray-50 hover:bg-blue-100 hover:border-blue-300 transition-all duration-150';
     }
 
     // 複数ルールがある場合は最初のルールの色を使用
     const primaryRule = rules[0];
-    return `${getRuleBackgroundClass(primaryRule)} hover:opacity-80`;
+    return `${getRuleBackgroundClass(primaryRule)} hover:opacity-80 transition-all duration-150`;
   };
 
   // 日付クリック処理

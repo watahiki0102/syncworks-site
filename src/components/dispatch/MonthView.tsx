@@ -305,7 +305,7 @@ export default function MonthView({
                     {schedules.slice(0, isExpanded ? schedules.length : 3).map((schedule, idx) => (
                       <div
                         key={idx}
-                        className={`text-xs p-2 rounded border-l-2 cursor-pointer hover:bg-gray-100 ${
+                        className={`text-xs p-2 rounded border-l-2 cursor-pointer hover:opacity-80 transition-all duration-150 ${
                           schedule.contractStatus === 'confirmed' 
                             ? 'border-green-500 bg-green-50 text-green-800' 
                             : 'border-orange-500 bg-orange-50 text-orange-800'

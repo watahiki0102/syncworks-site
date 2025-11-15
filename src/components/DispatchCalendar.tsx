@@ -17,6 +17,7 @@ import GridCalendar from './GridCalendar';
 import { CaseDetail as CaseDetailType } from '../types/case';
 import { Truck, Schedule } from '../types/dispatch';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
+import { fetchHolidays, isHoliday as checkIsHoliday, type Holiday } from '@/utils/holidayUtils';
 
 interface Option {
   name: string;
@@ -61,9 +62,15 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
   const [isExpandedView, setIsExpandedView] = useState(false);
   const [monthViewFilterType, setMonthViewFilterType] = useState<'all' | 'confirmed' | 'unconfirmed'>('all');
   const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
-  
+
   // 日ビュー用のステータスフィルタ状態管理
   const [dayViewStatusFilter, setDayViewStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
+
+  // 祝日データを取得
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  useEffect(() => {
+    fetchHolidays().then(setHolidays);
+  }, []);
 
   // URLクエリパラメータとの同期
   useEffect(() => {
@@ -248,37 +255,12 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
    * @returns 日付情報
    */
   /**
- * 祝日かどうかを判定する関数（簡易版）
+ * 祝日かどうかを判定する関数（API経由で動的に取得）
  * @param date - 判定する日付
  * @returns 祝日かどうか
  */
   const isHoliday = (date: Date) => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-
-    // 主要な祝日（簡易版）
-    const holidays = [
-      { month: 1, day: 1 },   // 元日
-      { month: 1, day: 2 },   // 振替休日
-      { month: 1, day: 3 },   // 振替休日
-      { month: 1, day: 9 },   // 成人の日
-      { month: 2, day: 11 },  // 建国記念の日
-      { month: 2, day: 23 },  // 天皇誕生日
-      { month: 3, day: 21 },  // 春分の日
-      { month: 4, day: 29 },  // 昭和の日
-      { month: 5, day: 3 },   // 憲法記念日
-      { month: 5, day: 4 },   // みどりの日
-      { month: 5, day: 5 },   // こどもの日
-      { month: 7, day: 17 },  // 海の日
-      { month: 8, day: 11 },  // 山の日
-      { month: 9, day: 21 },  // 敬老の日
-      { month: 9, day: 23 },  // 秋分の日
-      { month: 10, day: 14 }, // スポーツの日
-      { month: 11, day: 3 },  // 文化の日
-      { month: 11, day: 23 }, // 勤労感謝の日
-    ];
-
-    return holidays.some(holiday => holiday.month === month && holiday.day === day);
+    return checkIsHoliday(date, holidays);
   };
 
   const getDayInfo = (date: Date) => {

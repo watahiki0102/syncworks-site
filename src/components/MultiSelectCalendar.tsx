@@ -131,12 +131,12 @@ export default function MultiSelectCalendar({
               key={index}
               onClick={() => handleDateClick(date)}
               className={`
-                h-6 w-6 text-xs rounded transition-colors relative
+                h-6 w-6 text-xs rounded transition-all duration-150 relative
                 ${isSelected
                   ? 'bg-blue-600 text-white font-semibold'
                   : isCurrentDay
                   ? 'bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-gray-700 hover:bg-blue-100'
                 }
               `}
             >

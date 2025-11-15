@@ -189,7 +189,7 @@ export default function GridCalendar({
               onClick={() => onDateClick(cell.date)}
               className={`
                 p-1 border-r border-b border-gray-200 cursor-pointer
-                hover:bg-gray-50 transition-colors relative
+                hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative
                 aspect-[1/0.7]
                 ${cell.isToday ? 'bg-blue-50' : ''}
                 ${selectedDate === cell.date ? 'ring-2 ring-blue-500 ring-inset' : ''}
@@ -214,7 +214,7 @@ export default function GridCalendar({
               </div>
 
               {/* ステータスボックス */}
-              <div className="flex flex-col justify-center h-[calc(100%-1.5rem)] space-y-0.5">
+              <div className="flex flex-col justify-center h-[calc(100%-1.5rem)] space-y-0.5 relative z-20">
                 {cell.statusBoxes.map((box, index) => (
                   <div
                     key={index}
@@ -223,7 +223,7 @@ export default function GridCalendar({
                       onDateClick(cell.date, box.type === 'completed' ? 'confirmed' : 'unconfirmed');
                     }}
                     className={`
-                      flex items-center justify-center px-1 py-0.5 rounded text-[9px] border cursor-pointer hover:opacity-80
+                      flex items-center justify-center px-1 py-0.5 rounded text-[9px] border cursor-pointer hover:opacity-80 transition-opacity pointer-events-auto
                       ${box.color}
                     `}
                   >
@@ -239,8 +239,20 @@ export default function GridCalendar({
         </div>
       </div>
 
-      {/* モーダル - MonthScheduleModal already has its own modal wrapper */}
-      {showModal && modalContent}
+      {/* モーダル */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={onCloseModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto m-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {modalContent}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
