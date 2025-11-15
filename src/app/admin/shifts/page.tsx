@@ -23,6 +23,11 @@ interface Employee {
   status: 'active' | 'inactive';
   hireDate: string;
   shifts: EmployeeShift[];
+  employmentType?: string; // 雇用形態
+  qualifications?: string; // 保有資格
+  birthDate?: string; // 生年月日
+  address?: string; // 住所
+  emergencyContact?: string; // 緊急連絡先
 }
 
 interface EmployeeShift {
@@ -725,6 +730,11 @@ export default function ShiftManagement() {
           position: 'ドライバー',
           status: 'active',
           hireDate: '2023-01-15',
+          employmentType: '正社員',
+          qualifications: '準中型免許',
+          birthDate: '1990-05-15',
+          address: '東京都新宿区西新宿1-1-1',
+          emergencyContact: '090-9999-0001',
           shifts: [
             {
               id: 'shift-1',
@@ -746,6 +756,11 @@ export default function ShiftManagement() {
           position: '作業員',
           status: 'active',
           hireDate: '2023-03-20',
+          employmentType: 'アルバイト',
+          qualifications: '',
+          birthDate: '1995-08-22',
+          address: '東京都渋谷区道玄坂2-2-2',
+          emergencyContact: '080-8888-0002',
           shifts: [
             {
               id: 'shift-3',
@@ -767,6 +782,11 @@ export default function ShiftManagement() {
           position: 'リーダー',
           status: 'active',
           hireDate: '2022-11-10',
+          employmentType: '正社員',
+          qualifications: '普通免許',
+          birthDate: '1988-12-03',
+          address: '東京都目黒区自由が丘3-3-3',
+          emergencyContact: '070-7777-0003',
           shifts: [
             {
               id: 'shift-6',
@@ -788,6 +808,11 @@ export default function ShiftManagement() {
           position: 'ドライバー',
           status: 'active',
           hireDate: '2023-06-05',
+          employmentType: '正社員',
+          qualifications: '大型免許',
+          birthDate: '1985-03-18',
+          address: '東京都中野区中野4-4-4',
+          emergencyContact: '090-1111-0004',
           shifts: [
             {
               id: 'shift-7',
@@ -809,6 +834,11 @@ export default function ShiftManagement() {
           position: '作業員',
           status: 'active',
           hireDate: '2023-02-28',
+          employmentType: 'パート',
+          qualifications: '',
+          birthDate: '1998-07-09',
+          address: '東京都杉並区高円寺5-5-5',
+          emergencyContact: '080-3333-0005',
           shifts: [
             {
               id: 'shift-8',
@@ -830,6 +860,11 @@ export default function ShiftManagement() {
           position: 'ドライバー',
           status: 'active',
           hireDate: '2023-05-10',
+          employmentType: '契約社員',
+          qualifications: '準中型免許',
+          birthDate: '1992-11-25',
+          address: '東京都足立区西新井6-6-6',
+          emergencyContact: '070-7777-0006',
           shifts: [
             {
               id: 'shift-9',
@@ -851,6 +886,11 @@ export default function ShiftManagement() {
           position: '作業員',
           status: 'active',
           hireDate: '2023-07-15',
+          employmentType: 'アルバイト',
+          qualifications: '',
+          birthDate: '2000-01-30',
+          address: '東京都葛飾区亀有7-7-7',
+          emergencyContact: '090-9999-0007',
           shifts: [
             {
               id: 'shift-11',
@@ -872,6 +912,11 @@ export default function ShiftManagement() {
           position: 'リーダー',
           status: 'active',
           hireDate: '2022-12-01',
+          employmentType: '正社員',
+          qualifications: '普通免許、フォークリフト',
+          birthDate: '1987-06-14',
+          address: '東京都中央区銀座8-8-8',
+          emergencyContact: '080-1111-0008',
           shifts: [
             {
               id: 'shift-13',
@@ -893,6 +938,11 @@ export default function ShiftManagement() {
           position: 'ドライバー',
           status: 'active',
           hireDate: '2023-04-20',
+          employmentType: '契約社員',
+          qualifications: '準中型免許',
+          birthDate: '1993-09-05',
+          address: '東京都豊島区池袋9-9-9',
+          emergencyContact: '070-2222-0009',
           shifts: [
             {
               id: 'shift-15',
@@ -914,6 +964,11 @@ export default function ShiftManagement() {
           position: '作業員',
           status: 'active',
           hireDate: '2023-08-05',
+          employmentType: 'パート',
+          qualifications: '',
+          birthDate: '1999-02-28',
+          address: '東京都北区赤羽10-10-10',
+          emergencyContact: '090-5555-0010',
           shifts: [
             {
               id: 'shift-16',
@@ -935,6 +990,11 @@ export default function ShiftManagement() {
           position: 'ドライバー',
           status: 'active',
           hireDate: '2023-09-10',
+          employmentType: '派遣',
+          qualifications: '大型免許',
+          birthDate: '1991-04-12',
+          address: '東京都品川区五反田11-11-11',
+          emergencyContact: '080-6666-0011',
           shifts: [
             {
               id: 'shift-17',
@@ -956,6 +1016,11 @@ export default function ShiftManagement() {
           position: '作業員',
           status: 'active',
           hireDate: '2023-10-01',
+          employmentType: 'アルバイト',
+          qualifications: '',
+          birthDate: '2001-10-20',
+          address: '東京都大田区蒲田12-12-12',
+          emergencyContact: '070-8888-0012',
           shifts: [
             {
               id: 'shift-18',
