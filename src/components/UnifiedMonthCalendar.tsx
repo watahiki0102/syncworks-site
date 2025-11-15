@@ -6,7 +6,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WEEKDAYS_JA } from '@/constants/calendar';
 import { toLocalDateString } from '@/utils/dateTimeUtils';
 import { fetchHolidays, isHoliday as checkIsHoliday, getHolidayName, type Holiday } from '@/utils/holidayUtils';
@@ -163,14 +163,14 @@ export default function UnifiedMonthCalendar({
   };
 
   // DispatchCalendarスタイルのデフォルト日付セルレンダリング
-  const defaultRenderDateCell = (day: CalendarDay, events: CalendarEvent[]) => {
+  const defaultRenderDateCell = (day: CalendarDay, events: CalendarEvent[], weekIndex?: number) => {
     const hasEvents = events.length > 0;
-
+    
     return (
       <div
         key={day.date}
         data-date-cell
-        className={`p-1 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative aspect-[1/0.7] ${
+        className={`p-1 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative min-h-24 ${
           !day.isCurrentMonth ? 'bg-gray-50' :
           day.isToday ? 'bg-blue-50' :
           day.isHoliday ? 'bg-red-50' :
@@ -185,7 +185,7 @@ export default function UnifiedMonthCalendar({
         onClick={(e) => onDateClick(day.date, day, e)}
       >
         {/* 日付と祝日名 */}
-        <div className="flex items-center gap-1 mb-0.5">
+        <div className="flex items-center gap-1 mb-0.5 relative z-40">
           <div className={`text-xs font-medium ${
             selectedDates.includes(day.date)
               ? 'text-blue-800 font-bold'
@@ -236,7 +236,7 @@ export default function UnifiedMonthCalendar({
   return (
     <div className={className || ''}>
       {/* 統合されたカレンダーセクション */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto overflow-y-visible">
+      <div className="relative bg-white rounded-lg shadow-sm border border-gray-200 overflow-visible">
         <div className="w-full" style={{ minWidth: '900px', maxWidth: 'min(1800px, 100%)' }}>
           {/* 月次ナビゲーション */}
           {showNavigation && (
@@ -271,31 +271,33 @@ export default function UnifiedMonthCalendar({
           {/* 曜日ヘッダー */}
           {showWeekdays && (
             <div className="grid grid-cols-7 border-b border-gray-200 sticky top-[38px] bg-white z-10">
-              {WEEKDAYS_JA.map(weekday => (
-                <div key={weekday} className="p-0.5 text-center text-xs font-medium text-gray-500 bg-gray-50">
-                  {weekday}
+              {WEEKDAYS_JA.map((day) => (
+                <div key={day} className="p-1 text-center text-xs font-medium text-gray-500 bg-gray-50 border-r border-gray-200 last:border-r-0">
+                  {day}
                 </div>
               ))}
             </div>
           )}
 
-          {/* 日付グリッド */}
+          {/* カレンダーグリッド（日付のみ） */}
           <div className="grid grid-cols-7">
-            {Array.from({ length: Math.ceil(monthDays.length / 7) }, (_, weekIndex) => (
-              monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
-                const events = getEventsForDate(day.date);
-                const weekDays = monthDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
-                const week = {
-                  startDate: weekDays[0]?.date,
-                  endDate: weekDays[weekDays.length - 1]?.date,
-                  days: weekDays
-                };
+            {monthDays.map((day, dayIndex) => {
+              const events = getEventsForDate(day.date);
+              const weekIndex = Math.floor(dayIndex / 7);
+              const weekDays = monthDays.slice(weekIndex * 7, Math.min((weekIndex + 1) * 7, monthDays.length));
+              const week = {
+                startDate: weekDays[0]?.date,
+                endDate: weekDays[weekDays.length - 1]?.date,
+                days: weekDays,
+                weekIndex: weekIndex
+              };
 
-                return renderDateCell ?
-                  renderDateCell(day, events, week) :
-                  defaultRenderDateCell(day, events);
-              })
-            ))}
+              if (renderDateCell) {
+                return renderDateCell(day, events, week);
+              } else {
+                return defaultRenderDateCell(day, events, weekIndex);
+              }
+            })}
           </div>
 
           {/* モーダル表示 */}

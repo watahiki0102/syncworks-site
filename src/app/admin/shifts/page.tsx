@@ -228,13 +228,20 @@ export default function ShiftManagement() {
   // 未保存のシフトIDを管理
   const [unsavedShiftIds, setUnsavedShiftIds] = useState<Set<string>>(new Set());
 
+  // 表示中のカレンダーの月を管理（従業員集計に使用）
+  const [displayMonth, setDisplayMonth] = useState<{ year: number; month: number }>(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
   /**
    * 従業員の月間集計をメモ化
    * 【パフォーマンス改善】employeesが変更された時のみ再計算
+   * 【修正】表示中のカレンダーの月に合わせて集計を表示
    */
   const monthlySummary = useMemo(() => {
-    const year = new Date().getFullYear();
-    const month = new Date().getMonth();
+    const year = displayMonth.year;
+    const month = displayMonth.month;
 
     return employees
       .filter(emp => emp.status === 'active')
@@ -247,8 +254,8 @@ export default function ShiftManagement() {
           totalWorkingMinutes: stats.totalWorkingMinutes
         };
       })
-      .sort((a, b) => b.totalWorkingMinutes - a.totalWorkingMinutes); // 労働時間の多い順にソート
-  }, [employees]);
+        .sort((a, b) => b.totalWorkingMinutes - a.totalWorkingMinutes); // 労働時間の多い順にソート
+  }, [employees, displayMonth]);
 
   /**
    * 全従業員の合計統計をメモ化
@@ -1055,33 +1062,20 @@ export default function ShiftManagement() {
     // 未保存シフトとして記録
     setUnsavedShiftIds(prev => new Set(prev).add(shift.id));
     
-    console.warn('✅ PAGE.TSX - updateShift completed');
   };
 
   const addShift = (employeeId: string, shift: Omit<EmployeeShift, 'id'>) => {
-    console.log('➕ PAGE.TSX - addShift called:', {
-      employeeId,
-      shift: {
-        ...shift,
-        status: shift.status
-      }
-    });
-
     // ID重複を防ぐため一意のIDを生成【コード重複削減】共通関数を使用
     const newShift: EmployeeShift = {
       ...shift,
       id: generateShiftId(),
     };
     
-    console.log('🆔 Generated shift ID:', newShift.id);
-    console.log('📋 New shift data:', newShift);
-    
     // setEmployeesを使用して、前の状態を基に更新（状態更新の競合を回避）
     setEmployees(prevEmployees => {
       const updatedEmployees = prevEmployees.map(employee => {
         if (employee.id === employeeId) {
           const updatedEmployee = { ...employee, shifts: [...employee.shifts, newShift] };
-          console.log(`👤 Updated employee ${employee.name}: ${employee.shifts.length} → ${updatedEmployee.shifts.length} shifts`);
           return updatedEmployee;
         }
         return employee;
@@ -1102,8 +1096,6 @@ export default function ShiftManagement() {
     
     // 未保存シフトとして記録
     setUnsavedShiftIds(prev => new Set(prev).add(newShift.id));
-    
-    console.log('✅ PAGE.TSX - addShift completed');
   };
 
   const deleteShift = (employeeId: string, shiftId: string) => {
@@ -1197,7 +1189,7 @@ export default function ShiftManagement() {
         </div>
 
         {/* メインコンテンツ - dispatchと同じレスポンシブ仕様 */}
-        <main className={`w-full ${(showClipboard || showEmployeeSummary) ? 'max-w-[75%] mr-[25%]' : 'max-w-7xl'} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
+        <main className={`w-full ${(showClipboard || showEmployeeSummary) ? 'max-w-[75%] mr-[25%]' : ''} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>
           <div className="px-4 py-2 sm:px-0">
 
 
@@ -1231,6 +1223,7 @@ export default function ShiftManagement() {
                 onDateClickForClipboard={handleDateClickForClipboard}
                 unsavedShiftIds={unsavedShiftIds}
                 onSave={handleSaveToStorage}
+                onCurrentMonthChange={(year, month) => setDisplayMonth({ year, month })}
                   />
                 </div>
               </div>
