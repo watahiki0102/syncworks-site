@@ -13,6 +13,7 @@ import { ContractStatus } from '@/types/case';
 import { Truck, Employee, EmployeeShift, TruckAssignment } from '@/types/shared';
 import { FormModal, SimpleModal } from '@/components/ui/SimpleModal';
 import { calculateTruckEfficiency } from '@/utils/truckUtils';
+import { parseTimeRange } from '@/constants/calendar';
 
 interface FormSubmission {
   id: string;
@@ -20,6 +21,7 @@ interface FormSubmission {
   customerEmail: string;
   customerPhone: string;
   moveDate: string;
+  moveTime1?: string; // 第一希望時間
   originAddress: string;
   destinationAddress: string;
   totalPoints: number;
@@ -64,8 +66,8 @@ export default function TruckAssignmentModal({
 }: TruckAssignmentModalProps) {
   const [formData, setFormData] = useState({
     truckId: '',
-    startTime: '09:00',
-    endTime: '12:00',
+    startTime: '',
+    endTime: '',
     workType: 'loading' as 'loading' | 'moving' | 'unloading',
     capacity: '',
     employeeId: '', // 従業員IDを追加
@@ -87,6 +89,9 @@ export default function TruckAssignmentModal({
   useEffect(() => {
     const currentCase = selectedCase || selectedSubmission;
     if (currentCase) {
+      // 案件の時間情報を取得（共通の時間帯マッピングを使用）
+      const parsedTime = parseTimeRange(currentCase.moveTime1);
+
       // 推奨トラックを自動選択
       if (calculateRecommendedTrucks) {
         const recommendedTrucks = calculateRecommendedTrucks(currentCase.totalPoints || currentCase.items?.totalPoints || 0);
@@ -95,8 +100,26 @@ export default function TruckAssignmentModal({
             ...prev,
             truckId: recommendedTrucks[0].id,
             capacity: (currentCase.totalCapacity || currentCase.items?.totalPoints || 0).toString(),
+            startTime: parsedTime?.startTime || '',
+            endTime: parsedTime?.endTime || '',
+          }));
+        } else {
+          // 推奨トラックがない場合でも時間情報は設定
+          setFormData(prev => ({
+            ...prev,
+            capacity: (currentCase.totalCapacity || currentCase.items?.totalPoints || 0).toString(),
+            startTime: parsedTime?.startTime || '',
+            endTime: parsedTime?.endTime || '',
           }));
         }
+      } else {
+        // calculateRecommendedTrucksがない場合でも時間情報は設定
+        setFormData(prev => ({
+          ...prev,
+          capacity: (currentCase.totalCapacity || currentCase.items?.totalPoints || 0).toString(),
+          startTime: parsedTime?.startTime || '',
+          endTime: parsedTime?.endTime || '',
+        }));
       }
     }
   }, [selectedCase, selectedSubmission, calculateRecommendedTrucks]);
@@ -239,6 +262,14 @@ export default function TruckAssignmentModal({
             <div>
               <span className="font-medium text-gray-700">荷物ポイント:</span> {currentCase.totalPoints || currentCase.items?.totalPoints || 0}pt
             </div>
+            <div className="col-span-2">
+              <span className="font-medium text-gray-700">希望時間:</span>{' '}
+              {currentCase.moveTime1 ? (
+                <span className="text-gray-900">{currentCase.moveTime1}</span>
+              ) : (
+                <span className="text-red-600 font-medium">時間未設定</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -373,24 +404,48 @@ export default function TruckAssignmentModal({
             )}
           </div>
 
+          {/* 時間未設定の警告 */}
+          {(!formData.startTime || !formData.endTime) && (
+            <div className="p-3 bg-yellow-50 border border-yellow-300 rounded">
+              <div className="flex items-start gap-2">
+                <span className="text-yellow-600 text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">作業時間を設定してください</p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    配車を行う場合は、作業開始時間と終了時間を必ず指定する必要があります。
+                    {currentCase.moveTime1 && `案件の希望時間「${currentCase.moveTime1}」を参考に設定してください。`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">開始時間</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                開始時間<span className="text-red-600 ml-1">*</span>
+              </label>
               <input
                 type="time"
                 value={formData.startTime}
                 onChange={e => setFormData({ ...formData, startTime: e.target.value })}
-                className="w-full px-3 py-2 border rounded text-gray-900"
+                className={`w-full px-3 py-2 border rounded text-gray-900 ${
+                  !formData.startTime ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
+                }`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">終了時間</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                終了時間<span className="text-red-600 ml-1">*</span>
+              </label>
               <input
                 type="time"
                 value={formData.endTime}
                 onChange={e => setFormData({ ...formData, endTime: e.target.value })}
-                className="w-full px-3 py-2 border rounded text-gray-900"
+                className={`w-full px-3 py-2 border rounded text-gray-900 ${
+                  !formData.endTime ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
+                }`}
                 required
               />
             </div>

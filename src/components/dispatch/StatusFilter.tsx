@@ -17,17 +17,17 @@ export default function StatusFilter({ value, onChange }: StatusFilterProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">案件ステータス:</span>
-      <div className="flex gap-1" role="group" aria-label="案件ステータスフィルタ">
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs font-medium text-gray-700 whitespace-nowrap">案件:</span>
+      <div className="flex gap-0.5" role="group" aria-label="案件ステータスフィルタ">
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
             className={`
-              px-3 py-1 text-sm font-medium rounded transition-all duration-200
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+              px-2 py-0.5 text-xs font-medium rounded transition-all duration-200
+              focus:outline-none focus:ring-1 focus:ring-blue-500
               ${value === option.value
                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

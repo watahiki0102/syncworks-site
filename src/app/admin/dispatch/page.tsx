@@ -22,6 +22,7 @@ interface FormSubmission {
   customerEmail: string;
   customerPhone: string;
   moveDate: string;
+  moveTime1?: string; // 第一希望時間
   originAddress: string;
   destinationAddress: string;
   totalPoints: number;
@@ -49,7 +50,7 @@ function DispatchManagementContent() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [formSubmissions, setFormSubmissions] = useState<FormSubmission[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<Truck | null>(null);
-  const [activeView, setActiveView] = useState<'calendar' | 'trucks' | 'cases'>('calendar');
+  const [activeView, setActiveView] = useState<'calendar' | 'trucks'>('calendar');
   const [showTruckModal, setShowTruckModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
@@ -57,7 +58,6 @@ function DispatchManagementContent() {
   // const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
-  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
   
   // 使用不能期間設定関連のstate
@@ -78,7 +78,8 @@ function DispatchManagementContent() {
   useEffect(() => {
     // テスト用：ローカルストレージをクリアしてテストデータを確実に読み込む
     localStorage.removeItem('trucks');
-    
+    localStorage.removeItem('formSubmissions');
+
     // ローカルストレージからトラックデータを読み込み
     const savedTrucks = localStorage.getItem('trucks');
     if (savedTrucks) {
@@ -457,61 +458,91 @@ function DispatchManagementContent() {
           contractStatus: 'confirmed',
           contractDate: '2024-01-05T12:00:00Z',
         },
-        // 未割り当ての案件を追加
+        // 未割り当ての案件を追加（今日の案件）
         {
           id: '4',
           customerName: '鈴木 三郎',
           customerEmail: 'suzuki@example.com',
           customerPhone: '090-1111-2222',
-          moveDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 明日
+          moveDate: new Date().toISOString().split('T')[0], // 今日
+          preferredDate1: new Date().toISOString().split('T')[0],
+          preferredDate2: new Date(Date.now() + 86400000).toISOString().split('T')[0], // 明日
+          preferredDate3: new Date(Date.now() + 172800000).toISOString().split('T')[0], // 明後日
+          moveTime1: '午前中',
+          moveTime2: '13:00～15:00',
+          moveTime3: '午後',
           originAddress: '東京都港区六本木7-7-7',
           destinationAddress: '東京都品川区品川8-8-8',
           totalPoints: 80,
           totalCapacity: 400,
           distance: 6,
+          estimatedPrice: 25000,
+          recommendedTruckTypes: ['軽トラ', '2tショート'],
           itemList: ['テレビ', 'パソコン', '本'],
-          additionalServices: ['梱包'],
+          additionalServices: ['🏠 建物養生（壁や床の保護）', '📦 荷造り・荷ほどきの代行'],
           status: 'pending',
           truckAssignments: [],
           createdAt: new Date().toISOString(),
           contractStatus: 'estimate',
+          notes: 'エレベーターなし。3階の部屋です。',
+          paymentMethod: '銀行振込',
+          paymentStatus: '未請求',
+          priceTaxIncluded: 27500,
         },
         {
           id: '5',
           customerName: '高橋 四郎',
           customerEmail: 'takahashi@example.com',
           customerPhone: '080-3333-4444',
-          moveDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 明後日
+          moveDate: new Date().toISOString().split('T')[0], // 今日
+          preferredDate1: new Date().toISOString().split('T')[0],
+          preferredDate2: new Date(Date.now() + 259200000).toISOString().split('T')[0], // 3日後
+          moveTime1: '10:00～12:00',
+          moveTime2: '午後',
           originAddress: '東京都文京区本郷9-9-9',
           destinationAddress: '東京都台東区上野10-10-10',
           totalPoints: 120,
           totalCapacity: 600,
           distance: 4,
+          estimatedPrice: 35000,
+          recommendedTruckTypes: ['2tショート', '2tロング'],
           itemList: ['ソファ', 'テーブル', '椅子', '本棚'],
-          additionalServices: ['梱包', '開梱'],
+          additionalServices: ['📦 荷造り・荷ほどきの代行', '🪑 家具・家電の分解・組み立て'],
           status: 'pending',
           truckAssignments: [],
           createdAt: new Date().toISOString(),
           contractStatus: 'estimate',
+          notes: 'ソファが大きいため、分解が必要かもしれません。',
+          paymentMethod: '現金',
+          paymentStatus: '未請求',
+          priceTaxIncluded: 38500,
         },
         {
           id: '6',
           customerName: '伊藤 五郎',
           customerEmail: 'ito@example.com',
           customerPhone: '070-5555-7777',
-          moveDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3日後
+          moveDate: new Date().toISOString().split('T')[0], // 今日
+          preferredDate1: new Date().toISOString().split('T')[0],
+          moveTime1: '午前中',
           originAddress: '東京都練馬区練馬11-11-11',
           destinationAddress: '東京都板橋区板橋12-12-12',
           totalPoints: 180,
           totalCapacity: 900,
           distance: 8,
+          estimatedPrice: 48000,
+          recommendedTruckTypes: ['2tロング', '3t'],
           itemList: ['ベッド', 'ワードローブ', '机', '椅子'],
-          additionalServices: ['保険', '保管'],
+          additionalServices: ['🏠 建物養生（壁や床の保護）', '🪑 家具・家電の分解・組み立て'],
           status: 'pending',
           truckAssignments: [],
           createdAt: new Date().toISOString(),
           contractStatus: 'confirmed',
           contractDate: new Date().toISOString(),
+          notes: '大きなワードローブがあります。慎重な取り扱いをお願いします。',
+          paymentMethod: 'クレジットカード',
+          paymentStatus: '入金済',
+          priceTaxIncluded: 52800,
         },
       ];
       setFormSubmissions(testSubmissions);
@@ -710,24 +741,6 @@ function DispatchManagementContent() {
   };
   */
 
-  // 簡易版の割り当て関数（IDのみ）
-  const assignTruckByIdToSubmission = (submissionId: string, truckId: string) => {
-    const truck = trucks.find(t => t.id === truckId);
-    if (!truck) return;
-
-    // デフォルトの時間設定でTruckAssignmentを作成
-    const defaultAssignment: TruckAssignment = {
-      truckId: truckId,
-      truckName: truck.name,
-      capacity: 1000, // デフォルト容量
-      startTime: '09:00',
-      endTime: '13:00',
-      workType: 'moving'
-    };
-
-    assignTruckToSubmission(submissionId, defaultAssignment);
-  };
-
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
     // バリデーション実行
     const validation = validateTruckAssignment(submissionId, truckAssignment);
@@ -787,38 +800,6 @@ function DispatchManagementContent() {
     
     // 成功メッセージ
     alert(`✅ 割り当て完了\n\n${truck?.name} を ${submission.customerName}様の案件に割り当てました。`);
-  };
-
-  const removeTruckFromSubmission = (submissionId: string, truckId: string) => {
-    const submission = formSubmissions.find(s => s.id === submissionId);
-    if (!submission) return;
-
-    // トラックのスケジュールから削除
-    const truck = trucks.find(t => t.id === truckId);
-    if (truck) {
-      const updatedTruck = {
-        ...truck,
-        schedules: truck.schedules.filter(s => 
-          !(s.date === submission.moveDate && 
-            s.customerName === submission.customerName &&
-            s.status === 'available')
-        ),
-      };
-
-      const updatedTrucks = trucks.map(t => 
-        t.id === truck.id ? updatedTruck : t
-      );
-      saveTrucks(updatedTrucks);
-    }
-
-    // 案件からトラック割り当てを削除
-    const updatedSubmission: FormSubmission = {
-      ...submission,
-      truckAssignments: submission.truckAssignments.filter(ta => ta.truckId !== truckId),
-      status: submission.truckAssignments.length <= 1 ? 'pending' : 'assigned',
-    };
-
-    updateFormSubmission(updatedSubmission);
   };
 
   const updateFormSubmission = (updatedSubmission: FormSubmission) => {
@@ -892,8 +873,7 @@ function DispatchManagementContent() {
 
   const tabs = [
     { id: 'calendar', label: '配車カレンダー', icon: '📅' },
-    { id: 'trucks', label: 'トラック管理', icon: '🚚' },
-    { id: 'cases', label: '配車割り当て', icon: '🚛' }
+    { id: 'trucks', label: 'トラック管理', icon: '🚚' }
   ];
 
   const actions = null;
@@ -914,11 +894,16 @@ function DispatchManagementContent() {
 
       {/* 配車カレンダータブ */}
       {activeView === 'calendar' && (
-        <DispatchCalendar 
+        <DispatchCalendar
           trucks={trucks as any}
           onUpdateTruck={updateTruck}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
+          formSubmissions={formSubmissions}
+          onAssignTruck={(submission, truck) => {
+            setSelectedSubmission(submission);
+            setShowTruckModal(true);
+          }}
         />
       )}
 
@@ -926,7 +911,7 @@ function DispatchManagementContent() {
       {activeView === 'trucks' && (
         <div className="space-y-4">
           {/* トラック状況 */}
-          <TruckManagement 
+          <TruckManagement
             trucks={trucks as any}
             onTrucksChange={setTrucks}
           />
@@ -941,33 +926,6 @@ function DispatchManagementContent() {
             onSelectTruck={setSelectedTruck}
             availableTruckTypes={availableTruckTypes}
             pricingRules={pricingRules}
-          />
-        </div>
-      )}
-
-      {/* 配車割り当てタブ */}
-      {activeView === 'cases' && (
-        <div className="space-y-4">
-          {/* 案件一覧 */}
-          <UnifiedCaseManagement
-            submissions={formSubmissions}
-            trucks={trucks}
-            onAssignTruck={assignTruckByIdToSubmission}
-            onRemoveTruck={removeTruckFromSubmission}
-            expandedSubmissions={expandedSubmissions}
-            onToggleExpand={(id) => {
-              setExpandedSubmissions(prev => {
-                const newSet = new Set(prev);
-                if (newSet.has(id)) {
-                  newSet.delete(id);
-                } else {
-                  newSet.add(id);
-                }
-                return newSet;
-              });
-            }}
-            setShowTruckModal={setShowTruckModal}
-            setSelectedSubmission={setSelectedSubmission}
           />
         </div>
       )}
@@ -1034,157 +992,6 @@ function DispatchManagementContent() {
     </UnifiedCalendarLayout>
   );
 }
-
-
-// 統合案件管理コンポーネント  
-interface UnifiedCaseManagementProps {
-  submissions: FormSubmission[];
-  trucks: Truck[];
-  onAssignTruck: (submissionId: string, truckId: string) => void;
-  onRemoveTruck: (submissionId: string, truckId: string) => void;
-  expandedSubmissions: Set<string>;
-  onToggleExpand: (id: string) => void;
-  setShowTruckModal: (show: boolean) => void;
-  setSelectedSubmission: (submission: FormSubmission | null) => void;
-}
-
-const UnifiedCaseManagement = ({ 
-  submissions, 
-  trucks, 
-  onAssignTruck, 
-  onRemoveTruck, 
-  expandedSubmissions, 
-  onToggleExpand,
-  setShowTruckModal,
-  setSelectedSubmission
-}: UnifiedCaseManagementProps) => {
-
-  return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <div className="flex items-center justify-end mb-4">
-          <div className="text-sm text-gray-900">
-            総案件数: {submissions.length}件
-          </div>
-        </div>
-
-        {submissions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>表示する案件がありません</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {submissions.map(submission => (
-              <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900">{submission.customerName}</h4>
-                      <p className="text-sm text-gray-600">{submission.moveDate}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      submission.status === 'pending' ? 'bg-orange-100 text-orange-800' :
-                      submission.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {submission.status === 'pending' ? '未割当' :
-                       submission.status === 'assigned' ? '割当済' : '完了'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {submission.status === 'pending' && (
-                      <button
-                        onClick={() => {
-                          setSelectedSubmission(submission);
-                          setShowTruckModal(true);
-                        }}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                      >
-                        トラック割当
-                      </button>
-                    )}
-                    <button
-                      onClick={() => onToggleExpand(submission.id)}
-                      className="px-3 py-1 text-gray-600 text-sm border rounded hover:bg-gray-50"
-                    >
-                      {expandedSubmissions.has(submission.id) ? '詳細を隠す' : '詳細を表示'}
-                    </button>
-                  </div>
-                </div>
-
-                {expandedSubmissions.has(submission.id) && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-900">引越し元:</span> <span className="text-gray-900">{submission.originAddress}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">引越し先:</span> <span className="text-gray-900">{submission.destinationAddress}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">総ポイント:</span> <span className="text-gray-900">{submission.totalPoints}pt</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">総容量:</span> <span className="text-gray-900">{submission.totalCapacity}kg</span>
-                      </div>
-                    </div>
-                    
-                    {submission.truckAssignments.length > 0 && (
-                      <div className="mt-3">
-                        <span className="text-sm font-medium text-gray-900">割り当て済みトラック:</span>
-                        <div className="mt-1 space-y-2">
-                          {submission.truckAssignments.map((assignment, index) => (
-                            <div key={index} className="bg-gray-50 p-3 rounded">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-900">
-                                      {assignment.truckName}
-                                    </span>
-                                    <span className="text-xs text-gray-600">
-                                      {assignment.startTime}-{assignment.endTime}
-                                    </span>
-                                    {assignment.isManualSelection && (
-                                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                                        手動選択
-                                      </span>
-                                    )}
-                                  </div>
-                                  {assignment.isManualSelection && assignment.selectionReason && (
-                                    <div className="mt-1 text-xs text-gray-600">
-                                      理由: {assignment.selectionReason}
-                                    </div>
-                                  )}
-                                  {assignment.selectionTimestamp && (
-                                    <div className="mt-1 text-xs text-gray-500">
-                                      選択日時: {new Date(assignment.selectionTimestamp).toLocaleString('ja-JP')}
-                                    </div>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => onRemoveTruck(submission.id, assignment.truckId)}
-                                  className="text-red-600 hover:text-red-800 text-xs ml-2"
-                                >
-                                  削除
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
 
 export default function DispatchManagement() {
   return (

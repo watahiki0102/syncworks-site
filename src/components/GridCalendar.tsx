@@ -6,7 +6,7 @@ import { WEEKDAYS_JA } from '@/constants/calendar';
 import { fetchHolidays, isHoliday, getHolidayName, isSaturday, isSunday, type Holiday } from '@/utils/holidayUtils';
 
 interface StatusBox {
-  type: 'completed' | 'pending';
+  type: 'completed' | 'pending' | 'unassigned';
   count: number;
   color: string;
   icon: string;
@@ -27,7 +27,7 @@ interface CalendarCell {
 interface GridCalendarProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
-  onDateClick: (date: string, filterType?: 'confirmed' | 'unconfirmed') => void;
+  onDateClick: (date: string, filterType?: 'confirmed' | 'unconfirmed' | 'unassigned') => void;
   selectedDate?: string;
   getEventsForDate?: (date: string) => any[];
   showModal?: boolean;
@@ -83,31 +83,48 @@ export default function GridCalendar({
         const events = getEventsForDate ? getEventsForDate(dateString) : [];
         
         // ステータスボックスの生成（実際のデータに基づく）
-        const completedCount = events.filter(event =>
+        // 3つのカテゴリー：
+        // - 確定：確定かつ配車割当済み + 確定かつ配車未割当
+        // - 未確定：未確定かつ配車割当済み + 未確定かつ配車未割当
+        // - 未割当：配車未割当（確定+未確定の両方）
+        const confirmedCount = events.filter(event =>
           event.contractStatus === 'confirmed'
         ).length;
 
-        const pendingCount = events.filter(event =>
+        const estimateCount = events.filter(event =>
           event.contractStatus === 'estimate'
         ).length;
-        
+
+        const unassignedCount = events.filter(event =>
+          event.isUnassigned === true
+        ).length;
+
         const statusBoxes: StatusBox[] = [];
-        
-        if (completedCount > 0) {
+
+        if (confirmedCount > 0) {
           statusBoxes.push({
             type: 'completed',
-            count: completedCount,
+            count: confirmedCount,
             color: 'bg-green-100 border-green-200',
             icon: '✓'
           });
         }
-        
-        if (pendingCount > 0) {
+
+        if (estimateCount > 0) {
           statusBoxes.push({
             type: 'pending',
-            count: pendingCount,
+            count: estimateCount,
             color: 'bg-gray-100 border-gray-200',
             icon: '⏳'
+          });
+        }
+
+        if (unassignedCount > 0) {
+          statusBoxes.push({
+            type: 'unassigned',
+            count: unassignedCount,
+            color: 'bg-red-100 border-red-200',
+            icon: '📋'
           });
         }
         
@@ -220,7 +237,9 @@ export default function GridCalendar({
                     key={index}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDateClick(cell.date, box.type === 'completed' ? 'confirmed' : 'unconfirmed');
+                      const filterType = box.type === 'completed' ? 'confirmed' :
+                                        box.type === 'unassigned' ? 'unassigned' : 'unconfirmed';
+                      onDateClick(cell.date, filterType);
                     }}
                     className={`
                       flex items-center justify-center px-1 py-0.5 rounded text-[9px] border cursor-pointer hover:opacity-80 transition-opacity pointer-events-auto
@@ -229,7 +248,7 @@ export default function GridCalendar({
                   >
                     <span className="mr-0.5">{box.icon}</span>
                     <span className="font-medium truncate">
-                      {box.type === 'completed' ? '確定' : '未確定'} {box.count}件
+                      {box.icon === '✓' ? '確定' : box.icon === '⏳' ? '未確定' : '未配車'} {box.count}件
                     </span>
                   </div>
                 ))}

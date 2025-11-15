@@ -110,4 +110,73 @@ export const DUPLICATE_STATUS = {
   partial: { label: '部分重複', color: 'bg-yellow-100 text-yellow-800', icon: '🟡' },
   full: { label: '完全重複', color: 'bg-red-100 text-red-800', icon: '🔴' },
   working: { label: '登録可能', color: 'bg-green-100 text-green-800', icon: '🟢' },
-} as const; 
+} as const;
+
+/**
+ * 時間帯マッピング定義
+ * フォーム入力の時間帯文字列を実際の作業時間に変換
+ */
+export const TIME_RANGE_MAPPINGS = {
+  // 基本時間帯
+  '早朝': { startTime: '06:00', endTime: '09:00' },
+  '早朝（6～9時）': { startTime: '06:00', endTime: '09:00' },
+  '午前': { startTime: '09:00', endTime: '12:00' },
+  '午前中': { startTime: '09:00', endTime: '12:00' },
+  '午前（9～12時）': { startTime: '09:00', endTime: '12:00' },
+  '午後': { startTime: '13:00', endTime: '17:00' },
+  '午後（12～15時）': { startTime: '12:00', endTime: '15:00' },
+  '夕方': { startTime: '16:00', endTime: '19:00' },
+  '夕方（15～18時）': { startTime: '15:00', endTime: '18:00' },
+  '夜間': { startTime: '18:00', endTime: '21:00' },
+  '夜間（18～21時）': { startTime: '18:00', endTime: '21:00' },
+  // 組み合わせ時間帯
+  '早朝以外': { startTime: '09:00', endTime: '21:00' },
+  '早朝以外（9～21時）': { startTime: '09:00', endTime: '21:00' },
+  '夜間以外': { startTime: '06:00', endTime: '18:00' },
+  '夜間以外（6～18時）': { startTime: '06:00', endTime: '18:00' },
+  '早朝・夜間以外': { startTime: '09:00', endTime: '18:00' },
+  '早朝・夜間以外（9～18時）': { startTime: '09:00', endTime: '18:00' },
+} as const;
+
+/**
+ * 時間帯文字列を開始・終了時刻に変換
+ * @param timeString 時間帯文字列（例: "午前中", "10:00～12:00"）
+ * @returns 開始・終了時刻のオブジェクト、または null
+ */
+export function parseTimeRange(timeString?: string): { startTime: string; endTime: string } | null {
+  if (!timeString) return null;
+
+  // "10:00～12:00" や "10:00-12:00" 形式の時刻範囲
+  const rangeMatch = timeString.match(/(\d{1,2}):(\d{2})[～~\-](\d{1,2}):(\d{2})/);
+  if (rangeMatch) {
+    return {
+      startTime: `${rangeMatch[1].padStart(2, '0')}:${rangeMatch[2]}`,
+      endTime: `${rangeMatch[3].padStart(2, '0')}:${rangeMatch[4]}`
+    };
+  }
+
+  // 時間帯名称でのマッピング
+  const mapping = TIME_RANGE_MAPPINGS[timeString as keyof typeof TIME_RANGE_MAPPINGS];
+  if (mapping) {
+    return mapping;
+  }
+
+  // 部分一致チェック（柔軟性のため）
+  if (timeString.includes('午前')) {
+    return TIME_RANGE_MAPPINGS['午前中'];
+  }
+  if (timeString.includes('午後')) {
+    return TIME_RANGE_MAPPINGS['午後'];
+  }
+  if (timeString.includes('夕方')) {
+    return TIME_RANGE_MAPPINGS['夕方'];
+  }
+  if (timeString.includes('早朝')) {
+    return TIME_RANGE_MAPPINGS['早朝'];
+  }
+  if (timeString.includes('夜間')) {
+    return TIME_RANGE_MAPPINGS['夜間'];
+  }
+
+  return null;
+} 
