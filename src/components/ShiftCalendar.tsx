@@ -7,6 +7,7 @@ import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonth
 import TimeRangeDisplaySelector from './TimeRangeDisplaySelector';
 import Modal from './ui/Modal';
 import ShiftModal, { ShiftModalData } from './ShiftModal';
+import { fetchHolidays, isHoliday as checkIsHoliday, getHolidayName, type Holiday } from '@/utils/holidayUtils';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import minMax from 'dayjs/plugin/minMax';
@@ -137,6 +138,12 @@ export default function ShiftCalendar({
   const [editingShift, setEditingShift] = useState<EmployeeShift | null>(null);
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [shiftModalMode, setShiftModalMode] = useState<'edit' | 'create' | 'bulk' | 'range'>('edit');
+
+  // 祝日データを取得
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  useEffect(() => {
+    fetchHolidays().then(setHolidays);
+  }, []);
   const [dragState, setDragState] = useState<{
     currentEmployee: string;
     startTime: string;
@@ -3639,16 +3646,18 @@ export default function ShiftCalendar({
           key={day.date}
           data-date-cell
           data-date={day.date}
-          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} px-0.5 pt-0.5 pb-0 border cursor-pointer hover:bg-gray-50 transition-all duration-300 relative overflow-visible ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-            } ${day.isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-            expandedDates.has(day.date)
-              ? 'bg-blue-50 border-blue-400 border-2 shadow-md'
-              : ''
-            } ${
+          className={`${isExpanded ? `min-h-[${expandedHeight}px]` : 'min-h-[100px]'} p-1 border cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all duration-150 relative overflow-visible ${
             isSelectedForPaste
               ? 'bg-green-100 border-green-500 border-2 shadow-sm'
-              : ''
-            }`}
+              : expandedDates.has(day.date)
+              ? 'bg-blue-50 border-blue-400 border-2 shadow-md'
+              : !day.isCurrentMonth ? 'bg-gray-50'
+              : day.isToday ? 'bg-blue-50 border-blue-500 border-2'
+              : day.isHoliday ? 'bg-red-50'
+              : day.dayOfWeekNumber === 0 ? 'bg-red-50'
+              : day.dayOfWeekNumber === 6 ? 'bg-blue-50'
+              : 'bg-white'
+            } ${!day.isToday && !expandedDates.has(day.date) && !isSelectedForPaste ? 'border-gray-200' : ''}`}
           style={isExpanded ? { minHeight: `${expandedHeight}px` } : {}}
           onClick={(e) => {
             // +N人ボタンまたは-ボタンがクリックされた場合は日ビューに遷移しない
@@ -3658,18 +3667,27 @@ export default function ShiftCalendar({
             handleDateClick(day.date, e);
           }}
         >
-          <div className={`text-xs font-medium flex items-center gap-1 ${
-            expandedDates.has(day.date)
-              ? 'text-blue-800 font-bold'
-              : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-            } ${day.isToday ? 'text-blue-600' : ''} ${
-            // 展開されていない場合のみ土曜日・日曜日・祝日の色を適用
-            !expandedDates.has(day.date) && (
-              day.dayOfWeekNumber === 6 ? 'text-blue-600' :
-              (day.dayOfWeekNumber === 0 || day.isHoliday) ? 'text-red-600' : ''
-            )
-            } ${isSelectedForPaste ? 'text-green-800 font-bold' : ''}`}>
-            {day.day}
+          {/* 日付と祝日名 */}
+          <div className="flex items-center gap-1 mb-0.5">
+            <div className={`text-xs font-medium ${
+              isSelectedForPaste
+                ? 'text-green-800 font-bold'
+                : expandedDates.has(day.date)
+                ? 'text-blue-800 font-bold'
+                : !day.isCurrentMonth ? 'text-gray-400'
+                : day.isToday ? 'text-blue-600'
+                : day.isHoliday ? 'text-red-600'
+                : day.dayOfWeekNumber === 0 ? 'text-red-500'
+                : day.dayOfWeekNumber === 6 ? 'text-blue-500'
+                : 'text-gray-900'
+              }`}>
+              {day.day}
+            </div>
+            {day.holidayName && day.isCurrentMonth && (
+              <div className="text-[8px] text-red-600 font-medium truncate">
+                {day.holidayName}
+              </div>
+            )}
             {moreEvent && (
               <button
                 type="button"
@@ -3682,10 +3700,10 @@ export default function ShiftCalendar({
                 {moreEvent.title}
               </button>
             )}
-            {isSelectedForPaste && (
-              <span className="text-green-600 text-xs">✓</span>
-            )}
           </div>
+          {isSelectedForPaste && (
+            <span className="text-green-600 text-xs">✓</span>
+          )}
 
           {/* 古い日跨ぎシフト結合バーロジックを削除 - renderEventで処理 */}
 
