@@ -28,6 +28,7 @@ interface Employee {
   birthDate?: string; // 生年月日
   address?: string; // 住所
   emergencyContact?: string; // 緊急連絡先
+  retireDate?: string; // 退職日
 }
 
 interface EmployeeShift {
@@ -757,7 +758,7 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-03-20',
           employmentType: 'アルバイト',
-          qualifications: '',
+          qualifications: '普通免許',
           birthDate: '1995-08-22',
           address: '東京都渋谷区道玄坂2-2-2',
           emergencyContact: '080-8888-0002',
@@ -835,7 +836,7 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-02-28',
           employmentType: 'パート',
-          qualifications: '',
+          qualifications: '普通免許',
           birthDate: '1998-07-09',
           address: '東京都杉並区高円寺5-5-5',
           emergencyContact: '080-3333-0005',
@@ -887,7 +888,7 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-07-15',
           employmentType: 'アルバイト',
-          qualifications: '',
+          qualifications: '普通免許',
           birthDate: '2000-01-30',
           address: '東京都葛飾区亀有7-7-7',
           emergencyContact: '090-9999-0007',
@@ -965,7 +966,7 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-08-05',
           employmentType: 'パート',
-          qualifications: '',
+          qualifications: '普通免許',
           birthDate: '1999-02-28',
           address: '東京都北区赤羽10-10-10',
           emergencyContact: '090-5555-0010',
@@ -1017,7 +1018,7 @@ export default function ShiftManagement() {
           status: 'active',
           hireDate: '2023-10-01',
           employmentType: 'アルバイト',
-          qualifications: '',
+          qualifications: '普通免許',
           birthDate: '2001-10-20',
           address: '東京都大田区蒲田12-12-12',
           emergencyContact: '070-8888-0012',

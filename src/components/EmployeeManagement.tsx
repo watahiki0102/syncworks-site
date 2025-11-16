@@ -17,6 +17,7 @@ interface Employee {
   birthDate?: string; // 生年月日
   address?: string; // 住所
   emergencyContact?: string; // 緊急連絡先
+  retireDate?: string; // 退職日
 }
 
 interface EmployeeManagementProps {
@@ -52,12 +53,13 @@ export default function EmployeeManagement({
     birthDate: '',
     address: '',
     emergencyContact: '',
+    retireDate: '',
   });
 
-  // フィルタ用のstate
+  // フィルタ用のstate（デフォルトで「在籍中」のみ表示）
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPosition, setFilterPosition] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState('active');
 
   // フィルタリングされた従業員リスト
   const filteredEmployees = useMemo(() => {
@@ -65,10 +67,10 @@ export default function EmployeeManagement({
       // 名前で検索
       const matchesSearch = !searchQuery || employee.name.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // 役職でフィルタ
+      // 役割でフィルタ
       const matchesPosition = !filterPosition || employee.position === filterPosition;
       
-      // ステータスでフィルタ
+      // ステータスでフィルタ（デフォルトで在籍中のみ表示）
       const matchesStatus = !filterStatus || employee.status === filterStatus;
       
       return matchesSearch && matchesPosition && matchesStatus;
@@ -77,17 +79,43 @@ export default function EmployeeManagement({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // 在籍中 → 退職 に変更する場合は退職日必須
+    if (formData.status === 'inactive' && !formData.retireDate) {
+      alert('退職ステータスを設定する場合は「退職日」を入力してください。');
+      return;
+    }
+
+    // 在籍中に戻す場合は退職日をクリア
+    const normalizedFormData = {
+      ...formData,
+      retireDate: formData.status === 'active' ? '' : formData.retireDate,
+    };
+
+    // 在籍中 → 退職 へ変更する場合のみ確認ダイアログを表示
+    if (
+      selectedEmployee &&
+      selectedEmployee.status === 'active' &&
+      normalizedFormData.status === 'inactive'
+    ) {
+      const ok = window.confirm(
+        `この従業員を「退職」ステータスに変更します。\n` +
+        `退職日: ${normalizedFormData.retireDate || '未設定'}\n\n` +
+        'よろしいですか？'
+      );
+      if (!ok) return;
+    }
+
     if (selectedEmployee) {
       // 更新
       onUpdateEmployee({
         ...selectedEmployee,
-        ...formData,
+        ...normalizedFormData,
       });
     } else {
       // 新規追加
       onAddEmployee({
-        ...formData,
+        ...normalizedFormData,
         shifts: [],
       });
     }
@@ -105,6 +133,7 @@ export default function EmployeeManagement({
       birthDate: '',
       address: '',
       emergencyContact: '',
+      retireDate: '',
     });
     onShowEmployeeModal(false);
     onSelectEmployee(null);
@@ -123,6 +152,7 @@ export default function EmployeeManagement({
       birthDate: employee.birthDate || '',
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
+      retireDate: employee.retireDate || '',
     });
     onSelectEmployee(employee);
     onShowEmployeeModal(true);
@@ -150,53 +180,70 @@ export default function EmployeeManagement({
         <div className="p-6 md:p-8">
         
           {/* 検索・フィルタ・アクションバー */}
-          <div className="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 gap-2">
+          <div className="mb-6 space-y-4">
             {/* 検索・フィルタ */}
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <input 
-                type="text" 
-                placeholder="従業員名で検索..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              />
-              <select 
-                value={filterPosition}
-                onChange={(e) => setFilterPosition(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              >
-                <option value="">すべての役職</option>
-                {EMPLOYEE_POSITIONS.map(position => (
-                  <option key={position} value={position}>{position}</option>
-                ))}
-              </select>
-              <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              >
-                <option value="">すべてのステータス</option>
-                <option value="active">在籍中</option>
-                <option value="inactive">退職</option>
-              </select>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">従業員名で検索</label>
+                <input 
+                  type="text" 
+                  placeholder="氏名を入力..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+              <div className="sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-1">役割</label>
+                <select 
+                  value={filterPosition}
+                  onChange={(e) => setFilterPosition(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                >
+                  <option value="">すべて</option>
+                  {EMPLOYEE_POSITIONS.map(position => (
+                    <option key={position} value={position}>{position}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:w-40">
+                <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                >
+                  <option value="active">在籍中</option>
+                  <option value="inactive">退職</option>
+                  <option value="">すべて</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setFormData({
+                      name: '',
+                      email: '',
+                      phone: '',
+                      position: 'ドライバー',
+                      status: 'active',
+                      hireDate: '',
+                      employmentType: '正社員',
+                      qualifications: '',
+                      birthDate: '',
+                      address: '',
+                      emergencyContact: '',
+                      retireDate: '',
+                    });
+                    onSelectEmployee(null);
+                    onShowEmployeeModal(true);
+                  }}
+                  className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 shadow-md transition duration-200 whitespace-nowrap"
+                >
+                  ＋ 従業員追加
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => {
-                setFormData({
-                  name: '',
-                  email: '',
-                  phone: '',
-                  position: 'ドライバー',
-                  status: 'active',
-                  hireDate: '',
-                });
-                onSelectEmployee(null);
-                onShowEmployeeModal(true);
-              }}
-              className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 shadow-md transition duration-200"
-            >
-              従業員追加
-            </button>
           </div>
 
           {/* テーブル */}
@@ -225,10 +272,12 @@ export default function EmployeeManagement({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">雇用形態</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">保有資格</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入社日</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">住所</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">緊急連絡先</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">編集</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredEmployees.map((employee) => (
                     <tr key={employee.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -245,18 +294,14 @@ export default function EmployeeManagement({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.employmentType || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.qualifications || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.hireDate}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.address || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.emergencyContact || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleEdit(employee)}
                           className="text-blue-600 hover:text-blue-900"
                         >
                           編集
-                        </button>
-                        <button
-                          onClick={() => handleDelete(employee.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          削除
                         </button>
                       </td>
                     </tr>
@@ -270,69 +315,96 @@ export default function EmployeeManagement({
 
       {/* 従業員追加・編集モーダル */}
       {showEmployeeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {selectedEmployee ? '従業員編集' : '従業員追加'}
-            </h3>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => {onShowEmployeeModal(false); onSelectEmployee(null);}}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {selectedEmployee ? '従業員編集' : '従業員追加'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onShowEmployeeModal(false);
+                    onSelectEmployee(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">氏名</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  氏名 <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">メールアドレス</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">電話番号</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  電話番号 <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="090-1234-5678"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">役割</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  役割 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  list="position-options"
                   value={formData.position}
                   onChange={e => setFormData({ ...formData, position: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="選択または入力してください"
                   required
-                >
+                />
+                <datalist id="position-options">
                   {EMPLOYEE_POSITIONS.map(position => (
-                    <option key={position} value={position}>
-                      {position}
-                    </option>
+                    <option key={position} value={position} />
                   ))}
-                </select>
+                </datalist>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">ステータス</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
-                  className="w-full px-3 py-2 border rounded text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                   required
                 >
                   <option value="active">在籍中</option>
@@ -340,12 +412,29 @@ export default function EmployeeManagement({
                 </select>
               </div>
 
+              {formData.status === 'inactive' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    退職日 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.retireDate}
+                    onChange={e => setFormData({ ...formData, retireDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    required
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">雇用形態</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  雇用形態 <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={formData.employmentType}
                   onChange={e => setFormData({ ...formData, employmentType: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                   required
                 >
                   <option value="正社員">正社員</option>
@@ -357,66 +446,70 @@ export default function EmployeeManagement({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">保有資格</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">保有資格</label>
                 <input
                   type="text"
                   value={formData.qualifications}
                   onChange={e => setFormData({ ...formData, qualifications: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   placeholder="例: 準中型免許、大型免許"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">生年月日</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  生年月日
+                </label>
                 <input
                   type="date"
                   value={formData.birthDate}
                   onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">入社日</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  入社日 <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   value={formData.hireDate}
                   onChange={e => setFormData({ ...formData, hireDate: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-900 mb-1">住所</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">住所</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   placeholder="例: 東京都新宿区..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">緊急連絡先</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">緊急連絡先</label>
                 <input
                   type="tel"
                   value={formData.emergencyContact}
                   onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })}
-                  className="w-full px-3 py-2 border rounded text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   placeholder="例: 090-1234-5678（家族等）"
                 />
               </div>
               </div>
               
-              <div className="flex gap-2 pt-4">
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 shadow-md transition duration-200"
                 >
-                  {selectedEmployee ? '更新' : '追加'}
+                  保存
                 </button>
                 <button
                   type="button"
@@ -424,7 +517,7 @@ export default function EmployeeManagement({
                     onShowEmployeeModal(false);
                     onSelectEmployee(null);
                   }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition duration-200"
                 >
                   キャンセル
                 </button>
