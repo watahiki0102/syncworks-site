@@ -140,3 +140,35 @@ export function useSessionStorage<T>(
 
   return [storedValue, setValue, removeValue];
 }
+
+/**
+ * LocalStorageへの保存を手動で実行するカスタムフック
+ * 保存成功/失敗を返す（エラーハンドリング強化版）
+ */
+export function useSaveToLocalStorage() {
+  const saveToLocalStorage = <T>(key: string, value: T): { success: boolean; error?: string } => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+      return { success: true };
+    } catch (error) {
+      console.error(`LocalStorageへの保存に失敗しました (key: ${key}):`, error);
+
+      // 容量オーバーの場合
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        return {
+          success: false,
+          error: 'ローカルストレージの容量が不足しています。\nブラウザのデータを削除するか、古いシフトデータを整理してください。'
+        };
+      }
+
+      return {
+        success: false,
+        error: 'シフトの保存に失敗しました。再度お試しください。'
+      };
+    }
+  };
+
+  return saveToLocalStorage;
+}
