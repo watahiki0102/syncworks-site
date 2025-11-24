@@ -59,12 +59,15 @@ function DispatchManagementContent() {
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
-  
+
   // 使用不能期間設定関連のstate
   const [showUnavailablePeriodModal, setShowUnavailablePeriodModal] = useState(false);
   const [selectedTruckForUnavailable, setSelectedTruckForUnavailable] = useState<Truck | null>(null);
   const [unavailablePeriod, setUnavailablePeriod] = useState({ startDate: '', endDate: '', reason: '' });
-  
+
+  // 案件の展開状態を管理
+  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
+
   const router = useRouter();
 
 
@@ -76,15 +79,20 @@ function DispatchManagementContent() {
 
 
   useEffect(() => {
-    // テスト用：ローカルストレージをクリアしてテストデータを確実に読み込む
-    localStorage.removeItem('trucks');
-    localStorage.removeItem('formSubmissions');
-
     // ローカルストレージからトラックデータを読み込み
     const savedTrucks = localStorage.getItem('trucks');
     if (savedTrucks) {
-      setTrucks(JSON.parse(savedTrucks));
-    } else {
+      try {
+        setTrucks(JSON.parse(savedTrucks));
+      } catch (error) {
+        console.error('トラックデータの読み込みに失敗しました:', error);
+        // エラー時はテストデータで初期化
+        localStorage.removeItem('trucks');
+      }
+    }
+
+    // 保存データがない場合のみテストデータで初期化
+    if (!savedTrucks) {
       // テストデータを初期化
       const testTrucks: Truck[] = [
         {
@@ -372,8 +380,16 @@ function DispatchManagementContent() {
     // ローカルストレージからフォーム送信データを読み込み
     const savedSubmissions = localStorage.getItem('formSubmissions');
     if (savedSubmissions) {
-      setFormSubmissions(JSON.parse(savedSubmissions));
-    } else {
+      try {
+        setFormSubmissions(JSON.parse(savedSubmissions));
+      } catch (error) {
+        console.error('フォームデータの読み込みに失敗しました:', error);
+        // エラー時はテストデータで初期化
+        localStorage.removeItem('formSubmissions');
+      }
+    }
+
+    if (!savedSubmissions) {
       // テストデータを初期化
       const testSubmissions: FormSubmission[] = [
         {
@@ -552,10 +568,16 @@ function DispatchManagementContent() {
     // 料金設定からトラック種別を読み込み
     const savedPricing = localStorage.getItem('truckPricingRules');
     if (savedPricing) {
-      const pricingRules = JSON.parse(savedPricing);
-      setPricingRules(pricingRules);
-      const truckTypes = [...new Set(pricingRules.map((rule: any) => rule.truckType).filter(Boolean))] as string[];
-      setAvailableTruckTypes(truckTypes);
+      try {
+        const pricingRules = JSON.parse(savedPricing);
+        setPricingRules(pricingRules);
+        const truckTypes = [...new Set(pricingRules.map((rule: any) => rule.truckType).filter(Boolean))] as string[];
+        setAvailableTruckTypes(truckTypes);
+      } catch (error) {
+        console.error('料金設定データの読み込みに失敗しました:', error);
+        localStorage.removeItem('truckPricingRules');
+        setAvailableTruckTypes(['軽トラ', '2tショート', '2tロング', '3t', '4t', '4t複数', '特別対応']);
+      }
     } else {
       // デフォルトのトラック種別を設定
       setAvailableTruckTypes(['軽トラ', '2tショート', '2tロング', '3t', '4t', '4t複数', '特別対応']);
@@ -564,22 +586,37 @@ function DispatchManagementContent() {
     // 車種係数からもトラック種別を読み込み
     const savedCoefficients = localStorage.getItem('truckCoefficients');
     if (savedCoefficients) {
-      const coefficients = JSON.parse(savedCoefficients);
-      // setTruckCoefficients(coefficients);
-      const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
-      setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
+      try {
+        const coefficients = JSON.parse(savedCoefficients);
+        // setTruckCoefficients(coefficients);
+        const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
+        setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
+      } catch (error) {
+        console.error('車種係数データの読み込みに失敗しました:', error);
+        localStorage.removeItem('truckCoefficients');
+      }
     }
 
     // 距離料金の読み込み
     const savedDistance = localStorage.getItem('distanceRanges');
     if (savedDistance) {
-      setDistanceRanges(JSON.parse(savedDistance));
+      try {
+        setDistanceRanges(JSON.parse(savedDistance));
+      } catch (error) {
+        console.error('距離料金データの読み込みに失敗しました:', error);
+        localStorage.removeItem('distanceRanges');
+      }
     }
 
     // 料金設定のトラックデータの読み込み
     const savedPricingTrucks = localStorage.getItem('pricingTrucks');
     if (savedPricingTrucks) {
-      setPricingTrucks(JSON.parse(savedPricingTrucks));
+      try {
+        setPricingTrucks(JSON.parse(savedPricingTrucks));
+      } catch (error) {
+        console.error('料金設定トラックデータの読み込みに失敗しました:', error);
+        localStorage.removeItem('pricingTrucks');
+      }
     }
   }, []);
 

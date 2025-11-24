@@ -1047,6 +1047,13 @@ export default function ShiftManagement() {
       }
     };
 
+  /**
+   * 従業員データの状態更新（メモリ内のみ）
+   * 【重要】LocalStorageへの保存は行わない
+   * - すべてのシフト操作（追加、編集、削除）はこの関数を使用
+   * - 実際の保存は handleSaveToStorage() で明示的に実行
+   * - これにより保存の競合を防ぐ
+   */
   const updateEmployeesState = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
     // 即座にlocalStorageには保存せず、メモリ内のstateのみ更新
@@ -1054,6 +1061,10 @@ export default function ShiftManagement() {
 
   /**
    * 明示的な保存処理（保存ボタン用）
+   * 【重要】これが唯一の保存ポイント（初期化を除く）
+   * - addShift, updateShift, deleteShift は自動保存しない
+   * - ユーザーが保存ボタンを押した時のみ実行
+   * - これにより複数操作の競合を防ぐ
    * 【エラーハンドリング追加】保存失敗時にユーザーに通知
    */
   const handleSaveToStorage = () => {
@@ -1130,13 +1141,20 @@ export default function ShiftManagement() {
     
   };
 
+  /**
+   * シフト追加処理
+   * 【修正済み】自動保存を削除し、競合を防止
+   * - 以前：追加時に即座にLocalStorageに保存していた
+   * - 現在：メモリ内のstateのみ更新
+   * - 保存は handleSaveToStorage() で明示的に実行
+   */
   const addShift = (employeeId: string, shift: Omit<EmployeeShift, 'id'>) => {
     // ID重複を防ぐため一意のIDを生成【コード重複削減】共通関数を使用
     const newShift: EmployeeShift = {
       ...shift,
       id: generateShiftId(),
     };
-    
+
     // setEmployeesを使用して、前の状態を基に更新（状態更新の競合を回避）
     setEmployees(prevEmployees => {
       const updatedEmployees = prevEmployees.map(employee => {
@@ -1146,21 +1164,11 @@ export default function ShiftManagement() {
         }
         return employee;
       });
-      
-      // ローカルストレージに保存【エラーハンドリング追加】
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-        } catch (error) {
-          console.error('シフト追加時のLocalStorage保存に失敗しました:', error);
-          // 追加自体は成功しているので、ユーザーには通知しない
-        }
-      }
-      
+
       return updatedEmployees;
     });
-    
-    // 未保存シフトとして記録
+
+    // 未保存シフトとして記録（保存は明示的な保存ボタンで実行）
     setUnsavedShiftIds(prev => new Set(prev).add(newShift.id));
   };
 
