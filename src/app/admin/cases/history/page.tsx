@@ -6,6 +6,7 @@ import { QuoteHistory } from '../types';
 import { UnifiedCaseStatus, QuoteResponseData } from '../types/unified';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber, isSourceTypeEditable } from '../lib/normalize';
 import { generateUnifiedTestData } from '../lib/unifiedData';
+import { formatCurrency } from '@/utils/format';
 
 export default function QuoteHistoryPage() {
   const [quotes, setQuotes] = useState<QuoteHistory[]>([]);
@@ -123,12 +124,6 @@ export default function QuoteHistoryPage() {
   };
 
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: 'JPY'
-    }).format(amount);
-  };
 
   return (
     <AdminAuthGuard>

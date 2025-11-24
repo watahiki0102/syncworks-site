@@ -37,3 +37,34 @@ export const toLocalDateString = (date: Date): string => {
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+/**
+ * 日付文字列をYYYY/MM/DD形式でフォーマットする
+ * @param dateString - ISO形式の日付文字列 (例: "2023-10-15")
+ * @returns YYYY/MM/DD形式の日付文字列 (例: "2023/10/15")
+ */
+export const formatDateYMD = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
+/**
+ * 前月の月初と月末の日付範囲を計算する
+ * @returns 前月の開始日と終了日（YYYY-MM-DD形式）
+ */
+export const getPreviousMonthRange = (): { start: string; end: string } => {
+  const now = new Date();
+
+  // 前月の月初（1日）を直接計算
+  const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  // 前月の月末（末日）を直接計算
+  const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  return {
+    start: toLocalDateString(firstDay),
+    end: toLocalDateString(lastDay)
+  };
+};

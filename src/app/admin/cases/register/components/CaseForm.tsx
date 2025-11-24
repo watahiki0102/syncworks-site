@@ -6,6 +6,7 @@ import { ITEM_CATEGORIES } from '@/constants/items';
 import { IntermediaryService } from '../../lib/normalize';
 import { searchAddressByPostalCode } from '@/utils/postalCodeSearch';
 import { TimeSlotSelect } from '@/components/ui/TimeSlotSelect';
+import { formatCurrency } from '@/utils/format';
 
 interface CaseFormProps {
   onSubmit: (_formData: any) => void;
@@ -300,12 +301,6 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ja-JP', { 
-      style: 'currency', 
-      currency: 'JPY' 
-    }).format(amount);
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">

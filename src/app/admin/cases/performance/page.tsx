@@ -5,40 +5,14 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '../lib/unifiedData';
 import { getSourceTypeLabel, getManagementNumber, normalizeSourceType } from '../lib/normalize';
+import { calculateCommission } from '../lib/commission';
+import { formatDateYMD, getPreviousMonthRange } from '@/utils/dateTimeUtils';
+import { formatCurrency } from '@/utils/format';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function PerformancePage() {
   const [cases, setCases] = useState<UnifiedCase[]>([]);
   const [filteredCases, setFilteredCases] = useState<UnifiedCase[]>([]);
-  // 前月の月初と月末を計算
-  const getPreviousMonthRange = () => {
-    const now = new Date();
-    console.log('現在の日付:', now);
-    
-    // 前月の月初（1日）を直接計算
-    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    // 前月の月末（末日）を直接計算
-    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-    
-    console.log('前月の月初:', firstDay);
-    console.log('前月の月末:', lastDay);
-    
-    const formatDate = (date: Date) => {
-      // タイムゾーンの影響を避けるために手動でフォーマット
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-    
-    const result = {
-      start: formatDate(firstDay),
-      end: formatDate(lastDay)
-    };
-    
-    console.log('結果:', result);
-    return result;
-  };
 
   const previousMonthRange = getPreviousMonthRange();
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,25 +55,6 @@ export default function PerformancePage() {
     setFilteredCases(filtered);
   }, [cases, searchTerm, startDate, endDate]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: 'JPY'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
-
-  // 手数料を計算（受注金額の10%と仮定）
-  const calculateCommission = (amount: number) => {
-    return Math.round(amount * 0.1);
-  };
 
   const calculateTotalRevenue = () => {
     return (filteredCases || []).reduce((total, caseItem) => {
@@ -110,24 +65,6 @@ export default function PerformancePage() {
 
   const calculateTotalContracts = () => {
     return (filteredCases || []).length;
-  };
-
-  // 仲介元別集計データを計算
-  const calculateSourceTypeData = () => {
-    const sourceStats: { [key: string]: { contracts: number; amount: number; revenue: number } } = {};
-    
-    (filteredCases || []).forEach(caseItem => {
-      const sourceType = caseItem.sourceType;
-      if (!sourceStats[sourceType]) {
-        sourceStats[sourceType] = { contracts: 0, amount: 0, revenue: 0 };
-      }
-      sourceStats[sourceType].contracts += 1;
-      const amount = caseItem.amountWithTax || 0;
-      sourceStats[sourceType].amount += amount;
-      sourceStats[sourceType].revenue += calculateCommission(amount);
-    });
-    
-    return Object.entries(sourceStats);
   };
 
   return (
@@ -245,7 +182,7 @@ export default function PerformancePage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(caseItem.move.moveDate)}
+                      {formatDateYMD(caseItem.move.moveDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">

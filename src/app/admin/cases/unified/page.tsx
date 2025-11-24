@@ -9,6 +9,7 @@ import { UnifiedCaseFilter, STATUS_STYLES, PRIORITY_STYLES, QuoteResponseData } 
 import { generateUnifiedTestData, sortUnifiedCases } from '../lib/unifiedData';
 import { SourceType, getSourceTypeLabel, getManagementNumber, normalizeSourceType, IntermediaryService } from '../lib/normalize';
 import { formatCurrency } from '@/utils/format';
+import { formatDateYMD } from '@/utils/dateTimeUtils';
 
 export default function UnifiedCasesPage() {
   const router = useRouter();
@@ -242,9 +243,9 @@ export default function UnifiedCasesPage() {
    */
   const getDateDisplay = (caseItem: UnifiedCase) => {
     if (caseItem.type === 'request') {
-      return caseItem.deadline ? `期限: ${formatDate(caseItem.deadline)}` : '';
+      return caseItem.deadline ? `期限: ${formatDateYMD(caseItem.deadline)}` : '';
     } else {
-      return caseItem.responseDate ? `回答: ${formatDate(caseItem.responseDate)}` : '';
+      return caseItem.responseDate ? `回答: ${formatDateYMD(caseItem.responseDate)}` : '';
     }
   };
 
@@ -368,13 +369,6 @@ export default function UnifiedCasesPage() {
     );
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
 
   return (
     <AdminAuthGuard>    
@@ -550,7 +544,7 @@ export default function UnifiedCasesPage() {
                     </span>
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(caseItem.move?.moveDate)}
+                    {formatDateYMD(caseItem.move?.moveDate)}
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getDateDisplay(caseItem)}
@@ -775,7 +769,7 @@ export default function UnifiedCasesPage() {
                         ) : (
                           <div className="flex items-center gap-2">
                             <span className="text-gray-700">
-                              {viewingCase.packingDeadline ? formatDate(viewingCase.packingDeadline) : '未設定'}
+                              {viewingCase.packingDeadline ? formatDateYMD(viewingCase.packingDeadline) : '未設定'}
                             </span>
                             <button
                               onClick={() => startEditingPackingDeadline(viewingCase.packingDeadline)}

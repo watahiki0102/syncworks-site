@@ -13,6 +13,7 @@ import AdminButton from '@/components/admin/AdminButton';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import CaseForm from './components/CaseForm';
 import EstimatePDFButton from './components/EstimatePDFButton';
+import { formatCurrency } from '@/utils/format';
 
 export default function CaseRegistrationPage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function CaseRegistrationPage() {
 引越し日: ${data.moveDate} (${data.moveDateKind})
 引越し元: ${data.fromAddress}
 引越し先: ${data.toAddress}
-見積金額: ${new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(data.priceTaxIncluded)}
+見積金額: ${formatCurrency(data.priceTaxIncluded)}
 契約ステータス: ${data.contractStatus}
 支払方法: ${data.paymentMethod}
 支払状況: ${data.paymentStatus}`;

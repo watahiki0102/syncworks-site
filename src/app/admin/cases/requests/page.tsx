@@ -6,6 +6,7 @@ import { QuoteRequest, ItemInfo } from '@/types/common';
 import { TruckAvailability } from '../types';
 import { normalizeSourceType, getSourceTypeLabel, getManagementNumber } from '../lib/normalize';
 import TruckAssignmentModal from '../../dispatch/components/TruckAssignmentModal';
+import { formatCurrency } from '@/utils/format';
 import { TEST_CUSTOMERS, TEST_ADDRESSES, TEST_ITEMS } from '@/constants/testData';
 
 type ResponseStep = 'content' | 'truck' | 'complete';
@@ -283,16 +284,9 @@ export default function QuoteRequestsPage() {
     setTruckAvailability(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: 'JPY'
-    }).format(amount);
-  };
 
   // トラック割り当てモーダル用の関数
   const assignTruckToSubmission = (submissionId: string, truckAssignment: any) => {
-    console.log('トラック割り当て:', submissionId, truckAssignment);
     setShowTruckAssignmentModal(false);
   };
 
