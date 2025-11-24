@@ -26,27 +26,18 @@ export async function searchAddressByPostalCode(postalCode: string): Promise<Add
     
     if (data.results && data.results.length > 0) {
       const { address1, address2, address3 } = data.results[0];
-      
-      // zipcloud APIの実際の仕様を確認
-      console.log('API Response:', data.results[0]);
-      console.log('address1:', address1);
-      console.log('address2:', address2);
-      console.log('address3:', address3);
-      
+
       // zipcloud APIの実際の仕様：
       // address1: 都道府県（例：東京都）
       // address2: 市区町村（例：品川区）
       // address3: 町名（例：北品川）
-      
+
       // 完全な住所を構築
       const fullAddress = `${address1}${address2}${address3}`;
-      console.log('Full address:', fullAddress);
-      
+
       // 市区町村フィールドには address2 + address3 を使用
       let city = `${address2 || ''}${address3 || ''}`;
       let streetNumber = ''; // 番地は表示しない
-      
-      console.log('Final city:', city);
       
       return {
         prefecture: address1,

@@ -3,10 +3,8 @@
  * アプリケーション全体で使用される型定義を統一管理
  */
 
-export * from './business';
 export * from './case';
 export * as DispatchTypes from './dispatch';
-export * from './forms';
 export * from './internal';
 
 // 共通型定義（名前衝突を回避して選択的エクスポート）

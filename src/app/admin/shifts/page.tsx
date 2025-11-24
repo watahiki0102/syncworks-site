@@ -298,7 +298,6 @@ export default function ShiftManagement() {
             // コピー済みシフトをクリアして再試行
             localStorage.removeItem('copiedShifts');
             localStorage.setItem('copiedShifts', JSON.stringify(copiedShifts));
-            console.warn('LocalStorageの容量が不足していたため、古いデータをクリアしました');
           } catch (retryError) {
             console.error('再試行も失敗しました:', retryError);
             // ユーザーには通知しない（UX的に邪魔にならないように）
@@ -1115,25 +1114,16 @@ export default function ShiftManagement() {
   };
 
   const updateShift = (employeeId: string, shift: EmployeeShift) => {
-    console.warn('═══════════════════════════════════════');
-    console.warn('📝 PAGE.TSX - updateShift called');
-    console.warn('Employee ID:', employeeId);
-    console.warn('Shift ID:', shift.id);
-    console.warn('New time:', shift.startTime, '-', shift.endTime);
-    console.warn('═══════════════════════════════════════');
-    
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
-        const updatedShifts = employee.shifts.map(s => 
+        const updatedShifts = employee.shifts.map(s =>
           s.id === shift.id ? shift : s
         );
-        console.warn('Updated employee shifts count:', updatedShifts.length);
         return { ...employee, shifts: updatedShifts };
       }
       return employee;
     });
-    
-    console.warn('Calling updateEmployeesState with', updatedEmployees.length, 'employees');
+
     updateEmployeesState(updatedEmployees);
     
     // 未保存シフトとして記録

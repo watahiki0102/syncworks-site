@@ -215,8 +215,6 @@ export default function PricingRatesPage() {
   const [newTruckType, setNewTruckType] = useState<string>('');
   const [pricingErrors, setPricingErrors] = useState<string[]>([]);
   const [rowErrorIds, setRowErrorIds] = useState<Set<string>>(new Set());
-  const [optionAddError, setOptionAddError] = useState<string>('');
-  const [optionErrors, setOptionErrors] = useState<{ [optionId: string]: string }>({});
 
   /**
    * 車種係数設定用state
@@ -226,19 +224,12 @@ export default function PricingRatesPage() {
 
   // シミュレーション機能の関数
   const addSimulationItem = (item: { id: string, name: string, points: number, quantity?: number }) => {
-    console.log('addSimulationItem called:', item);
     setSimulationItems(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
-        console.log('Item exists, updating quantity');
-        const updated = prev.map(i => i.id === item.id ? { ...i, quantity: item.quantity || i.quantity + 1 } : i);
-        console.log('Updated simulationItems (existing):', updated);
-        return updated;
+        return prev.map(i => i.id === item.id ? { ...i, quantity: item.quantity || i.quantity + 1 } : i);
       }
-      console.log('New item, adding to list');
-      const updated = [...prev, { ...item, quantity: item.quantity || 1 }];
-      console.log('Updated simulationItems (new):', updated);
-      return updated;
+      return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
   };
 
@@ -247,20 +238,13 @@ export default function PricingRatesPage() {
   };
 
   const updateSimulationQuantity = (id: string, quantity: number) => {
-    console.log('updateSimulationQuantity called:', { id, quantity });
     if (quantity <= 0) {
-      console.log('Removing item due to quantity <= 0');
       removeSimulationItem(id);
       return;
     }
-    console.log('Updating item quantity');
-    setSimulationItems(prev => {
-      const updated = prev.map(item =>
-        item.id === id ? { ...item, quantity } : item
-      );
-      console.log('Updated simulationItems:', updated);
-      return updated;
-    });
+    setSimulationItems(prev =>
+      prev.map(item => item.id === id ? { ...item, quantity } : item)
+    );
   };
 
   const clearSimulation = () => {
@@ -284,14 +268,6 @@ export default function PricingRatesPage() {
     setItemPoints(itemPoints.map(item =>
       item.id === id ? { ...item, points: item.defaultPoints, additionalCost: 0 } : item
     ));
-  };
-
-  const resetAllToDefault = () => {
-    setItemPoints(itemPoints.map(item => ({
-      ...item,
-      points: item.defaultPoints,
-      additionalCost: 0
-    })));
   };
 
   const filteredItems = itemPoints.filter(item => {
@@ -597,11 +573,11 @@ export default function PricingRatesPage() {
    */
   const removePricingRule = (id: string) => {
     if (pricingRules.length <= 1) {
-      setOptionAddError('最低1行は必要です');
+      setPricingErrors(['最低1行は必要です']);
       return;
     }
     setPricingRules(pricingRules.filter(rule => rule.id !== id));
-    setOptionAddError('');
+    setPricingErrors([]);
   };
 
   /**
@@ -610,7 +586,7 @@ export default function PricingRatesPage() {
    * @param field 更新するフィールド
    * @param value 新しい値
    */
-  const updatePricingRule = (id: string, field: keyof PricingRule, value: any) => {
+  const updatePricingRule = (id: string, field: keyof PricingRule, value: PricingRule[keyof PricingRule]) => {
     setPricingRules(pricingRules.map(rule =>
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
@@ -633,7 +609,7 @@ export default function PricingRatesPage() {
 
     // 最大値の妥当性チェック
     if (newMaxPoint <= newMinPoint) {
-      setOptionAddError('最大値は前の行の最大値より大きい値を選択してください');
+      setPricingErrors(['最大値は前の行の最大値より大きい値を選択してください']);
       return;
     }
 
@@ -651,7 +627,7 @@ export default function PricingRatesPage() {
     }
 
     setPricingRules(updatedRules);
-    setOptionAddError('');
+    setPricingErrors([]);
   };
 
 
@@ -710,7 +686,7 @@ export default function PricingRatesPage() {
   };
 
   // 距離料金更新
-  const updateDistanceRange = (id: string, field: keyof DistanceRange, value: any) => {
+  const updateDistanceRange = (id: string, field: keyof DistanceRange, value: DistanceRange[keyof DistanceRange]) => {
     setDistanceRanges(prev => prev.map(range =>
       range.id === id ? { ...range, [field]: value } : range
     ));
@@ -733,17 +709,6 @@ export default function PricingRatesPage() {
   const removeDistanceRange = (id: string) => {
     setDistanceRanges(prev => prev.filter(range => range.id !== id));
   };
-
-  // 料金計算例（車種係数×距離加算額）
-  const calculateExamplePrice = (truckType: string, distance: number) => {
-    const coefficient = truckCoefficients.find(coef => coef.truckType === truckType)?.coefficient || 1.0;
-    const distancePrice = distanceRanges.find(range =>
-      distance <= range.maxDistance
-    )?.basePrice || 0;
-
-    return Math.round(coefficient * distancePrice);
-  };
-
 
   // validatePricingのエラーを画面上部に表示、エラー行は赤枠
   const validatePoints = (): { isValid: boolean; errors: string[] } => {
@@ -808,19 +773,11 @@ export default function PricingRatesPage() {
   // オプション追加
   const handleAddOption = () => {
     if (!optionFormState.newOptionLabel.trim()) {
-      setOptionAddError('オプション名は必須です');
+      optionFormDispatch({ type: 'SET_ADD_ERROR', payload: 'オプション名は必須です' });
       return;
     }
     if (optionFormState.newOptionType === 'paid' && (!optionFormState.newOptionPrice || optionFormState.newOptionPrice < 0)) {
-      setOptionAddError('有料オプションは金額を0円以上で入力してください');
-      return;
-    }
-    if (optionFormState.newOptionMinPoint === undefined || optionFormState.newOptionMaxPoint === undefined) {
-      setOptionAddError('ポイント最小値・最大値は必須です');
-      return;
-    }
-    if (optionFormState.newOptionMinPoint >= optionFormState.newOptionMaxPoint) {
-      setOptionAddError('最大値は最小値より大きい値を入力してください');
+      optionFormDispatch({ type: 'SET_ADD_ERROR', payload: '有料オプションは金額を0円以上で入力してください' });
       return;
     }
     setOptions(prev => [
@@ -832,12 +789,9 @@ export default function PricingRatesPage() {
         price: optionFormState.newOptionType === 'paid' ? optionFormState.newOptionPrice : undefined,
         isDefault: false,
         unit: optionFormState.newOptionUnit,
-        minPoint: optionFormState.newOptionMinPoint,
-        maxPoint: optionFormState.newOptionMaxPoint,
       }
     ]);
     optionFormDispatch({ type: 'RESET_FORM' });
-    setOptionAddError('');
   };
 
   // オプション削除
@@ -875,8 +829,8 @@ export default function PricingRatesPage() {
   // ソート機能
   const sortPricingRules = (rules: PricingRule[]) => {
     return [...rules].sort((a, b) => {
-      const aValue: any = a[sortField];
-      const bValue: any = b[sortField];
+      const aValue = a[sortField];
+      const bValue = b[sortField];
 
       // undefinedの場合は最後に配置
       if (aValue === undefined && bValue === undefined) return 0;
@@ -1016,18 +970,10 @@ export default function PricingRatesPage() {
             <button
               onClick={() => scrollToSection('truck-coefficient')}
               className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
-              title="車種係数設定"
+              title="距離・車種別料金設定"
             >
               <span className="text-lg mr-2.5">🚛</span>
-              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">車種係数設定</span>}
-            </button>
-            <button
-              onClick={() => scrollToSection('distance')}
-              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center group"
-              title="距離加算額設定"
-            >
-              <span className="text-lg mr-2.5">📍</span>
-              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">距離加算額設定</span>}
+              {!isSidebarCollapsed && <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">距離・車種別料金</span>}
             </button>
             <button
               onClick={() => scrollToSection('options')}
@@ -1050,34 +996,34 @@ export default function PricingRatesPage() {
 
         {/* メインコンテンツ */}
         <div className={`flex-1 ${isSidebarCollapsed ? 'ml-16' : 'ml-56'} ${isSimulationEnabled ? 'pr-[33.333333%]' : ''} transition-all duration-300`}>
-          <main className="py-10 px-4">
-            <div className="max-w-6xl mx-auto">
+          <main className="py-6 px-3 md:px-4 lg:px-6 text-sm">
+            <div className="w-full">
 
               {/* 荷物ポイント設定 */}
-              <div id="item-points" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">📦</span>
+              <div id="item-points" className="bg-white shadow-md rounded-lg p-4 scroll-mt-20 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-lg mr-2">📦</span>
                   荷物ポイント設定
                 </h2>
 
                   {/* 説明 */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
-                    <p className="text-gray-700">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <h3 className="text-sm font-semibold text-blue-800 mb-1">📋 設定内容</h3>
+                    <p className="text-xs text-gray-700">
                       各荷物のポイントを設定します。このポイント合計に基づいてトラックサイズが自動判定されます。
                       荷物の重さや大きさに応じてポイントを調整してください。
                     </p>
-                    <div className="mt-3 p-3 bg-white border border-blue-200 rounded">
-                      <p className="text-sm font-medium text-blue-800">📦 ポイント基準</p>
-                      <p className="text-sm text-gray-700">1ポイント = 段ボールMサイズ1個分（50×35×35cm）</p>
+                    <div className="mt-2 p-2 bg-white border border-blue-200 rounded">
+                      <p className="text-xs font-medium text-blue-800">📦 ポイント基準</p>
+                      <p className="text-xs text-gray-700">1ポイント = 段ボールMサイズ1個分（50×35×35cm）</p>
                     </div>
                   </div>
 
                   {/* 検索・フィルター */}
-                  <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white shadow-md rounded-lg p-3 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           検索
                         </label>
                         <input
@@ -1085,17 +1031,17 @@ export default function PricingRatesPage() {
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           placeholder="荷物名で検索..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           カテゴリ
                         </label>
                         <select
                           value={selectedCategory}
                           onChange={(e) => setSelectedCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         >
                           {categories.map(category => (
                             <option key={category} value={category}>
@@ -1104,6 +1050,18 @@ export default function PricingRatesPage() {
                           ))}
                         </select>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* 参考例 */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 ポイント参考例（1ポイント=段ボール中1個分：50×35×35cm）</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>• 小物（1-3ポイント）：炊飯器、電子レンジ、スツールなど</p>
+                      <p>• 中型荷物（4-8ポイント）：テレビ、洗濯機、デスクなど</p>
+                      <p>• 大型荷物（20-32ポイント）：シングルベッド、2人ソファ、タンスなど</p>
+                      <p>• 特大荷物（35ポイント以上）：ダブルベッド、大型冷蔵庫、ワードローブなど</p>
+                      <p>• 特殊荷物（30ポイント以上）：アップライトピアノ、グランドピアノ、大型金庫など</p>
                     </div>
                   </div>
 
@@ -1185,18 +1143,6 @@ export default function PricingRatesPage() {
                     )}
                   </div>
 
-                  {/* 参考例 */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 ポイント参考例（1ポイント=段ボール中1個分：50×35×35cm）</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>• 小物（1-3ポイント）：炊飯器、電子レンジ、スツールなど</p>
-                      <p>• 中型荷物（4-8ポイント）：テレビ、洗濯機、デスクなど</p>
-                      <p>• 大型荷物（20-32ポイント）：シングルベッド、2人ソファ、タンスなど</p>
-                      <p>• 特大荷物（35ポイント以上）：ダブルベッド、大型冷蔵庫、ワードローブなど</p>
-                      <p>• 特殊荷物（30ポイント以上）：アップライトピアノ、グランドピアノ、大型金庫など</p>
-                    </div>
-                  </div>
-
                   {/* 荷物ポイント設定の保存ボタン */}
                   <div className="flex justify-center mt-8">
                     <button
@@ -1209,24 +1155,62 @@ export default function PricingRatesPage() {
               </div>
 
               {/* 料金設定 */}
-              <div id="pricing" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">💰</span>
+              <div id="pricing" className="bg-white shadow-md rounded-lg p-4 scroll-mt-20 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-lg mr-2">💰</span>
                   料金設定
                 </h2>
                   {/* 説明 */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
-                    <p className="text-gray-700">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <h3 className="text-sm font-semibold text-blue-800 mb-1">📋 設定内容</h3>
+                    <p className="text-xs text-gray-700">
                       トラック種別とポイント範囲に応じた料金を設定します。
                       ポイント最小値は自動設定され、最大値のみ選択できます。各設定は連続したポイント範囲で管理されます。
                     </p>
                   </div>
 
-                  <div className="bg-white shadow-md rounded-lg p-6">
-                    <div className="mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">💰 料金設定</h3>
+                  <div className="bg-white shadow-md rounded-lg p-3">
+                    <div className="mb-3">
+                      <h3 className="text-base font-semibold text-gray-800">💰 料金設定</h3>
                     </div>
+
+                    {/* 車種追加フォーム */}
+                    {truckTypeError && (
+                      <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4">
+                        {truckTypeError}
+                      </div>
+                    )}
+                    <div className="mb-4 flex flex-wrap gap-2 items-end bg-blue-50 p-3 rounded">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">車種名</label>
+                        <input
+                          type="text"
+                          value={newTruckTypeForCoefficient}
+                          onChange={e => setNewTruckTypeForCoefficient(e.target.value)}
+                          className="border border-gray-300 rounded px-3 py-1 text-sm min-w-[120px]"
+                          placeholder="新しい車種名"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">係数</label>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          value={newTruckCoefficient}
+                          onChange={e => setNewTruckCoefficient(parseFloat(e.target.value) || 1.0)}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-20"
+                          placeholder="1.0"
+                        />
+                      </div>
+                      <button
+                        onClick={addTruckType}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition"
+                      >
+                        ＋ 車種追加
+                      </button>
+                    </div>
+
                     {pricingErrors.length > 0 && (
                       <div className="bg-red-50 border border-red-300 text-red-700 rounded p-2 mb-4">
                         <ul className="list-disc pl-5">
@@ -1378,158 +1362,84 @@ export default function PricingRatesPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
                       >追加</button>
                     </div>
-
-                    {/* 料金計算例 */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">💡 料金設定例</h3>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>• 各設定は「トラック種別 × ポイント範囲」で管理</p>
-                        <p>• ポイント最小値は自動設定（前の行の最大値 + 1）</p>
-                        <p>• 最初の行は最小値1から開始</p>
-                        <p>• 例：1行目 1-100、2行目 101-250、3行目 251-350...</p>
-                      </div>
-
-                      {/* 料金計算例（車種係数×距離加算額） */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                        <h3 className="text-lg font-semibold text-blue-800 mb-2">🧮 料金計算例（車種係数×距離加算額）</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {truckCoefficients.map((coef) => (
-                            <div key={coef.id} className="bg-white p-3 rounded border">
-                              <h4 className="font-semibold text-gray-800 mb-2">{coef.truckType}</h4>
-                              <div className="space-y-1 text-sm">
-                                <div>係数: {coef.coefficient}</div>
-                                <div>10km: ¥{calculateExamplePrice(coef.truckType, 10).toLocaleString()}</div>
-                                <div>30km: ¥{calculateExamplePrice(coef.truckType, 30).toLocaleString()}</div>
-                                <div>50km: ¥{calculateExamplePrice(coef.truckType, 50).toLocaleString()}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-4 text-sm text-gray-600">
-                          <p>• 計算式: 車種係数 × 距離加算額 = 最終料金</p>
-                          <p>• 例：軽トラ（係数1.0）× 30km（加算額4,000円）= 4,000円</p>
-                          <p>• 例：4t（係数1.8）× 50km（加算額6,000円）= 10,800円</p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
               </div>
 
-              {/* 車種係数設定 */}
-              <div id="truck-coefficient" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">🚛</span>
-                  車種係数設定
+              {/* 距離・車種別料金設定 */}
+              <div id="truck-coefficient" className="bg-white shadow-md rounded-lg p-4 scroll-mt-20 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-lg mr-2">🚛</span>
+                  距離・車種別料金設定
                 </h2>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
-                    <p className="text-gray-700">
-                      各車種の係数を設定します。この係数は距離加算額に乗算されます。
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <h3 className="text-sm font-semibold text-blue-800 mb-1">📋 設定内容</h3>
+                    <p className="text-xs text-gray-700 mb-1">
+                      距離範囲と車種ごとの料金を一覧で設定します。
                     </p>
-                  </div>
-
-                  {truckTypeError && (
-                    <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4">
-                      {truckTypeError}
-                    </div>
-                  )}
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="border border-gray-200 px-4 py-2 text-left">車種</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left">係数</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {truckCoefficients.map((coef) => (
-                          <tr key={coef.id} className="hover:bg-gray-50">
-                            <td className="border border-gray-200 px-4 py-2">
-                              <span className="text-gray-800">{coef.truckType}</span>
-                            </td>
-                            <td className="border border-gray-200 px-4 py-2">
-                              <input
-                                type="number"
-                                min="0.1"
-                                step="0.1"
-                                value={coef.coefficient}
-                                onChange={e => updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
-                              />
-                            </td>
-                            <td className="border border-gray-200 px-4 py-2">
-                              <button
-                                onClick={() => removeTruckType(coef.id)}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                                title="この車種を削除"
-                              >
-                                🗑️ 削除
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* 車種追加フォーム */}
-                  <div className="flex flex-wrap gap-2 mt-4 items-end bg-blue-50 p-4 rounded">
-                    <input
-                      type="text"
-                      value={newTruckTypeForCoefficient}
-                      onChange={e => setNewTruckTypeForCoefficient(e.target.value)}
-                      className="border rounded px-3 py-1 min-w-[150px]"
-                      placeholder="新しい車種名"
-                    />
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      value={newTruckCoefficient}
-                      onChange={e => setNewTruckCoefficient(parseFloat(e.target.value) || 1.0)}
-                      className="border rounded px-2 py-1 min-w-[80px]"
-                      placeholder="係数"
-                    />
-                    <button
-                      onClick={addTruckType}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
-                    >
-                      ＋ 車種追加
-                    </button>
-                  </div>
-              </div>
-
-              {/* 距離加算額設定 */}
-              <div id="distance" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">📍</span>
-                  距離加算額設定
-                </h2>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 設定内容</h3>
-                    <p className="text-gray-700">
-                      距離範囲ごとの基本加算額を設定します。車種係数と乗算して最終料金が算出されます。
+                    <p className="text-xs text-gray-700">
+                      • 最終料金 = 車種係数 × 基本加算額<br/>
+                      • 表内の金額は自動計算された各車種の実際の加算料金です
                     </p>
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
+                    <table className="border-collapse" style={{ minWidth: '100%' }}>
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="border border-gray-200 px-4 py-2 text-left">距離範囲（km）</th>
-                          {TRUCK_TYPES.map(type => (
-                            <th key={type} className="border border-gray-200 px-4 py-2 text-left">{type}</th>
-                          ))}
+                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '120px' }}>距離範囲（km）</th>
+                          {TRUCK_TYPES.map(type => {
+                            const coef = truckCoefficients.find(c => c.truckType === type);
+                            return (
+                              <th key={type} className="border border-gray-200 px-2 py-1 text-left" style={{ minWidth: '100px' }}>
+                                <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                                  <span className="text-xs font-semibold">{type}</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] text-gray-500">係数:</span>
+                                    <input
+                                      type="number"
+                                      min="0.1"
+                                      step="0.1"
+                                      value={coef?.coefficient || 1.0}
+                                      onChange={e => coef && updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
+                                      className="w-12 px-1 py-0.5 border border-gray-300 rounded text-[10px] text-right focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                  </div>
+                                </div>
+                              </th>
+                            );
+                          })}
                           {truckCoefficients
                             .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
                             .map(coef => (
-                              <th key={coef.truckType} className="border border-gray-200 px-4 py-2 text-left">{coef.truckType}</th>
+                              <th key={coef.truckType} className="border border-gray-200 px-2 py-1 text-left" style={{ minWidth: '100px' }}>
+                                <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs font-semibold">{coef.truckType}</span>
+                                    <button
+                                      onClick={() => removeTruckType(coef.id)}
+                                      className="text-red-600 hover:text-red-800 text-[10px]"
+                                      title="削除"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] text-gray-500">係数:</span>
+                                    <input
+                                      type="number"
+                                      min="0.1"
+                                      step="0.1"
+                                      value={coef.coefficient}
+                                      onChange={e => updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
+                                      className="w-12 px-1 py-0.5 border border-gray-300 rounded text-[10px] text-right focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                  </div>
+                                </div>
+                              </th>
                             ))
                           }
-                          <th className="border border-gray-200 px-4 py-2 text-left">基本加算額</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left">操作</th>
+                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '100px' }}>基本加算額</th>
+                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '60px' }}>操作</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1539,46 +1449,46 @@ export default function PricingRatesPage() {
 
                           return (
                             <tr key={range.id} className="hover:bg-gray-50">
-                              <td className="border border-gray-200 px-4 py-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-gray-600 text-sm">{distanceRangeText}</span>
+                              <td className="border border-gray-200 px-2 py-1">
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-gray-600 text-xs">{distanceRangeText}</span>
                                   <input
                                     type="number"
                                     min="1"
                                     value={range.maxDistance}
                                     onChange={e => updateDistanceRange(range.id, 'maxDistance', parseInt(e.target.value) || 0)}
-                                    className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-sm"
+                                    className="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs"
                                   />
-                                  <span className="text-gray-500 text-sm">km</span>
+                                  <span className="text-gray-500 text-xs">km</span>
                                 </div>
                               </td>
                               {TRUCK_TYPES.map(type => (
-                                <td key={type} className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                                <td key={type} className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600">
                                   ¥{Math.round((truckCoefficients.find(c => c.truckType === type)?.coefficient || 1.0) * range.basePrice).toLocaleString()}
                                 </td>
                               ))}
                               {truckCoefficients
                                 .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
                                 .map(coef => (
-                                  <td key={coef.truckType} className="border border-gray-200 px-4 py-2 text-center text-sm text-gray-600">
+                                  <td key={coef.truckType} className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600">
                                     ¥{Math.round(coef.coefficient * range.basePrice).toLocaleString()}
                                   </td>
                                 ))
                               }
-                              <td className="border border-gray-200 px-4 py-2">
+                              <td className="border border-gray-200 px-2 py-1">
                                 <input
                                   type="number"
                                   min="0"
                                   value={range.basePrice}
                                   onChange={e => updateDistanceRange(range.id, 'basePrice', parseInt(e.target.value) || 0)}
-                                  className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-sm"
+                                  className="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs"
                                   placeholder="基本額"
                                 />
                               </td>
-                              <td className="border border-gray-200 px-4 py-2">
+                              <td className="border border-gray-200 px-2 py-1">
                                 <button
                                   onClick={() => removeDistanceRange(range.id)}
-                                  className="text-red-600 hover:text-red-800 text-sm"
+                                  className="text-red-600 hover:text-red-800 text-xs"
                                 >🗑️ 削除</button>
                               </td>
                             </tr>
@@ -1587,11 +1497,12 @@ export default function PricingRatesPage() {
                       </tbody>
                     </table>
                   </div>
-                  {/* 距離範囲追加フォーム */}
-                  <div className="mt-4">
+
+                  {/* 距離範囲追加ボタン */}
+                  <div className="mt-3">
                     <button
                       onClick={addDistanceRange}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition"
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition text-sm"
                     >
                       ＋ 距離範囲追加
                     </button>
@@ -1599,9 +1510,9 @@ export default function PricingRatesPage() {
               </div>
 
               {/* オプション料金設定 */}
-              <div id="options" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">🛠️</span>
+              <div id="options" className="bg-white shadow-md rounded-lg p-4 scroll-mt-20 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-lg mr-2">🛠️</span>
                   オプション料金設定
                 </h2>
                   <div className="overflow-x-auto">
@@ -1611,7 +1522,6 @@ export default function PricingRatesPage() {
                           <th className="border border-gray-200 px-4 py-2 text-left">オプション名</th>
                           <th className="border border-gray-200 px-6 py-2 text-left">種別</th>
                           <th className="border border-gray-200 px-2 py-2 text-left">金額（円）</th>
-                          <th className="border border-gray-200 px-2 py-2 text-left">ポイント範囲</th>
                           <th className="border border-gray-200 px-2 py-2 text-left">単位数量</th>
                           <th className="border border-gray-200 px-4 py-2 text-left">備考</th>
                         </tr>
@@ -1628,6 +1538,7 @@ export default function PricingRatesPage() {
                                   value={opt.label}
                                   onChange={e => handleOptionLabelChange(opt.id, e.target.value)}
                                   className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                  required
                                 />
                               )}
                             </td>
@@ -1637,6 +1548,7 @@ export default function PricingRatesPage() {
                                 onChange={e => handleOptionTypeChange(opt.id, e.target.value as OptionType)}
                                 className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                                 style={{ whiteSpace: 'nowrap' }}
+                                required
                               >
                                 {OPTION_TYPES.map(t => (
                                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -1650,45 +1562,22 @@ export default function PricingRatesPage() {
                                 onChange={e => {
                                   const value = e.target.value;
                                   if (/[^\u0000-\u007f]+/.test(value)) {
-                                    setOptionErrors(prev => ({ ...prev, [opt.id]: '※半角数値のみ' }));
+                                    optionFormDispatch({ type: 'SET_ERRORS', payload: { ...optionFormState.optionErrors, [opt.id]: '※半角数値のみ' } });
                                     return;
                                   } else {
-                                    setOptionErrors(prev => ({ ...prev, [opt.id]: '' }));
+                                    optionFormDispatch({ type: 'SET_ERRORS', payload: { ...optionFormState.optionErrors, [opt.id]: '' } });
                                     const num = value.replace(/,/g, '');
                                     handleOptionPriceChange(opt.id, parseInt(num) || 0);
                                   }
                                 }}
                                 className={`w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right ${opt.type === 'individual' || opt.type === 'free' ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                                 disabled={opt.type === 'individual' || opt.type === 'free'}
+                                placeholder="金額"
+                                required={opt.type === 'paid'}
                               />
                               {optionFormState.optionErrors[opt.id] && (
                                 <div className="text-red-600 text-xs mt-1">{optionFormState.optionErrors[opt.id]}</div>
                               )}
-                            </td>
-                            <td className="border border-gray-200 px-2 py-2">
-                              <div className="flex items-center space-x-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={opt.minPoint ?? ''}
-                                  onChange={e => {
-                                    // この機能は後で実装
-                                  }}
-                                  className="w-12 px-1 py-1 border border-gray-300 rounded text-xs text-center"
-                                  placeholder="最小"
-                                />
-                                <span className="text-xs text-gray-500">～</span>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={opt.maxPoint ?? ''}
-                                  onChange={e => {
-                                    // この機能は後で実装
-                                  }}
-                                  className="w-12 px-1 py-1 border border-gray-300 rounded text-xs text-center"
-                                  placeholder="最大"
-                                />
-                              </div>
                             </td>
                             <td className="border border-gray-200 px-2 py-2">
                               {opt.type === 'individual' || opt.type === 'free' || opt.label === '🏠 建物養生（壁や床の保護）' ? (
@@ -1700,6 +1589,7 @@ export default function PricingRatesPage() {
                                   value={opt.unit ?? ''}
                                   onChange={e => handleOptionUnitChange(opt.id, e.target.value)}
                                   className="w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
+                                  required
                                 >
                                   <option value=""></option>
                                   {[...Array(100)].map((_, i) => (
@@ -1747,30 +1637,24 @@ export default function PricingRatesPage() {
                     </select>
                     {optionFormState.newOptionType === 'paid' && (
                       <input
-                        type="number"
-                        min="0"
-                        value={optionFormState.newOptionPrice}
-                        onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_PRICE', payload: parseInt(e.target.value) || 0 })}
+                        type="text"
+                        value={optionFormState.newOptionPrice || ''}
+                        onChange={e => {
+                          const value = e.target.value.replace(/[^\d]/g, '');
+                          optionFormDispatch({ type: 'SET_NEW_OPTION_PRICE', payload: parseInt(value) || 0 });
+                        }}
                         className="border rounded px-2 py-1 min-w-[80px]"
                         placeholder="金額"
                       />
                     )}
-                    <input
-                      type="number"
-                      min="1"
-                      value={optionFormState.newOptionMinPoint}
-                      onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_MIN_POINT', payload: parseInt(e.target.value) || 1 })}
-                      className="border rounded px-2 py-1 min-w-[60px]"
-                      placeholder="最小ポイント"
-                    />
-                    <input
-                      type="number"
-                      min="1"
-                      value={optionFormState.newOptionMaxPoint}
-                      onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_MAX_POINT', payload: parseInt(e.target.value) || 100 })}
-                      className="border rounded px-2 py-1 min-w-[60px]"
-                      placeholder="最大ポイント"
-                    />
+                    {optionFormState.newOptionType !== 'paid' && (
+                      <input
+                        type="text"
+                        disabled
+                        className="border rounded px-2 py-1 min-w-[80px] bg-gray-100 cursor-not-allowed"
+                        placeholder="金額"
+                      />
+                    )}
                     <input
                       type="text"
                       value={optionFormState.newOptionUnit}
@@ -1784,22 +1668,22 @@ export default function PricingRatesPage() {
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
                     >追加</button>
                   </div>
-                  {optionAddError && <div className="text-red-600 text-sm mt-2">{optionAddError}</div>}
+                  {optionFormState.optionAddError && <div className="text-red-600 text-sm mt-2">{optionFormState.optionAddError}</div>}
               </div>
 
               {/* トラック管理 */}
-              <div id="truck-management" className="bg-white shadow-md rounded-lg p-6 scroll-mt-20 mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                  <span className="text-2xl mr-3">🚚</span>
+              <div id="truck-management" className="bg-white shadow-md rounded-lg p-4 scroll-mt-20 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-lg mr-2">🚚</span>
                   トラック管理
                 </h2>
                 <div className="text-center">
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-sm text-gray-600 mb-4">
                     トラックの登録・管理は配車管理画面で行います
                   </p>
                   <button
                     onClick={handleDispatchManagement}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium shadow-md hover:shadow-lg transition-all"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all"
                   >
                     🚚 配車管理画面へ
                   </button>
@@ -1809,6 +1693,7 @@ export default function PricingRatesPage() {
             </div>
           </main>
         </div>
+      </div>
 
       {isSimulationEnabled && (
         <SimulationPanel
@@ -1822,7 +1707,6 @@ export default function PricingRatesPage() {
           }}
         />
       )}
-      </div>
     </div>
   );
 } 

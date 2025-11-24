@@ -8,26 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // ログ出力（本番ではDB保存など）
-    console.log('不動産登録受付:', {
-      timestamp: new Date().toISOString(),
-      mode: body.mode,
-      referrer: body.referrer,
-      company: {
-        name: body.company.name,
-        licenseNo: body.company.licenseNo,
-        repName: body.company.repName,
-        contactName: body.company.contactName,
-        dept: body.company.dept,
-        tel: body.company.tel,
-        email: body.company.email,
-        address: body.company.address,
-        websiteUrl: body.company.websiteUrl,
-        prefectures: body.company.prefectures
-      },
-      referral: body.referral
-    });
 
     // 成功レスポンス
     return NextResponse.json({

@@ -10,7 +10,6 @@ import React, { useRef, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useModal, useSelection, useOutsideClick } from '@/hooks';
-// import { Button } from '@/components/ui';
 
 interface NavigationItem {
   label: string;

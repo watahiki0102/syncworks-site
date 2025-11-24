@@ -179,7 +179,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
   // selectedDateの変更を監視
   useEffect(() => {
-    console.log('selectedDate changed to:', selectedDate);
+    // selectedDate changed
   }, [selectedDate]);
 
   // ハイライト効果を一定時間後に自動的に消す
@@ -311,12 +311,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
   const monthDays = getMonthDays(currentDate);
   const dayInfo = getDayInfo(currentDate);
   
-  // デバッグ用：トラックデータを確認
+  // トラックデータの監視
   useEffect(() => {
-    console.log('Trucks data in DispatchCalendar:', trucks);
-    if (trucks.length > 0 && trucks[0].schedules) {
-      console.log('First truck schedules:', trucks[0].schedules);
-    }
+    // Trucks data updated
   }, [trucks]);
 
 
@@ -898,11 +895,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
         (!submission.truckAssignments || submission.truckAssignments.length === 0)
       );
 
-      console.log('MonthScheduleModal - date:', date);
-      console.log('MonthScheduleModal - formSubmissions:', formSubmissions);
-      console.log('MonthScheduleModal - unassignedCases:', unassignedCases);
-      console.log('MonthScheduleModal - onAssignTruck exists:', !!onAssignTruck);
-
       // フィルター状態を管理（月ビューの状態を使用）
       const [filterType, setFilterType] = useState<'all' | 'confirmed' | 'unconfirmed' | 'unassigned'>(monthViewFilterType);
 
@@ -1241,8 +1233,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     };
 
     const handleDateClick = (date: string, filterType?: 'confirmed' | 'unconfirmed' | 'unassigned') => {
-      console.log('Date clicked:', date, 'filterType:', filterType);
-
       // その日のスケジュールを取得
       const schedules = getSchedulesForDate(date);
 
@@ -1254,7 +1244,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
       // スケジュールも未割り当て案件もない場合はモーダルを開かない
       if (schedules.length === 0 && unassignedCases.length === 0) {
-        console.log('No schedules or unassigned cases for this date, modal will not open');
         return;
       }
 

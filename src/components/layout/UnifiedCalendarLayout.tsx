@@ -28,15 +28,15 @@ interface UnifiedCalendarLayoutProps {
   actions?: ReactNode;
   backUrl?: string;
   showBackButton?: boolean;
-  
-  // タブ関連
-  tabs: TabItem[];
-  activeTab: string;
-  onTabChange: (tabId: string) => void;
-  
+
+  // タブ関連（オプショナル）
+  tabs?: TabItem[];
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+
   // コンテンツ関連
   children: ReactNode;
-  
+
   // サイドパネル関連
   showSidePanel?: boolean;
   sidePanelContent?: ReactNode;
@@ -68,14 +68,16 @@ export default function UnifiedCalendarLayout({
         showBackButton={showBackButton}
       />
 
-      {/* タブナビゲーション */}
-      <AdminTabs
-        variant="calendar"
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        className="px-2 sm:px-4 lg:px-6 xl:px-8"
-      />
+      {/* タブナビゲーション（オプショナル） */}
+      {tabs && activeTab && onTabChange && (
+        <AdminTabs
+          variant="calendar"
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          className="px-2 sm:px-4 lg:px-6 xl:px-8"
+        />
+      )}
 
       {/* メインコンテンツ */}
       <main className={`w-full ${showSidePanel ? 'max-w-[75%]' : ''} mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300`}>

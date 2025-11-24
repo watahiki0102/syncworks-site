@@ -94,18 +94,16 @@ export interface EstimateResult {
  */
 export const getBasePrice = (truckType: string | null | undefined): number => {
   if (!truckType || typeof truckType !== 'string') {
-    console.warn(PRICING_ERROR_MESSAGES.INVALID_TRUCK_TYPE + ':', truckType);
     return 0;
   }
-  
+
   const normalizedType = truckType.trim();
   const basePrice = UNIFIED_TRUCK_BASE_PRICES[normalizedType as keyof typeof UNIFIED_TRUCK_BASE_PRICES];
-  
+
   if (basePrice === undefined) {
-    console.warn(`${PRICING_ERROR_MESSAGES.INVALID_TRUCK_TYPE}: ${normalizedType}. Available types:`, Object.keys(UNIFIED_TRUCK_BASE_PRICES));
     return 0;
   }
-  
+
   return basePrice;
 };
 

@@ -8,10 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { field, value } = await request.json();
-    
-    // ログ出力
-    console.log('重複チェック:', { field, value, timestamp: new Date().toISOString() });
-    
+
     // ダミーの重複チェック（本番ではDB検索）
     let isValid = true;
     let message = '';

@@ -63,12 +63,11 @@ function CaseEditPage() {
 
   const handleSave = async () => {
     if (!caseData) return;
-    
+
     setIsSaving(true);
     try {
       // 実際の実装では、APIにデータを送信
-      console.log('保存するデータ:', caseData);
-      
+
       // 保存成功後、戻り先に遷移
       if (fromPage === 'assignment' && returnCaseId) {
         router.push(`/admin/dispatch/assignment`);

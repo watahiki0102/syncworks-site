@@ -55,7 +55,6 @@ function DispatchManagementContent() {
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [availableTruckTypes, setAvailableTruckTypes] = useState<string[]>([]);
   const [pricingRules, setPricingRules] = useState<any[]>([]);
-  // const [truckCoefficients, setTruckCoefficients] = useState<any[]>([]);
   const [distanceRanges, setDistanceRanges] = useState<any[]>([]);
   const [pricingTrucks, setPricingTrucks] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
@@ -588,7 +587,6 @@ function DispatchManagementContent() {
     if (savedCoefficients) {
       try {
         const coefficients = JSON.parse(savedCoefficients);
-        // setTruckCoefficients(coefficients);
         const coefficientTypes = coefficients.map((coef: any) => coef.truckType).filter(Boolean) as string[];
         setAvailableTruckTypes(prev => [...new Set([...prev, ...coefficientTypes])]);
       } catch (error) {
@@ -748,36 +746,6 @@ function DispatchManagementContent() {
     return { isValid: true };
   };
 
-  /**
-   * 案件ステータス変更（手動変更可能なもののみ）
-   * 現在未使用のため、コメントアウト
-   */
-  /*
-  const changeCaseStatus = (submissionId: string, newStatus: 'cancelled') => {
-    const submission = formSubmissions.find(s => s.id === submissionId);
-    if (!submission) return;
-
-    // 受注案件からキャンセルへの変更のみ許可
-    if (submission.caseStatus !== 'contracted' && submission.contractStatus !== 'confirmed') {
-      alert('受注済み案件のみキャンセルに変更できます。');
-      return;
-    }
-
-    if (!confirm(`案件「${submission.customerName}様」をキャンセルに変更しますか？\n\n※キャンセル案件は請求対象となります。`)) {
-      return;
-    }
-
-    const updatedSubmissions = formSubmissions.map(s => 
-      s.id === submissionId 
-        ? { ...s, caseStatus: newStatus, contractStatus: newStatus === 'cancelled' ? 'confirmed' : s.contractStatus }
-        : s
-    );
-    
-    saveFormSubmissions(updatedSubmissions);
-    alert(`案件ステータスを「${newStatus === 'cancelled' ? 'キャンセル' : newStatus}」に変更しました。`);
-  };
-  */
-
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
     // バリデーション実行
     const validation = validateTruckAssignment(submissionId, truckAssignment);
@@ -846,16 +814,6 @@ function DispatchManagementContent() {
     saveFormSubmissions(updatedSubmissions);
   };
 
-  // const getStatusColor = (status: string) => {
-  //   return getStatusConfig('submission', status).color;
-  // };
-
-  // const getStatusText = (status: string) => {
-  //   return getStatusConfig('submission', status).text;
-  // };
-
-  // formatDate と formatTime は utils/dateTimeUtils.ts からインポート
-
   // 推奨トラックを計算
   const calculateRecommendedTrucks = (points: number): any[] => {
     const recommended: any[] = [];
@@ -896,17 +854,6 @@ function DispatchManagementContent() {
 
     return basePrice + distancePrice;
   };
-
-  // // トラック種別に基づいて利用可能なトラックをフィルタリング
-  // const getAvailableTrucksByType = (truckType: string): Truck[] => {
-  //   return trucks.filter(truck => 
-  //     truck.truckType === truckType && 
-  //     truck.status === 'available'
-  //   );
-  // };
-
-
-
 
   const tabs = [
     { id: 'calendar', label: '配車カレンダー', icon: '📅' },

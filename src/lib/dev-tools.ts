@@ -259,14 +259,7 @@ export const debugInfo = {
    */
   logComponentInfo(componentName: string, props: Record<string, unknown>, state?: Record<string, unknown>): void {
     if (!isDevelopment) return;
-
-    console.group(`🔍 ${componentName}`);
-    console.log('Props:', props);
-    if (state) {
-      console.log('State:', state);
-    }
-    console.trace('Render stack');
-    console.groupEnd();
+    // Component info logging removed
   },
 
   /**

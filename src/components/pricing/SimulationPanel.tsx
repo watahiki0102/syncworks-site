@@ -47,26 +47,18 @@ export default function SimulationPanel({
   const { calculationResult, calculateEstimate } = usePriceCalculator({});
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
-    console.log('handleQuantityChange called:', { itemId, quantity, items });
-    console.log('onAddItem available:', !!onAddItem);
-    console.log('onUpdateQuantity available:', !!onUpdateQuantity);
-    console.log('onRemoveItem available:', !!onRemoveItem);
-    
     setQuantities(prev => ({ ...prev, [itemId]: quantity }));
-    
+
     // 既存のアイテムかどうかチェック
     const existingItem = items.find(item => item.name === itemId);
-    console.log('existingItem:', existingItem);
-    
+
     if (quantity > 0) {
       if (existingItem) {
         // 既存のアイテムの場合、数量を更新
-        console.log('Updating existing item:', existingItem.id, quantity);
         onUpdateQuantity(existingItem.id, quantity);
       } else {
         // 新しいアイテムの場合、追加
         const itemPoints = getItemPoints(itemId);
-        console.log('Adding new item:', itemId, itemPoints, 'quantity:', quantity);
         if (onAddItem) {
           onAddItem(itemId, itemId, itemPoints);
         } else {
@@ -75,35 +67,28 @@ export default function SimulationPanel({
       }
     } else if (quantity === 0 && existingItem) {
       // 数量が0の場合、選択された荷物から削除
-      console.log('Removing item:', existingItem.id);
       onRemoveItem(existingItem.id);
     }
   };
 
   // 再計算ボタンが押された時の処理
   const handleRecalculate = () => {
-    console.log('Recalculate button clicked');
-    console.log('Current quantities:', quantities);
-    console.log('Current items:', items);
-    
     // 選択された荷物の数量を更新
     items.forEach(item => {
       const quantity = quantities[item.name];
       if (quantity !== undefined && quantity > 0) {
-        console.log('Updating quantity for item:', item.name, 'to', quantity);
         onUpdateQuantity(item.id, quantity);
       }
     });
-    
+
     // 計算結果を更新
     const totalPoints = items.reduce((total, item) => total + (item.points * item.quantity), 0);
     const totalPrice = items.reduce((total, item) => total + (item.points * item.quantity * 1000), 0); // 仮の単価
-    
+
     setCalculatedPoints(totalPoints);
     setCalculatedPrice(totalPrice);
-    
+
     // 料金計算を実行
-    console.log('Calling calculateEstimate');
     calculateEstimate();
   };
 

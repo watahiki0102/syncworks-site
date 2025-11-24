@@ -12,7 +12,6 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useForm, UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
-import "react-datepicker/dist/react-datepicker.css";
 
 import { Step1FormData } from '@/types/common';
 import { searchAddressForAutoComplete } from '@/utils/postalCodeSearch';

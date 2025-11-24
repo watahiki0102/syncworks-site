@@ -30,7 +30,6 @@ export function useLocalStorage<T>(
       const item = window.localStorage.getItem(key);
       return item ? deserialize(item) : initialValue;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
   });
@@ -46,7 +45,7 @@ export function useLocalStorage<T>(
         window.localStorage.setItem(key, serialize(valueToStore));
       }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      // Error setting localStorage
     }
   }, [key, serialize, storedValue]);
 
@@ -58,7 +57,7 @@ export function useLocalStorage<T>(
         window.localStorage.removeItem(key);
       }
     } catch (error) {
-      console.warn(`Error removing localStorage key "${key}":`, error);
+      // Error removing localStorage
     }
   }, [key, initialValue]);
 
@@ -72,7 +71,7 @@ export function useLocalStorage<T>(
       try {
         setStoredValue(e.newValue ? deserialize(e.newValue) : initialValue);
       } catch (error) {
-        console.warn(`Error parsing localStorage change for key "${key}":`, error);
+        // Error parsing localStorage change
       }
     };
 
@@ -109,7 +108,6 @@ export function useSessionStorage<T>(
       const item = window.sessionStorage.getItem(key);
       return item ? deserialize(item) : initialValue;
     } catch (error) {
-      console.warn(`Error reading sessionStorage key "${key}":`, error);
       return initialValue;
     }
   });
@@ -123,7 +121,7 @@ export function useSessionStorage<T>(
         window.sessionStorage.setItem(key, serialize(valueToStore));
       }
     } catch (error) {
-      console.warn(`Error setting sessionStorage key "${key}":`, error);
+      // Error setting sessionStorage
     }
   }, [key, serialize, storedValue]);
 
@@ -134,7 +132,7 @@ export function useSessionStorage<T>(
         window.sessionStorage.removeItem(key);
       }
     } catch (error) {
-      console.warn(`Error removing sessionStorage key "${key}":`, error);
+      // Error removing sessionStorage
     }
   }, [key, initialValue]);
 

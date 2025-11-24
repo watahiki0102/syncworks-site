@@ -187,7 +187,7 @@ if (config.env.isDevelopment) {
   try {
     validateConfig();
   } catch (error) {
-    console.warn('Configuration validation warning:', error);
+    // Configuration validation warning
   }
 }
 

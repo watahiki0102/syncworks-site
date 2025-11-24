@@ -163,7 +163,7 @@ export default function RootLayout({
                     localStorage.setItem('theme', systemPrefersDark ? 'dark' : 'light');
                   }
                 } catch (e) {
-                  console.warn('Theme initialization failed:', e);
+                  // Theme initialization failed
                 }
               })();
             `

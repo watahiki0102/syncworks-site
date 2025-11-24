@@ -96,32 +96,29 @@ export default function NewsPage() {
         ...formData,
         publishedAt: formData.published ? new Date().toISOString() : undefined,
       };
-      console.log('News created:', newNews);
       setData(prev => [...prev, newNews]);
     } else if (selectedNews) {
       // 編集
       const updatedNews: NewsItem = {
         ...selectedNews,
         ...formData,
-        publishedAt: formData.published && !selectedNews.publishedAt 
-          ? new Date().toISOString() 
+        publishedAt: formData.published && !selectedNews.publishedAt
+          ? new Date().toISOString()
           : selectedNews.publishedAt,
       };
-      console.log('News updated:', updatedNews);
-      setData(prev => prev.map(row => 
+      setData(prev => prev.map(row =>
         row.id === selectedNews.id ? updatedNews : row
       ));
     }
-    
+
     resetForm();
   };
 
   const handlePublishedChange = async (id: string, newPublished: boolean) => {
-    console.log('Published status updated:', id, newPublished);
-    setData(prev => prev.map(row => 
-      row.id === id 
-        ? { 
-            ...row, 
+    setData(prev => prev.map(row =>
+      row.id === id
+        ? {
+            ...row,
             published: newPublished,
             publishedAt: newPublished && !row.publishedAt ? new Date().toISOString() : row.publishedAt
           }
@@ -131,7 +128,6 @@ export default function NewsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm('このニュースを削除しますか？')) {
-      console.log('News deleted:', id);
       setData(prev => prev.filter(row => row.id !== id));
       if (selectedNews?.id === id) {
         resetForm();

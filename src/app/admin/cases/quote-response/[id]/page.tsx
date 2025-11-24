@@ -157,33 +157,25 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
     
     // 見積依頼ステータスの案件のみをフィルタリング
     const requestCases = unifiedData.filter(item => item.status === '見積依頼');
-    
-    console.log('Available request cases:', requestCases.map(c => ({ id: c.id, customer: c.customer?.customerName })));
-    console.log('Requested ID:', params.id);
-    
+
     // IDが存在しない場合は最初の見積依頼案件を使用
     let foundCase = unifiedData.find(item => item.id === params.id);
-    
+
     if (!foundCase && requestCases.length > 0) {
       // IDが見つからない場合は最初の見積依頼案件を使用
       foundCase = requestCases[0];
-      console.log('Using fallback case:', foundCase.id, foundCase.customer?.customerName);
     }
-    
+
     if (!foundCase) {
-      console.log('No case found, setting not found');
       setNotFound(true);
       return;
     }
 
     // 見積依頼ステータスでない場合はアクセス不可
     if (foundCase.status !== '見積依頼') {
-      console.log('Case status is not 見積依頼:', foundCase.status);
       setNotFound(true);
       return;
     }
-
-    console.log('Using case:', foundCase);
 
     const enhancedCase: EnhancedCase = {
       ...foundCase,
@@ -206,42 +198,26 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
     const calculateAutoQuote = () => {
       // 1. 総ポイント計算
       const totalPoints = caseItem.items?.totalPoints || 0;
-      
-      console.log('=== 自動見積算出 ===');
-      console.log('総ポイント:', totalPoints);
-      console.log('料金ルール:', pricingData.pricingRules);
-      
+
       // 2. 推奨トラック判定
-      const applicableRule = pricingData.pricingRules.find(rule => 
+      const applicableRule = pricingData.pricingRules.find(rule =>
         rule.maxPoint !== undefined && rule.price !== undefined &&
         totalPoints >= rule.minPoint && totalPoints <= rule.maxPoint
       );
-      
+
       const recommendedTruck = applicableRule?.truckType || '判定不可';
       const basePrice = applicableRule?.price || 0;
-      
-      console.log('適用ルール:', applicableRule);
-      console.log('推奨トラック:', recommendedTruck);
-      console.log('基本料金:', basePrice);
-      
+
       // 3. 距離料金の算出（簡易版）
       const estimatedDistance = estimateDistance(caseItem);
       const distancePrice = Math.floor(estimatedDistance * 100); // 1kmあたり100円として簡易計算
-      
-      console.log('推定距離:', estimatedDistance, 'km');
-      console.log('距離料金:', distancePrice);
-      
+
       // 4. オプション料金（基本的なオプション）
       const optionPrice = pricingData.options?.length > 0 ? pricingData.options[0].price || 5000 : 5000;
-      
-      console.log('オプション料金:', optionPrice);
-      
+
       // 5. 最終価格（基本料金 + 距離料金 + オプション料金）
       const subtotal = basePrice + distancePrice + optionPrice;
       const finalPrice = Math.floor(subtotal * 1.1); // 消費税10%
-      
-      console.log('小計:', subtotal);
-      console.log('最終価格（税込）:', finalPrice);
       
       setAutoQuote({
         totalPoints,
@@ -305,8 +281,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
       }
 
       // 実際の実装ではAPI呼び出し
-      console.log('見積回答データ:', quoteResponse);
-      
+
       // ローカルストレージを使用したデモ実装
       const existingResponses = JSON.parse(localStorage.getItem('quoteResponses') || '[]');
       existingResponses.push(quoteResponse);

@@ -154,13 +154,7 @@ class Logger {
     const prefix = `${colors[level]}[${level.toUpperCase()}]${reset}`;
     const time = new Date(timestamp).toLocaleTimeString();
     const context = component ? `[${component}${action ? `:${action}` : ''}]` : '';
-    
-    console.log(`${prefix} ${time} ${context} ${message}`);
-    
-    if (data) {
-      console.log('Data:', data);
-    }
-    
+
     if (error) {
       console.error('Error:', error);
     }

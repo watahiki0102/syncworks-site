@@ -8,7 +8,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { formatTime } from '@/utils/dateTimeUtils'; // Currently unused
 import { ContractStatus } from '@/types/case';
 import { Truck, Employee, EmployeeShift, TruckAssignment } from '@/types/shared';
 import { FormModal, SimpleModal } from '@/components/ui/SimpleModal';

@@ -5,7 +5,6 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
-// import { BillingStatusRow, InvoiceRow } from '@/types/internal'; // Currently unused
 import { TEST_VENDORS } from '@/constants/testData';
 
 // 統合された請求データの型

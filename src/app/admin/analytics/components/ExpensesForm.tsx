@@ -93,8 +93,7 @@ export default function ExpensesForm({ onExpenseCreated }: ExpensesFormProps) {
       };
 
       // createExternalExpense(newExpense) を呼び出す
-      console.log('経費作成:', newExpense);
-      
+
       // 成功後の処理
       setFormData({
         date: '',

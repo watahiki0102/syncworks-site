@@ -441,7 +441,6 @@ export default function ShiftCalendar({
     const dateGroups = buildDayCrossingDateGroups(employeeId, baseNotes, clickedShift.date);
 
     if (dateGroups.length === 0) {
-      console.warn(`⚠️ No date groups found for shift:`, clickedShift);
       return [clickedShift];
     }
 
@@ -579,12 +578,10 @@ export default function ShiftCalendar({
       const { startTime, endTime } = resolveShiftTimeRange(shift);
 
       if (!startTime || !endTime) {
-        console.warn('🌙 Skipping day crossing shift with missing time info:', shift);
         return;
       }
 
       if (parseTimeToMinutes(endTime) <= parseTimeToMinutes(startTime)) {
-        console.warn('🌙 Skipping zero-duration day crossing shift:', shift);
         return;
       }
 
@@ -674,7 +671,6 @@ export default function ShiftCalendar({
       const key = `${startTime}-${endTime}-${shift.status}`;
       if (uniqueShifts.has(key)) {
         duplicateShifts.push(shift.id);
-        console.warn(`⚠️ 重複したシフトが検出されました: ${shift.id} (${shift.startTime}-${shift.endTime})`);
       } else {
         uniqueShifts.set(key, shift);
       }
@@ -697,7 +693,6 @@ export default function ShiftCalendar({
       const { startTime: shiftStartTime, endTime: shiftEndTime } = resolveShiftTimeRange(shift);
 
       if (!shiftStartTime || !shiftEndTime) {
-        console.warn('⚠️ 単一シフトの時間情報が不足しているため表示できません:', shift);
         return [];
       }
 
@@ -752,7 +747,6 @@ export default function ShiftCalendar({
       const { startTime: shiftStartTime, endTime: shiftEndTime } = resolveShiftTimeRange(shift);
 
       if (!shiftStartTime || !shiftEndTime) {
-        console.warn('⚠️ 時間情報が不足しているシフトをスキップします:', shift);
         return;
       }
 
@@ -1308,17 +1302,8 @@ export default function ShiftCalendar({
       // 隣接している場合は重複としない
       const overlap = timeOverlap && statusMatch && !isAdjacent;
 
-      console.warn(`⚠️ 時間重複検出: 新規(${startTime}-${endTime}) [${currentStatus}] vs 既存(${shiftStart}-${shiftEnd}) [${shift.status}]`);
-      console.warn(`   判定式: (${startTime} < ${shiftEnd}) && (${endTime} > ${shiftStart}) = (${startTime < shiftEnd}) && (${endTime > shiftStart}) = ${timeOverlap}`);
-      console.warn(`   ステータス一致: ${statusMatch}, 隣接判定: ${isAdjacent}, 重複判定: ${overlap}`);
-      console.warn(`   既存シフト詳細:`, { id: shift.id, status: shift.status, timeSlot: shift.timeSlot });
-
       return overlap;
     });
-
-    if (hasOverlap) {
-      console.warn(`🚨 重複シフト作成をブロック: ${employeeId} on ${date} at ${startTime}-${endTime} [${currentStatus}]`);
-    }
 
     return hasOverlap;
   };
@@ -1572,12 +1557,6 @@ export default function ShiftCalendar({
         }
       }
 
-      console.warn('═══════════════════════════════════════');
-      console.warn('🔄 BAR RESIZE - UPDATING SHIFT TIME');
-      console.warn('Old time:', barResizeState.originalStartTime, '-', barResizeState.originalEndTime);
-      console.warn('New time:', newStartTime, '-', newEndTime);
-      console.warn('═══════════════════════════════════════');
-
       // 対象ブロックに対応するシフトを見つける（最初のシフトを更新）
       const blockShift = dayShifts.find(shift => {
         const shiftStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
@@ -1646,9 +1625,6 @@ export default function ShiftCalendar({
         }
 
         setHasUnsavedChanges(true);
-        console.warn('✅ BAR RESIZE - SHIFT TIME UPDATED!');
-      } else {
-        console.error('❌ Target shift not found for bar resize');
       }
     }
 
@@ -1708,7 +1684,6 @@ export default function ShiftCalendar({
 
     const createNewShifts = () => {
       if (startIndex === -1 || endIndex === -1) {
-        console.warn('⚠️ 時間スロットの計算に失敗しました', { startTime, endTime, startIndex, endIndex });
         return;
       }
 
@@ -2135,8 +2110,6 @@ export default function ShiftCalendar({
               allShifts.push(endShift);
               if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
               if (!affectedDates.includes(lastDate)) affectedDates.push(lastDate);
-            } else {
-              console.error('❌ Could not find valid TIME_SLOTS entry');
             }
           } else {
             const employee = employees.find(emp => emp.id === employeeId);
@@ -2154,7 +2127,6 @@ export default function ShiftCalendar({
         for (const date of dates) {
           // 重複チェック
           if (checkShiftOverlap(employeeId, date, data.startTime, data.endTime, undefined, data.status)) {
-            console.warn(`⚠️ Shift overlap detected for employee ${employeeId} on ${date}`);
             const employee = employees.find(emp => emp.id === employeeId);
             skippedShifts.push({
               employeeId: employee?.name || employeeId,
@@ -2168,7 +2140,6 @@ export default function ShiftCalendar({
           const endIndex = TIME_SLOTS.findIndex(ts => ts.end === data.endTime);
 
           if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
-            console.error('Invalid time range');
             continue;
           }
 

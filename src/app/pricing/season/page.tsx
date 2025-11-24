@@ -92,7 +92,6 @@ const createSeasonRule = (rule: SeasonRuleInput, id?: string): SeasonRule => ({
 export default function SeasonPage() {
   const [seasonRules, setSeasonRules] = useState<SeasonRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('calendar');
 
   /**
    * 初期データの読み込み
@@ -297,11 +296,6 @@ export default function SeasonPage() {
     );
   }
 
-  const tabs = [
-    { id: 'calendar', label: 'シーズン料金カレンダー', icon: '📅' },
-    { id: 'settings', label: '設定', icon: '⚙️' }
-  ];
-
   return (
     <UnifiedCalendarLayout
       title="🌸 シーズン加算設定"
@@ -311,24 +305,14 @@ export default function SeasonPage() {
         { label: 'シーズン加算設定' }
       ]}
       backUrl="/pricing"
-      tabs={tabs}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
     >
-      {activeTab === 'calendar' && (
-        <SeasonCalendar
-          seasonRules={seasonRules}
-          onUpdateRule={updateRule}
-          onAddRule={addRule}
-          onRemoveRule={removeRule}
-          onSave={handleSave}
-        />
-      )}
-      {activeTab === 'settings' && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">設定画面は今後実装予定です</p>
-        </div>
-      )}
+      <SeasonCalendar
+        seasonRules={seasonRules}
+        onUpdateRule={updateRule}
+        onAddRule={addRule}
+        onRemoveRule={removeRule}
+        onSave={handleSave}
+      />
     </UnifiedCalendarLayout>
   );
 }

@@ -86,8 +86,7 @@ export default function WorkerAssignmentView({
   }) => {
     try {
       // 実際のAPI呼び出し（今回はモック）
-      console.log('作業者割り当て:', payload);
-      
+
       // トラックのスケジュールを更新
       const truck = trucks.find(t => 
         t.schedules.some(s => s.id === payload.scheduleId)

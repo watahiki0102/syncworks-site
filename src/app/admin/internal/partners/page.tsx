@@ -89,9 +89,8 @@ export default function PartnersPage() {
     
     if (editingPartner) {
       // 編集
-      console.log('Partner updated:', editingPartner.id, formData);
-      setData(prev => prev.map(row => 
-        row.id === editingPartner.id 
+      setData(prev => prev.map(row =>
+        row.id === editingPartner.id
           ? { ...row, ...formData }
           : row
       ));
@@ -101,16 +100,14 @@ export default function PartnersPage() {
         id: Date.now().toString(),
         ...formData,
       };
-      console.log('Partner created:', newPartner);
       setData(prev => [...prev, newPartner]);
     }
-    
+
     closeModal();
   };
 
   const handleActiveChange = async (id: string, newActive: boolean) => {
-    console.log('Active status updated:', id, newActive);
-    setData(prev => prev.map(row => 
+    setData(prev => prev.map(row =>
       row.id === id ? { ...row, active: newActive } : row
     ));
   };

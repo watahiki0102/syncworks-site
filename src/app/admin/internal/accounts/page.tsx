@@ -74,9 +74,7 @@ export default function AccountsPage() {
       return;
     }
 
-    console.log('Role updated:', id, newRole);
-    
-    setData(prev => prev.map(row => 
+    setData(prev => prev.map(row =>
       row.id === id ? { ...row, role: newRole } : row
     ));
   };
@@ -91,11 +89,9 @@ export default function AccountsPage() {
       return;
     }
 
-    console.log('Permission updated:', id, permission, value);
-    
-    setData(prev => prev.map(row => 
-      row.id === id ? { 
-        ...row, 
+    setData(prev => prev.map(row =>
+      row.id === id ? {
+        ...row,
         permissions: { ...row.permissions, [permission]: value }
       } : row
     ));
@@ -110,8 +106,6 @@ export default function AccountsPage() {
       alert('superadminの自身のアカウントを無効化することはできません');
       return;
     }
-
-    console.log('Active status updated:', id, newActive);
     
     setData(prev => prev.map(row => 
       row.id === id ? { ...row, active: newActive } : row
