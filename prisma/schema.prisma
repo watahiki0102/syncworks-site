@@ -1,0 +1,614 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model employees {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id              String            @db.Uuid
+  user_id                 String?           @db.Uuid
+  employee_number         String            @db.VarChar(50)
+  last_name               String            @db.VarChar(100)
+  first_name              String            @db.VarChar(100)
+  last_name_kana          String?           @db.VarChar(100)
+  first_name_kana         String?           @db.VarChar(100)
+  role                    String            @default("worker") @db.VarChar(50)
+  employment_type         String            @default("full_time") @db.VarChar(20)
+  qualifications          String[]
+  hire_date               DateTime          @db.Date
+  termination_date        DateTime?         @db.Date
+  birth_date              DateTime?         @db.Date
+  postal_code             String?           @db.VarChar(10)
+  prefecture              String?           @db.VarChar(50)
+  city                    String?           @db.VarChar(100)
+  address_line            String?
+  phone_number            String            @db.VarChar(20)
+  emergency_contact_name  String?           @db.VarChar(200)
+  emergency_contact_phone String?           @db.VarChar(20)
+  hourly_rate             Int?
+  max_work_hours_per_day  Int?              @default(8)
+  max_work_days_per_month Int?              @default(25)
+  points_balance          Int?              @default(0)
+  is_active               Boolean           @default(true)
+  created_at              DateTime          @default(now()) @db.Timestamp(6)
+  updated_at              DateTime          @default(now()) @db.Timestamp(6)
+  moving_companies        moving_companies  @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employees_company")
+  users                   users?            @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_employees_user")
+  job_assignments         job_assignments[]
+  shifts                  shifts[]
+
+  @@unique([company_id, employee_number], map: "idx_employees_company_number")
+  @@index([company_id], map: "idx_employees_company")
+  @@index([role], map: "idx_employees_role")
+  @@index([user_id], map: "idx_employees_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model item_masters {
+  id                             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category                       String         @db.VarChar(50)
+  name                           String         @unique @db.VarChar(100)
+  default_points                 Int
+  typical_quantity_per_household Int?           @default(1)
+  requires_disassembly           Boolean        @default(false)
+  is_active                      Boolean        @default(true)
+  created_at                     DateTime       @default(now()) @db.Timestamp(6)
+  updated_at                     DateTime       @default(now()) @db.Timestamp(6)
+  moving_items                   moving_items[]
+
+  @@index([category], map: "idx_item_masters_category")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model job_assignments {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id         String    @db.Uuid
+  employee_id    String    @db.Uuid
+  role           String    @db.VarChar(50)
+  assigned_at    DateTime  @default(now()) @db.Timestamp(6)
+  confirmed_at   DateTime? @db.Timestamp(6)
+  check_in_time  DateTime? @db.Timestamp(6)
+  check_out_time DateTime? @db.Timestamp(6)
+  worked_hours   Decimal?  @db.Decimal(5, 2)
+  points_earned  Int?      @default(0)
+  status         String    @default("assigned") @db.VarChar(20)
+  notes          String?
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime  @default(now()) @db.Timestamp(6)
+  employees      employees @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_job_assignments_employee")
+  jobs           jobs      @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_job_assignments_job")
+
+  @@unique([job_id, employee_id], map: "idx_job_assignments_unique")
+  @@index([employee_id], map: "idx_job_assignments_employee")
+  @@index([job_id], map: "idx_job_assignments_job")
+  @@index([status], map: "idx_job_assignments_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model jobs {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_id               String            @db.Uuid
+  company_id             String            @db.Uuid
+  job_number             String            @unique(map: "idx_jobs_number") @db.VarChar(50)
+  customer_last_name     String            @db.VarChar(100)
+  customer_first_name    String            @db.VarChar(100)
+  customer_phone         String            @db.VarChar(20)
+  customer_email         String?           @db.VarChar(255)
+  from_address           String
+  to_address             String
+  scheduled_date         DateTime          @db.Date
+  scheduled_time_slot    String            @db.VarChar(20)
+  actual_start_time      DateTime?         @db.Timestamp(6)
+  actual_end_time        DateTime?         @db.Timestamp(6)
+  assigned_truck_ids     String[]          @db.Uuid
+  total_price            Int
+  payment_method         String?           @db.VarChar(20)
+  payment_status         String            @default("pending") @db.VarChar(20)
+  paid_amount            Int?              @default(0)
+  paid_at                DateTime?         @db.Timestamp(6)
+  status                 String            @default("scheduled") @db.VarChar(20)
+  cancellation_reason    String?
+  cancelled_at           DateTime?         @db.Timestamp(6)
+  special_instructions   String?
+  internal_notes         String?
+  completion_notes       String?
+  customer_signature_url String?
+  created_at             DateTime          @default(now()) @db.Timestamp(6)
+  updated_at             DateTime          @default(now()) @db.Timestamp(6)
+  job_assignments        job_assignments[]
+  moving_companies       moving_companies  @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_jobs_company")
+  quotes                 quotes            @relation(fields: [quote_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_jobs_quote")
+  reviews                reviews[]
+
+  @@index([company_id], map: "idx_jobs_company")
+  @@index([customer_last_name, customer_first_name], map: "idx_jobs_customer")
+  @@index([quote_id], map: "idx_jobs_quote")
+  @@index([scheduled_date], map: "idx_jobs_scheduled_date")
+  @@index([status], map: "idx_jobs_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model moving_companies {
+  id                     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_user_id          String      @db.Uuid
+  company_name           String      @db.VarChar(255)
+  company_name_kana      String?     @db.VarChar(255)
+  postal_code            String?     @db.VarChar(10)
+  prefecture             String      @db.VarChar(50)
+  city                   String      @db.VarChar(100)
+  address_line           String
+  phone_number           String      @db.VarChar(20)
+  email                  String?     @db.VarChar(255)
+  business_hours         String?
+  service_areas          String[]    @default([])
+  max_distance_km        Int?
+  min_job_price          Int?
+  provides_packing       Boolean     @default(false)
+  provides_storage       Boolean     @default(false)
+  storage_capacity_cbm   Decimal?    @db.Decimal(10, 2)
+  has_insurance          Boolean     @default(false)
+  insurance_max_coverage Int?
+  insurance_company_name String?     @db.VarChar(255)
+  licenses               String[]
+  certifications         String[]
+  rating_average         Decimal?    @default(0.00) @db.Decimal(3, 2)
+  total_reviews          Int?        @default(0)
+  total_jobs_completed   Int?        @default(0)
+  status                 String      @default("pending") @db.VarChar(20)
+  is_verified            Boolean     @default(false)
+  verified_at            DateTime?   @db.Timestamp(6)
+  created_at             DateTime    @default(now()) @db.Timestamp(6)
+  updated_at             DateTime    @default(now()) @db.Timestamp(6)
+  employees              employees[]
+  jobs                   jobs[]
+  users                  users       @relation(fields: [owner_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_moving_companies_owner")
+  quotes                 quotes[]
+  trucks                 trucks[]
+
+  @@index([owner_user_id], map: "idx_moving_companies_owner")
+  @@index([prefecture], map: "idx_moving_companies_prefecture")
+  @@index([rating_average(sort: Desc)], map: "idx_moving_companies_rating")
+  @@index([status], map: "idx_moving_companies_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model moving_items {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_request_id     String         @db.Uuid
+  item_master_id       String?        @db.Uuid
+  custom_item_name     String?        @db.VarChar(200)
+  quantity             Int
+  points_per_unit      Int
+  total_points         Int?           @default(dbgenerated("(quantity * points_per_unit)"))
+  requires_disassembly Boolean        @default(false)
+  notes                String?
+  created_at           DateTime       @default(now()) @db.Timestamp(6)
+  item_masters         item_masters?  @relation(fields: [item_master_id], references: [id], onUpdate: NoAction, map: "fk_moving_items_master")
+  quote_requests       quote_requests @relation(fields: [quote_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_moving_items_request")
+
+  @@index([item_master_id], map: "idx_moving_items_master")
+  @@index([quote_request_id], map: "idx_moving_items_request")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model notifications {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String    @db.Uuid
+  notification_type   String    @db.VarChar(50)
+  title               String    @db.VarChar(255)
+  message             String
+  related_entity_type String?   @db.VarChar(50)
+  related_entity_id   String?   @db.Uuid
+  action_url          String?
+  is_read             Boolean   @default(false)
+  read_at             DateTime? @db.Timestamp(6)
+  priority            String    @default("normal") @db.VarChar(20)
+  expires_at          DateTime? @db.Timestamp(6)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_user")
+
+  @@index([created_at(sort: Desc)], map: "idx_notifications_created")
+  @@index([notification_type], map: "idx_notifications_type")
+  @@index([user_id], map: "idx_notifications_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model options {
+  id                     String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                   String          @unique @db.VarChar(100)
+  category               String          @db.VarChar(50)
+  description            String?
+  base_price             Int
+  is_percentage          Boolean         @default(false)
+  percentage_rate        Decimal?        @db.Decimal(5, 4)
+  requires_approval      Boolean         @default(false)
+  estimated_time_minutes Int?
+  max_quantity           Int?            @default(1)
+  is_active              Boolean         @default(true)
+  display_order          Int?            @default(100)
+  created_at             DateTime        @default(now()) @db.Timestamp(6)
+  updated_at             DateTime        @default(now()) @db.Timestamp(6)
+  quote_options          quote_options[]
+
+  @@index([category], map: "idx_options_category")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pricing_rules {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rule_type            String    @db.VarChar(50)
+  description          String
+  base_price           Int?
+  point_unit_price     Int?
+  distance_rate_per_km Int?
+  min_charge           Int?
+  max_charge           Int?
+  effective_from       DateTime  @db.Date
+  effective_to         DateTime? @db.Date
+  is_active            Boolean   @default(true)
+  priority             Int       @default(100)
+  created_at           DateTime  @default(now()) @db.Timestamp(6)
+  updated_at           DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([effective_from, effective_to], map: "idx_pricing_rules_effective")
+  @@index([rule_type], map: "idx_pricing_rules_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model quote_options {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_id    String   @db.Uuid
+  option_id   String   @db.Uuid
+  quantity    Int      @default(1)
+  unit_price  Int
+  total_price Int?     @default(dbgenerated("(quantity * unit_price)"))
+  notes       String?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  options     options  @relation(fields: [option_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_quote_options_option")
+  quotes      quotes   @relation(fields: [quote_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_quote_options_quote")
+
+  @@index([option_id], map: "idx_quote_options_option")
+  @@index([quote_id], map: "idx_quote_options_quote")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model quote_requests {
+  id                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_last_name       String              @db.VarChar(100)
+  customer_first_name      String              @db.VarChar(100)
+  customer_last_name_kana  String?             @db.VarChar(100)
+  customer_first_name_kana String?             @db.VarChar(100)
+  customer_email           String              @db.VarChar(255)
+  customer_phone           String              @db.VarChar(20)
+  from_postal_code         String?             @db.VarChar(10)
+  from_prefecture          String              @db.VarChar(50)
+  from_city                String              @db.VarChar(100)
+  from_address_line        String
+  from_building_type       String?             @db.VarChar(20)
+  from_floor               Int?
+  from_has_elevator        Boolean?
+  to_postal_code           String?             @db.VarChar(10)
+  to_prefecture            String              @db.VarChar(50)
+  to_city                  String              @db.VarChar(100)
+  to_address_line          String
+  to_building_type         String?             @db.VarChar(20)
+  to_floor                 Int?
+  to_has_elevator          Boolean?
+  preferred_date_1         DateTime?           @db.Date
+  preferred_time_slot_1    String?             @db.VarChar(20)
+  preferred_date_2         DateTime?           @db.Date
+  preferred_time_slot_2    String?             @db.VarChar(20)
+  preferred_date_3         DateTime?           @db.Date
+  preferred_time_slot_3    String?             @db.VarChar(20)
+  household_size           String?             @db.VarChar(20)
+  estimated_volume_cbm     Decimal?            @db.Decimal(10, 2)
+  packing_required         Boolean             @default(false)
+  has_fragile_items        Boolean             @default(false)
+  has_large_furniture      Boolean             @default(false)
+  special_requirements     String?
+  access_restrictions      String?
+  distance_km              Decimal?            @db.Decimal(10, 2)
+  estimated_duration_hours Int?
+  request_source           String              @db.VarChar(20)
+  referrer_agent_id        String?             @db.Uuid
+  status                   String              @default("pending") @db.VarChar(20)
+  created_at               DateTime            @default(now()) @db.Timestamp(6)
+  updated_at               DateTime            @default(now()) @db.Timestamp(6)
+  moving_items             moving_items[]
+  real_estate_agents       real_estate_agents? @relation(fields: [referrer_agent_id], references: [id], onUpdate: NoAction, map: "fk_quote_requests_referrer_agent")
+  quotes                   quotes[]
+
+  @@index([customer_email], map: "idx_quote_requests_customer_email")
+  @@index([preferred_date_1], map: "idx_quote_requests_date")
+  @@index([referrer_agent_id], map: "idx_quote_requests_referrer")
+  @@index([status], map: "idx_quote_requests_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model quotes {
+  id                       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_request_id         String           @db.Uuid
+  company_id               String           @db.Uuid
+  quote_number             String           @unique(map: "idx_quotes_number") @db.VarChar(50)
+  total_points             Int
+  base_price               Int
+  distance_price           Int
+  option_price             Int
+  season_adjustment_price  Int?             @default(0)
+  tax_amount               Int
+  total_price              Int
+  breakdown_base_price     Int?
+  breakdown_distance_price Int?
+  breakdown_option_price   Int?
+  breakdown_total_points   Int?
+  valid_until              DateTime         @db.Date
+  proposed_date            DateTime?        @db.Date
+  proposed_time_slot       String?          @db.VarChar(20)
+  estimated_duration_hours Int?
+  assigned_truck_ids       String[]         @db.Uuid
+  assigned_employee_ids    String[]         @db.Uuid
+  terms_and_conditions     String?
+  internal_notes           String?
+  status                   String           @default("pending") @db.VarChar(20)
+  sent_at                  DateTime?        @db.Timestamp(6)
+  viewed_at                DateTime?        @db.Timestamp(6)
+  responded_at             DateTime?        @db.Timestamp(6)
+  created_at               DateTime         @default(now()) @db.Timestamp(6)
+  updated_at               DateTime         @default(now()) @db.Timestamp(6)
+  jobs                     jobs[]
+  quote_options            quote_options[]
+  moving_companies         moving_companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_quotes_company")
+  quote_requests           quote_requests   @relation(fields: [quote_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_quotes_request")
+
+  @@index([company_id], map: "idx_quotes_company")
+  @@index([quote_request_id], map: "idx_quotes_request")
+  @@index([status], map: "idx_quotes_status")
+  @@index([valid_until], map: "idx_quotes_valid_until")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model real_estate_agents {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String?          @db.Uuid
+  agent_code           String           @unique @db.VarChar(50)
+  company_name         String           @db.VarChar(255)
+  company_name_kana    String?          @db.VarChar(255)
+  department_name      String?          @db.VarChar(100)
+  last_name            String           @db.VarChar(100)
+  first_name           String           @db.VarChar(100)
+  last_name_kana       String?          @db.VarChar(100)
+  first_name_kana      String?          @db.VarChar(100)
+  postal_code          String?          @db.VarChar(10)
+  prefecture           String           @db.VarChar(50)
+  city                 String           @db.VarChar(100)
+  address_line         String
+  phone_number         String           @db.VarChar(20)
+  fax_number           String?          @db.VarChar(20)
+  email                String           @db.VarChar(255)
+  commission_rate      Decimal          @db.Decimal(5, 4)
+  payment_terms        String?
+  total_referrals      Int?             @default(0)
+  successful_referrals Int?             @default(0)
+  rating_average       Decimal?         @default(0.00) @db.Decimal(3, 2)
+  total_reviews        Int?             @default(0)
+  bank_name            String?          @db.VarChar(100)
+  branch_name          String?          @db.VarChar(100)
+  account_type         String?          @db.VarChar(20)
+  account_number       String?          @db.VarChar(20)
+  account_holder_name  String?          @db.VarChar(200)
+  contract_start_date  DateTime         @db.Date
+  contract_end_date    DateTime?        @db.Date
+  status               String           @default("active") @db.VarChar(20)
+  is_active            Boolean          @default(true)
+  created_at           DateTime         @default(now()) @db.Timestamp(6)
+  updated_at           DateTime         @default(now()) @db.Timestamp(6)
+  quote_requests       quote_requests[]
+  users                users?           @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_real_estate_agents_user")
+  referrers            referrers[]
+
+  @@index([company_name], map: "idx_real_estate_agents_company")
+  @@index([status], map: "idx_real_estate_agents_status")
+  @@index([user_id], map: "idx_real_estate_agents_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model referral_cases {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrer_id          String    @db.Uuid
+  customer_name        String    @db.VarChar(200)
+  customer_contact     String    @db.VarChar(500)
+  move_date            DateTime? @db.Date
+  move_from_location   String?
+  move_to_location     String?
+  estimated_volume_cbm Decimal?  @db.Decimal(10, 2)
+  special_notes        String?
+  status               String    @default("new") @db.VarChar(20)
+  commission_amount    Int?
+  commission_paid      Boolean   @default(false)
+  commission_paid_at   DateTime? @db.Timestamp(6)
+  created_at           DateTime  @default(now()) @db.Timestamp(6)
+  updated_at           DateTime  @default(now()) @db.Timestamp(6)
+  referrers            referrers @relation(fields: [referrer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_referral_cases_referrer")
+
+  @@index([move_date], map: "idx_referral_cases_move_date")
+  @@index([referrer_id], map: "idx_referral_cases_referrer")
+  @@index([status], map: "idx_referral_cases_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model referrers {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrer_type        String              @db.VarChar(20)
+  agent_id             String?             @db.Uuid
+  name                 String              @db.VarChar(255)
+  contact_info         Json?
+  commission_rate      Decimal?            @db.Decimal(5, 4)
+  total_referrals      Int?                @default(0)
+  successful_referrals Int?                @default(0)
+  is_active            Boolean             @default(true)
+  created_at           DateTime            @default(now()) @db.Timestamp(6)
+  updated_at           DateTime            @default(now()) @db.Timestamp(6)
+  referral_cases       referral_cases[]
+  real_estate_agents   real_estate_agents? @relation(fields: [agent_id], references: [id], onUpdate: NoAction, map: "fk_referrers_agent")
+
+  @@index([agent_id], map: "idx_referrers_agent")
+  @@index([referrer_type], map: "idx_referrers_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reviews {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id                 String    @db.Uuid
+  reviewer_name          String    @db.VarChar(200)
+  reviewer_email         String?   @db.VarChar(255)
+  overall_rating         Int
+  punctuality_rating     Int?
+  service_quality_rating Int?
+  professionalism_rating Int?
+  value_rating           Int?
+  comment                String?
+  would_recommend        Boolean?
+  is_verified            Boolean   @default(false)
+  is_visible             Boolean   @default(true)
+  response_from_company  String?
+  responded_at           DateTime? @db.Timestamp(6)
+  created_at             DateTime  @default(now()) @db.Timestamp(6)
+  updated_at             DateTime  @default(now()) @db.Timestamp(6)
+  jobs                   jobs      @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reviews_job")
+
+  @@index([job_id], map: "idx_reviews_job")
+  @@index([overall_rating(sort: Desc)], map: "idx_reviews_rating")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model schema_migrations {
+  version           String   @id @db.VarChar(50)
+  description       String
+  executed_at       DateTime @default(now()) @db.Timestamp(6)
+  execution_time_ms Int?
+  success           Boolean  @default(true)
+  error_message     String?
+
+  @@index([executed_at(sort: Desc)], map: "idx_schema_migrations_executed_at")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model season_rules {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String   @db.VarChar(100)
+  season_type         String   @db.VarChar(20)
+  start_date          DateTime @db.Date
+  end_date            DateTime @db.Date
+  rate_multiplier     Decimal  @db.Decimal(4, 2)
+  applies_to_weekdays Boolean  @default(true)
+  applies_to_weekends Boolean  @default(true)
+  min_discount_amount Int?
+  max_discount_amount Int?
+  is_active           Boolean  @default(true)
+  priority            Int      @default(100)
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([start_date, end_date], map: "idx_season_rules_dates")
+  @@index([season_type], map: "idx_season_rules_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model shifts {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employee_id   String    @db.Uuid
+  shift_date    DateTime  @db.Date
+  shift_type    String    @default("regular") @db.VarChar(20)
+  start_time    DateTime  @db.Time(6)
+  end_time      DateTime  @db.Time(6)
+  break_minutes Int?      @default(60)
+  status        String    @default("scheduled") @db.VarChar(20)
+  notes         String?
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @default(now()) @db.Timestamp(6)
+  employees     employees @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_shifts_employee")
+
+  @@index([shift_date], map: "idx_shifts_date")
+  @@index([employee_id], map: "idx_shifts_employee")
+  @@index([employee_id, shift_date], map: "idx_shifts_employee_date")
+  @@index([status], map: "idx_shifts_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model trucks {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id            String           @db.Uuid
+  truck_number          String           @db.VarChar(50)
+  license_plate         String           @unique @db.VarChar(20)
+  truck_type            String           @db.VarChar(20)
+  capacity_cbm          Decimal          @db.Decimal(10, 2)
+  max_load_kg           Int
+  has_lift_gate         Boolean          @default(false)
+  has_air_conditioning  Boolean          @default(false)
+  manufacture_year      Int?
+  manufacturer          String?          @db.VarChar(100)
+  model_name            String?          @db.VarChar(100)
+  last_inspection_date  DateTime?        @db.Date
+  next_inspection_date  DateTime         @db.Date
+  fuel_type             String?          @db.VarChar(20)
+  fuel_efficiency_kmpl  Decimal?         @db.Decimal(5, 2)
+  insurance_expiry_date DateTime         @db.Date
+  status                String           @default("available") @db.VarChar(20)
+  created_at            DateTime         @default(now()) @db.Timestamp(6)
+  updated_at            DateTime         @default(now()) @db.Timestamp(6)
+  moving_companies      moving_companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_trucks_company")
+
+  @@unique([company_id, truck_number], map: "idx_trucks_company_number")
+  @@index([company_id], map: "idx_trucks_company")
+  @@index([status], map: "idx_trucks_status")
+  @@index([truck_type], map: "idx_trucks_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String               @unique @db.VarChar(255)
+  password_hash      String               @db.VarChar(255)
+  role               String               @db.VarChar(20)
+  display_name       String?              @db.VarChar(100)
+  phone_number       String?              @db.VarChar(20)
+  is_active          Boolean              @default(true)
+  email_verified     Boolean              @default(false)
+  email_verified_at  DateTime?            @db.Timestamp(6)
+  last_login_at      DateTime?            @db.Timestamp(6)
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  updated_at         DateTime             @default(now()) @db.Timestamp(6)
+  employees          employees[]
+  moving_companies   moving_companies[]
+  notifications      notifications[]
+  real_estate_agents real_estate_agents[]
+
+  @@index([email], map: "idx_users_email")
+  @@index([role], map: "idx_users_role")
+}

@@ -28,6 +28,7 @@ interface Employee {
   birthDate?: string; // 生年月日
   address?: string; // 住所
   emergencyContact?: string; // 緊急連絡先
+  emergencyContactRelation?: string; // 緊急連絡先との関係
   retireDate?: string; // 退職日
 }
 

@@ -17,6 +17,7 @@ interface Employee {
   birthDate?: string; // 生年月日
   address?: string; // 住所
   emergencyContact?: string; // 緊急連絡先
+  emergencyContactRelation?: string; // 緊急連絡先との関係
   retireDate?: string; // 退職日
 }
 
@@ -53,6 +54,7 @@ export default function EmployeeManagement({
     birthDate: '',
     address: '',
     emergencyContact: '',
+    emergencyContactRelation: '',
     retireDate: '',
   });
 
@@ -133,6 +135,7 @@ export default function EmployeeManagement({
       birthDate: '',
       address: '',
       emergencyContact: '',
+      emergencyContactRelation: '',
       retireDate: '',
     });
     onShowEmployeeModal(false);
@@ -152,6 +155,7 @@ export default function EmployeeManagement({
       birthDate: employee.birthDate || '',
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
+      emergencyContactRelation: employee.emergencyContactRelation || '',
       retireDate: employee.retireDate || '',
     });
     onSelectEmployee(employee);
@@ -233,6 +237,7 @@ export default function EmployeeManagement({
                       birthDate: '',
                       address: '',
                       emergencyContact: '',
+                      emergencyContactRelation: '',
                       retireDate: '',
                     });
                     onSelectEmployee(null);
@@ -273,8 +278,7 @@ export default function EmployeeManagement({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">保有資格</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入社日</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">住所</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">緊急連絡先</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">編集</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">詳細</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
@@ -295,13 +299,12 @@ export default function EmployeeManagement({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.qualifications || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.hireDate}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.address || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.emergencyContact || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleEdit(employee)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          編集
+                          詳細
                         </button>
                       </td>
                     </tr>
@@ -320,7 +323,7 @@ export default function EmployeeManagement({
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {selectedEmployee ? '従業員編集' : '従業員追加'}
+                  {selectedEmployee ? '従業員詳細' : '従業員追加'}
                 </h3>
                 <button
                   type="button"
@@ -499,7 +502,18 @@ export default function EmployeeManagement({
                   value={formData.emergencyContact}
                   onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  placeholder="例: 090-1234-5678（家族等）"
+                  placeholder="例: 090-1234-5678"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">緊急連絡先との関係</label>
+                <input
+                  type="text"
+                  value={formData.emergencyContactRelation}
+                  onChange={e => setFormData({ ...formData, emergencyContactRelation: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="例: 父、母、配偶者など"
                 />
               </div>
               </div>
