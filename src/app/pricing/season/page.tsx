@@ -195,7 +195,7 @@ export default function SeasonPage() {
     const end = new Date(endDate);
     
     return seasonRules.some(rule => {
-      if (excludeId && rule.id === excludeId) return false;
+      if (excludeId && rule.id === excludeId) {return false;}
       
       const ruleStart = new Date(rule.startDate);
       const ruleEnd = new Date(rule.endDate);

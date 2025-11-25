@@ -84,15 +84,15 @@ interface CompleteFormData {
  */
 const calculateEstimate = (step1Data: any, step2Data: any) => {
   // アイテムポイントの計算
-  let totalPoints = 0;
-  
+  let _totalPoints = 0;
+
   if (step2Data.items) {
     // 各アイテムの数量とポイントを計算
     Object.entries(step2Data.items).forEach(([itemName, quantity]) => {
       if (typeof quantity === 'number' && quantity > 0) {
         // アイテム名からポイントを取得（簡易版）
         const points = getItemPoints(itemName);
-        totalPoints += points * quantity;
+        _totalPoints += points * quantity;
       }
     });
   }
@@ -100,24 +100,24 @@ const calculateEstimate = (step1Data: any, step2Data: any) => {
   // 段ボールの追加ポイント
   if (step2Data.items?.danball) {
     const danballPoints = getDanballPoints(step2Data.items.danball);
-    totalPoints += danballPoints;
+    _totalPoints += danballPoints;
   }
 
   // トラック種別の決定
-  const recommendedTruckType = getRecommendedTruckType(totalPoints);
-  
+  const recommendedTruckType = getRecommendedTruckType(_totalPoints);
+
   // 基本料金の計算
-  const basePrice = getBasePrice(recommendedTruckType, totalPoints);
-  
+  const basePrice = getBasePrice(recommendedTruckType, _totalPoints);
+
   // 距離料金の計算（簡易版）
   const distance = calculateDistance(step1Data.fromAddress, step1Data.toAddress);
   const distancePrice = getDistancePrice(distance);
-  
+
   // 総額計算
   const estimatedPrice = basePrice + distancePrice;
 
   return {
-    totalPoints,
+    totalPoints: _totalPoints,
     estimatedPrice,
     recommendedTruckType,
     distance
@@ -153,11 +153,11 @@ const getItemPoints = (itemName: string): number => {
  * @returns ポイント数
  */
 const getDanballPoints = (danballOption: string): number => {
-  if (danballOption.includes('10箱未満')) return 5;
-  if (danballOption.includes('10〜20箱')) return 10;
-  if (danballOption.includes('21〜30箱')) return 15;
-  if (danballOption.includes('31〜50箱')) return 25;
-  if (danballOption.includes('51箱以上')) return 40;
+  if (danballOption.includes('10箱未満')) {return 5;}
+  if (danballOption.includes('10〜20箱')) {return 10;}
+  if (danballOption.includes('21〜30箱')) {return 15;}
+  if (danballOption.includes('31〜50箱')) {return 25;}
+  if (danballOption.includes('51箱以上')) {return 40;}
   return 0;
 };
 
@@ -167,10 +167,10 @@ const getDanballPoints = (danballOption: string): number => {
  * @returns トラック種別
  */
 const getRecommendedTruckType = (totalPoints: number): string => {
-  if (totalPoints <= 50) return '2tショート';
-  if (totalPoints <= 75) return '2tロング';
-  if (totalPoints <= 100) return '4t';
-  if (totalPoints <= 150) return '6t';
+  if (totalPoints <= 50) {return '2tショート';}
+  if (totalPoints <= 75) {return '2tロング';}
+  if (totalPoints <= 100) {return '4t';}
+  if (totalPoints <= 150) {return '6t';}
   return '10t';
 };
 
@@ -180,7 +180,7 @@ const getRecommendedTruckType = (totalPoints: number): string => {
  * @param totalPoints - 総ポイント
  * @returns 基本料金
  */
-const getBasePrice = (truckType: string, totalPoints: number): number => {
+const getBasePrice = (truckType: string, _totalPoints: number): number => {
   const basePrices: Record<string, number> = {
     '2tショート': 25000,
     '2tロング': 35000,
@@ -188,7 +188,7 @@ const getBasePrice = (truckType: string, totalPoints: number): number => {
     '6t': 60000,
     '10t': 80000,
   };
-  
+
   return basePrices[truckType] || 45000;
 };
 
@@ -213,9 +213,9 @@ const calculateDistance = (fromAddress: string, toAddress: string): number => {
  * @returns 距離料金
  */
 const getDistancePrice = (distance: number): number => {
-  if (distance <= 10) return 0;
-  if (distance <= 30) return 5000;
-  if (distance <= 50) return 10000;
+  if (distance <= 10) {return 0;}
+  if (distance <= 30) {return 5000;}
+  if (distance <= 50) {return 10000;}
   return 15000;
 };
 

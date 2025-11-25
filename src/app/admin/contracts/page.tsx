@@ -8,10 +8,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import AdminCard from '@/components/admin/AdminCard';
 import { generateTestContract } from '@/constants/testData';
 
 /**
@@ -43,7 +41,7 @@ interface MonthlySummary {
 export default function AdminContracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
-  const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummary[]>([]);
+  const [_monthlySummaries, setMonthlySummaries] = useState<MonthlySummary[]>([]);
   const [periodOption, setPeriodOption] = useState<string>('all');
   const [yearValue, setYearValue] = useState('');
   const [monthValue, setMonthValue] = useState('');
@@ -51,7 +49,6 @@ export default function AdminContracts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('contractDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const router = useRouter();
 
   /**
    * デモデータの初期化

@@ -121,7 +121,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
 
   // ソート処理
   const handleSort = useCallback((columnKey: string) => {
-    if (!onSortChange) return;
+    if (!onSortChange) {return;}
     
     const newDirection = sort?.key === columnKey && sort.direction === 'asc' ? 'desc' : 'asc';
     onSortChange({ key: columnKey, direction: newDirection });
@@ -129,7 +129,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
 
   // 全選択の処理
   const handleSelectAll = useCallback(() => {
-    if (!onSelectionChange) return;
+    if (!onSelectionChange) {return;}
     
     const allRowKeys = data.map((item, index) => getRowKey(item, index));
     const isAllSelected = allRowKeys.every(key => selectedRows.includes(key));
@@ -139,7 +139,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
 
   // 行選択の処理
   const handleRowSelect = useCallback((rowKey: string) => {
-    if (!onSelectionChange) return;
+    if (!onSelectionChange) {return;}
     
     const newSelection = selectedRows.includes(rowKey)
       ? selectedRows.filter(key => key !== rowKey)
@@ -150,13 +150,13 @@ export const DataTable = memo(<T extends Record<string, any>>({
 
   // 全選択状態の計算
   const selectAllState = useMemo(() => {
-    if (data.length === 0) return 'none';
+    if (data.length === 0) {return 'none';}
     
     const allRowKeys = data.map((item, index) => getRowKey(item, index));
     const selectedCount = allRowKeys.filter(key => selectedRows.includes(key)).length;
     
-    if (selectedCount === 0) return 'none';
-    if (selectedCount === allRowKeys.length) return 'all';
+    if (selectedCount === 0) {return 'none';}
+    if (selectedCount === allRowKeys.length) {return 'all';}
     return 'partial';
   }, [data, selectedRows, getRowKey]);
 
@@ -202,7 +202,7 @@ export const DataTable = memo(<T extends Record<string, any>>({
                     type="checkbox"
                     checked={selectAllState === 'all'}
                     ref={input => {
-                      if (input) input.indeterminate = selectAllState === 'partial';
+                      if (input) {input.indeterminate = selectAllState === 'partial';}
                     }}
                     onChange={handleSelectAll}
                     aria-label="全て選択"

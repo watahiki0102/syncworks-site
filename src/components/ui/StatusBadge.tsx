@@ -31,7 +31,7 @@ function isCaseStatusBadge(props: StatusBadgeProps): props is CaseStatusBadgePro
 export function StatusBadge(props: StatusBadgeProps) {
   // シンプルなバッジの場合（フィルタリング用）
   if (!isCaseStatusBadge(props)) {
-    const { status, bgColor, textColor, label, variant, children } = props;
+    const { status: _status, bgColor, textColor, label, variant, children } = props;
     
     // childrenが指定されている場合はchildrenを使用
     if (children) {
@@ -61,7 +61,7 @@ export function StatusBadge(props: StatusBadgeProps) {
   }
 
   // ケースアイテムバッジの場合
-  const { caseItem, showDropdown = false, onStatusChange } = props;
+  const { caseItem, showDropdown = false, onStatusChange: _onStatusChange } = props;
   // エラーハンドリング
   if (!caseItem || !caseItem.status) {
     return (

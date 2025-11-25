@@ -10,8 +10,8 @@ export type SourceType = 'syncmoving' | 'suumo' | '外部' | '手動' | string;
  * @returns 正規化された依頼元種別
  */
 export const normalizeSourceType = (raw?: string): SourceType => {
-  if (!raw) return '外部';
-  if (raw === 'sync') return 'syncmoving';
+  if (!raw) { return '外部'; }
+  if (raw === 'sync') { return 'syncmoving'; }
   const ok = new Set(['syncmoving', 'suumo', '外部', '手動']);
   return ok.has(raw) ? (raw as SourceType) : '外部';
 };
@@ -112,7 +112,7 @@ export class IntermediaryService {
    */
   static getSavedNames(): string[] {
     try {
-      if (typeof window === 'undefined') return [];
+      if (typeof window === 'undefined') { return []; }
       const stored = localStorage.getItem(INTERMEDIARY_NAMES_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
@@ -125,9 +125,9 @@ export class IntermediaryService {
    * 新しい仲介元名を追加
    */
   static addName(name: string): void {
-    if (typeof window === 'undefined') return;
-    if (!name.trim()) return;
-    
+    if (typeof window === 'undefined') { return; }
+    if (!name.trim()) { return; }
+
     const savedNames = this.getSavedNames();
     if (!savedNames.includes(name.trim())) {
       savedNames.push(name.trim());
@@ -143,9 +143,9 @@ export class IntermediaryService {
    * 仲介元名を削除
    */
   static removeName(name: string): void {
-    if (typeof window === 'undefined') return;
-    if (!name.trim()) return;
-    
+    if (typeof window === 'undefined') { return; }
+    if (!name.trim()) { return; }
+
     const savedNames = this.getSavedNames();
     const filteredNames = savedNames.filter(savedName => savedName !== name.trim());
     
@@ -169,11 +169,11 @@ export class IntermediaryService {
       '外部': '外部',
       '手動': '手動登録'
     };
-    
+
     if (fixedLabels[id]) {
       return { name: fixedLabels[id] };
     }
-    
+
     // 保存された仲介元名の場合
     const savedNames = this.getSavedNames();
     if (savedNames.includes(id)) {
@@ -187,8 +187,8 @@ export class IntermediaryService {
    * 初期データを設定
    */
   static initializeTestData(): void {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === 'undefined') { return; }
+
     const testNames = ['スーモ', '引越し侍'];
     testNames.forEach(name => this.addName(name));
   }

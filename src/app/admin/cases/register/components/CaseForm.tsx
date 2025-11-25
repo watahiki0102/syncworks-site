@@ -190,7 +190,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
       
       // 入力フィールドをクリア
       updateFormData('newIntermediaryName', '');
-      
+
       // エラーをクリア
       if (errors.newIntermediaryName) {
         setErrors(prev => ({ ...prev, newIntermediaryName: '' }));
@@ -202,7 +202,7 @@ export default function CaseForm({ onSubmit, initialData }: CaseFormProps) {
   const removeIntermediary = (name: string) => {
     if (confirm(`「${name}」を削除しますか？`)) {
       IntermediaryService.removeName(name);
-      
+
       // 現在選択されている項目が削除された場合は選択をクリア
       if (formData.sourceType === name) {
         updateFormData('sourceType', '');
@@ -1073,11 +1073,11 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
   };
 
   const getDanballPoints = (danballOption: string): number => {
-    if (danballOption.includes('10箱未満')) return 5;
-    if (danballOption.includes('10〜20箱')) return 10;
-    if (danballOption.includes('21〜30箱')) return 15;
-    if (danballOption.includes('31〜50箱')) return 25;
-    if (danballOption.includes('51箱以上')) return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
+    if (danballOption.includes('10箱未満')) {return 5;}
+    if (danballOption.includes('10〜20箱')) {return 10;}
+    if (danballOption.includes('21〜30箱')) {return 15;}
+    if (danballOption.includes('31〜50箱')) {return 25;}
+    if (danballOption.includes('51箱以上')) {return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;}
     return 0;
   };
 
@@ -1128,7 +1128,7 @@ function EstimateModal({ isOpen, onClose, onCalculate }: EstimateModalProps) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) { return null; }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

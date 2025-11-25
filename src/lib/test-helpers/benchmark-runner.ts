@@ -178,7 +178,7 @@ export class BenchmarkRunner {
    * 時系列パフォーマンス測定（性能回帰検出用）
    */
   static async timeSeriesBenchmark<T extends any[], R>(
-    name: string,
+    _name: string,
     fn: (...args: T) => R,
     args: T,
     duration: number = 5000, // 5秒間
@@ -377,7 +377,7 @@ export class MemoryProfiler {
    * メモリリークの検出
    */
   detectLeaks(threshold: number = 50 * 1024 * 1024): boolean { // 50MB threshold
-    if (this.snapshots.length < 2) return false;
+    if (this.snapshots.length < 2) {return false;}
     
     const growth = this.snapshots[this.snapshots.length - 1].memory - this.snapshots[0].memory;
     return growth > threshold;

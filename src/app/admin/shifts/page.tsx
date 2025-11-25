@@ -1,16 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import AdminButton from '@/components/admin/AdminButton';
 import AdminTabs from '@/components/admin/AdminTabs';
 import ShiftCalendar from '@/components/ShiftCalendar';
 import EmployeeManagement from '@/components/EmployeeManagement';
 import { TIME_SLOTS } from '@/constants/calendar';
-import TimeRangeSelector, { TimeRangeType } from '@/components/TimeRangeSelector';
-import TimeRangeDisplaySelector from '@/components/TimeRangeDisplaySelector';
+import { TimeRangeType } from '@/components/TimeRangeSelector';
 import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '@/app/admin/cases/lib/unifiedData';
 
@@ -36,20 +33,12 @@ interface EmployeeShift {
   id: string;
   employeeId: string;
   date: string;
-  timeSlot: string;
+  timeSlot?: string;
   status: 'working' | 'unavailable';
   customerName?: string;
   notes?: string;
   startTime?: string;
   endTime?: string;
-}
-
-// 従業員の月間集計データの型定義
-interface EmployeeMonthlySummary {
-  employee: Employee; // 従業員情報
-  workingDays: number; // 出勤日数
-  totalWorkingTime: string; // 総労働時間（表示用文字列）
-  totalWorkingMinutes: number; // 総労働時間（分単位、ソート用）
 }
 
 /**
@@ -198,9 +187,9 @@ export default function ShiftManagement() {
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   
   // 日ビュー用の時間帯設定関連のstate
-  const [timeRangeType, setTimeRangeType] = useState<TimeRangeType>('full');
-  const [customStartTime, setCustomStartTime] = useState<string>('');
-  const [customEndTime, setCustomEndTime] = useState<string>('');
+  const [timeRangeType, _setTimeRangeType] = useState<TimeRangeType>('full');
+  const [customStartTime, _setCustomStartTime] = useState<string>('');
+  const [customEndTime, _setCustomEndTime] = useState<string>('');
   
   // 時間帯表示設定（配車管理画面のような機能）
   const [displayStartTime, setDisplayStartTime] = useState<number>(8);
@@ -216,7 +205,7 @@ export default function ShiftManagement() {
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch (e) {
+        } catch {
           return [];
         }
       }
@@ -475,7 +464,7 @@ export default function ShiftManagement() {
     pendingPasteDates.forEach(date => {
       normalShifts.forEach(shift => {
         const employee = employees.find(emp => emp.id === shift.employeeId);
-        if (!employee) return;
+        if (!employee) {return;}
 
         const key = `${shift.employeeId}|||${date}`;
         const newStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
@@ -534,9 +523,9 @@ export default function ShiftManagement() {
 
     // 日マタギシフトの処理
     pendingPasteDates.forEach(startDate => {
-      dayCrossingGroups.forEach((groupShifts, groupKey) => {
+      dayCrossingGroups.forEach((groupShifts, _groupKey) => {
         const employee = employees.find(emp => emp.id === groupShifts[0].employeeId);
-        if (!employee) return;
+        if (!employee) {return;}
 
         // グループの日数を計算
         const dayCount = groupShifts.length;
@@ -678,13 +667,6 @@ export default function ShiftManagement() {
     setClipboardMode('none');
   };
 
-  const cancelClipboard = () => {
-    setClipboardMode('none');
-    setSelectedShifts([]);
-    setPendingPasteDates([]);
-    setShowClipboard(false);
-  };
-
   const removeSelectedShift = (shiftIdToRemove: string) => {
     setSelectedShifts(prev => prev.filter(shift => shift.id !== shiftIdToRemove));
   };
@@ -692,8 +674,6 @@ export default function ShiftManagement() {
   const clearSelectedShifts = () => {
     setSelectedShifts([]);
   };
-  
-  const router = useRouter();
 
   useEffect(() => {
     // 統合案件データを取得
@@ -1190,7 +1170,7 @@ export default function ShiftManagement() {
    * @param shiftIds - 削除するシフトIDの配列
    */
   const deleteMultipleShifts = (employeeId: string, shiftIds: string[]) => {
-    if (shiftIds.length === 0) return;
+    if (shiftIds.length === 0) {return;}
     
     const shiftIdSet = new Set(shiftIds);
     const updatedEmployees = employees.map(employee => {

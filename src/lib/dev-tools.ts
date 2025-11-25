@@ -21,7 +21,7 @@ export const useRenderTracker = (componentName: string) => {
   renderCountRef.current += 1;
 
   React.useEffect(() => {
-    if (!isDevelopment) return;
+    if (!isDevelopment) {return;}
     
     logger.debug(`${componentName} rendered`, {
       renderCount: renderCountRef.current,
@@ -59,7 +59,7 @@ export class PerformanceMonitor {
   private observers: PerformanceObserver[] = [];
 
   private constructor() {
-    if (!isDevelopment) return;
+    if (!isDevelopment) {return;}
     this.initializeObservers();
   }
 
@@ -165,12 +165,12 @@ export class PerformanceMonitor {
    * すべての測定結果をログ出力
    */
   logAllStats(): void {
-    this.measurements.forEach((measurements, name) => {
+    this.measurements.forEach((_measurements, name) => {
       const stats = this.getStats(name);
       if (stats) {
-        logger.info(`Performance Stats: ${name}`, stats, { 
-          component: 'PerformanceMonitor', 
-          action: 'stats' 
+        logger.info(`Performance Stats: ${name}`, stats, {
+          component: 'PerformanceMonitor',
+          action: 'stats'
         });
       }
     });
@@ -204,7 +204,7 @@ export const renderOptimizationChecker = {
     props: T,
     prevProps?: T
   ): void {
-    if (!isDevelopment || !prevProps) return;
+    if (!isDevelopment || !prevProps) {return;}
 
     const changedProps: string[] = [];
     const shallowChanges: string[] = [];
@@ -235,7 +235,7 @@ export const renderOptimizationChecker = {
    * メモ化されていないコールバックを検出
    */
   checkUnmemoizedCallbacks(componentName: string, callbacks: Record<string, (...args: unknown[]) => unknown>): void {
-    if (!isDevelopment) return;
+    if (!isDevelopment) {return;}
 
     Object.entries(callbacks).forEach(([name, callback]) => {
       // 関数の toString() でメモ化されているかどうかを大まかに判定
@@ -257,8 +257,8 @@ export const debugInfo = {
   /**
    * コンポーネント情報をコンソールに表示
    */
-  logComponentInfo(componentName: string, props: Record<string, unknown>, state?: Record<string, unknown>): void {
-    if (!isDevelopment) return;
+  logComponentInfo(_componentName: string, _props: Record<string, unknown>, _state?: Record<string, unknown>): void {
+    if (!isDevelopment) {return;}
     // Component info logging removed
   },
 
@@ -266,7 +266,7 @@ export const debugInfo = {
    * パフォーマンス情報を可視化
    */
   visualizePerformance(): void {
-    if (!isDevelopment || typeof window === 'undefined') return;
+    if (!isDevelopment || typeof window === 'undefined') {return;}
 
     const monitor = PerformanceMonitor.getInstance();
     
@@ -290,7 +290,7 @@ export const debugInfo = {
 
       const updateOverlay = () => {
         const stats: Record<string, ReturnType<typeof monitor.getStats>> = {};
-        (monitor as any).measurements.forEach((values: number[], name: string) => {
+        (monitor as any).measurements.forEach((_values: number[], name: string) => {
           stats[name] = monitor.getStats(name);
         });
 

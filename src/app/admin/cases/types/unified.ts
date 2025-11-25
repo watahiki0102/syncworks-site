@@ -147,6 +147,7 @@ export interface QuoteResponseFormErrors {
   optionAmount?: string;
   validUntil?: string;
   comment?: string;
+  notes?: string;
   confirmationMemo?: string;
   adjustmentReason?: string;
   submit?: string;

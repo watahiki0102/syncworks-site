@@ -166,7 +166,7 @@ export default function VendorsPage() {
 
   // 検索とソートの処理
   const filteredAndSortedVendors = useMemo(() => {
-    let filtered = vendors.filter(vendor => {
+    const filtered = vendors.filter(vendor => {
       // 1. 地域フィルターチェック
       let passesAreaFilter = true;
 

@@ -140,8 +140,8 @@ class Logger {
    * コンソールへの出力
    */
   private outputToConsole(entry: LogEntry): void {
-    const { timestamp, level, message, data, error, component, action } = entry;
-    
+    const { timestamp, level, message: _message, data: _data, error, component, action } = entry;
+
     // カラー付きログ出力
     const colors = {
       debug: '\x1b[36m', // cyan
@@ -150,10 +150,11 @@ class Logger {
       error: '\x1b[31m', // red
     };
     const reset = '\x1b[0m';
-    
-    const prefix = `${colors[level]}[${level.toUpperCase()}]${reset}`;
-    const time = new Date(timestamp).toLocaleTimeString();
-    const context = component ? `[${component}${action ? `:${action}` : ''}]` : '';
+
+    // ログフォーマット用変数（将来のコンソール出力拡張用）
+    void `${colors[level]}[${level.toUpperCase()}]${reset}`;
+    void new Date(timestamp).toLocaleTimeString();
+    void (component ? `[${component}${action ? `:${action}` : ''}]` : '');
 
     if (error) {
       console.error('Error:', error);
@@ -164,7 +165,7 @@ class Logger {
    * リモートログサーバーへの送信
    */
   private async sendToRemote(entries: LogEntry[]): Promise<void> {
-    if (!this.config.enableRemoteLogging) return;
+    if (!this.config.enableRemoteLogging) {return;}
 
     try {
       // 実際の実装では適切なログサーバーのエンドポイントに送信
@@ -183,7 +184,7 @@ class Logger {
    * バッファ内のログをフラッシュ
    */
   private async flushLogs(): Promise<void> {
-    if (this.logBuffer.length === 0) return;
+    if (this.logBuffer.length === 0) {return;}
 
     const logsToSend = [...this.logBuffer];
     this.logBuffer = [];
@@ -224,8 +225,8 @@ class Logger {
    */
   startTimer(label: string): () => void {
     const startTime = performance.now();
-    const startEntry = this.createLogEntry('debug', `Timer started: ${label}`, { startTime });
-    
+    void this.createLogEntry('debug', `Timer started: ${label}`, { startTime });
+
     if (this.config.enableConsole) {
       console.time(label);
     }

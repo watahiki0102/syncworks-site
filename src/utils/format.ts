@@ -4,7 +4,7 @@
  * @returns フォーマットされた文字列（例：¥123,456（税込））
  */
 export function formatPriceJPY(value?: number | null): string {
-  if (value == null) return '-';
+  if (value === null || value === undefined) {return '-';}
   return `¥${value.toLocaleString()}（税込）`;
 }
 
@@ -14,10 +14,10 @@ export function formatPriceJPY(value?: number | null): string {
  * @returns フォーマットされた文字列（例：2024/01/15）または '-'
  */
 export function formatDateYMD(dateStr?: string | null): string {
-  if (!dateStr) return '-';
+  if (!dateStr) {return '-';}
   try {
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '-';
+    if (isNaN(date.getTime())) {return '-';}
     return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: '2-digit',
@@ -34,7 +34,7 @@ export function formatDateYMD(dateStr?: string | null): string {
  * @returns フォーマットされた時間文字列
  */
 export function formatHHmm(t: string): string {
-  if (!t) return '-';
+  if (!t) {return '-';}
   // 既にHH:mm形式の場合はそのまま返す
   if (/^\d{2}:\d{2}$/.test(t)) {
     return t;
@@ -55,7 +55,7 @@ export function formatHHmm(t: string): string {
  * @returns 短縮された住所文字列
  */
 export function shortenAddress(address: string, mode: 'full' | 'compact' | 'mini' | 'too-narrow' = 'compact'): string {
-  if (!address) return '';
+  if (!address) {return '';}
   
   // 住所を解析して市区町村を優先
   const parts = address.split(/[都道府県市区町村]/).filter(Boolean);

@@ -49,8 +49,10 @@ export default function AssignDrawer({
 
   // 検索フィルタリングされた作業者
   const filteredWorkers = useMemo(() => {
-    if (!searchTerm) return workers;
-    return workers.filter(worker => 
+    if (!searchTerm) {
+      return workers;
+    }
+    return workers.filter(worker =>
       worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       worker.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -63,13 +65,15 @@ export default function AssignDrawer({
 
   // 時間競合チェック
   const conflicts = useMemo(() => {
-    if (selectedEmployees.length === 0) return [];
+    if (selectedEmployees.length === 0) {return [];}
     
     const conflicts: Array<{ employeeId: string; employeeName: string; conflictInfo: string }> = [];
     
     selectedEmployees.forEach(employeeId => {
       const worker = workers.find(w => w.id === employeeId);
-      if (!worker) return;
+      if (!worker) {
+        return;
+      }
       
       // 実際の実装では、この作業者が他のスケジュールに割り当てられているかをチェック
       // 今回はモックで競合をシミュレート
@@ -107,7 +111,9 @@ export default function AssignDrawer({
 
   // 割り当て実行
   const handleAssign = () => {
-    if (!isValid) return;
+    if (!isValid) {
+      return;
+    }
     
     onAssign({
       scheduleId: schedule.scheduleId,
@@ -140,9 +146,12 @@ export default function AssignDrawer({
       document.addEventListener('keydown', handleEsc);
       return () => document.removeEventListener('keydown', handleEsc);
     }
+    return undefined;
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

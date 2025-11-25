@@ -7,12 +7,14 @@ const nextConfig = {
   // Experimental features
   experimental: {
     optimizePackageImports: ["lucide-react"],
-    turbo: {
-      rules: {
-        "*.svg": {
-          loaders: ["@svgr/webpack"],
-          as: "*.js",
-        },
+  },
+
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
       },
     },
   },
@@ -34,14 +36,14 @@ const nextConfig = {
   // Enable React strict mode
   reactStrictMode: true,
 
-  // TypeScript build settings - 開発時は高速化
+  // TypeScript build settings - ビルド時に型エラーを検出
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
-  // ESLint settings - 開発時は高速化
+  // ESLint settings - ビルド時にリントエラーを検出
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   // Build-time optimizations

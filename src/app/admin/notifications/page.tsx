@@ -116,10 +116,10 @@ export default function AdminNotifications() {
     }
 
     filtered.sort((a, b) => {
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      if (a.priority === 'high' && b.priority !== 'high') return -1;
-      if (a.priority !== 'high' && b.priority === 'high') return 1;
+      if (a.status === 'pending' && b.status !== 'pending') {return -1;}
+      if (a.status !== 'pending' && b.status === 'pending') {return 1;}
+      if (a.priority === 'high' && b.priority !== 'high') {return -1;}
+      if (a.priority !== 'high' && b.priority === 'high') {return 1;}
       return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
     });
 
@@ -177,17 +177,17 @@ export default function AdminNotifications() {
 
   /**
    * 見積回答処理
-   * @param requestId - 依頼ID
+   * @param _requestId - 依頼ID
    */
-  const handleAnswer = (requestId: string) => {
+  const handleAnswer = (_requestId: string) => {
     // TODO: implement answer logic
   };
 
   /**
    * 依頼詳細の表示
-   * @param requestId - 依頼ID
+   * @param _requestId - 依頼ID
    */
-  const handleViewDetails = (requestId: string) => {
+  const handleViewDetails = (_requestId: string) => {
     // TODO: navigate to details view
   };
 

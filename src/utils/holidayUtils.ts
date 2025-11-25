@@ -35,7 +35,7 @@ export async function fetchHolidays(): Promise<Holiday[]> {
     holidayCache = data.holidays || [];
     lastFetchTime = now;
 
-    return holidayCache;
+    return holidayCache || [];
   } catch (error) {
     console.error('祝日データ取得エラー:', error);
     // エラー時は空の配列を返す

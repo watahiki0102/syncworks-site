@@ -221,7 +221,7 @@ export const customSchemas = {
   japaneseDate: () => z.string().refine((date) => {
     // YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD形式をサポート
     const dateRegex = /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/;
-    if (!dateRegex.test(date)) return false;
+    if (!dateRegex.test(date)) {return false;}
     
     const parsedDate = new Date(date.replace(/[/.]/g, '-'));
     return !isNaN(parsedDate.getTime());

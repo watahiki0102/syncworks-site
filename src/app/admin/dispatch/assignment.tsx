@@ -83,43 +83,23 @@ function TruckAssignmentPage() {
   }, []);
 
   const filteredCases = dispatchCases.filter(caseItem => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'pending') return caseItem.truckAssignments.length === 0;
-    if (statusFilter === 'assigned') return caseItem.truckAssignments.length > 0;
-    if (statusFilter === 'completed') return caseItem.contractStatus === 'confirmed';
+    if (statusFilter === 'all') {
+      return true;
+    }
+    if (statusFilter === 'pending') {
+      return caseItem.truckAssignments.length === 0;
+    }
+    if (statusFilter === 'assigned') {
+      return caseItem.truckAssignments.length > 0;
+    }
+    if (statusFilter === 'completed') {
+      return caseItem.contractStatus === 'confirmed';
+    }
     return true;
   });
 
-  const calculateEstimatedPrice = (points: number, distance?: number) => {
+  const _calculateEstimatedPrice = (points: number, distance?: number) => {
     return points * 100 + (distance || 0) * 50;
-  };
-
-  const calculateRecommendedTrucks = (points: number) => {
-    if (points <= 100) return trucks.filter(t => t.truckType === '2t');
-    if (points <= 200) return trucks.filter(t => t.truckType === '4t');
-    return trucks.filter(t => t.truckType === '10t');
-  };
-
-  const getStatusConfig = (type: string, status: string) => {
-    const configs: Record<string, Record<string, { icon: string; text: string; color: string }>> = {
-      submission: {
-        pending: { icon: '⏳', text: '未割当', color: 'bg-yellow-100 text-yellow-800' },
-        assigned: { icon: '✅', text: '割当済', color: 'bg-blue-100 text-blue-800' },
-        completed: { icon: '🎉', text: '完了', color: 'bg-green-100 text-green-800' },
-      },
-      caseStatus: {
-        unanswered: { icon: '❓', text: '未回答', color: 'bg-gray-100 text-gray-800' },
-        answered: { icon: '💬', text: '回答済', color: 'bg-blue-100 text-blue-800' },
-        contracted: { icon: '📋', text: '受注', color: 'bg-green-100 text-green-800' },
-        lost: { icon: '💸', text: '失注', color: 'bg-red-100 text-red-800' },
-        cancelled: { icon: '🚫', text: 'キャンセル', color: 'bg-yellow-100 text-yellow-800' },
-      },
-      contract: {
-        estimate: { icon: '📝', text: '見積もり', color: 'bg-orange-100 text-orange-800' },
-        confirmed: { icon: '✅', text: '契約完了', color: 'bg-green-100 text-green-800' },
-      },
-    };
-    return configs[type]?.[status] || { icon: '❓', text: '不明', color: 'bg-gray-100 text-gray-800' };
   };
 
   const handleEdit = (caseId: string) => {
@@ -419,31 +399,31 @@ function TruckAssignmentPage() {
             ) : (
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {trucks.map(truck => {
-                    const todaySchedules = truck.schedules
+                  {trucks.map(_truck => {
+                    const todaySchedules = _truck.schedules
                       .filter(s => s.date === new Date().toISOString().split('T')[0])
                       .length;
 
                     return (
-                      <div key={truck.id} className={`border-2 rounded-lg p-4 transition-all hover:shadow-md ${
-                        truck.status === 'available' ? 'border-green-200 bg-green-50' :
-                        truck.status === 'maintenance' ? 'border-yellow-200 bg-yellow-50' :
+                      <div key={_truck.id} className={`border-2 rounded-lg p-4 transition-all hover:shadow-md ${
+                        _truck.status === 'available' ? 'border-green-200 bg-green-50' :
+                        _truck.status === 'maintenance' ? 'border-yellow-200 bg-yellow-50' :
                         'border-red-200 bg-red-50'
                       }`}>
                         {/* ヘッダー */}
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h4 className="font-bold text-gray-900">{truck.name}</h4>
-                            <p className="text-sm text-gray-600">{truck.plateNumber}</p>
+                            <h4 className="font-bold text-gray-900">{_truck.name}</h4>
+                            <p className="text-sm text-gray-600">{_truck.plateNumber}</p>
                           </div>
                           <div className="text-right">
                             <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                              truck.status === 'available' ? 'bg-green-100 text-green-800' :
-                              truck.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                              _truck.status === 'available' ? 'bg-green-100 text-green-800' :
+                              _truck.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-red-100 text-red-800'
                             }`}>
-                              {truck.status === 'available' ? '🟢 稼働可能' :
-                               truck.status === 'maintenance' ? '🟡 整備中' :
+                              {_truck.status === 'available' ? '🟢 稼働可能' :
+                               _truck.status === 'maintenance' ? '🟡 整備中' :
                                '🔴 使用中'}
                             </span>
                             {todaySchedules > 0 && (
@@ -456,15 +436,15 @@ function TruckAssignmentPage() {
                         <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500">📦</span>
-                            <span className="font-medium text-gray-700">{truck.capacityKg.toLocaleString()}kg</span>
+                            <span className="font-medium text-gray-700">{_truck.capacityKg.toLocaleString()}kg</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500">🚛</span>
-                            <span className="text-gray-700">{truck.truckType}</span>
+                            <span className="text-gray-700">{_truck.truckType}</span>
                           </div>
                         </div>
-                        
-                        {truck.status === 'available' ? (
+
+                        {_truck.status === 'available' ? (
                           <div className="p-3 rounded-lg bg-green-100 border-l-4 border-green-400">
                             <p className="text-sm font-medium text-green-800">📋 割り当て可能</p>
                             <p className="text-xs text-green-600 mt-1">新しい案件をアサイン可能</p>
@@ -493,12 +473,12 @@ function TruckAssignmentPage() {
           pricingTrucks={[]}
           setShowTruckModal={setShowTruckModal}
           onAssign={(caseId, truckId) => {
-            const truck = trucks.find(t => t.id === truckId);
-            if (truck) {
+            const _truck = trucks.find(t => t.id === truckId);
+            if (_truck) {
               const truckAssignment: TruckAssignment = {
-                truckId: truck.id,
-                truckName: truck.name,
-                capacity: truck.capacityKg,
+                truckId: _truck.id,
+                truckName: _truck.name,
+                capacity: _truck.capacityKg,
                 startTime: '09:00',
                 endTime: '12:00',
                 workType: 'loading',
@@ -506,7 +486,7 @@ function TruckAssignmentPage() {
               assignTruckToCase(caseId, truckAssignment);
             }
           }}
-          calculateEstimatedPrice={calculateEstimatedPrice}
+          calculateEstimatedPrice={_calculateEstimatedPrice}
         />
       )}
     </div>

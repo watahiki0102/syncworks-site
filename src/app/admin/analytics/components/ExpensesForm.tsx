@@ -82,16 +82,9 @@ export default function ExpensesForm({ onExpenseCreated }: ExpensesFormProps) {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // 実際のAPI呼び出しに置き換え
-      const newExpense: Omit<ExternalExpense, 'id'> = {
-        date: formData.date,
-        amountInclTax: parseFloat(formData.amountInclTax),
-        memo: formData.memo || undefined,
-        source: formData.source
-      };
-
       // createExternalExpense(newExpense) を呼び出す
 
       // 成功後の処理

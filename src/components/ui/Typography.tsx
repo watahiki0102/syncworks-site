@@ -166,7 +166,7 @@ const Text = React.forwardRef<HTMLElement, TextProps>(
     };
 
     const getColorClasses = (color: string): string => {
-      if (variant === 'muted') return '';
+      if (variant === 'muted') {return '';}
       
       switch (color) {
         case 'muted': return 'text-gray-600';

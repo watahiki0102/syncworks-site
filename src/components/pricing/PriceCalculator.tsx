@@ -6,11 +6,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ITEM_CATEGORIES } from '@/constants/items';
-import { 
-  calculateEstimate, 
-  calculateTotalPoints, 
+import {
+  calculateEstimate,
+  calculateTotalPoints,
   getRecommendedTruckTypes,
-  formatPriceJPY,
   type CargoItem,
   type WorkOption,
   type EstimateResult
@@ -98,12 +97,12 @@ export default function PriceCalculator({
 
   // 段ボールポイントの計算
   const getDanballPoints = useCallback((danballOption: string): number => {
-    if (danballOption.includes('10箱未満')) return 5;
-    if (danballOption.includes('10〜20箱')) return 10;
-    if (danballOption.includes('21〜30箱')) return 15;
-    if (danballOption.includes('31〜40箱')) return 20;
-    if (danballOption.includes('41〜50箱')) return 25;
-    if (danballOption.includes('51箱以上')) return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
+    if (danballOption.includes('10箱未満')) {return 5;}
+    if (danballOption.includes('10〜20箱')) {return 10;}
+    if (danballOption.includes('21〜30箱')) {return 15;}
+    if (danballOption.includes('31〜40箱')) {return 20;}
+    if (danballOption.includes('41〜50箱')) {return 25;}
+    if (danballOption.includes('51箱以上')) {return boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;}
     return 0;
   }, [boxCount]);
 
@@ -254,12 +253,12 @@ export function usePriceCalculator(
 
   // 段ボールポイントの計算
   const getDanballPoints = useCallback((danballOption: string): number => {
-    if (danballOption.includes('10箱未満')) return 5;
-    if (danballOption.includes('10〜20箱')) return 10;
-    if (danballOption.includes('21〜30箱')) return 15;
-    if (danballOption.includes('31〜40箱')) return 20;
-    if (danballOption.includes('41〜50箱')) return 25;
-    if (danballOption.includes('51箱以上')) return boxCount && boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;
+    if (danballOption.includes('10箱未満')) {return 5;}
+    if (danballOption.includes('10〜20箱')) {return 10;}
+    if (danballOption.includes('21〜30箱')) {return 15;}
+    if (danballOption.includes('31〜40箱')) {return 20;}
+    if (danballOption.includes('41〜50箱')) {return 25;}
+    if (danballOption.includes('51箱以上')) {return boxCount && boxCount > 50 ? Math.floor(boxCount / 10) * 5 : 40;}
     return 0;
   }, [boxCount]);
 

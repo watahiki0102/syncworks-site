@@ -16,12 +16,12 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
     if (isOpen) {
       // 現在のスクロール位置を保存
       const scrollY = window.scrollY;
-      
+
       // bodyにoverflow: hiddenを適用してスクロールを無効化
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
-      
+
       // クリーンアップ関数でスクロールを復元
       return () => {
         document.body.style.position = '';
@@ -30,9 +30,10 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
         window.scrollTo(0, scrollY);
       };
     }
+    return undefined;
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div 

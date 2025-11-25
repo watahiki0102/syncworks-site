@@ -46,7 +46,7 @@ export default function QuoteResponseForm({
 
   // 税込総額の計算
   const calculateTotalWithTax = () => {
-    if (formData.responseType !== 'quote') return 0;
+    if (formData.responseType !== 'quote') {return 0;}
     const basic = parseFloat(formData.basicAmount) || 0;
     const option = parseFloat(formData.optionAmount) || 0;
     const subtotal = basic + option;
@@ -116,7 +116,7 @@ export default function QuoteResponseForm({
 
   // 算出価格を適用する機能
   const applyCalculatedQuote = () => {
-    if (!autoQuote) return;
+    if (!autoQuote) {return;}
     
     setFormData(prev => ({
       ...prev,

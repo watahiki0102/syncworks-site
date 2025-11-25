@@ -144,7 +144,7 @@ export default function WorkerPool({ workers, selectedDate, trucks, onDragStart,
 
       <div className="space-y-6">
         {Object.entries(groupedWorkers).map(([role, roleWorkers]) => {
-          if (roleWorkers.length === 0) return null;
+          if (roleWorkers.length === 0) {return null;}
           
           const roleConfig = {
             driver: { label: 'ドライバー', icon: '🚗', color: 'text-blue-600' },

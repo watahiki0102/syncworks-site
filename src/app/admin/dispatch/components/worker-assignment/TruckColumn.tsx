@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Truck, Schedule, WorkerRef, ScheduleId } from '@/types/dispatch';
+import { Truck, WorkerRef, ScheduleId } from '@/types/dispatch';
 import ScheduleSlot from './ScheduleSlot';
 
 interface TruckColumnProps {
@@ -25,14 +24,6 @@ export default function TruckColumn({
   onDragDrop,
   // draggedWorker // Currently unused
 }: TruckColumnProps) {
-  // トラックのスケジュールを時間スロットにマッピング
-  const _scheduleMap = useMemo(() => {
-    const map = new Map<string, Schedule>();
-    truck.schedules.forEach(schedule => {
-      map.set(schedule.id, schedule);
-    });
-    return map;
-  }, [truck.schedules]);
 
   // 各時間スロットのスケジュール情報を取得
   const getSlotSchedule = (timeSlot: string) => {

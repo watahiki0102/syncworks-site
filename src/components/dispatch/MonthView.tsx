@@ -14,10 +14,10 @@ interface MonthViewProps {
   setMonthViewFilterType: (type: 'all' | 'confirmed' | 'unconfirmed') => void;
 }
 
-export default function MonthView({ 
-  trucks, 
-  currentDate, 
-  selectedDate,
+export default function MonthView({
+  trucks,
+  currentDate,
+  selectedDate: _selectedDate,
   onScheduleClick,
   onAddSchedule,
   monthViewFilterType,
@@ -51,8 +51,8 @@ export default function MonthView({
 
   // 稼働率の色を決定
   const getUtilizationColor = (rate: number) => {
-    if (rate < 30) return 'bg-green-100 text-green-800';
-    if (rate < 70) return 'bg-yellow-100 text-yellow-800';
+    if (rate < 30) {return 'bg-green-100 text-green-800';}
+    if (rate < 70) {return 'bg-yellow-100 text-yellow-800';}
     return 'bg-red-100 text-red-800';
   };
 
@@ -63,7 +63,7 @@ export default function MonthView({
     onClose: () => void;
   }) => {
     const formatPrefMunicipality = (addr?: string) => {
-      if (!addr) return '-';
+      if (!addr) {return '-';}
       const prefMatch = addr.match(/^(.*?[都道府県])/);
       const afterPref = addr.replace(/^(.*?[都道府県])/, '');
       const muniMatch = afterPref.match(/^(.*?[市区町村])/);
@@ -249,7 +249,6 @@ export default function MonthView({
   };
 
   const calendarDays = generateCalendarDays();
-  const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   return (

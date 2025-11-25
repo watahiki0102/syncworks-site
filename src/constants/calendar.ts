@@ -144,7 +144,7 @@ export const TIME_RANGE_MAPPINGS = {
  * @returns 開始・終了時刻のオブジェクト、または null
  */
 export function parseTimeRange(timeString?: string): { startTime: string; endTime: string } | null {
-  if (!timeString) return null;
+  if (!timeString) {return null;}
 
   // "10:00～12:00" や "10:00-12:00" 形式の時刻範囲
   const rangeMatch = timeString.match(/(\d{1,2}):(\d{2})[～~\-](\d{1,2}):(\d{2})/);

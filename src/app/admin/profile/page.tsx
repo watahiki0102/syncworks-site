@@ -137,12 +137,12 @@ export default function AdminProfile() {
    * サービスエリアの状態管理
    */
   const [serviceAreas, setServiceAreas] = useState<string[]>([]);
-  const [newServiceArea, setNewServiceArea] = useState('');
+  const [_newServiceArea, _setNewServiceArea] = useState('');
 
   /**
    * 対応エリア選択の状態管理
    */
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [_selectedAreas, _setSelectedAreas] = useState<string[]>([]);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPrefectures, setSelectedPrefectures] = useState<string[]>([]);
 
@@ -190,20 +190,20 @@ export default function AdminProfile() {
    */
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.companyName.trim()) newErrors.companyName = '事業者名は必須です';
+    if (!formData.companyName.trim()) {newErrors.companyName = '事業者名は必須です';}
     
     // メールアドレスのバリデーション
     const emailErrors = validateEmailData(formData.emailData);
     Object.entries(emailErrors).forEach(([key, value]) => {
-      if (value) newErrors[key] = value;
+      if (value) {newErrors[key] = value;}
     });
     
-    if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
-    if (!formData.address.trim()) newErrors.address = '住所は必須です';
-    if (!formData.description.trim()) newErrors.description = '事業コンセプトは必須です';
-    if (!formData.experienceYears.trim()) newErrors.experienceYears = '経験年数は必須です';
-    if (!formData.staffCount.trim()) newErrors.staffCount = '従業員数は必須です';
-    if (selectedPrefectures.length === 0) newErrors.serviceAreas = '対応エリア（都道府県）を1つ以上選択してください';
+    if (!formData.phone.trim()) {newErrors.phone = '電話番号は必須です';}
+    if (!formData.address.trim()) {newErrors.address = '住所は必須です';}
+    if (!formData.description.trim()) {newErrors.description = '事業コンセプトは必須です';}
+    if (!formData.experienceYears.trim()) {newErrors.experienceYears = '経験年数は必須です';}
+    if (!formData.staffCount.trim()) {newErrors.staffCount = '従業員数は必須です';}
+    if (selectedPrefectures.length === 0) {newErrors.serviceAreas = '対応エリア（都道府県）を1つ以上選択してください';}
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -238,7 +238,7 @@ export default function AdminProfile() {
 
       // 3秒後に保存メッセージを消す
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err) {
+    } catch {
       setErrors({ submit: '保存に失敗しました。もう一度お試しください。' });
     } finally {
       setIsLoading(false);
@@ -330,17 +330,17 @@ export default function AdminProfile() {
 
   // オプションの種別変更
   const handleOptionTypeChange = (idx: number, type: OptionType) => {
-    setOptions(prev => prev.map((opt, i) => i === idx ? { ...opt, type } : opt));
+    setOptions(prev => prev.map((_opt, i) => i === idx ? { ..._opt, type } : _opt));
   };
 
   // オプションの削除
   const handleOptionDelete = (idx: number) => {
-    setOptions(prev => prev.filter((opt, i) => i !== idx));
+    setOptions(prev => prev.filter((_opt, i) => i !== idx));
   };
 
   // オプションの追加
   const handleOptionAdd = () => {
-    if (!newOptionLabel.trim()) return;
+    if (!newOptionLabel.trim()) {return;}
     setOptions(prev => [
       ...prev,
       { label: newOptionLabel.trim(), type: newOptionType, isDefault: false }
@@ -351,18 +351,6 @@ export default function AdminProfile() {
 
   const typeLabel = (type: OptionType) => OPTION_TYPES.find(t => t.value === type)?.label || '';
   const colorClass = (type: OptionType) => OPTION_TYPES.find(t => t.value === type)?.color || '';
-
-  const handleAddServiceArea = () => {
-    if (newServiceArea.trim() && !serviceAreas.includes(newServiceArea.trim())) {
-      setServiceAreas(prev => [...prev, newServiceArea.trim()]);
-      setNewServiceArea('');
-    }
-  };
-
-  // New functions to handle area selection
-  const handleRemoveArea = (area: string) => {
-    setSelectedAreas(prev => prev.filter(a => a !== area));
-  };
 
   // 地方選択
   const handleRegionSelect = (region: string) => {

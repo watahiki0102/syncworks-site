@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { ContractStatus } from '@/types/case';
-import { Truck, Employee, EmployeeShift, TruckAssignment } from '@/types/shared';
+import { Truck, Employee, TruckAssignment } from '@/types/shared';
 import { FormModal, SimpleModal } from '@/components/ui/SimpleModal';
 import { calculateTruckEfficiency } from '@/utils/truckUtils';
 import { parseTimeRange } from '@/constants/calendar';
@@ -125,10 +125,10 @@ export default function TruckAssignmentModal({
 
   const handleSubmit = () => {
     const currentCase = selectedCase || selectedSubmission;
-    if (!currentCase || !formData.truckId) return;
+    if (!currentCase || !formData.truckId) {return;}
 
     const selectedTruck = trucks.find(t => t.id === formData.truckId);
-    if (!selectedTruck) return;
+    if (!selectedTruck) {return;}
 
     const recommendedTrucks = calculateRecommendedTrucks ? calculateRecommendedTrucks(currentCase.totalPoints || currentCase.items?.totalPoints || 0) : [];
     const recommendedTruckIds = recommendedTrucks.map(truck => truck.id);
@@ -164,11 +164,11 @@ export default function TruckAssignmentModal({
 
   const getAvailableEmployees = (date: string, startTime: string, endTime: string) => {
     return employees.filter(emp => {
-      if (emp.status !== 'active') return false;
+      if (emp.status !== 'active') {return false;}
       
       // 指定された時間帯にシフトがあるかチェック
       const hasShift = emp.shifts?.some(shift => {
-        if (shift.date !== date) return false;
+        if (shift.date !== date) {return false;}
         
         // 時間帯の重複チェック
         const shiftStart = getTimeSlotStart(shift.timeSlot);
@@ -201,10 +201,10 @@ export default function TruckAssignmentModal({
     setShowEmployeeModal(false);
   };
 
-  if (!selectedCase && !selectedSubmission) return null;
+  if (!selectedCase && !selectedSubmission) {return null;}
 
   const currentCase = selectedCase || selectedSubmission;
-  if (!currentCase) return null;
+  if (!currentCase) {return null;}
 
   const availableEmployees = getAvailableEmployees(
     currentCase.moveDate || currentCase.move?.moveDate,

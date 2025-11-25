@@ -8,7 +8,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Heading } from '@/components/ui/Typography';
 import { UserType } from '@/types/referral';
 import { Building2, User, ArrowRight, CheckCircle } from 'lucide-react';
 
@@ -39,7 +38,7 @@ const UserTypeSelectionModal: React.FC<UserTypeSelectionModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!selectedType) return;
+    if (!selectedType) {return;}
 
     setIsSubmitting(true);
     try {
@@ -91,15 +90,10 @@ const UserTypeSelectionModal: React.FC<UserTypeSelectionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="xl"
-      closeOnOverlayClick={false}
-      showCloseButton={false}
+      title="利用種別を選択してください"
     >
-      <div className="p-8">
+      <div>
         <div className="text-center mb-8">
-          <Heading level={1} className="text-3xl font-bold text-gray-900 mb-4">
-            利用種別を選択してください
-          </Heading>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             あなたの業務内容に応じて、適切な利用種別を選択してください。
             選択後は変更可能ですが、一部の機能が制限される場合があります。

@@ -93,7 +93,7 @@ export default function ScheduleSlot({
         <div className="space-y-1">
           {assignedWorkers.slice(0, 3).map((assignment) => {
             const worker = getWorkerDetails(assignment.employeeId);
-            if (!worker) return null;
+            if (!worker) {return null;}
             
             return (
               <EmployeePill

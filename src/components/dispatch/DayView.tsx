@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import CaseDetail from '../CaseDetail';
 import { CaseDetail as CaseDetailType } from '../../types/case';
 import { Truck, Schedule } from '../../types/dispatch';
 import PlaceLabels from './PlaceLabels';
@@ -25,7 +24,12 @@ interface FormSubmission {
   totalCapacity?: number;
   distance?: number;
   itemList?: string[];
-  truckAssignments: any[];
+  truckAssignments: Array<{
+    truckId: string;
+    scheduleId?: string;
+    startTime?: string;
+    endTime?: string;
+  }>;
   contractStatus: 'estimate' | 'confirmed';
   estimatedPrice?: number;
   recommendedTruckTypes?: string[];
@@ -70,10 +74,10 @@ export default function DayView({
   selectedDate,
   trucks,
   cases,
-  onUpdateTruck,
+  onUpdateTruck: _onUpdateTruck,
   onSelect,
-  highlightedScheduleId,
-  onEditCase,
+  highlightedScheduleId: _highlightedScheduleId,
+  onEditCase: _onEditCase,
   statusFilter = 'all',
   formSubmissions = [],
   onAssignTruck
@@ -106,15 +110,11 @@ export default function DayView({
     return () => window.removeEventListener('resize', updateSidebarHeight);
   }, [sidebarVisible, trucks, selectedDate]);
 
-  // フィルタ適用後の案件配列
-  const visibleCases = useMemo(() => {
-    if (statusFilter === 'all') return cases;
-    return cases.filter(c => c.contractStatus === statusFilter);
-  }, [cases, statusFilter]);
-
   // フィルタ適用後のスケジュール配列
   const getFilteredSchedules = (truckSchedules: Schedule[]) => {
-    if (statusFilter === 'all') return truckSchedules;
+    if (statusFilter === 'all') {
+      return truckSchedules;
+    }
     return truckSchedules.filter(s => s.contractStatus === statusFilter);
   };
 
@@ -125,7 +125,7 @@ export default function DayView({
       const hash = window.location.hash;
       if (hash.startsWith('#case-')) {
         const caseId = hash.replace('#case-', '');
-        
+
         // レイアウト確定後にスクロール
         requestAnimationFrame(() => {
           const el = document.getElementById(`case-${caseId}`);
@@ -211,27 +211,9 @@ export default function DayView({
 
   const timeSlots = generateTimeSlots();
 
-  // 指定された日付と時間のスケジュールを取得
-  const getSchedulesForDateTime = (date: string, time: string) => {
-    return trucks.flatMap(truck =>
-      getFilteredSchedules(truck.schedules)
-        .filter(schedule => schedule.date === date)
-        .filter(schedule => {
-          const scheduleStart = schedule.startTime;
-          const scheduleEnd = schedule.endTime;
-          return time >= scheduleStart && time < scheduleEnd;
-        })
-        .map(schedule => ({
-          ...schedule,
-          truckName: truck.name,
-          truckId: truck.id,
-        }))
-    );
-  };
-
   // 重なり回避アルゴリズム：同一時間帯の最大同時案件数でカラム幅を算出
   const calculateOverlappingLayout = (schedules: Schedule[], truck: Truck): OverlappingSchedule[] => {
-    if (schedules.length === 0) return [];
+    if (schedules.length === 0) {return [];}
 
     // 時間帯ごとにグループ化
     const timeGroups = new Map<string, Schedule[]>();
@@ -245,10 +227,10 @@ export default function DayView({
     });
 
     const result: OverlappingSchedule[] = [];
-    
-    timeGroups.forEach((groupSchedules, timeKey) => {
+
+    timeGroups.forEach((groupSchedules, _timeKey) => {
       const totalColumns = groupSchedules.length;
-      
+
       groupSchedules.forEach((schedule, index) => {
         result.push({
           schedule,
@@ -265,8 +247,12 @@ export default function DayView({
 
   // 容量バーの色を取得
   const getBarColor = (percent: number) => {
-    if (percent >= 80) return 'bg-red-500';
-    if (percent >= 50) return 'bg-yellow-500';
+    if (percent >= 80) {
+      return 'bg-red-500';
+    }
+    if (percent >= 50) {
+      return 'bg-yellow-500';
+    }
     return 'bg-green-500';
   };
 
@@ -292,16 +278,6 @@ export default function DayView({
     }
     return colors[Math.abs(hash) % colors.length];
   };
-
-  // 住所の簡易表示を安全に処理
-  const shortPrefMuni = (addr?: string) => {
-    if (!addr) return '';
-    const m = addr.match(/^(.*?[都道府県])\s*(.*?[市区町村])/);
-    if (m) return `${m[1]}${m[2]}`;
-    return addr.split(/[ \t　]/).slice(0,2).join('');
-  };
-
-
 
   // セルクリックハンドラー（空きセル用 - 新規作成モーダル）
   // 日ビューでは未使用 - 直接編集画面に遷移するため
@@ -659,7 +635,7 @@ export default function DayView({
                       {/* 時間帯の契約ステータス表示 */}
                       {schedules.length > 0 && (
                         <div className="absolute top-0.5 right-0.5 flex flex-col gap-0.5">
-                          {schedules.map((schedule, index) => (
+                          {schedules.map((schedule, _index) => (
                             <div key={`status-${schedule.id}`} className="flex items-center gap-0.5">
                               {schedule.contractStatus === 'confirmed' ? (
                                 <span title={`${schedule.customerName || '予約済み'} - 確定`} className="text-[10px] bg-green-100 text-green-800 px-0.5 py-0 rounded">✅</span>
@@ -726,14 +702,24 @@ export default function DayView({
             <div className="space-y-3">
               {formSubmissions
                 .filter(submission => {
-                  if (submission.moveDate !== selectedDate) return false;
+                  if (submission.moveDate !== selectedDate) {
+                    return false;
+                  }
 
                   const isUnassigned = !submission.truckAssignments || submission.truckAssignments.length === 0;
 
-                  if (sidebarFilter === 'all') return true;
-                  if (sidebarFilter === 'confirmed') return submission.contractStatus === 'confirmed';
-                  if (sidebarFilter === 'estimate') return submission.contractStatus === 'estimate';
-                  if (sidebarFilter === 'unassigned') return isUnassigned;
+                  if (sidebarFilter === 'all') {
+                    return true;
+                  }
+                  if (sidebarFilter === 'confirmed') {
+                    return submission.contractStatus === 'confirmed';
+                  }
+                  if (sidebarFilter === 'estimate') {
+                    return submission.contractStatus === 'estimate';
+                  }
+                  if (sidebarFilter === 'unassigned') {
+                    return isUnassigned;
+                  }
 
                   return true;
                 })

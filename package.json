@@ -14,14 +14,10 @@
     "prebuild": "echo 'Skipping typecheck for now'",
     "precommit": "npm run typecheck:strict && npm run lint",
     "ci:check": "npm run typecheck:strict && npm run lint && npm run build",
-    "test": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
-    "test:watch": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
-    "test:coverage": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
-    "test:memory": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
-    "test:components": "echo '⚠️  Tests temporarily disabled during refactoring' && exit 0",
-    "test:original": "jest",
-    "test:original:watch": "jest --watch",
-    "test:original:coverage": "jest --coverage"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

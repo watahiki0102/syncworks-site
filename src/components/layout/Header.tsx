@@ -6,7 +6,7 @@
  */
 'use client';
 
-import React, { useRef, useCallback, memo } from 'react';
+import React, { useCallback, memo } from 'react';
 import Link from 'next/link';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useModal, useSelection, useOutsideClick } from '@/hooks';
@@ -27,7 +27,7 @@ interface HeaderProps {
 const Header = memo<HeaderProps>(({
   navigation,
   showBusinessLogin = true,
-  showVendorReviews = true,
+  showVendorReviews: _showVendorReviews = true,
   currentPath = ''
 }) => {
   // モバイルメニューの状態管理

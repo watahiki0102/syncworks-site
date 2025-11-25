@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
-import { WEEKDAYS_JA, TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
+import { TIME_SLOTS, SHIFT_STATUS } from '@/constants/calendar';
 import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
 import TimeRangeDisplaySelector from './TimeRangeDisplaySelector';
-import Modal from './ui/Modal';
 import ShiftModal, { ShiftModalData } from './ShiftModal';
-import { fetchHolidays, isHoliday as checkIsHoliday, getHolidayName, type Holiday } from '@/utils/holidayUtils';
+import { fetchHolidays, type Holiday } from '@/utils/holidayUtils';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import minMax from 'dayjs/plugin/minMax';
@@ -100,12 +99,12 @@ type ViewMode = 'day' | 'month';
 
 export default function ShiftCalendar({
   employees,
-  truckSchedules = [],
+  truckSchedules: _truckSchedules = [],
   onUpdateShift,
   onAddShift,
   onDeleteShift,
   onDeleteMultipleShifts,
-  onUpdateTruckSchedules,
+  onUpdateTruckSchedules: _onUpdateTruckSchedules,
   timeRangeType = 'full',
   customStartTime = '06:00',
   customEndTime = '24:00',
@@ -119,13 +118,13 @@ export default function ShiftCalendar({
   setShowEmployeeSummary,
   clipboardMode,
   setClipboardMode,
-  clipboardData,
-  setClipboardData,
+  clipboardData: _clipboardData,
+  setClipboardData: _setClipboardData,
   onDateClickForClipboard,
   selectedShifts,
   setSelectedShifts,
-  copiedShifts,
-  setCopiedShifts,
+  copiedShifts: _copiedShifts,
+  setCopiedShifts: _setCopiedShifts,
   pendingPasteDates,
   setPendingPasteDates,
   onShiftClickForClipboard,
@@ -165,7 +164,7 @@ export default function ShiftCalendar({
   const [shiftModalMode, setShiftModalMode] = useState<'edit' | 'create' | 'bulk' | 'range'>('edit');
 
   // 祝日データを取得
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [_holidays, setHolidays] = useState<Holiday[]>([]);
   useEffect(() => {
     fetchHolidays().then(setHolidays);
   }, []);
@@ -183,7 +182,7 @@ export default function ShiftCalendar({
     currentTime: string;
   } | null>(null);
   const [recentlyResized, setRecentlyResized] = useState(false); // リサイズ完了後の状態
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [_hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // 月ビュー展開状態管理
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set()); // 複数の日付を展開可能に変更
@@ -194,10 +193,10 @@ export default function ShiftCalendar({
   // マージが必要かどうかをチェックする関数
   const needsMerging = (employeeId: string, date: string): boolean => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return false;
+    if (!employee) {return false;}
     
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
-    if (dayShifts.length < 2) return false;
+    if (dayShifts.length < 2) {return false;}
     
     // ソートして連続するシフトがあるかチェック
     const sortedShifts = [...dayShifts].sort((a, b) => {
@@ -288,7 +287,7 @@ export default function ShiftCalendar({
 
   // グローバルなマウスイベントリスナー
   useEffect(() => {
-    const handleGlobalMouseUp = (e: MouseEvent) => {
+    const handleGlobalMouseUp = (_e: MouseEvent) => {
       if (dragState) {
         handleMouseUp();
       } else if (barResizeState) {
@@ -300,7 +299,7 @@ export default function ShiftCalendar({
       const target = e.target as HTMLElement;
       
       // リサイズ中またはバーリサイズ中のみ処理
-      if (!barResizeState) return;
+      if (!barResizeState) {return;}
       
       // 時間セルまたはその子要素から時間スロットIDを取得
       let timeSlotElement = target;
@@ -415,7 +414,7 @@ export default function ShiftCalendar({
 
   const getRelatedDayCrossingShifts = (employeeId: string, baseNotes: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return [];
+    if (!employee) {return [];}
 
     return employee.shifts.filter(shift =>
       shift.notes &&
@@ -484,7 +483,7 @@ export default function ShiftCalendar({
 
     relatedShifts.sort((a, b) => {
       const dateDiff = new Date(a.shift.date).getTime() - new Date(b.shift.date).getTime();
-      if (dateDiff !== 0) return dateDiff;
+      if (dateDiff !== 0) {return dateDiff;}
       return parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime);
     });
 
@@ -498,7 +497,7 @@ export default function ShiftCalendar({
           const current = relatedShifts[startIndex];
           const previous = relatedShifts[startIndex - 1];
           const dayDiff = dayjs(current.shift.date).diff(dayjs(previous.shift.date), 'day');
-          if (dayDiff > 1) break;
+          if (dayDiff > 1) {break;}
           startIndex--;
         }
 
@@ -507,7 +506,7 @@ export default function ShiftCalendar({
           const current = relatedShifts[endIndex];
           const next = relatedShifts[endIndex + 1];
           const dayDiff = dayjs(next.shift.date).diff(dayjs(current.shift.date), 'day');
-          if (dayDiff > 1) break;
+          if (dayDiff > 1) {break;}
           endIndex++;
         }
 
@@ -540,7 +539,7 @@ export default function ShiftCalendar({
   };
 
   // 日跨ぎシフト専用のブロック取得関数
-  const getDayCrossingShiftBlocks = (employeeId: string, date: string, dayShifts: EmployeeShift[]): Array<{
+  const getDayCrossingShiftBlocks = (employeeId: string, _date: string, dayShifts: EmployeeShift[]): Array<{
     id: string;
     startTime: string;
     endTime: string;
@@ -742,8 +741,8 @@ export default function ShiftCalendar({
     }> = [];
 
     let currentBlock: any = null;
-    
-    sortedShifts.forEach((shift, shiftIndex) => {
+
+    sortedShifts.forEach((shift, _shiftIndex) => {
       const { startTime: shiftStartTime, endTime: shiftEndTime } = resolveShiftTimeRange(shift);
 
       if (!shiftStartTime || !shiftEndTime) {
@@ -786,10 +785,7 @@ export default function ShiftCalendar({
       ) {
         // 連続するシフトまたは重複するシフトを結合
         // より長い時間帯に拡張
-        const currentDuration = currentBlock.endIndex - currentBlock.startIndex;
-        const newDuration = actualEndIndex - actualStartIndex;
-        const mergedDuration = Math.max(currentDuration, newDuration);
-        
+
         // 開始時間は早い方を、終了時間は遅い方を採用
         const mergedStartIndex = Math.min(currentBlock.startIndex, actualStartIndex);
         const mergedEndIndex = Math.max(currentBlock.endIndex, actualEndIndex);
@@ -829,17 +825,6 @@ export default function ShiftCalendar({
     return hours * 60 + minutes;
   };
 
-  // シフトの変更を追跡する関数
-  const handleShiftUpdate = (shiftId: string, updatedShift: Partial<EmployeeShift>) => {
-    const employee = employees.find(emp => emp.shifts.some(shift => shift.id === shiftId));
-    if (employee) {
-      const existingShift = employee.shifts.find(shift => shift.id === shiftId);
-      if (existingShift) {
-        onUpdateShift(shiftId, { ...existingShift, ...updatedShift });
-      }
-    }
-  };
-
   const handleShiftAdd = (newShift: Omit<EmployeeShift, 'id'>) => {
     onAddShift(newShift.employeeId, newShift);
   };
@@ -851,256 +836,15 @@ export default function ShiftCalendar({
     }
   };
 
-  // クリップボード機能
-  const startCopyMode = () => {
-    setClipboardMode && setClipboardMode('copy');
-    setSelectedShifts && setSelectedShifts([]);
-    setCopiedShifts && setCopiedShifts([]);
-    setShowClipboard && setShowClipboard(true);
-  };
-
-  const startPasteMode = () => {
-    if (copiedShifts && copiedShifts.length === 0) {
-      alert('コピーされたシフトがありません');
-      return;
-    }
-    setClipboardMode && setClipboardMode('paste');
-    setSelectedShifts && setSelectedShifts([]);
-    setPendingPasteDates && setPendingPasteDates([]);
-    setShowClipboard && setShowClipboard(true);
-  };
-
-  const handleShiftClickForClipboard = (shift: EmployeeShift) => {
-    if (clipboardMode === 'copy' && setSelectedShifts) {
-      // コピーモード：シフトを選択
-      setSelectedShifts((prev: EmployeeShift[]) => {
-        const exists = prev.some(s => s.id === shift.id);
-        if (exists) {
-          return prev.filter(s => s.id !== shift.id);
-        } else {
-          return [...prev, shift];
-        }
-      });
-    }
-  };
-
-  const handleDateClickForClipboard = (date: string) => {
-    if (clipboardMode === 'paste' && setPendingPasteDates && pendingPasteDates) {
-      // ペーストモード：複数の貼り付け先を選択
-      const exists = pendingPasteDates.includes(date);
-      if (exists) {
-        setPendingPasteDates(pendingPasteDates.filter(d => d !== date));
-      } else {
-        setPendingPasteDates([...pendingPasteDates, date]);
-      }
-    }
-  };
-
-  const executeCopy = () => {
-    if (!selectedShifts || selectedShifts.length === 0) {
-      alert('コピーするシフトを選択してください');
-      return;
-    }
-
-    // 出勤状態のシフトのみコピー
-    const workingShifts = selectedShifts.filter(shift => shift.status === 'working');
-    
-    if (workingShifts.length === 0) {
-      alert('選択したシフトにコピー可能なシフト（出勤）がありません');
-      return;
-    }
-
-    setCopiedShifts && setCopiedShifts(workingShifts);
-    setSelectedShifts && setSelectedShifts([]);
-    // コピー後、自動的に貼り付けモードに移行
-    setClipboardMode && setClipboardMode('paste');
-    setPendingPasteDates && setPendingPasteDates([]);
-  };
-
-  const executePaste = () => {
-    if (!pendingPasteDates || pendingPasteDates.length === 0) {
-      alert('貼り付け先の日付を選択してください');
-      return;
-    }
-
-    if (!copiedShifts || copiedShifts.length === 0) {
-      alert('コピーされたシフトがありません');
-      return;
-    }
-
-    // 重複チェック
-    const conflicts: Array<{
-      employeeName: string;
-      date: string;
-      timeRange: string;
-      reason: string;
-    }> = [];
-
-    // 貼り付け予定のシフトを従業員・日付ごとに整理
-    const pendingShiftsByEmployeeAndDate: {
-      [key: string]: {
-        employeeId: string;
-        date: string;
-        shifts: Array<{ startTime: string; endTime: string; shift: typeof copiedShifts[0] }>
-      }
-    } = {};
-
-    pendingPasteDates.forEach(date => {
-      copiedShifts.forEach(shift => {
-        const employee = employees.find(emp => emp.id === shift.employeeId);
-        if (!employee) return;
-
-        const key = `${shift.employeeId}|||${date}`; // より安全な区切り文字
-        const newStartTime = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
-        const newEndTime = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
-
-        if (!pendingShiftsByEmployeeAndDate[key]) {
-          pendingShiftsByEmployeeAndDate[key] = {
-            employeeId: shift.employeeId,
-            date: date,
-            shifts: []
-          };
-        }
-
-        // 貼り付け予定のシフト同士の重複チェック
-        const hasPendingConflict = pendingShiftsByEmployeeAndDate[key].shifts.some(pending => {
-          return (newStartTime < pending.endTime && newEndTime > pending.startTime);
-        });
-
-        if (hasPendingConflict) {
-          conflicts.push({
-            employeeName: employee.name,
-            date: new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
-            timeRange: `${newStartTime}-${newEndTime}`,
-            reason: '貼り付け予定のシフト同士が重複'
-          });
-        }
-
-        // 既存シフトとの重複チェック
-        const existingShifts = employee.shifts.filter(s => s.date === date);
-        const hasExistingConflict = existingShifts.some(existingShift => {
-          const existingStartTime = existingShift.startTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.start || '';
-          const existingEndTime = existingShift.endTime || TIME_SLOTS.find(ts => ts.id === existingShift.timeSlot)?.end || '';
-          
-          // 時間の重複をチェック
-          return (newStartTime < existingEndTime && newEndTime > existingStartTime);
-        });
-
-        if (hasExistingConflict) {
-          conflicts.push({
-            employeeName: employee.name,
-            date: new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
-            timeRange: `${newStartTime}-${newEndTime}`,
-            reason: '既存のシフトと重複'
-          });
-        }
-
-        // 重複がない場合は貼り付け予定リストに追加
-        if (!hasPendingConflict && !hasExistingConflict) {
-          pendingShiftsByEmployeeAndDate[key].shifts.push({
-            startTime: newStartTime,
-            endTime: newEndTime,
-            shift
-          });
-        }
-      });
-    });
-
-    // 重複がある場合はエラーを表示して中断
-    if (conflicts.length > 0) {
-      // 重複を原因別にグループ化
-      const pendingConflicts = conflicts.filter(c => c.reason === '貼り付け予定のシフト同士が重複');
-      const existingConflicts = conflicts.filter(c => c.reason === '既存のシフトと重複');
-      
-      let message = '以下のシフトが重複しているため、貼り付けできません：\n\n';
-      
-      if (pendingConflicts.length > 0) {
-        message += '【同じ担当者・同じ時間のシフトを複数貼り付けようとしています】\n';
-        pendingConflicts.forEach(c => {
-          message += `・${c.employeeName} (${c.date} ${c.timeRange})\n`;
-        });
-        message += '\n';
-      }
-      
-      if (existingConflicts.length > 0) {
-        message += '【既に登録されているシフトと重複しています】\n';
-        existingConflicts.forEach(c => {
-          message += `・${c.employeeName} (${c.date} ${c.timeRange})\n`;
-        });
-        message += '\n既存のシフトを削除してから再度お試しください。\n';
-      }
-      
-      if (pendingConflicts.length > 0) {
-        message += '\nコピー元のシフトに重複がないか確認してください。';
-      }
-      
-      alert(message);
-      return;
-    }
-
-    // 重複がない場合のみ貼り付けを実行
-    // pendingShiftsByEmployeeAndDateに登録されたシフトのみを貼り付け
-    Object.keys(pendingShiftsByEmployeeAndDate).forEach(key => {
-      const group = pendingShiftsByEmployeeAndDate[key];
-      group.shifts.forEach(pending => {
-        const newShift: Omit<EmployeeShift, 'id'> = {
-          employeeId: group.employeeId,
-          date: group.date,
-          timeSlot: pending.shift.timeSlot,
-          status: pending.shift.status,
-          customerName: pending.shift.customerName,
-          notes: pending.shift.notes,
-          startTime: pending.shift.startTime,
-          endTime: pending.shift.endTime,
-        };
-        handleShiftAdd(newShift);
-      });
-    });
-    
-    setPendingPasteDates && setPendingPasteDates([]);
-    setClipboardMode && setClipboardMode('none');
-  };
-
-  const cancelClipboard = () => {
-    setClipboardMode && setClipboardMode('none');
-    setSelectedShifts && setSelectedShifts([]);
-    setPendingPasteDates && setPendingPasteDates([]);
-    setShowClipboard && setShowClipboard(false);
-  };
-
-  const removeSelectedShift = (shiftIdToRemove: string) => {
-    setSelectedShifts && setSelectedShifts((prev: EmployeeShift[]) => prev.filter(shift => shift.id !== shiftIdToRemove));
-  };
-
-  const clearSelectedShifts = () => {
-    setSelectedShifts && setSelectedShifts([]);
-  };
-
-
-  // 5分単位の時間選択肢を生成
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 5) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        options.push(timeString);
-      }
-    }
-    return options;
-  };
-
-  const timeOptions = generateTimeOptions();
-
-
   // 時間帯に基づいてTIME_SLOTSをフィルタリング
   const getFilteredTimeSlots = () => {
-    let filteredSlots: typeof TIME_SLOTS;
+    let filteredSlots: typeof TIME_SLOTS = TIME_SLOTS;
 
     // 時間帯表示設定が有効な場合は、それを使用
     if (showTimeRangeSelector) {
       const startTime = `${displayStartTime.toString().padStart(2, '0')}:00`;
       const endTime = `${displayEndTime.toString().padStart(2, '0')}:00`;
-      
+
       filteredSlots = TIME_SLOTS.filter(slot => {
         const slotStart = slot.start;
         const slotEnd = slot.end;
@@ -1148,72 +892,24 @@ export default function ShiftCalendar({
   };
 
   const filteredTimeSlots = getFilteredTimeSlots();
-  
-  // 出勤予定の従業員のみをフィルター
-  const getShiftEmployees = (date: string) => {
-    return filteredEmployees.filter(employee => 
-      employee.shifts.some(shift => shift.date === date)
-    );
-  };
 
   // シフトが入っている従業員のみを表示（日ビュー用）
-  const displayEmployees = filteredEmployees.filter(employee => 
+  const displayEmployees = filteredEmployees.filter(employee =>
     employee.shifts.some(shift => shift.date === selectedDate)
   );
 
-  const getEmployeesWithShifts = (date: string) => {
-    return filteredEmployees.filter(employee => 
-      employee.shifts.some(shift => shift.date === date)
-    );
-  };
-
   const getShiftAtDateTime = (employeeId: string, date: string, timeSlot: string) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return null;
+    if (!employee) {return null;}
     
     return employee.shifts.find(shift => 
       shift.date === date && shift.timeSlot === timeSlot
     );
   };
 
-  const getTruckScheduleForDateTime = (date: string, timeSlot: string) => {
-    const timeSlotInfo = TIME_SLOTS.find(ts => ts.id === timeSlot);
-    if (!timeSlotInfo) return null;
-
-    return truckSchedules.find(schedule => 
-      schedule.date === date && 
-      schedule.startTime <= timeSlotInfo.end &&
-      schedule.endTime > timeSlotInfo.start
-    );
-  };
-
-
-  const isBreakTime = (timeSlot: string) => {
+  const isBreakTime = (_timeSlot: string) => {
     // 休憩時間の設定を削除（12時から13時も通常時間として表示）
     return false;
-  };
-
-
-  const getShiftBlock = (employeeId: string, date: string) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return { customers: [], shifts: [] };
-
-    const dayShifts = employee.shifts.filter(shift => shift.date === date);
-    const sortedShifts = dayShifts.sort((a, b) => {
-      const timeA = TIME_SLOTS.find(ts => ts.id === a.timeSlot)?.start || '';
-      const timeB = TIME_SLOTS.find(ts => ts.id === b.timeSlot)?.start || '';
-      return timeA.localeCompare(timeB);
-    });
-
-    const customers = [...new Set(sortedShifts
-      .filter(shift => shift.customerName)
-      .map(shift => shift.customerName!)
-    )];
-
-    return {
-      customers,
-      shifts: sortedShifts,
-    };
   };
 
   const handleCellClick = (employeeId: string, date: string, timeSlot: string) => {
@@ -1261,7 +957,7 @@ export default function ShiftCalendar({
     isDayCrossingShift: boolean = false
   ) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return false;
+    if (!employee) {return false;}
 
     // 除外するシフトIDのセットを作成
     const excludeIds = Array.isArray(excludeShiftId) 
@@ -1311,7 +1007,7 @@ export default function ShiftCalendar({
   // 同じステータスのシフトを結合する関数（マージが実行されたかどうかを返す）
   const mergeAdjacentShifts = (employeeId: string, date: string): boolean => {
     const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return false;
+    if (!employee) {return false;}
 
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
 
@@ -1322,11 +1018,10 @@ export default function ShiftCalendar({
     });
 
     // 同じステータスの連続するシフトを結合
-    const mergedShifts: EmployeeShift[] = [];
     let currentGroup: EmployeeShift[] = [];
     let hasMerges = false;
 
-    sortedShifts.forEach((shift, index) => {
+    sortedShifts.forEach((shift, _index) => {
       if (currentGroup.length === 0) {
         currentGroup.push(shift);
       } else {
@@ -1411,7 +1106,7 @@ export default function ShiftCalendar({
     return hasMerges;
   };
 
-  const handleMouseDown = (employeeId: string, date: string, timeSlot: string) => {
+  const handleMouseDown = (employeeId: string, _date: string, timeSlot: string) => {
     setDragState({
       currentEmployee: employeeId,
       startTime: timeSlot,
@@ -1419,7 +1114,7 @@ export default function ShiftCalendar({
     });
   };
 
-  const handleMouseEnter = (employeeId: string, date: string, timeSlot: string) => {
+  const handleMouseEnter = (employeeId: string, _date: string, timeSlot: string) => {
     if (dragState && dragState.currentEmployee === employeeId) {
       setDragState(prev => prev ? {
         ...prev,
@@ -1435,8 +1130,7 @@ export default function ShiftCalendar({
       
       if (startIndex !== -1 && endIndex !== -1) {
         const [minIndex, maxIndex] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)];
-        const selectedSlots = maxIndex - minIndex + 1;
-        
+
         // ドラッグした範囲にシフトを作成（長さに関わらず統一）
         const startTimeSlot = filteredTimeSlots[minIndex];
         const endTimeSlot = filteredTimeSlots[maxIndex];
@@ -1474,7 +1168,7 @@ export default function ShiftCalendar({
         }
         
         // 全てのシフトを一括作成
-        shiftsToCreate.forEach((shift, index) => {
+        shiftsToCreate.forEach((shift, _index) => {
           handleShiftAdd(shift);
         });
         
@@ -1489,11 +1183,11 @@ export default function ShiftCalendar({
 
   // バーリサイズ用の関数
   const handleBarResizeEnter = (employeeId: string, timeSlotId: string) => {
-    if (!barResizeState) return;
-    if (barResizeState.employeeId !== employeeId) return;
+    if (!barResizeState) {return;}
+    if (barResizeState.employeeId !== employeeId) {return;}
     
     const timeSlot = TIME_SLOTS.find(ts => ts.id === timeSlotId);
-    if (!timeSlot) return;
+    if (!timeSlot) {return;}
     
     // 最小30分の確保のみチェック（時間の拡大・縮小両方を許可）
     if (barResizeState.direction === 'start') {
@@ -1527,10 +1221,10 @@ export default function ShiftCalendar({
   };
 
   const handleBarResizeEnd = () => {
-    if (!barResizeState) return;
+    if (!barResizeState) {return;}
     
     const employee = employees.find(emp => emp.id === barResizeState.employeeId);
-    if (!employee) return;
+    if (!employee) {return;}
     
     const dayShifts = employee.shifts.filter(shift => shift.date === selectedDate);
     const shiftBlocks = getShiftBlocks(employee.id, selectedDate);
@@ -1574,7 +1268,7 @@ export default function ShiftCalendar({
 
         // 隣接シフトの結合チェック
         const adjacentShift = dayShifts.find(shift => {
-          if (shift.id === blockShift.id) return false;
+          if (shift.id === blockShift.id) {return false;}
           const shiftStart = shift.startTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.start || '';
           const shiftEnd = shift.endTime || TIME_SLOTS.find(ts => ts.id === shift.timeSlot)?.end || '';
 
@@ -1637,103 +1331,8 @@ export default function ShiftCalendar({
     }, 1000); // 1秒後にリセット
   };
 
-  const handleShiftSave = () => {
-    if (!editingShift) return;
-
-    const startTime = editingShift.startTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.start;
-    const endTime = editingShift.endTime || TIME_SLOTS.find(ts => ts.id === editingShift.timeSlot)?.end;
-
-    if (!startTime || !endTime) {
-      alert('開始時間と終了時間を設定してください');
-      return;
-    }
-
-    // 時間範囲内のすべてのスロットにシフトを作成
-    const startIndex = TIME_SLOTS.findIndex(ts => ts.start === startTime);
-    const endIndex = TIME_SLOTS.findIndex(ts => ts.end === endTime);
-
-    if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
-      alert('無効な時間範囲です');
-      return;
-    }
-
-    // 関数を先に定義
-    const updateExistingShift = () => {
-      if (!selectedShift) return;
-      
-      // 既存のシフトを新しい情報で更新
-      const updatedShift: EmployeeShift = {
-        ...selectedShift,
-        status: editingShift.status,
-        startTime: startTime,
-        endTime: endTime,
-        customerName: editingShift.customerName,
-        notes: editingShift.notes,
-        timeSlot: TIME_SLOTS[startIndex].id, // 開始時間のスロットを使用
-      };
-      
-      // シフトを更新
-      onUpdateShift(editingShift.employeeId, updatedShift);
-      
-      
-      // モーダルを閉じる
-      setShowShiftModal(false);
-      setEditingShift(null);
-      setSelectedShift(null);
-    };
-
-    const createNewShifts = () => {
-      if (startIndex === -1 || endIndex === -1) {
-        return;
-      }
-
-      const newShift: Omit<EmployeeShift, 'id'> = {
-        employeeId: editingShift.employeeId,
-        date: editingShift.date,
-        timeSlot: TIME_SLOTS[startIndex].id,
-        status: editingShift.status,
-        customerName: editingShift.customerName,
-        notes: editingShift.notes,
-        startTime,
-        endTime,
-      };
-
-      handleShiftAdd(newShift);
-
-      // 同じステータスのシフトを結合
-      mergeAdjacentShifts(editingShift.employeeId, editingShift.date);
-
-      setShowShiftModal(false);
-      setEditingShift(null);
-      setSelectedShift(null);
-    };
-
-    // 条件分岐で関数を呼び出し
-    if (selectedShift) {
-      // 既存のシフトを更新
-      
-      // 重複チェック（更新対象のシフトは除外）
-      if (checkShiftOverlap(editingShift.employeeId, editingShift.date, startTime, endTime, selectedShift.id, editingShift.status)) {
-        alert('選択した時間帯に既にシフトが登録されています。時間を調整してください。');
-        return;
-      }
-      
-      // 既存シフトを更新
-      updateExistingShift();
-    } else {
-      // 新規作成の場合
-      if (checkShiftOverlap(editingShift.employeeId, editingShift.date, startTime, endTime, undefined, editingShift.status)) {
-        alert('選択した時間帯に既にシフトが登録されています。時間を調整してください。');
-        return;
-      }
-      
-      // 時間範囲内の各スロットにシフトを作成
-      createNewShifts();
-    }
-  };
-
   const handleDeleteShift = () => {
-    if (!selectedShift?.id) return;
+    if (!selectedShift?.id) {return;}
     
     const employeeId = selectedShift.employeeId;
     const isDayCrossing = selectedShift.notes && selectedShift.notes.includes('日跨ぎ');
@@ -1859,7 +1458,7 @@ export default function ShiftCalendar({
         // 編集された内容で日マタギシフトを再作成
         // 編集された開始日・終了日から新しい日付範囲を生成
         const newStartDate = new Date(data.startDate);
-        const newEndDate = new Date(data.endDate);
+        const newEndDate = data.endDate ? new Date(data.endDate) : new Date(data.startDate);
         const newDates: string[] = [];
         for (let d = new Date(newStartDate); d <= newEndDate; d.setDate(d.getDate() + 1)) {
           newDates.push(d.toISOString().split('T')[0]);
@@ -2028,8 +1627,8 @@ export default function ShiftCalendar({
               endTime: '24:00'
             };
             allShifts.push(startShift);
-            if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
-            if (!affectedDates.includes(firstDate)) affectedDates.push(firstDate);
+            if (!affectedEmployees.includes(employeeId)) {affectedEmployees.push(employeeId);}
+            if (!affectedDates.includes(firstDate)) {affectedDates.push(firstDate);}
           }
         } else {
           const employee = employees.find(emp => emp.id === employeeId);
@@ -2064,8 +1663,8 @@ export default function ShiftCalendar({
                   endTime: '24:00'
                 };
                 allShifts.push(midShift);
-                if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
-                if (!affectedDates.includes(midDate)) affectedDates.push(midDate);
+                if (!affectedEmployees.includes(employeeId)) {affectedEmployees.push(employeeId);}
+                if (!affectedDates.includes(midDate)) {affectedDates.push(midDate);}
               }
             } else {
               const employee = employees.find(emp => emp.id === employeeId);
@@ -2108,8 +1707,8 @@ export default function ShiftCalendar({
                 endTime: data.endTime
               };
               allShifts.push(endShift);
-              if (!affectedEmployees.includes(employeeId)) affectedEmployees.push(employeeId);
-              if (!affectedDates.includes(lastDate)) affectedDates.push(lastDate);
+              if (!affectedEmployees.includes(employeeId)) {affectedEmployees.push(employeeId);}
+              if (!affectedDates.includes(lastDate)) {affectedDates.push(lastDate);}
             }
           } else {
             const employee = employees.find(emp => emp.id === employeeId);
@@ -2189,33 +1788,6 @@ export default function ShiftCalendar({
     setEditingShift(null);
     setSelectedShift(null);
   };
-
-  const goToPreviousPeriod = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() - 1);
-    }
-    setCurrentDate(newDate);
-  };
-
-  const goToNextPeriod = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() + 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    setCurrentDate(newDate);
-  };
-
-  const goToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    setSelectedDate(toLocalDateString(today));
-  };
-
 
   // 共通リサイズハンドルコンポーネント
   const ResizeHandles = ({ 
@@ -2465,7 +2037,7 @@ export default function ShiftCalendar({
                   const isHalfHour = timeSlot.start.split(':')[1] === '30';
                   
                   // 30分スロットの場合は表示しない（1時間の開始時刻のみ表示）
-                  if (isHalfHour) return null;
+                  if (isHalfHour) {return null;}
                   
                   return (
                     <th key={timeSlot.id} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-16 relative" colSpan={2}>
@@ -2569,10 +2141,10 @@ export default function ShiftCalendar({
                           const width = ((endIndex - startIndex + 1) / filteredTimeSlots.length) * 100;
                           const left = (startIndex / filteredTimeSlots.length) * 100;
                           
-                          // バーの実際の時間長を計算してログに追加
+                          // バーの実際の時間長を計算
                           const startMinutes = parseTimeToMinutes(block.startTime);
                           const endMinutes = parseTimeToMinutes(block.endTime);
-                          const actualHours = (endMinutes - startMinutes) / 60;
+                          void ((endMinutes - startMinutes) / 60); // actualHours - 将来の使用のため計算
                           
                           // 日跨ぎシフトかどうかを判定
                           const isDayCrossing = block.isDayCrossing;
@@ -2924,7 +2496,7 @@ export default function ShiftCalendar({
 
 
     // 日付をクリックした時の処理（日ビューに遷移またはクリップボード操作）
-    const handleDateClick = (date: string, event?: React.MouseEvent) => {
+    const handleDateClick = (date: string, _event?: React.MouseEvent) => {
       // 複数展開を許可するため、展開状態のリセットはしない
 
       if (clipboardMode === 'paste' && onDateClickForClipboard) {
@@ -2938,7 +2510,7 @@ export default function ShiftCalendar({
     };
 
     // +N表示をクリックした時の処理（日のマスを展開）
-    const handleMoreEmployeesClick = (date: string, allEmployees: Employee[]) => {
+    const handleMoreEmployeesClick = (date: string, _allEmployees: Employee[]) => {
       const weekKey = getWeekKey(date);
 
       if (allDatesExpanded) {
@@ -2984,21 +2556,9 @@ export default function ShiftCalendar({
     };
 
 
-    const getUtilizationRate = (employeeId: string, date: string) => {
-      const shifts = getShiftsForDate(employeeId, date);
-      const confirmedShifts = shifts.filter(s => s.status === 'working');
-      return (confirmedShifts.length / TIME_SLOTS.length) * 100;
-    };
-
-    const getUtilizationColor = (rate: number) => {
-      if (rate < 30) return 'bg-green-100 text-green-800';
-      if (rate < 70) return 'bg-yellow-100 text-yellow-800';
-      return 'bg-red-100 text-red-800';
-    };
-
     // シフトが未保存かどうかをチェック
     const hasUnsavedShifts = (employeeId: string, date: string) => {
-      if (!unsavedShiftIds || unsavedShiftIds.size === 0) return false;
+      if (!unsavedShiftIds || unsavedShiftIds.size === 0) {return false;}
       const shifts = getShiftsForDate(employeeId, date);
       return shifts.some(shift => unsavedShiftIds.has(shift.id));
     };
@@ -3084,12 +2644,12 @@ export default function ShiftCalendar({
 
     const getShiftTimeRange = (employeeId: string, date: string) => {
       const shifts = getShiftsForDate(employeeId, date);
-      if (shifts.length === 0) return null;
+      if (shifts.length === 0) {return null;}
 
       const workingShifts = shifts.filter(s => s.status === 'working');
       const primaryShifts = workingShifts.length > 0 ? workingShifts : shifts;
 
-      if (primaryShifts.length === 0) return null;
+      if (primaryShifts.length === 0) {return null;}
 
       // 日跨ぎシフトの場合は特別な処理
       const dayCrossingShifts = primaryShifts.filter(s =>
@@ -3106,7 +2666,7 @@ export default function ShiftCalendar({
 
         baseNotesSet.forEach(baseNotes => {
           const dateGroups = buildDayCrossingDateGroups(employeeId, baseNotes, date);
-          if (dateGroups.length === 0) return;
+          if (dateGroups.length === 0) {return;}
 
           const totalDays = dateGroups.length;
           const currentIndex = dateGroups.findIndex(group => group.date === date);
@@ -3185,7 +2745,7 @@ export default function ShiftCalendar({
       
       // 展開された日付の場合は全ての従業員を表示
       const weekKey = getWeekKey(date);
-      const isWeekExpanded = expandedWeeks.has(weekKey);
+      void expandedWeeks.has(weekKey); // isWeekExpanded - 将来の使用のため
 
       // 完全に個別の動作：該当日付が展開されている場合のみ全表示
       if ((expandedDates.has(date) || (allDatesExpanded && !collapsedDates.has(date)))) {
@@ -3454,8 +3014,8 @@ export default function ShiftCalendar({
       const positions = typeof indexOrPositions === 'number'
         ? { index: indexOrPositions, normalIndex: indexOrPositions, dayCrossingIndex: 0, totalDayCrossingShifts: 0 }
         : indexOrPositions;
-      const { index, normalIndex, dayCrossingIndex, totalDayCrossingShifts = 0 } = positions;
-      const { employee, timeRange, shifts, startDate } = event.metadata || {};
+      const { index: _index, normalIndex, dayCrossingIndex, totalDayCrossingShifts = 0 } = positions;
+      const { employee, timeRange, shifts, startDate: _startDate } = event.metadata || {};
       const shift = event.metadata?.shift; // Access original shift data from metadata
       const visual = event.metadata?.visual as ShiftVisualStyle | undefined;
       
@@ -3483,7 +3043,7 @@ export default function ShiftCalendar({
       
       // 時間範囲を解析（カンマ区切りで分割）
       const timeRanges = timeRange ? timeRange.split(', ') : [];
-      const hasMultipleTimeRanges = timeRanges.length > 1;
+      void (timeRanges.length > 1); // hasMultipleTimeRanges - 将来の使用のため
       
       // 従業員名の省略処理（6文字以上の場合は改行なしで表示）
       const displayName = employee.name;
@@ -3600,7 +3160,7 @@ export default function ShiftCalendar({
 
       const currentMoment = dayjs(currentDate);
       const weekStartMoment = dayjs(weekStartDate);
-      const weekEndMoment = dayjs(weekEndDate);
+      void dayjs(weekEndDate); // weekEndMoment - 将来の使用のため
       const shiftStartMoment = dayjs(shiftStartDate);
       const shiftEndMoment = dayjs(shiftEndDate);
 
@@ -3736,46 +3296,6 @@ export default function ShiftCalendar({
 
     // getCombinedDayCrossingShiftsForCell removed - logic moved to renderEvent
 
-    // 表示月のすべての日跨ぎシフト起点を収集する関数
-    const getAllDayCrossingStartShifts = () => {
-      const startShifts: Array<{
-        employee: Employee;
-        shift: EmployeeShift;
-        startDate: string;
-        allShifts: EmployeeShift[];
-        dates: string[];
-      }> = [];
-
-      // 現在の月の全日付を取得
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day).toISOString().split('T')[0];
-        
-        filteredEmployees.forEach(employee => {
-          const shifts = getShiftsForDate(employee.id, date);
-          shifts.forEach(shift => {
-            if (shift.notes && (shift.notes.includes('日跨ぎ-起点') || shift.notes.includes('日跨ぎ-1日目'))) {
-              const allShifts = getShiftsForDate(employee.id, date);
-              const dates = Array.from(new Set(allShifts.map((s: any) => s.date))).sort();
-              
-              startShifts.push({
-                employee,
-                shift,
-                startDate: date,
-                allShifts,
-                dates
-              });
-            }
-          });
-        });
-      }
-
-      return startShifts;
-    };
-
     // カスタム日付セルレンダリング（日跨ぎシフト結合バー付き）
     const renderDateCell = (day: CalendarDay, events: CalendarEvent[], week?: any) => {
       const isExpanded = expandedDates.has(day.date);
@@ -3786,13 +3306,13 @@ export default function ShiftCalendar({
 
       const isDayCrossingEvent = (event: CalendarEvent) => {
         const shifts = (event.metadata as any)?.shifts as EmployeeShift[] | undefined;
-        if (!Array.isArray(shifts)) return false;
+        if (!Array.isArray(shifts)) {return false;}
         return shifts.some(shift => typeof shift?.notes === 'string' && shift.notes.includes('日跨ぎ'));
       };
 
       const getEarliestStartTime = (event: CalendarEvent) => {
         const shifts = (event.metadata as any)?.shifts as EmployeeShift[] | undefined;
-        if (!Array.isArray(shifts) || shifts.length === 0) return '24:00';
+        if (!Array.isArray(shifts) || shifts.length === 0) {return '24:00';}
         return shifts.reduce((earliest, shift) => {
           const candidate = shift?.startTime || (shift as any)?.originalStartTime || '24:00';
           return candidate < earliest ? candidate : earliest;
@@ -3824,9 +3344,9 @@ export default function ShiftCalendar({
 
       // ペーストモードで選択されているかチェック
       const isSelectedForPaste = clipboardMode === 'paste' && pendingPasteDates && pendingPasteDates.includes(day.date);
-      
-      // 日跨ぎシフト情報を取得
-      const dayCrossingShifts = getDayCrossingShiftInfo(day.date);
+
+      // 日跨ぎシフト情報を取得（将来の使用のため）
+      void getDayCrossingShiftInfo(day.date);
       
       return (
         <div
@@ -4012,8 +3532,8 @@ export default function ShiftCalendar({
             // 時刻情報を取得
             const firstShift = groupShifts.find(s => s.date === dates[0]);
             const lastShift = groupShifts.find(s => s.date === dates[dates.length - 1]);
-            const startTime = firstShift?.startTime || shift.startTime;
-            const endTime = lastShift?.endTime || shift.endTime;
+            const startTime = firstShift?.startTime || shift.startTime || '';
+            const endTime = lastShift?.endTime || shift.endTime || '';
 
             dayCrossingShifts.push({
               employee,
@@ -4086,7 +3606,7 @@ export default function ShiftCalendar({
         <UnifiedMonthCalendar
           currentDate={currentDate}
           onDateChange={setCurrentDate}
-          onDateClick={(date, day, event) => handleDateClick(date, event)}
+          onDateClick={(date, _day, event) => handleDateClick(date, event)}
           getEventsForDate={getEventsForDate}
           renderEvent={renderEvent}
           renderDateCell={renderDateCell}

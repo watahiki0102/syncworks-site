@@ -30,7 +30,7 @@ export const useModal = () => {
 /**
  * 複数のモーダル状態を管理するフック
  */
-export const useModalManager = <T extends string>(modalIds: T[]) => {
+export const useModalManager = <T extends string>(_modalIds: T[]) => {
   const [openModals, setOpenModals] = useState<Set<T>>(new Set());
 
   const openModal = useCallback((modalId: T) => {

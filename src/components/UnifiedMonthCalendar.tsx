@@ -163,7 +163,7 @@ export default function UnifiedMonthCalendar({
   };
 
   // DispatchCalendarスタイルのデフォルト日付セルレンダリング
-  const defaultRenderDateCell = (day: CalendarDay, events: CalendarEvent[], weekIndex?: number) => {
+  const defaultRenderDateCell = (day: CalendarDay, events: CalendarEvent[], _weekIndex?: number) => {
     const hasEvents = events.length > 0;
     
     return (

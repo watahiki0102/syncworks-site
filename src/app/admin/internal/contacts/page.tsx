@@ -83,13 +83,13 @@ export default function ContactsPage() {
 
   const filteredData = data.filter(row => {
     // ステータスフィルター（完了は非表示、未完了・対応中のみ表示）
-    if (statusFilter === '未完了' && row.status !== '未完了') return false;
-    if (statusFilter === '対応中' && row.status !== '対応中') return false;
-    if (statusFilter === '完了' && row.status !== '完了') return false;
-    if (statusFilter === '全て' && row.status === '完了') return false; // デフォルトでは完了は非表示
+    if (statusFilter === '未完了' && row.status !== '未完了') {return false;}
+    if (statusFilter === '対応中' && row.status !== '対応中') {return false;}
+    if (statusFilter === '完了' && row.status !== '完了') {return false;}
+    if (statusFilter === '全て' && row.status === '完了') {return false;} // デフォルトでは完了は非表示
     
     // 検索フィルター
-    if (!searchQuery) return true;
+    if (!searchQuery) {return true;}
     
     const query = searchQuery.toLowerCase();
     return (

@@ -3,8 +3,7 @@
  * 見積もり・料金計算に関する共通ロジックを提供
  */
 
-import { TAX_RATES } from '@/constants';
-import { UNIFIED_PRICING_CONFIG, UNIFIED_TRUCK_BASE_PRICES, PRICING_ERROR_MESSAGES } from '@/config/pricing';
+import { UNIFIED_PRICING_CONFIG, UNIFIED_TRUCK_BASE_PRICES } from '@/config/pricing';
 
 /**
  * 荷物アイテムの型定義
@@ -253,7 +252,7 @@ export const formatPriceNumber = (amount: number): string => {
  * 割引率を計算
  */
 export const calculateDiscountRate = (originalPrice: number, discountedPrice: number): number => {
-  if (originalPrice === 0) return 0;
+  if (originalPrice === 0) {return 0;}
   return Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
 };
 

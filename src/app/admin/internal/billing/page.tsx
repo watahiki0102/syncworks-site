@@ -100,7 +100,7 @@ export default function BillingPage() {
   };
 
   const handleIssueInvoice = (id: string) => {
-    if (!window.confirm('請求書を発行しますか？')) return;
+    if (!window.confirm('請求書を発行しますか？')) {return;}
 
     const invoiceId = `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
     const now = new Date().toISOString();
@@ -121,10 +121,10 @@ export default function BillingPage() {
 
   const filteredData = data.filter(row => {
     // ステータスフィルター
-    if (statusFilter !== '全て' && row.status !== statusFilter) return false;
+    if (statusFilter !== '全て' && row.status !== statusFilter) {return false;}
     
     // 検索フィルター
-    if (!searchQuery) return true;
+    if (!searchQuery) {return true;}
     
     const query = searchQuery.toLowerCase();
     return (

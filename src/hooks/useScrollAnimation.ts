@@ -24,7 +24,7 @@ export const useInView = (threshold = 0.1) => {
   const [ref, setRef] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!ref) return;
+    if (!ref) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {

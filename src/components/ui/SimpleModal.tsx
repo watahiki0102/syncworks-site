@@ -78,7 +78,6 @@ export const ConfirmModal: React.FC<{
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      size="sm"
       footer={
         <>
           <button
@@ -140,7 +139,6 @@ export const AlertModal: React.FC<{
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      size="sm"
       footer={
         <button
           onClick={onClose}
@@ -188,7 +186,6 @@ export const FormModal: React.FC<{
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      size="md"
       footer={
         <>
           <button

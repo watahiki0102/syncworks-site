@@ -36,10 +36,10 @@ export default function PlaceLabels({ origin, destination, className = '' }: Pla
   // ResizeObserverを使用して幅の変更を監視
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {return;}
 
     const resizeObserver = new ResizeObserver((entries) => {
-      if (isResizing) return;
+      if (isResizing) {return;}
       
       setIsResizing(true);
       

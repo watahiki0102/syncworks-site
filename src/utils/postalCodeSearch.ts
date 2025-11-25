@@ -32,12 +32,12 @@ export async function searchAddressByPostalCode(postalCode: string): Promise<Add
       // address2: 市区町村（例：品川区）
       // address3: 町名（例：北品川）
 
-      // 完全な住所を構築
-      const fullAddress = `${address1}${address2}${address3}`;
+      // 完全な住所を構築（将来の使用のため保持）
+      void `${address1}${address2}${address3}`;
 
       // 市区町村フィールドには address2 + address3 を使用
-      let city = `${address2 || ''}${address3 || ''}`;
-      let streetNumber = ''; // 番地は表示しない
+      const city = `${address2 || ''}${address3 || ''}`;
+      const streetNumber = ''; // 番地は表示しない
       
       return {
         prefecture: address1,

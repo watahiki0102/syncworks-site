@@ -228,15 +228,15 @@ export default function ShiftModal({
 
   // モーダルタイトル
   const getTitle = () => {
-    if (mode === 'edit') return 'シフト編集';
-    if (mode === 'create') return 'シフト登録';
+    if (mode === 'edit') {return 'シフト編集';}
+    if (mode === 'create') {return 'シフト登録';}
     return 'シフト追加';
   };
 
   // 保存ボタンラベル
   const getSaveLabel = () => {
-    if (mode === 'edit') return '更新';
-    if (activeTab === 'bulk') return '一括登録';
+    if (mode === 'edit') {return '更新';}
+    if (activeTab === 'bulk') {return '一括登録';}
     return '登録';
   };
 
@@ -328,7 +328,7 @@ export default function ShiftModal({
   };
 
   const formatDateLabel = (date: string) => {
-    if (!date) return '';
+    if (!date) {return '';}
     const [year, month, day] = date.split('-');
     return `${year}/${month}/${day}`;
   };

@@ -32,7 +32,7 @@ export async function POST() {
 
     for (let i = 1; i < lines.length; i++) { // ヘッダーをスキップ
       const line = lines[i].trim();
-      if (!line) continue;
+      if (!line) {continue;}
 
       const [dateStr, name] = line.split(',').map(s => s.trim());
       if (dateStr && name) {

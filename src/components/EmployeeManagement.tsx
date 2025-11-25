@@ -37,7 +37,7 @@ export default function EmployeeManagement({
   selectedEmployee,
   onAddEmployee,
   onUpdateEmployee,
-  onDeleteEmployee,
+  onDeleteEmployee: _onDeleteEmployee,
   onSelectEmployee,
   onShowEmployeeModal,
   showEmployeeModal,
@@ -105,7 +105,7 @@ export default function EmployeeManagement({
         `退職日: ${normalizedFormData.retireDate || '未設定'}\n\n` +
         'よろしいですか？'
       );
-      if (!ok) return;
+      if (!ok) {return;}
     }
 
     if (selectedEmployee) {
@@ -160,12 +160,6 @@ export default function EmployeeManagement({
     });
     onSelectEmployee(employee);
     onShowEmployeeModal(true);
-  };
-
-  const handleDelete = (employeeId: string) => {
-    if (window.confirm('この従業員を削除しますか？')) {
-      onDeleteEmployee(employeeId);
-    }
   };
 
   const getStatusColor = (status: string) => {

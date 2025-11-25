@@ -101,10 +101,10 @@ export default function RegisterPage() {
     // メールアドレスのバリデーション
     const emailErrors = validateEmailData(basicInfo.emailData);
     Object.entries(emailErrors).forEach(([key, value]) => {
-      if (value) newErrors[key] = value;
+      if (value) {newErrors[key] = value;}
     });
     
-    if (!basicInfo.password) newErrors.password = 'パスワードは必須です';
+    if (!basicInfo.password) {newErrors.password = 'パスワードは必須です';}
     else if (basicInfo.password.length < 8) {
       newErrors.password = 'パスワードは8文字以上で入力してください';
     }
@@ -113,8 +113,8 @@ export default function RegisterPage() {
       newErrors.confirmPassword = 'パスワードが一致しません';
     }
     
-    if (!basicInfo.phone) newErrors.phone = '電話番号は必須です';
-    if (!basicInfo.address) newErrors.address = '住所は必須です';
+    if (!basicInfo.phone) {newErrors.phone = '電話番号は必須です';}
+    if (!basicInfo.address) {newErrors.address = '住所は必須です';}
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -124,25 +124,25 @@ export default function RegisterPage() {
     const newErrors: Record<string, string> = {};
     
     if (userType === 'mover') {
-      if (!moverInfo.companyName) newErrors.companyName = '事業者名は必須です';
-      if (!moverInfo.description) newErrors.description = '事業コンセプトは必須です';
+      if (!moverInfo.companyName) {newErrors.companyName = '事業者名は必須です';}
+      if (!moverInfo.description) {newErrors.description = '事業コンセプトは必須です';}
       if (moverInfo.selectedPrefectures.length === 0) {
         newErrors.selectedPrefectures = '対応エリアを1つ以上選択してください';
       }
     } else {
-      if (!referrerInfo.displayName) newErrors.displayName = '表示名は必須です';
+      if (!referrerInfo.displayName) {newErrors.displayName = '表示名は必須です';}
       
       if (referrerInfo.referrerType === 'company') {
-        if (!referrerInfo.companyName) newErrors.companyName = '会社名は必須です';
+        if (!referrerInfo.companyName) {newErrors.companyName = '会社名は必須です';}
       } else {
-        if (!referrerInfo.fullName) newErrors.fullName = '氏名は必須です';
-        if (!referrerInfo.kana) newErrors.kana = 'カナは必須です';
+        if (!referrerInfo.fullName) {newErrors.fullName = '氏名は必須です';}
+        if (!referrerInfo.kana) {newErrors.kana = 'カナは必須です';}
       }
       
-      if (!referrerInfo.bankCode) newErrors.bankCode = '銀行名は必須です';
-      if (!referrerInfo.branchName) newErrors.branchName = '支店名は必須です';
-      if (!referrerInfo.accountNumber) newErrors.accountNumber = '口座番号は必須です';
-      if (!referrerInfo.accountHolder) newErrors.accountHolder = '口座名義は必須です';
+      if (!referrerInfo.bankCode) {newErrors.bankCode = '銀行名は必須です';}
+      if (!referrerInfo.branchName) {newErrors.branchName = '支店名は必須です';}
+      if (!referrerInfo.accountNumber) {newErrors.accountNumber = '口座番号は必須です';}
+      if (!referrerInfo.accountHolder) {newErrors.accountHolder = '口座名義は必須です';}
     }
     
     setErrors(newErrors);
@@ -150,8 +150,8 @@ export default function RegisterPage() {
   };
 
   const handleNext = () => {
-    if (currentStep === 'basic' && !validateBasicInfo()) return;
-    if (currentStep === 'specific' && !validateSpecificInfo()) return;
+    if (currentStep === 'basic' && !validateBasicInfo()) {return;}
+    if (currentStep === 'specific' && !validateSpecificInfo()) {return;}
     
     const steps: RegistrationStep[] = ['userType', 'basic', 'specific', 'terms'];
     const currentIndex = steps.indexOf(currentStep);

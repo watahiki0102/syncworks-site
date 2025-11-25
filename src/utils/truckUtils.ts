@@ -120,10 +120,10 @@ export const getTruckBasePrice = (truckType: string): number => {
  * ポイント数から推奨トラックタイプを取得
  */
 export const getRecommendedTruckType = (points: number): string => {
-  if (points <= 50) return '軽トラ';
-  if (points <= 100) return '2t';
-  if (points <= 200) return '3t';
-  if (points <= 350) return '4t';
+  if (points <= 50) {return '軽トラ';}
+  if (points <= 100) {return '2t';}
+  if (points <= 200) {return '3t';}
+  if (points <= 350) {return '4t';}
   return '8t';
 };
 
@@ -131,7 +131,7 @@ export const getRecommendedTruckType = (points: number): string => {
  * トラック効率性を計算（ポイント/容量比）
  */
 export const calculateTruckEfficiency = (truck: Truck, requiredPoints: number): number => {
-  if (truck.capacityKg === 0) return 0;
+  if (truck.capacityKg === 0) {return 0;}
   const pointsPerKg = requiredPoints / truck.capacityKg;
   return Math.round(pointsPerKg * 1000) / 1000; // 小数点3位まで
 };

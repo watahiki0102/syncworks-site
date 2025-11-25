@@ -69,7 +69,7 @@ export default function InternalHolidaysPage() {
   // CSVファイルをアップロード
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     try {
       setUploadingFile(true);
@@ -85,7 +85,7 @@ export default function InternalHolidaysPage() {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line || i === 0) continue; // ヘッダー行をスキップ
+        if (!line || i === 0) {continue;} // ヘッダー行をスキップ
 
         const [dateStr, name] = line.split(',').map(s => s.trim());
         if (dateStr && name) {
