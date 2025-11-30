@@ -9,8 +9,10 @@ export * from './internal';
 
 // 共通型定義（名前衝突を回避して選択的エクスポート）
 export type { CustomerInfo, MoveInfo, ItemInfo, ItemsInfo, QuoteRequest, QuoteResponse, UnifiedCase, FormInputData } from './common';
-export type { Employee, EmployeeShift, Truck, Schedule, ContractStatus, WorkerAssignment } from './shared';
+export type { Employee, EmployeeShift, Schedule, ContractStatus, WorkerAssignment } from './shared';
 export type { ItemPoint, PricingRule, OptionItem, ItemDetail, PricingData } from './pricing';
+export type { User, UserFromDB, CreateUserInput, UpdateUserInput } from './user';
+export type { Truck, TruckFromDB, CreateTruckInput, UpdateTruckInput } from './truck';
 
 // 残りは名前空間でエクスポート
 export * as AnalyticsTypes from './analytics';

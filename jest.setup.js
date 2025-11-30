@@ -28,15 +28,26 @@ Date.now = jest.fn(() => mockDate.getTime())
 
 // Windowオブジェクトのモック（必要に応じて）
 if (typeof window !== 'undefined') {
-  Object.defineProperty(window, 'location', {
-    value: {
-      href: 'http://localhost:3000',
-      pathname: '/',
-      search: '',
-      hash: '',
-    },
-    writable: true,
-  });
+  // locationが既に定義されている場合は削除してから再定義
+  try {
+    delete window.location;
+  } catch (e) {
+    // 削除できない場合は無視
+  }
+  try {
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: 'http://localhost:3000',
+        pathname: '/',
+        search: '',
+        hash: '',
+      },
+      writable: true,
+      configurable: true,
+    });
+  } catch (e) {
+    // 定義できない場合は無視（既に定義されている可能性がある）
+  }
 }
 
 // IntersectionObserver のモック

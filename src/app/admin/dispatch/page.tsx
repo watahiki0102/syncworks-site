@@ -11,8 +11,10 @@ import TruckAssignmentModal from './components/TruckAssignmentModal';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
 import { toLocalDateString } from '@/utils/dateTimeUtils';
-import { Truck, Schedule, TruckAssignment } from '@/types/shared';
+import { Truck } from '@/types/truck';
+import { Schedule, TruckAssignment } from '@/types/shared';
 import { ContractStatus } from '@/types/case';
+import { fetchTrucks, createTruck, updateTruck as apiUpdateTruck, deleteTruck as apiDeleteTruck } from '@/lib/api/trucks';
 
 interface FormSubmission {
   id: string;
@@ -74,20 +76,25 @@ function DispatchManagementContent() {
 
 
   useEffect(() => {
-    // ローカルストレージからトラックデータを読み込み
-    const savedTrucks = localStorage.getItem('trucks');
-    if (savedTrucks) {
+    // APIからトラックデータを取得
+    const loadTrucks = async () => {
       try {
-        setTrucks(JSON.parse(savedTrucks));
+        // TODO: 実際のcompany_idは認証情報から取得する
+        const DEFAULT_COMPANY_ID = '11111111-1111-1111-1111-111111111111';
+        const trucksData = await fetchTrucks({ company_id: DEFAULT_COMPANY_ID });
+        // schedulesは別途取得する必要がある（現在は空配列）
+        setTrucks(trucksData.map(truck => ({ ...truck, schedules: [] })));
       } catch (error) {
-        console.error('トラックデータの読み込みに失敗しました:', error);
-        // エラー時はテストデータで初期化
-        localStorage.removeItem('trucks');
+        console.error('トラックデータの取得に失敗しました:', error);
+        // エラー時は空配列で初期化
+        setTrucks([]);
       }
-    }
+    };
 
-    // 保存データがない場合のみテストデータで初期化
-    if (!savedTrucks) {
+    loadTrucks();
+
+    // テストデータ（後で削除）
+    if (false) {
       // テストデータを初期化
       const testTrucks: Truck[] = [
         {
@@ -618,7 +625,7 @@ function DispatchManagementContent() {
 
   const saveTrucks = (newTrucks: Truck[]) => {
     setTrucks(newTrucks);
-    localStorage.setItem('trucks', JSON.stringify(newTrucks));
+    // ローカルストレージへの保存は削除（APIに移行）
   };
 
   const saveFormSubmissions = (newSubmissions: FormSubmission[]) => {
@@ -626,29 +633,79 @@ function DispatchManagementContent() {
     localStorage.setItem('formSubmissions', JSON.stringify(newSubmissions));
   };
 
-  const addTruck = (truck: Omit<Truck, 'id'>) => {
-    const newTruck: Truck = {
-      ...truck,
-      id: Date.now().toString(),
-    };
-    const updatedTrucks = [...trucks, newTruck];
-    saveTrucks(updatedTrucks);
+  const addTruck = async (truck: Omit<Truck, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      // TODO: 実際のcompany_idは認証情報から取得する
+      const DEFAULT_COMPANY_ID = '11111111-1111-1111-1111-111111111111';
+      const newTruck = await createTruck({
+        company_id: DEFAULT_COMPANY_ID,
+        truck_number: truck.truckNumber,
+        license_plate: truck.licensePlate,
+        truck_type: truck.truckType,
+        capacity_cbm: truck.capacityCbm,
+        max_load_kg: truck.maxLoadKg,
+        has_lift_gate: truck.hasLiftGate,
+        has_air_conditioning: truck.hasAirConditioning,
+        manufacture_year: truck.manufactureYear,
+        manufacturer: truck.manufacturer,
+        model_name: truck.modelName,
+        last_inspection_date: truck.lastInspectionDate,
+        next_inspection_date: truck.nextInspectionDate,
+        fuel_type: truck.fuelType,
+        fuel_efficiency_kmpl: truck.fuelEfficiencyKmpl,
+        insurance_expiry_date: truck.insuranceExpiryDate,
+        status: truck.status || 'available',
+      });
+      setTrucks([...trucks, { ...newTruck, schedules: [] }]);
+    } catch (error) {
+      console.error('トラックの作成に失敗しました:', error);
+      alert('トラックの作成に失敗しました。再度お試しください。');
+    }
   };
 
-  const updateTruck = (updatedTruck: Truck) => {
-    const updatedTrucks = trucks.map(truck => 
-      truck.id === updatedTruck.id ? updatedTruck : truck
-    );
-    saveTrucks(updatedTrucks);
-    setSelectedTruck(null);
+  const handleUpdateTruck = async (updatedTruck: Truck) => {
+    try {
+      await apiUpdateTruck(updatedTruck.id, {
+        truck_number: updatedTruck.truckNumber,
+        license_plate: updatedTruck.licensePlate,
+        truck_type: updatedTruck.truckType,
+        capacity_cbm: updatedTruck.capacityCbm,
+        max_load_kg: updatedTruck.maxLoadKg,
+        has_lift_gate: updatedTruck.hasLiftGate,
+        has_air_conditioning: updatedTruck.hasAirConditioning,
+        manufacture_year: updatedTruck.manufactureYear,
+        manufacturer: updatedTruck.manufacturer,
+        model_name: updatedTruck.modelName,
+        last_inspection_date: updatedTruck.lastInspectionDate,
+        next_inspection_date: updatedTruck.nextInspectionDate,
+        fuel_type: updatedTruck.fuelType,
+        fuel_efficiency_kmpl: updatedTruck.fuelEfficiencyKmpl,
+        insurance_expiry_date: updatedTruck.insuranceExpiryDate,
+        status: updatedTruck.status,
+      });
+      const updatedTrucks = trucks.map(truck => 
+        truck.id === updatedTruck.id ? updatedTruck : truck
+      );
+      setTrucks(updatedTrucks);
+      setSelectedTruck(null);
+    } catch (error) {
+      console.error('トラックの更新に失敗しました:', error);
+      alert('トラックの更新に失敗しました。再度お試しください。');
+    }
   };
 
-  const deleteTruck = (truckId: string) => {
+  const handleDeleteTruck = async (truckId: string) => {
     if (window.confirm('このトラックを削除しますか？')) {
-      const updatedTrucks = trucks.filter(truck => truck.id !== truckId);
-      saveTrucks(updatedTrucks);
-      if (selectedTruck?.id === truckId) {
-        setSelectedTruck(null);
+      try {
+        await apiDeleteTruck(truckId);
+        const updatedTrucks = trucks.filter(truck => truck.id !== truckId);
+        setTrucks(updatedTrucks);
+        if (selectedTruck?.id === truckId) {
+          setSelectedTruck(null);
+        }
+      } catch (error) {
+        console.error('トラックの削除に失敗しました:', error);
+        alert('トラックの削除に失敗しました。再度お試しください。');
       }
     }
   };
@@ -671,10 +728,10 @@ function DispatchManagementContent() {
     }
 
     // 容量チェック
-    if (truckAssignment.capacity > _truck.capacityKg) {
+    if (truckAssignment.capacity > _truck.maxLoadKg) {
       return {
         isValid: false,
-        error: `容量超過: ${truckAssignment.capacity.toLocaleString()}kg > ${_truck.capacityKg.toLocaleString()}kg`
+        error: `容量超過: ${truckAssignment.capacity.toLocaleString()}kg > ${_truck.maxLoadKg.toLocaleString()}kg`
       };
     }
 
@@ -781,7 +838,7 @@ function DispatchManagementContent() {
     updateFormSubmission(updatedSubmission);
     
     // 成功メッセージ
-    alert(`✅ 割り当て完了\n\n${truck?.name} を ${submission.customerName}様の案件に割り当てました。`);
+    alert(`✅ 割り当て完了\n\n${truck?.truckType} (${truck?.licensePlate}) を ${submission.customerName}様の案件に割り当てました。`);
   };
 
   const updateFormSubmission = (updatedSubmission: FormSubmission) => {
@@ -857,7 +914,7 @@ function DispatchManagementContent() {
       {activeView === 'calendar' && (
         <DispatchCalendar
           trucks={trucks as any}
-          onUpdateTruck={updateTruck}
+          onUpdateTruck={handleUpdateTruck}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           formSubmissions={formSubmissions}
@@ -882,8 +939,8 @@ function DispatchManagementContent() {
             trucks={trucks}
             selectedTruck={selectedTruck}
             onAddTruck={addTruck}
-            onUpdateTruck={updateTruck}
-            onDeleteTruck={deleteTruck}
+            onUpdateTruck={handleUpdateTruck}
+            onDeleteTruck={handleDeleteTruck}
             onSelectTruck={setSelectedTruck}
             availableTruckTypes={availableTruckTypes}
             pricingRules={pricingRules}
@@ -943,7 +1000,7 @@ function DispatchManagementContent() {
               schedules: [...selectedTruckForUnavailable.schedules, ...newSchedules]
             };
             
-            updateTruck(updatedTruck);
+            handleUpdateTruck(updatedTruck);
             setShowUnavailablePeriodModal(false);
             setSelectedTruckForUnavailable(null);
             setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });

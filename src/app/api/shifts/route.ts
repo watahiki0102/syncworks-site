@@ -26,10 +26,12 @@ export async function GET(request: Request) {
     if (startDate || endDate) {
       where.shift_date = {};
       if (startDate) {
-        (where.shift_date as Record<string, Date>).gte = new Date(startDate);
+        // タイムゾーンの問題を回避するため、parseDateStringを使用
+        (where.shift_date as Record<string, Date>).gte = parseDateString(startDate);
       }
       if (endDate) {
-        (where.shift_date as Record<string, Date>).lte = new Date(endDate);
+        // タイムゾーンの問題を回避するため、parseDateStringを使用
+        (where.shift_date as Record<string, Date>).lte = parseDateString(endDate);
       }
     }
 
@@ -179,11 +181,12 @@ export async function POST(request: Request) {
 /**
  * 時刻文字列（HH:MM形式）をDate型に変換
  * PostgreSQLのTIME型は日付部分を無視するので、任意の日付を使用
+ * UTCで作成することでタイムゾーンのずれを防ぐ
  */
 function parseTimeToDate(timeString: string): Date {
   const [hours, minutes] = timeString.split(':').map(Number);
-  const date = new Date(1970, 0, 1, hours, minutes, 0, 0);
-  return date;
+  // UTCで時刻を設定
+  return new Date(Date.UTC(1970, 0, 1, hours, minutes, 0, 0));
 }
 
 /**

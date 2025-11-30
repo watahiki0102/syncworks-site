@@ -2,7 +2,7 @@
  * 管理者ログインページコンポーネント
  * - 事業者アカウントのログイン機能
  * - 利用種別選択（引越し事業者 / 紹介者）
- * - デモ用認証（admin@example.com / password123）
+ * - デモ用認証（syncworks.official@gmail.com / password123）
  * - 新規登録ページへの誘導
  */
 'use client';
@@ -13,7 +13,8 @@ import { UserType } from '@/types/referral';
 
 export default function AdminLoginPage() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
+    // 開発環境でのデモ用初期値
+    const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'syncworks.official@gmail.com' : '');
     const [password, setPassword] = useState('');
     const [userType, setUserType] = useState<UserType>('mover');
     const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +35,7 @@ export default function AdminLoginPage() {
                 // 有効期限内の場合、自動ログインを有効にする
                 const savedUserType = localStorage.getItem('userType') || 'mover';
                 localStorage.setItem('adminLoggedIn', 'true');
-                localStorage.setItem('adminEmail', 'admin@example.com'); // デモ用
+                localStorage.setItem('adminEmail', 'syncworks.official@gmail.com'); // デモ用
                 localStorage.setItem('userType', savedUserType);
                 
                 // 利用種別に応じて適切な画面に遷移
@@ -61,10 +62,26 @@ export default function AdminLoginPage() {
         setError('');
         
         try {
-            // デモ用認証
-            if (email === 'admin@example.com' && password === 'password123') {
+            // データベース認証APIを呼び出し
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                // ログイン成功: ユーザー情報をlocalStorageに保存
                 localStorage.setItem('adminLoggedIn', 'true');
-                localStorage.setItem('adminEmail', email);
+                localStorage.setItem('adminEmail', result.data.email);
+                localStorage.setItem('adminUserId', result.data.id);
+                localStorage.setItem('adminUserRole', result.data.role);
                 localStorage.setItem('userType', userType);
                 
                 // 自動ログイン機能
@@ -86,10 +103,12 @@ export default function AdminLoginPage() {
                     router.push('/admin/dashboard');
                 }
             } else {
-                setError('メールアドレスまたはパスワードが正しくありません');
+                // ログイン失敗
+                setError(result.error || 'メールアドレスまたはパスワードが正しくありません');
             }
-        } catch {
-            setError('ログインに失敗しました');
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('ログインに失敗しました。再度お試しください。');
         } finally {
             setIsLoading(false);
         }
@@ -155,7 +174,7 @@ export default function AdminLoginPage() {
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-                                placeholder="admin@example.com"
+                                placeholder="syncworks.official@gmail.com"
                             />
                         </div>
                         <div>
@@ -204,7 +223,7 @@ export default function AdminLoginPage() {
                         >
                             {isLoading ? 'ログイン中...' : 'ログイン'}
                         </button>
-                        <div className="text-xs text-gray-700 dark:text-gray-400 text-center mt-2 bg-gray-50 dark:bg-gray-800/50 p-2 rounded border border-gray-200 dark:border-gray-700">サンプル: admin@example.com / password123</div>
+                        <div className="text-xs text-gray-700 dark:text-gray-400 text-center mt-2 bg-gray-50 dark:bg-gray-800/50 p-2 rounded border border-gray-200 dark:border-gray-700">サンプル: syncworks.official@gmail.com / password123</div>
                     </form>
                 </div>
                 {/* 新規登録用 */}

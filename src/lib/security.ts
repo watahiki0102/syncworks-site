@@ -8,6 +8,8 @@
 import DOMPurify from 'isomorphic-dompurify';
 import { config } from './config';
 import { logger } from './logger';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 /**
  * XSS対策 - HTMLコンテンツのサニタイズ
@@ -68,7 +70,7 @@ export const isSafeUrl = (url: string): boolean => {
 
   try {
     const urlObj = new URL(url);
-    
+
     // 危険なプロトコルを拒否
     const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:', 'about:'];
     if (dangerousProtocols.some(protocol => urlObj.protocol.toLowerCase().startsWith(protocol))) {
@@ -105,7 +107,7 @@ export class CSRFProtection {
   static setToken(token: string): void {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(this.tokenKey, token);
-      
+
       // metaタグにも設定（従来のフォーム送信用）
       let metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
       if (!metaTag) {
@@ -124,13 +126,13 @@ export class CSRFProtection {
     if (typeof window !== 'undefined') {
       // sessionStorageから取得を試行
       let token = sessionStorage.getItem(this.tokenKey);
-      
+
       // なければmetaタグから取得
       if (!token) {
         const metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
         token = metaTag?.content || null;
       }
-      
+
       return token;
     }
     return null;
@@ -155,7 +157,7 @@ export class CSRFProtection {
     if (!storedToken || !requestToken) {
       return false;
     }
-    
+
     // 定数時間比較でタイミング攻撃を防ぐ
     return this.constantTimeEqual(storedToken, requestToken);
   }
@@ -167,12 +169,12 @@ export class CSRFProtection {
     if (a.length !== b.length) {
       return false;
     }
-    
+
     let result = 0;
     for (let i = 0; i < a.length; i++) {
       result |= a.charCodeAt(i) ^ b.charCodeAt(i);
     }
-    
+
     return result === 0;
   }
 }
@@ -188,13 +190,13 @@ export const inputSanitizer = {
     if (typeof input !== 'string') {
       return '';
     }
-    
+
     // 制御文字を除去
     let sanitized = input.replace(/[\x00-\x1F\x7F]/g, '');
-    
+
     // 過度な空白を正規化
     sanitized = sanitized.replace(/\s+/g, ' ').trim();
-    
+
     return sanitized;
   },
 
@@ -205,12 +207,12 @@ export const inputSanitizer = {
     if (typeof input === 'number') {
       return isFinite(input) ? input : null;
     }
-    
+
     if (typeof input === 'string') {
       const num = parseFloat(input);
       return isFinite(num) ? num : null;
     }
-    
+
     return null;
   },
 
@@ -221,16 +223,16 @@ export const inputSanitizer = {
     if (typeof input === 'boolean') {
       return input;
     }
-    
+
     if (typeof input === 'string') {
       const lower = input.toLowerCase();
       return lower === 'true' || lower === '1' || lower === 'yes';
     }
-    
+
     if (typeof input === 'number') {
       return input !== 0;
     }
-    
+
     return false;
   },
 
@@ -241,7 +243,7 @@ export const inputSanitizer = {
     if (!Array.isArray(input)) {
       return [];
     }
-    
+
     return input.map(itemSanitizer).filter(item => item !== null && item !== undefined);
   },
 
@@ -250,13 +252,13 @@ export const inputSanitizer = {
    */
   sanitizeObjectKeys: (obj: Record<string, unknown>, allowedKeys: string[]): Record<string, unknown> => {
     const sanitized: Record<string, unknown> = {};
-    
+
     allowedKeys.forEach(key => {
       if (key in obj) {
         sanitized[key] = obj[key];
       }
     });
-    
+
     return sanitized;
   },
 };
@@ -272,7 +274,7 @@ export const fileSecurityChecker = {
     if (!file || !file.type) {
       return false;
     }
-    
+
     return allowedTypes.includes(file.type);
   },
 
@@ -283,7 +285,7 @@ export const fileSecurityChecker = {
     if (!file) {
       return false;
     }
-    
+
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
     return file.size <= maxSizeInBytes;
   },
@@ -295,23 +297,23 @@ export const fileSecurityChecker = {
     if (!fileName || typeof fileName !== 'string') {
       return 'untitled';
     }
-    
+
     // 危険な文字を除去
     let sanitized = fileName.replace(/[^\w\s.-]/gi, '');
-    
+
     // 連続するドットを防ぐ
     sanitized = sanitized.replace(/\.{2,}/g, '.');
-    
+
     // 先頭・末尾のドットやスペースを除去
     sanitized = sanitized.replace(/^[.\s]+|[.\s]+$/g, '');
-    
+
     // 長すぎるファイル名を切り詰め
     if (sanitized.length > 100) {
       const ext = sanitized.match(/\.[^.]*$/)?.[0] || '';
       const name = sanitized.substring(0, 100 - ext.length);
       sanitized = name + ext;
     }
-    
+
     return sanitized || 'untitled';
   },
 
@@ -322,24 +324,24 @@ export const fileSecurityChecker = {
     if (!file.type.startsWith('image/')) {
       return false;
     }
-    
+
     return new Promise((resolve) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
-      
+
       img.onload = () => {
         URL.revokeObjectURL(url);
         // 基本的な画像として読み込めた場合は有効
         resolve(true);
       };
-      
+
       img.onerror = () => {
         URL.revokeObjectURL(url);
         resolve(false);
       };
-      
+
       img.src = url;
-      
+
       // タイムアウト設定
       setTimeout(() => {
         URL.revokeObjectURL(url);
@@ -359,10 +361,10 @@ export const secureStorage = {
   setSecureItem: async (key: string, value: unknown): Promise<void> => {
     try {
       const jsonString = JSON.stringify(value);
-      
+
       // 簡単な難読化（本格的な暗号化ではない）
       const encoded = btoa(encodeURIComponent(jsonString));
-      
+
       localStorage.setItem(`secure_${key}`, encoded);
     } catch (error) {
       logger.error('Secure storage set failed', error as Error, { key });
@@ -379,7 +381,7 @@ export const secureStorage = {
       if (!encoded) {
         return null;
       }
-      
+
       const jsonString = decodeURIComponent(atob(encoded));
       return JSON.parse(jsonString) as T;
     } catch (error) {
@@ -426,23 +428,23 @@ export class RateLimiter {
   checkLimit(identifier: string): boolean {
     const now = Date.now();
     const windowStart = now - this.windowMs;
-    
+
     // 既存のリクエストを取得
     let requests = this.requests.get(identifier) || [];
-    
+
     // 時間窓外のリクエストを除去
     requests = requests.filter(timestamp => timestamp > windowStart);
-    
+
     // 制限チェック
     if (requests.length >= this.maxRequests) {
       logger.warn('Rate limit exceeded', { identifier, requests: requests.length });
       return false;
     }
-    
+
     // 新しいリクエストを追加
     requests.push(now);
     this.requests.set(identifier, requests);
-    
+
     return true;
   }
 
@@ -466,6 +468,85 @@ export const defaultRateLimiter = new RateLimiter(
   config.app.rateLimit.windowMs,
   config.app.rateLimit.maxRequests
 );
+
+/**
+ * パスワード管理クラス
+ * Node.jsの標準cryptoモジュールを使用してパスワードハッシュ化と検証を実装
+ */
+export class PasswordManager {
+  /**
+   * パスワードをハッシュ化
+   * 注意: 本番環境ではbcryptなどの専用ライブラリの使用を推奨
+   */
+  static async hash(password: string): Promise<string> {
+    if (!password) {
+      throw new Error('Password is required');
+    }
+
+    // Node.jsの標準cryptoを使用
+    const crypto = await import('crypto');
+    
+    // ソルトを生成
+    const salt = crypto.randomBytes(16).toString('hex');
+    
+    // パスワードとソルトを結合してハッシュ化
+    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    
+    // ソルトとハッシュを結合して返す（形式: salt:hash）
+    return `${salt}:${hash}`;
+  }
+
+  /**
+   * パスワードを検証
+   * @param password - 検証するパスワード（平文）
+   * @param hashedPassword - ハッシュ化されたパスワード（salt:hash形式、またはbcrypt形式）
+   */
+  static async verify(password: string, hashedPassword: string): Promise<boolean> {
+    if (!password || !hashedPassword) {
+      return false;
+    }
+
+    try {
+      // bcrypt形式（$2b$、$2a$、$2y$で始まる）の場合はbcryptjsを使用
+      if (hashedPassword.startsWith('$2b$') || hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2y$')) {
+        return await bcrypt.compare(password, hashedPassword);
+      }
+      
+      // salt:hash形式（pbkdf2）の場合
+      const crypto = await import('crypto');
+      const [salt, hash] = hashedPassword.split(':');
+      
+      if (!salt || !hash) {
+        return false;
+      }
+      
+      // 入力パスワードを同じソルトでハッシュ化
+      const inputHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+      
+      // 定数時間比較でタイミング攻撃を防ぐ
+      return this.constantTimeEqual(hash, inputHash);
+    } catch (error) {
+      logger.error('Password verification failed', error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * 定数時間での文字列比較（タイミング攻撃対策）
+   */
+  private static constantTimeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+      return false;
+    }
+    
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    
+    return result === 0;
+  }
+}
 
 /**
  * セキュリティヘッダーのユーティリティ
@@ -500,7 +581,7 @@ export const securityHeaders = {
       "base-uri 'self'",
       "form-action 'self'",
     ];
-    
+
     return directives.join('; ');
   },
 };
@@ -516,6 +597,7 @@ const securityModule = {
   RateLimiter,
   defaultRateLimiter,
   securityHeaders,
+  PasswordManager,
 };
 
 export default securityModule;

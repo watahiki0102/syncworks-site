@@ -28,6 +28,7 @@ export interface Employee {
   birthDate?: string; // 生年月日
   address?: string; // 住所
   emergencyContact?: string; // 緊急連絡先
+  emergencyContactRelation?: string; // 緊急連絡先との関係
   retireDate?: string; // 退職日
 }
 
@@ -112,6 +113,7 @@ export function mapEmployeeFromDB(dbEmployee: EmployeeFromDB): Employee {
     birthDate: dbEmployee.birth_date ? formatDate(dbEmployee.birth_date) : undefined,
     address: address || undefined,
     emergencyContact: dbEmployee.emergency_contact_phone || undefined,
+    emergencyContactRelation: dbEmployee.emergency_contact_name || undefined,
     retireDate: dbEmployee.termination_date ? formatDate(dbEmployee.termination_date) : undefined,
   };
 }
@@ -155,7 +157,7 @@ export function mapEmployeeToDB(
     termination_date: employee.retireDate || null,
     address_line: employee.address || null,
     emergency_contact_phone: employee.emergencyContact || null,
-    emergency_contact_name: employee.emergencyContact ? '緊急連絡先' : null,
+    emergency_contact_name: employee.emergencyContactRelation || null,
     is_active: employee.status === 'active',
   };
 }

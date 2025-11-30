@@ -1,10 +1,3 @@
-/**
- * 新規登録ページコンポーネント（認証前）
- * - 引越し事業者/案件紹介者の新規アカウント登録
- * - ステップバイステップ形式
- * - 利用種別に応じた入力項目
- * - フォームバリデーション
- */
 'use client';
 
 import { useState } from 'react';
@@ -61,7 +54,7 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('userType');
   const [userType, setUserType] = useState<UserType>('mover');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
     emailData: {
       businessEmail: '',
@@ -74,14 +67,14 @@ export default function RegisterPage() {
     postalCode: '',
     address: ''
   });
-  
+
   const [moverInfo, setMoverInfo] = useState<MoverInfo>({
     companyName: '',
     description: '',
     staffCount: '',
     selectedPrefectures: []
   });
-  
+
   const [referrerInfo, setReferrerInfo] = useState<ReferrerInfo>({
     displayName: '',
     referrerType: 'company',
@@ -90,69 +83,69 @@ export default function RegisterPage() {
     accountNumber: '',
     accountHolder: ''
   });
-  
+
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('');
 
   const validateBasicInfo = () => {
     const newErrors: Record<string, string> = {};
-    
+
     // メールアドレスのバリデーション
     const emailErrors = validateEmailData(basicInfo.emailData);
     Object.entries(emailErrors).forEach(([key, value]) => {
-      if (value) {newErrors[key] = value;}
+      if (value) { newErrors[key] = value; }
     });
-    
-    if (!basicInfo.password) {newErrors.password = 'パスワードは必須です';}
+
+    if (!basicInfo.password) { newErrors.password = 'パスワードは必須です'; }
     else if (basicInfo.password.length < 8) {
       newErrors.password = 'パスワードは8文字以上で入力してください';
     }
-    
+
     if (basicInfo.password !== basicInfo.confirmPassword) {
       newErrors.confirmPassword = 'パスワードが一致しません';
     }
-    
-    if (!basicInfo.phone) {newErrors.phone = '電話番号は必須です';}
-    if (!basicInfo.address) {newErrors.address = '住所は必須です';}
-    
+
+    if (!basicInfo.phone) { newErrors.phone = '電話番号は必須です'; }
+    if (!basicInfo.address) { newErrors.address = '住所は必須です'; }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateSpecificInfo = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (userType === 'mover') {
-      if (!moverInfo.companyName) {newErrors.companyName = '事業者名は必須です';}
-      if (!moverInfo.description) {newErrors.description = '事業コンセプトは必須です';}
+      if (!moverInfo.companyName) { newErrors.companyName = '事業者名は必須です'; }
+      if (!moverInfo.description) { newErrors.description = '事業コンセプトは必須です'; }
       if (moverInfo.selectedPrefectures.length === 0) {
         newErrors.selectedPrefectures = '対応エリアを1つ以上選択してください';
       }
     } else {
-      if (!referrerInfo.displayName) {newErrors.displayName = '表示名は必須です';}
-      
+      if (!referrerInfo.displayName) { newErrors.displayName = '表示名は必須です'; }
+
       if (referrerInfo.referrerType === 'company') {
-        if (!referrerInfo.companyName) {newErrors.companyName = '会社名は必須です';}
+        if (!referrerInfo.companyName) { newErrors.companyName = '会社名は必須です'; }
       } else {
-        if (!referrerInfo.fullName) {newErrors.fullName = '氏名は必須です';}
-        if (!referrerInfo.kana) {newErrors.kana = 'カナは必須です';}
+        if (!referrerInfo.fullName) { newErrors.fullName = '氏名は必須です'; }
+        if (!referrerInfo.kana) { newErrors.kana = 'カナは必須です'; }
       }
-      
-      if (!referrerInfo.bankCode) {newErrors.bankCode = '銀行名は必須です';}
-      if (!referrerInfo.branchName) {newErrors.branchName = '支店名は必須です';}
-      if (!referrerInfo.accountNumber) {newErrors.accountNumber = '口座番号は必須です';}
-      if (!referrerInfo.accountHolder) {newErrors.accountHolder = '口座名義は必須です';}
+
+      if (!referrerInfo.bankCode) { newErrors.bankCode = '銀行名は必須です'; }
+      if (!referrerInfo.branchName) { newErrors.branchName = '支店名は必須です'; }
+      if (!referrerInfo.accountNumber) { newErrors.accountNumber = '口座番号は必須です'; }
+      if (!referrerInfo.accountHolder) { newErrors.accountHolder = '口座名義は必須です'; }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
-    if (currentStep === 'basic' && !validateBasicInfo()) {return;}
-    if (currentStep === 'specific' && !validateSpecificInfo()) {return;}
-    
+    if (currentStep === 'basic' && !validateBasicInfo()) { return; }
+    if (currentStep === 'specific' && !validateSpecificInfo()) { return; }
+
     const steps: RegistrationStep[] = ['userType', 'basic', 'specific', 'terms'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
@@ -175,22 +168,30 @@ export default function RegisterPage() {
     }
 
     try {
-      // Registration data
-      const registrationData = {
-        userType,
-        basicInfo,
-        ...(userType === 'mover' ? { moverInfo } : { referrerInfo }),
-        registeredAt: new Date().toISOString()
-      };
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userType,
+          basicInfo,
+          moverInfo: userType === 'mover' ? moverInfo : undefined,
+          referrerInfo: userType === 'referrer' ? referrerInfo : undefined,
+        }),
+      });
 
-      // Save to localStorage (in real implementation, this would be an API call)
-      localStorage.setItem('registrationData', JSON.stringify(registrationData));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // クライアントサイドのログイン状態管理（既存の実装との互換性のため）
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminEmail', basicInfo.emailData.businessEmail);
       localStorage.setItem('userType', userType);
 
       alert('新規登録が完了しました！');
-      
+
       // Redirect to appropriate dashboard
       if (userType === 'referrer') {
         router.push('/admin/referrer/dashboard');
@@ -199,7 +200,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setErrors({ submit: '登録中にエラーが発生しました。もう一度お試しください。' });
+      setErrors({ submit: error instanceof Error ? error.message : '登録中にエラーが発生しました。もう一度お試しください。' });
     }
   };
 
@@ -232,17 +233,15 @@ export default function RegisterPage() {
             <div className="flex items-center space-x-4">
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step <= getStepNumber()
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-300 text-gray-600'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step <= getStepNumber()
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-300 text-gray-600'
+                    }`}>
                     {step}
                   </div>
                   {step < 4 && (
-                    <div className={`w-12 h-1 ml-4 ${
-                      step < getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
-                    }`} />
+                    <div className={`w-12 h-1 ml-4 ${step < getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
+                      }`} />
                   )}
                 </div>
               ))}
@@ -259,11 +258,10 @@ export default function RegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">利用種別を選択してください</h2>
               <div className="space-y-4">
-                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  userType === 'mover'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}>
+                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${userType === 'mover'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}>
                   <input
                     type="radio"
                     name="userType"
@@ -284,12 +282,11 @@ export default function RegisterPage() {
                     </div>
                   </div>
                 </label>
-                
-                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  userType === 'referrer'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}>
+
+                <label className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${userType === 'referrer'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}>
                   <input
                     type="radio"
                     name="userType"
@@ -335,7 +332,7 @@ export default function RegisterPage() {
                     customerEmail: errors.customerEmail
                   }}
                 />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     パスワード <span className="text-red-500">*</span>
@@ -344,14 +341,13 @@ export default function RegisterPage() {
                     type="password"
                     value={basicInfo.password}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, password: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="8文字以上で入力"
                   />
                   {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     パスワード確認 <span className="text-red-500">*</span>
@@ -360,14 +356,13 @@ export default function RegisterPage() {
                     type="password"
                     value={basicInfo.confirmPassword}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="上記と同じパスワードを入力"
                   />
                   {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     電話番号 <span className="text-red-500">*</span>
@@ -376,14 +371,13 @@ export default function RegisterPage() {
                     type="tel"
                     value={basicInfo.phone}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.phone ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.phone ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="03-1234-5678"
                   />
                   {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     郵便番号
@@ -396,7 +390,7 @@ export default function RegisterPage() {
                     placeholder="123-4567"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     住所 <span className="text-red-500">*</span>
@@ -405,9 +399,8 @@ export default function RegisterPage() {
                     type="text"
                     value={basicInfo.address}
                     onChange={(e) => setBasicInfo(prev => ({ ...prev, address: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.address ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.address ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="東京都渋谷区..."
                   />
                   {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
@@ -428,15 +421,14 @@ export default function RegisterPage() {
                     type="text"
                     value={moverInfo.companyName}
                     onChange={(e) => setMoverInfo(prev => ({ ...prev, companyName: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.companyName ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.companyName ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="株式会社○○○"
                   />
                   {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                 </div>
-                
-                
+
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     事業コンセプト <span className="text-red-500">*</span>
@@ -445,14 +437,13 @@ export default function RegisterPage() {
                     value={moverInfo.description}
                     onChange={(e) => setMoverInfo(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.description ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="事業の特徴や強みをご記入ください"
                   />
                   {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     従業員数
@@ -466,7 +457,7 @@ export default function RegisterPage() {
                     placeholder="1"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     対応エリア <span className="text-red-500">*</span>
@@ -478,18 +469,17 @@ export default function RegisterPage() {
                           <button
                             key={region.name}
                             type="button"
-                            className={`px-3 py-1 rounded border text-sm ${
-                              selectedRegion === region.name
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'
-                            }`}
+                            className={`px-3 py-1 rounded border text-sm ${selectedRegion === region.name
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'
+                              }`}
                             onClick={() => setSelectedRegion(selectedRegion === region.name ? '' : region.name)}
                           >
                             {region.name}
                           </button>
                         ))}
                       </div>
-                      
+
                       {selectedRegion && (
                         <div className="grid grid-cols-2 gap-2">
                           {REGIONS.find(r => r.name === selectedRegion)?.prefectures.map(pref => (
@@ -506,7 +496,7 @@ export default function RegisterPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2">
                       {moverInfo.selectedPrefectures.map(pref => (
                         <span key={pref} className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
@@ -540,14 +530,13 @@ export default function RegisterPage() {
                     type="text"
                     value={referrerInfo.displayName}
                     onChange={(e) => setReferrerInfo(prev => ({ ...prev, displayName: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.displayName ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.displayName ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="表示名を入力"
                   />
                   {errors.displayName && <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     種別 <span className="text-red-500">*</span>
@@ -577,7 +566,7 @@ export default function RegisterPage() {
                     </label>
                   </div>
                 </div>
-                
+
                 {referrerInfo.referrerType === 'company' ? (
                   <>
                     <div>
@@ -588,14 +577,13 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.companyName || ''}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, companyName: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.companyName ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.companyName ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="会社名を入力"
                       />
                       {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         部署・担当者
@@ -619,14 +607,13 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.fullName || ''}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, fullName: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.fullName ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.fullName ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="氏名を入力"
                       />
                       {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         カナ <span className="text-red-500">*</span>
@@ -635,19 +622,18 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.kana || ''}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, kana: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.kana ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.kana ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="カナを入力"
                       />
                       {errors.kana && <p className="mt-1 text-sm text-red-600">{errors.kana}</p>}
                     </div>
                   </>
                 )}
-                
+
                 <div className="border-t pt-4 mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">振込先情報</h3>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -656,9 +642,8 @@ export default function RegisterPage() {
                       <select
                         value={referrerInfo.bankCode}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, bankCode: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.bankCode ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.bankCode ? 'border-red-300' : 'border-gray-300'
+                          }`}
                       >
                         <option value="">銀行を選択してください</option>
                         <option value="0001">みずほ銀行</option>
@@ -669,7 +654,7 @@ export default function RegisterPage() {
                       </select>
                       {errors.bankCode && <p className="mt-1 text-sm text-red-600">{errors.bankCode}</p>}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         支店名 <span className="text-red-500">*</span>
@@ -678,14 +663,13 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.branchName}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, branchName: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.branchName ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.branchName ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="本店、新宿支店など"
                       />
                       {errors.branchName && <p className="mt-1 text-sm text-red-600">{errors.branchName}</p>}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         口座番号 <span className="text-red-500">*</span>
@@ -694,14 +678,13 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.accountNumber}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, accountNumber: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.accountNumber ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.accountNumber ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="1234567"
                       />
                       {errors.accountNumber && <p className="mt-1 text-sm text-red-600">{errors.accountNumber}</p>}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         口座名義（全角カナ） <span className="text-red-500">*</span>
@@ -710,9 +693,8 @@ export default function RegisterPage() {
                         type="text"
                         value={referrerInfo.accountHolder}
                         onChange={(e) => setReferrerInfo(prev => ({ ...prev, accountHolder: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.accountHolder ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.accountHolder ? 'border-red-300' : 'border-gray-300'
+                          }`}
                         placeholder="カタカナで入力"
                       />
                       {errors.accountHolder && <p className="mt-1 text-sm text-red-600">{errors.accountHolder}</p>}
@@ -726,7 +708,7 @@ export default function RegisterPage() {
           {currentStep === 'terms' && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">利用規約・プライバシーポリシー</h2>
-              
+
               <div className="space-y-6">
                 <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
                   <h3 className="font-semibold mb-2">利用規約</h3>
@@ -736,7 +718,7 @@ export default function RegisterPage() {
                     ...
                   </p>
                 </div>
-                
+
                 <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
                   <h3 className="font-semibold mb-2">プライバシーポリシー</h3>
                   <p className="text-sm text-gray-600">
@@ -745,7 +727,7 @@ export default function RegisterPage() {
                     ...
                   </p>
                 </div>
-                
+
                 <div className="space-y-3">
                   <label className="flex items-center">
                     <input
@@ -756,7 +738,7 @@ export default function RegisterPage() {
                     />
                     <span className="text-sm">利用規約に同意する</span>
                   </label>
-                  
+
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -767,7 +749,7 @@ export default function RegisterPage() {
                     <span className="text-sm">プライバシーポリシーに同意する</span>
                   </label>
                 </div>
-                
+
                 {errors.terms && <p className="text-sm text-red-600">{errors.terms}</p>}
                 {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
               </div>
@@ -783,7 +765,7 @@ export default function RegisterPage() {
             >
               {currentStep === 'userType' ? 'ログインページへ' : '戻る'}
             </button>
-            
+
             {currentStep === 'terms' ? (
               <button
                 type="button"
@@ -807,4 +789,4 @@ export default function RegisterPage() {
       </div>
     </main>
   );
-} 
+}

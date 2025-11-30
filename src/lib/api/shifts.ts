@@ -3,6 +3,7 @@
  */
 
 import { EmployeeShift } from '@/types/employee';
+import { TIME_SLOTS } from '@/constants/calendar';
 
 export interface ShiftFromAPI {
   id: string;
@@ -37,7 +38,8 @@ export function mapShiftFromAPI(apiShift: ShiftFromAPI): EmployeeShift {
     try {
       const date = new Date(timeStr);
       if (!isNaN(date.getTime())) {
-        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        // UTCで保存されているのでgetUTCHours/getUTCMinutesを使用
+        return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
       }
     } catch {
       // パースに失敗した場合は元の値を返す
@@ -84,11 +86,45 @@ export function mapShiftFromAPI(apiShift: ShiftFromAPI): EmployeeShift {
  * フロントエンド用のEmployeeShiftをAPI用の形式に変換
  */
 export function mapShiftToAPI(shift: EmployeeShift): CreateShiftInput {
+  // TIME_SLOTSをインポートしてtimeSlotから時刻を取得
+  // timeSlotがIDの場合、TIME_SLOTSから実際の時刻を取得
+  let startTime = shift.startTime;
+  let endTime = shift.endTime;
+
+  // startTimeが存在しない場合、timeSlotから取得を試みる
+  if (!startTime && shift.timeSlot) {
+    // timeSlotが時刻文字列（HH:MM形式）の場合は直接使用
+    if (/^\d{2}:\d{2}$/.test(shift.timeSlot)) {
+      startTime = shift.timeSlot;
+    } else {
+      // timeSlotがIDの場合、TIME_SLOTSから取得
+      const timeSlot = TIME_SLOTS.find(ts => ts.id === shift.timeSlot);
+      if (timeSlot) {
+        startTime = timeSlot.start;
+        // endTimeも存在しない場合はtimeSlotから取得
+        if (!endTime) {
+          endTime = timeSlot.end;
+        }
+      }
+    }
+  }
+
+  // endTimeが存在しない場合、timeSlotから取得を試みる
+  if (!endTime && shift.timeSlot) {
+    // timeSlotがIDの場合、TIME_SLOTSから取得
+    if (!/^\d{2}:\d{2}$/.test(shift.timeSlot)) {
+      const timeSlot = TIME_SLOTS.find(ts => ts.id === shift.timeSlot);
+      if (timeSlot) {
+        endTime = timeSlot.end;
+      }
+    }
+  }
+
   return {
     employee_id: shift.employeeId,
     shift_date: shift.date,
-    start_time: shift.startTime || shift.timeSlot || '09:00',
-    end_time: shift.endTime || '18:00',
+    start_time: startTime || '09:00',
+    end_time: endTime || '18:00',
     shift_type: 'regular',
     status: shift.status === 'working' ? 'scheduled' : 'unavailable',
     notes: shift.notes || undefined,

@@ -92,6 +92,7 @@ interface ShiftCalendarProps {
   onShiftClickForClipboard?: (shift: EmployeeShift) => void;
   unsavedShiftIds?: Set<string>;
   onSave?: () => void;
+  isSaving?: boolean;
   onCurrentMonthChange?: (year: number, month: number) => void;
 }
 
@@ -130,6 +131,7 @@ export default function ShiftCalendar({
   onShiftClickForClipboard,
   unsavedShiftIds,
   onSave,
+  isSaving = false,
   onCurrentMonthChange
 }: ShiftCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -1406,9 +1408,12 @@ export default function ShiftCalendar({
       dates = data.dates;
     } else if (data.startDate && data.endDate) {
       // 単日登録の場合：日付範囲を生成
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
-      
+      // タイムゾーン問題を回避するため、文字列から直接日付を生成
+      const [startYear, startMonth, startDay] = data.startDate.split('-').map(Number);
+      const [endYear, endMonth, endDay] = data.endDate.split('-').map(Number);
+      const start = new Date(startYear, startMonth - 1, startDay);
+      const end = new Date(endYear, endMonth - 1, endDay);
+
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         dates.push(toLocalDateString(d));
       }
@@ -1457,8 +1462,16 @@ export default function ShiftCalendar({
         
         // 編集された内容で日マタギシフトを再作成
         // 編集された開始日・終了日から新しい日付範囲を生成
-        const newStartDate = new Date(data.startDate);
-        const newEndDate = data.endDate ? new Date(data.endDate) : new Date(data.startDate);
+        // タイムゾーン問題を回避するため、文字列から直接日付を生成
+        const [newStartYear, newStartMonth, newStartDay] = data.startDate.split('-').map(Number);
+        const newStartDate = new Date(newStartYear, newStartMonth - 1, newStartDay);
+        let newEndDate: Date;
+        if (data.endDate) {
+          const [newEndYear, newEndMonth, newEndDay] = data.endDate.split('-').map(Number);
+          newEndDate = new Date(newEndYear, newEndMonth - 1, newEndDay);
+        } else {
+          newEndDate = new Date(newStartYear, newStartMonth - 1, newStartDay);
+        }
         const newDates: string[] = [];
         for (let d = new Date(newStartDate); d <= newEndDate; d.setDate(d.getDate() + 1)) {
           newDates.push(toLocalDateString(d));
@@ -1845,15 +1858,10 @@ export default function ShiftCalendar({
   // 共通リサイズ開始処理
   const handleResizeStart = (direction: 'start' | 'end', block: any, employee: any, index: number) => {
     // 日マタギシフトの場合はリサイズを無効化（モーダルからのみ編集可能）
+    // block.idを使って直接シフトを検索（時間範囲での検索は不正確）
     const shift = employees
       .find(emp => emp.id === employee.id)
-      ?.shifts.find(s => {
-        const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
-        const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
-        return s.date === block.date &&
-               shiftStartTime >= block.startTime &&
-               shiftEndTime <= block.endTime;
-      });
+      ?.shifts.find(s => s.id === block.id);
     
     if (shift && shift.notes && shift.notes.includes('日跨ぎ')) {
       // 日マタギシフトの場合はリサイズ処理をスキップ
@@ -1998,14 +2006,16 @@ export default function ShiftCalendar({
               {onSave && (
                 <button
                   onClick={onSave}
-                  disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
+                  disabled={isSaving || !unsavedShiftIds || unsavedShiftIds.size === 0}
                   className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
-                    unsavedShiftIds && unsavedShiftIds.size > 0
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    isSaving
+                      ? 'bg-blue-400 text-white cursor-wait'
+                      : unsavedShiftIds && unsavedShiftIds.size > 0
+                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  保存
+                  {isSaving ? '保存中...' : '保存'}
                 </button>
               )}
             </div>
@@ -2155,14 +2165,10 @@ export default function ShiftCalendar({
                           };
                           
                           
-                          // このブロックに該当するシフトを見つける
+                          // このブロックに該当するシフトを見つける（block.idを使って直接検索）
                           const blockShift = employees
                             .find(emp => emp.id === employee.id)
-                            ?.shifts.find(s => {
-                              const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
-                              const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
-                              return shiftStartTime >= block.startTime && shiftEndTime <= block.endTime;
-                            });
+                            ?.shifts.find(s => s.id === block.id);
                           const isBlockSelected = selectedShifts && blockShift && selectedShifts.some(s => s.id === blockShift.id);
                           
                           // 日跨ぎシフトのタイトル
@@ -2192,13 +2198,10 @@ export default function ShiftCalendar({
                                 
                                 // コピーモードの場合はクリップボード処理
                                 if (clipboardMode === 'copy') {
+                                  // block.idを使って直接シフトを検索（時間範囲での検索は不正確）
                                   const shift = employees
                                     .find(emp => emp.id === employee.id)
-                                    ?.shifts.find(s => {
-                                      const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
-                                      const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
-                                      return shiftStartTime >= block.startTime && shiftEndTime <= block.endTime;
-                                    });
+                                    ?.shifts.find(s => s.id === block.id);
                                   
                                   if (shift && onShiftClickForClipboard) {
                                     // 日マタギシフトの場合、グループ全体を取得（月ビューと同様のロジック）
@@ -2216,13 +2219,10 @@ export default function ShiftCalendar({
                                 }
                                 
                                 // 通常モード：モーダルを開く
+                                // block.idを使って直接シフトを検索（時間範囲での検索は不正確）
                                 const shift = employees
                                   .find(emp => emp.id === employee.id)
-                                  ?.shifts.find(s => {
-                                    const shiftStartTime = s.startTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.start || '';
-                                    const shiftEndTime = s.endTime || TIME_SLOTS.find(ts => ts.id === s.timeSlot)?.end || '';
-                                    return shiftStartTime >= block.startTime && shiftEndTime <= block.endTime;
-                                  });
+                                  ?.shifts.find(s => s.id === block.id);
                                 
                                 if (shift) {
                                   setShiftModalMode('edit');
@@ -3590,14 +3590,16 @@ export default function ShiftCalendar({
             {onSave && (
               <button
                 onClick={onSave}
-                disabled={!unsavedShiftIds || unsavedShiftIds.size === 0}
+                disabled={isSaving || !unsavedShiftIds || unsavedShiftIds.size === 0}
                 className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
-                  unsavedShiftIds && unsavedShiftIds.size > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  isSaving
+                    ? 'bg-blue-400 text-white cursor-wait'
+                    : unsavedShiftIds && unsavedShiftIds.size > 0
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                保存
+                {isSaving ? '保存中...' : '保存'}
               </button>
             )}
           </div>

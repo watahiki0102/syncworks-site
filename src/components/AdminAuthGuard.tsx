@@ -22,17 +22,69 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     // 管理者認証状態をチェック
     const checkAdminAuth = async () => {
       try {
-        // TODO: 実際の認証APIを実装
-        // 現在は開発環境では認証をスキップ
-        if (process.env.NODE_ENV === 'development') {
+        // localStorageから認証情報を取得
+        const isLoggedIn = localStorage.getItem('adminLoggedIn');
+        const userId = localStorage.getItem('adminUserId');
+        const userEmail = localStorage.getItem('adminEmail');
+
+        // 認証情報がない場合は未認証
+        if (!isLoggedIn || (!userId && !userEmail)) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+
+        // 自動ログインの有効期限をチェック
+        const rememberMe = localStorage.getItem('adminRememberMe');
+        const autoLoginExpiry = localStorage.getItem('adminAutoLoginExpiry');
+        
+        if (rememberMe === 'true' && autoLoginExpiry) {
+          const expiryDate = new Date(autoLoginExpiry);
+          const now = new Date();
+          
+          if (now >= expiryDate) {
+            // 有効期限切れ: 認証情報をクリア
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminUserId');
+            localStorage.removeItem('adminUserRole');
+            localStorage.removeItem('adminAutoLoginExpiry');
+            localStorage.removeItem('adminRememberMe');
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // サーバー側で認証状態を確認
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (userId) {
+          headers['x-user-id'] = userId;
+        } else if (userEmail) {
+          headers['x-user-email'] = userEmail;
+        }
+
+        const response = await fetch('/api/auth/check', {
+          method: 'GET',
+          headers,
+        });
+
+        const result = await response.json();
+        
+        if (result.success && result.authenticated) {
           setIsAuthenticated(true);
         } else {
-          // 本番環境での認証チェック
-          // const response = await fetch('/api/admin/auth/check');
-          // setIsAuthenticated(response.ok);
-          
-          // 開発中のため、とりあえず認証済みとして扱う
-          setIsAuthenticated(true);
+          // 認証失敗: localStorageをクリア
+          localStorage.removeItem('adminLoggedIn');
+          localStorage.removeItem('adminEmail');
+          localStorage.removeItem('adminUserId');
+          localStorage.removeItem('adminUserRole');
+          localStorage.removeItem('adminAutoLoginExpiry');
+          localStorage.removeItem('adminRememberMe');
+          setIsAuthenticated(false);
         }
       } catch (error) {
         console.error('管理者認証チェックエラー:', error);

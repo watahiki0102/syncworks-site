@@ -62,17 +62,9 @@ export interface EmployeeShift {
   notes?: string;
 }
 
-// トラック型（Truck型を統合）
-export interface Truck {
-  id: string;
-  name: string;
-  plateNumber: string;
-  capacityKg: number;
-  inspectionExpiry: string;
-  status: 'available' | 'maintenance' | 'inactive';  // 既存コード互換のため維持
-  truckType: string;
-  schedules: Schedule[];
-}
+// トラック型は truck.ts からエクスポート
+// schedulesは別途管理（jobs/shiftsテーブルから取得）
+export type { Truck } from './truck';
 
 // ステータス統一のための型定義とマッピング
 export type TruckOperationStatus = 'available' | 'maintenance' | 'inactive';

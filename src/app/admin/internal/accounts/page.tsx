@@ -1,64 +1,70 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import DevelopmentAuthGuard from '@/components/admin/DevelopmentAuthGuard';
 import InternalGate from '@/components/admin/InternalGate';
 import InternalLayout from '../InternalLayout';
 import { AccountRow } from '@/types/internal';
+import { fetchUsers, updateUser } from '@/lib/api/users';
+import { User } from '@/types/user';
 
-// モックデータ
-const mockData: AccountRow[] = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    name: '管理者太郎',
-    role: 'superadmin',
+/**
+ * User型をAccountRow型に変換
+ * 注意: permissionsフィールドはusersテーブルに存在しないため、デフォルト値を設定
+ */
+function mapUserToAccountRow(user: User): AccountRow {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.displayName || user.email,
+    role: user.role as AccountRow['role'],
     permissions: {
-      billingManagement: true,
-      accountManagement: true,
-      partnerManagement: true,
+      // デフォルトの権限設定（将来的には別テーブルで管理）
+      billingManagement: user.role === 'admin' || user.role === 'superadmin',
+      accountManagement: user.role === 'superadmin',
+      partnerManagement: user.role === 'admin' || user.role === 'superadmin',
       contactManagement: true,
-      newsManagement: true,
+      newsManagement: user.role === 'admin' || user.role === 'superadmin',
     },
-    active: true,
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    email: 'manager@example.com',
-    name: 'マネージャー花子',
-    role: 'manager',
-    permissions: {
-      billingManagement: true,
-      accountManagement: false,
-      partnerManagement: true,
-      contactManagement: true,
-      newsManagement: true,
-    },
-    active: true,
-    createdAt: '2024-01-15T00:00:00Z',
-  },
-  {
-    id: '3',
-    email: 'viewer@example.com',
-    name: '閲覧者次郎',
-    role: 'viewer',
-    permissions: {
-      billingManagement: false,
-      accountManagement: false,
-      partnerManagement: false,
-      contactManagement: true,
-      newsManagement: false,
-    },
-    active: false,
-    createdAt: '2024-02-01T00:00:00Z',
-  },
-];
+    active: user.isActive,
+    createdAt: user.createdAt,
+  };
+}
 
 export default function AccountsPage() {
-  const [data, setData] = useState<AccountRow[]>(mockData);
-  const [currentUserEmail, _setCurrentUserEmail] = useState('admin@example.com'); // 実際は認証情報から取得
+  const [data, setData] = useState<AccountRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+
+  // 現在のユーザー情報を取得
+  useEffect(() => {
+    const email = localStorage.getItem('adminEmail');
+    if (email) {
+      setCurrentUserEmail(email);
+    }
+  }, []);
+
+  // ユーザー一覧を取得
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const users = await fetchUsers({ is_active: true });
+        const accountRows = users.map(mapUserToAccountRow);
+        setData(accountRows);
+      } catch (err) {
+        console.error('ユーザー一覧の取得に失敗しました:', err);
+        setError('ユーザー一覧の取得に失敗しました。再度お試しください。');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ja-JP');
@@ -74,9 +80,18 @@ export default function AccountsPage() {
       return;
     }
 
-    setData(prev => prev.map(row =>
-      row.id === id ? { ...row, role: newRole } : row
-    ));
+    try {
+      // APIでユーザー情報を更新
+      await updateUser(id, { role: newRole });
+      
+      // ローカル状態を更新
+      setData(prev => prev.map(row =>
+        row.id === id ? { ...row, role: newRole } : row
+      ));
+    } catch (err) {
+      console.error('権限の更新に失敗しました:', err);
+      alert('権限の更新に失敗しました。再度お試しください。');
+    }
   };
 
   const handlePermissionChange = async (id: string, permission: keyof AccountRow['permissions'], value: boolean) => {
@@ -107,9 +122,18 @@ export default function AccountsPage() {
       return;
     }
     
-    setData(prev => prev.map(row => 
-      row.id === id ? { ...row, active: newActive } : row
-    ));
+    try {
+      // APIでユーザー情報を更新
+      await updateUser(id, { is_active: newActive });
+      
+      // ローカル状態を更新
+      setData(prev => prev.map(row => 
+        row.id === id ? { ...row, active: newActive } : row
+      ));
+    } catch (err) {
+      console.error('アカウント状態の更新に失敗しました:', err);
+      alert('アカウント状態の更新に失敗しました。再度お試しください。');
+    }
   };
 
   return (
@@ -127,7 +151,21 @@ export default function AccountsPage() {
             </p>
           </div>
 
-          {/* テーブル */}
+          {/* エラーメッセージ */}
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* ローディング状態 */}
+          {isLoading ? (
+            <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-8 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">ユーザー一覧を読み込み中...</p>
+            </div>
+          ) : (
+          /* テーブル */
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -261,6 +299,7 @@ export default function AccountsPage() {
               </table>
             </div>
           </div>
+          )}
 
           {/* 注意事項 */}
           <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -299,7 +338,21 @@ export default function AccountsPage() {
                  </p>
                </div>
 
-               {/* テーブル */}
+               {/* エラーメッセージ */}
+               {error && (
+                 <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                   <p className="text-sm text-red-800">{error}</p>
+                 </div>
+               )}
+
+               {/* ローディング状態 */}
+               {isLoading ? (
+                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-8 text-center">
+                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                   <p className="mt-4 text-gray-600">ユーザー一覧を読み込み中...</p>
+                 </div>
+               ) : (
+               /* テーブル */
                <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
                  <div className="overflow-x-auto">
                    <table className="min-w-full divide-y divide-gray-200">
@@ -433,6 +486,7 @@ export default function AccountsPage() {
                    </table>
                  </div>
                </div>
+               )}
 
                {/* 注意事項 */}
                <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">

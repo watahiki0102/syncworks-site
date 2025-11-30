@@ -216,6 +216,8 @@ export default function ShiftManagement() {
   const [pendingDeleteShiftIds, setPendingDeleteShiftIds] = useState<Set<string>>(new Set());
   // DBから読み込んだシフトのIDセット（新規作成か更新かの判定用）
   const [dbShiftIds, setDbShiftIds] = useState<Set<string>>(new Set());
+  // 保存中フラグ（ダブルクリック防止）
+  const [isSaving, setIsSaving] = useState(false);
 
   // 表示中のカレンダーの月を管理（従業員集計に使用）
   const [displayMonth, setDisplayMonth] = useState<{ year: number; month: number }>(() => {
@@ -627,6 +629,8 @@ export default function ShiftManagement() {
           id: generateShiftId(),
           employeeId: group.employeeId,
           date: group.date,
+          startTime: pending.startTime,
+          endTime: pending.endTime,
         };
 
         if (!newShiftsByEmployee[group.employeeId]) {
@@ -735,13 +739,22 @@ export default function ShiftManagement() {
    * 接続プールのタイムアウトを防ぐため、バッチ処理で順次実行
    */
   const handleSaveToStorage = async () => {
+    // 保存中の場合は何もしない（ダブルクリック防止）
+    if (isSaving) {
+      return;
+    }
+
     // 未保存の変更がない場合
     if (pendingNewShifts.length === 0 && pendingUpdateShifts.length === 0 && pendingDeleteShiftIds.size === 0) {
       alert('保存する変更はありません。');
       return;
     }
 
+    setIsSaving(true);
     try {
+      // 保存前にカウントを保存（クリア後に使用するため）
+      const savedCount = pendingNewShifts.length + pendingUpdateShifts.length + pendingDeleteShiftIds.size;
+
       // バッチサイズ（同時実行数を制限してDB接続プールの枯渇を防ぐ）
       const BATCH_SIZE = 5;
 
@@ -756,10 +769,43 @@ export default function ShiftManagement() {
 
       // 既存シフトの更新
       for (const shift of pendingUpdateShifts) {
+        // timeSlotから時刻を取得する処理
+        let startTime = shift.startTime;
+        let endTime = shift.endTime;
+
+        // startTimeが存在しない場合、timeSlotから取得を試みる
+        if (!startTime && shift.timeSlot) {
+          // timeSlotが時刻文字列（HH:MM形式）の場合は直接使用
+          if (/^\d{2}:\d{2}$/.test(shift.timeSlot)) {
+            startTime = shift.timeSlot;
+          } else {
+            // timeSlotがIDの場合、TIME_SLOTSから取得
+            const timeSlot = TIME_SLOTS.find(ts => ts.id === shift.timeSlot);
+            if (timeSlot) {
+              startTime = timeSlot.start;
+              // endTimeも存在しない場合はtimeSlotから取得
+              if (!endTime) {
+                endTime = timeSlot.end;
+              }
+            }
+          }
+        }
+
+        // endTimeが存在しない場合、timeSlotから取得を試みる
+        if (!endTime && shift.timeSlot) {
+          // timeSlotがIDの場合、TIME_SLOTSから取得
+          if (!/^\d{2}:\d{2}$/.test(shift.timeSlot)) {
+            const timeSlot = TIME_SLOTS.find(ts => ts.id === shift.timeSlot);
+            if (timeSlot) {
+              endTime = timeSlot.end;
+            }
+          }
+        }
+
         operations.push(() => apiUpdateShift(shift.id, {
           shift_date: shift.date,
-          start_time: shift.startTime || shift.timeSlot || '09:00',
-          end_time: shift.endTime || '18:00',
+          start_time: startTime || '09:00',
+          end_time: endTime || '18:00',
           status: shift.status === 'working' ? 'scheduled' : 'unavailable',
           notes: shift.notes || undefined,
         }));
@@ -771,19 +817,77 @@ export default function ShiftManagement() {
       }
 
       // バッチ処理で順次実行（接続プールの枯渇を防ぐ）
+      // 個別のエラーを追跡して、一部が失敗しても続行できるようにする
+      const errors: Array<{ operation: string; error: Error }> = [];
       for (let i = 0; i < operations.length; i += BATCH_SIZE) {
         const batch = operations.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(op => op()));
+        const results = await Promise.allSettled(batch.map(op => op()));
+        
+        // 失敗した操作を記録
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const operationIndex = i + index;
+            let operationType = 'unknown';
+            if (operationIndex < pendingNewShifts.length) {
+              operationType = 'create';
+            } else if (operationIndex < pendingNewShifts.length + pendingUpdateShifts.length) {
+              operationType = 'update';
+            } else {
+              operationType = 'delete';
+            }
+            errors.push({
+              operation: operationType,
+              error: result.reason instanceof Error ? result.reason : new Error(String(result.reason))
+            });
+          }
+        });
       }
 
-      // 保存成功後、状態をリセット
-      // 新規作成されたシフトのIDをDBシフトIDに追加
-      setDbShiftIds(prev => {
-        const newSet = new Set(prev);
-        pendingNewShifts.forEach(s => newSet.add(s.id));
-        pendingDeleteShiftIds.forEach(id => newSet.delete(id));
-        return newSet;
-      });
+      // エラーがあった場合は警告を表示（ただし、一部成功した場合は続行）
+      if (errors.length > 0) {
+        const errorCount = errors.length;
+        const successCount = operations.length - errorCount;
+        console.error('一部のシフト保存に失敗しました:', errors);
+        
+        if (successCount > 0) {
+          alert(`シフトの保存が完了しました（成功: ${successCount}件、失敗: ${errorCount}件）。\n失敗した操作は再度お試しください。`);
+        } else {
+          // すべて失敗した場合はエラーをスロー
+          throw new Error(`${errorCount}件のシフト保存に失敗しました`);
+        }
+      }
+
+      // 保存成功後、APIから最新データを再取得して画面に反映
+      try {
+        const [employeesFromAPI, shiftsFromAPI] = await Promise.all([
+          fetchEmployees(),
+          fetchShifts(),
+        ]);
+
+        // シフトデータをフロントエンド形式に変換
+        const convertedShifts = shiftsFromAPI.map(mapShiftFromAPI);
+
+        // DBから読み込んだシフトIDをセット
+        setDbShiftIds(new Set(convertedShifts.map(s => s.id)));
+
+        // 従業員にシフトを紐付け
+        const employeesWithShifts = employeesFromAPI.map(emp => ({
+          ...emp,
+          shifts: convertedShifts.filter(shift => shift.employeeId === emp.id),
+        }));
+
+        setEmployees(employeesWithShifts);
+      } catch (refreshError) {
+        console.error('データの再取得に失敗しました（保存は成功しています）:', refreshError);
+        // 再取得に失敗しても、保存は成功しているので処理を続行
+        // 新規作成されたシフトのIDをDBシフトIDに追加（フォールバック）
+        setDbShiftIds(prev => {
+          const newSet = new Set(prev);
+          pendingNewShifts.forEach(s => newSet.add(s.id));
+          pendingDeleteShiftIds.forEach(id => newSet.delete(id));
+          return newSet;
+        });
+      }
 
       // 未保存状態をクリア
       setUnsavedShiftIds(new Set());
@@ -791,11 +895,13 @@ export default function ShiftManagement() {
       setPendingUpdateShifts([]);
       setPendingDeleteShiftIds(new Set());
 
-      const savedCount = pendingNewShifts.length + pendingUpdateShifts.length + pendingDeleteShiftIds.size;
+      // 保存前に計算したカウントを使用
       alert(`シフトを保存しました（${savedCount}件の変更）`);
     } catch (error) {
       console.error('シフトの保存に失敗しました:', error);
       alert('シフトの保存に失敗しました。再度お試しください。');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1043,6 +1149,7 @@ export default function ShiftManagement() {
                 onDateClickForClipboard={handleDateClickForClipboard}
                 unsavedShiftIds={unsavedShiftIds}
                 onSave={handleSaveToStorage}
+                isSaving={isSaving}
                 onCurrentMonthChange={(year, month) => setDisplayMonth({ year, month })}
                   />
                 </div>
