@@ -11,7 +11,7 @@ export type SeasonPriceType = 'percentage' | 'fixed';
 /**
  * シーズン加算設定の繰り返しタイプ
  */
-export type SeasonRecurringType = 'yearly' | 'monthly' | 'weekly' | 'none';
+export type SeasonRecurringType = 'yearly' | 'monthly' | 'weekly' | 'specific' | 'none';
 
 /**
  * シーズン加算設定の繰り返しパターン
@@ -21,6 +21,8 @@ export interface SeasonRecurringPattern {
   weekdays?: number[];
   /** 月単位の繰り返し方法（日付固定 or 曜日固定） */
   monthlyPattern?: 'date' | 'weekday';
+  /** 特定の日付リスト (ISO形式の日付文字列配列) */
+  specificDates?: string[];
 }
 
 /**

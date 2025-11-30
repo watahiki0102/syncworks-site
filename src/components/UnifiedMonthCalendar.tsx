@@ -11,6 +11,12 @@ import { WEEKDAYS_JA } from '@/constants/calendar';
 import { toLocalDateString } from '@/utils/dateTimeUtils';
 import { fetchHolidays, isHoliday as checkIsHoliday, getHolidayName, type Holiday } from '@/utils/holidayUtils';
 
+export interface SeasonPriceInfo {
+  name: string;
+  priceType: 'percentage' | 'fixed';
+  price: number;
+}
+
 export interface CalendarDay {
   date: string;
   day: number;
@@ -20,6 +26,7 @@ export interface CalendarDay {
   isToday: boolean;
   isHoliday: boolean;
   holidayName?: string;
+  seasonPrices?: SeasonPriceInfo[];
 }
 
 export interface CalendarEvent {
@@ -54,6 +61,9 @@ export interface UnifiedMonthCalendarProps {
   onCloseModal?: () => void;
   // カスタムアクションボタン
   navigationActions?: React.ReactNode;
+  // シーズン料金表示オプション
+  showSeasonPrices?: boolean;
+  getSeasonPricesForDate?: (date: string) => SeasonPriceInfo[];
 }
 
 /**
@@ -140,6 +150,8 @@ export default function UnifiedMonthCalendar({
   modalContent,
   onCloseModal,
   navigationActions,
+  showSeasonPrices = false,
+  getSeasonPricesForDate,
 }: UnifiedMonthCalendarProps) {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
 
@@ -162,10 +174,31 @@ export default function UnifiedMonthCalendar({
     onDateChange(nextMonth);
   };
 
+  // シーズン料金バッジの計算
+  const getSeasonPriceBadge = (date: string): { total: number; isPositive: boolean; hasFixed: boolean } | null => {
+    if (!showSeasonPrices || !getSeasonPricesForDate) return null;
+    const prices = getSeasonPricesForDate(date);
+    if (!prices || prices.length === 0) return null;
+
+    let totalPercent = 0;
+    let hasFixed = false;
+    for (const p of prices) {
+      if (p.priceType === 'percentage') {
+        totalPercent += p.price;
+      } else {
+        hasFixed = true;
+      }
+    }
+
+    if (totalPercent === 0 && !hasFixed) return null;
+    return { total: totalPercent, isPositive: totalPercent > 0, hasFixed };
+  };
+
   // DispatchCalendarスタイルのデフォルト日付セルレンダリング
   const defaultRenderDateCell = (day: CalendarDay, events: CalendarEvent[], _weekIndex?: number) => {
     const hasEvents = events.length > 0;
-    
+    const seasonBadge = getSeasonPriceBadge(day.date);
+
     return (
       <div
         key={day.date}
@@ -184,6 +217,51 @@ export default function UnifiedMonthCalendar({
           } ${cellClassName}`}
         onClick={(e) => onDateClick(day.date, day, e)}
       >
+        {/* シーズン料金バッジ（右上に小さく表示、ホバーで詳細表示） */}
+        {seasonBadge && day.isCurrentMonth && (
+          <div className="absolute top-0.5 right-0.5 group">
+            <div
+              className={`text-[9px] font-bold px-1 py-0 rounded cursor-help ${
+                seasonBadge.total > 0
+                  ? 'bg-rose-100 text-rose-700'
+                  : seasonBadge.total < 0
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-blue-100 text-blue-700'
+              }`}
+            >
+              {seasonBadge.total !== 0 && `${seasonBadge.total > 0 ? '+' : ''}${seasonBadge.total}%`}
+              {seasonBadge.hasFixed && (seasonBadge.total !== 0 ? '+' : '¥')}
+            </div>
+            {/* ホバー時の詳細ツールチップ */}
+            <div className="hidden group-hover:block absolute right-0 top-full mt-1 z-50 w-48 p-2 bg-white border border-gray-200 rounded-lg shadow-lg text-xs">
+              <div className="font-semibold text-gray-900 mb-1 border-b pb-1">シーズン料金詳細</div>
+              {getSeasonPricesForDate && getSeasonPricesForDate(day.date).map((p, i) => (
+                <div key={i} className="flex justify-between items-center py-0.5">
+                  <span className="text-gray-600 truncate mr-2">{p.name}</span>
+                  <span className={`font-medium whitespace-nowrap ${
+                    p.priceType === 'percentage'
+                      ? p.price > 0 ? 'text-rose-600' : 'text-emerald-600'
+                      : 'text-blue-600'
+                  }`}>
+                    {p.priceType === 'percentage'
+                      ? `${p.price > 0 ? '+' : ''}${p.price}%`
+                      : `¥${p.price.toLocaleString()}`
+                    }
+                  </span>
+                </div>
+              ))}
+              {seasonBadge.total !== 0 && (
+                <div className="border-t mt-1 pt-1 flex justify-between font-semibold">
+                  <span className="text-gray-700">合計</span>
+                  <span className={seasonBadge.total > 0 ? 'text-rose-600' : 'text-emerald-600'}>
+                    {seasonBadge.total > 0 ? '+' : ''}{seasonBadge.total}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 日付と祝日名 */}
         <div className="flex items-center gap-1 mb-0.5 relative z-40">
           <div className={`text-xs font-medium ${
