@@ -13,6 +13,7 @@ export type { Employee, EmployeeShift, Schedule, ContractStatus, WorkerAssignmen
 export type { ItemPoint, PricingRule, OptionItem, ItemDetail, PricingData } from './pricing';
 export type { User, UserFromDB, CreateUserInput, UpdateUserInput } from './user';
 export type { Truck, TruckFromDB, CreateTruckInput, UpdateTruckInput } from './truck';
+export type { QuoteRequest, QuoteRequestFromDB, CreateQuoteRequestInput, UpdateQuoteRequestInput } from './quote-request';
 
 // 残りは名前空間でエクスポート
 export * as AnalyticsTypes from './analytics';
