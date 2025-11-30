@@ -153,8 +153,8 @@ export const getWorkTypeDisplay = (workType: string): {
  * 数値に応じた色分け（稼働率など）
  */
 export const getUtilizationColor = (rate: number): string => {
-  if (rate < 30) return 'bg-green-100 text-green-800';
-  if (rate < 70) return 'bg-yellow-100 text-yellow-800';
+  if (rate < 30) {return 'bg-green-100 text-green-800';}
+  if (rate < 70) {return 'bg-yellow-100 text-yellow-800';}
   return 'bg-red-100 text-red-800';
 };
 

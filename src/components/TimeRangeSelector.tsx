@@ -27,8 +27,8 @@ export default function TimeRangeSelector({
 
   // カスタム時間が変更されたときにローカル状態を更新
   useEffect(() => {
-    if (customStartTime) setTempStartTime(customStartTime);
-    if (customEndTime) setTempEndTime(customEndTime);
+    if (customStartTime) {setTempStartTime(customStartTime);}
+    if (customEndTime) {setTempEndTime(customEndTime);}
   }, [customStartTime, customEndTime]);
 
   const handleTimeRangeChange = (range: TimeRangeType) => {

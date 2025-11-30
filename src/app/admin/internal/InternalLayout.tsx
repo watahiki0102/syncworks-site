@@ -18,7 +18,7 @@ const navigation = [
 
 export default function InternalLayout({ children }: InternalLayoutProps) {
   const [pathname, setPathname] = useState('');
-  const [isClient, setIsClient] = useState(false);
+  const [_isClient, setIsClient] = useState(false);
 
   // クライアントサイド判定とパス名取得
   useEffect(() => {

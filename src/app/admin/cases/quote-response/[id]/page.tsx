@@ -193,7 +193,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
 
   // 自動見積算出
   useEffect(() => {
-    if (!caseItem || !pricingData.itemPoints?.length || !pricingData.pricingRules?.length) return;
+    if (!caseItem || !pricingData.itemPoints?.length || !pricingData.pricingRules?.length) {return;}
     
     const calculateAutoQuote = () => {
       // 1. 総ポイント計算
@@ -238,7 +238,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
    * 見積回答の保存処理
    */
   const handleSubmit = async (formData: QuoteResponseFormData) => {
-    if (!caseItem) return;
+    if (!caseItem) {return;}
 
     setIsSubmitting(true);
 
@@ -326,7 +326,7 @@ export default function QuoteResponsePage({ params }: QuoteResponsePageProps) {
    * キャンセル処理
    */
   const handleCancel = () => {
-    if (isSubmitting) return;
+    if (isSubmitting) {return;}
     
     const confirmCancel = confirm('入力内容が失われますが、よろしいですか？');
     if (confirmCancel) {

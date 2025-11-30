@@ -174,7 +174,7 @@ class ApiClient {
     let responseData: any;
     try {
       responseData = isJson ? await response.json() : await response.text();
-    } catch (error) {
+    } catch {
       throw new ApiError('Invalid response format', response.status);
     }
 

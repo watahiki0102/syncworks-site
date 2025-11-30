@@ -54,7 +54,7 @@ interface CaseDetailProps {
 }
 
 function formatDate(date: string) {
-  if (!date) return '-';
+  if (!date) {return '-';}
   try {
     return new Date(date).toLocaleDateString('ja-JP');
   } catch {
@@ -63,14 +63,14 @@ function formatDate(date: string) {
 }
 
 function formatTime(time: string) {
-  if (!time) return '-';
+  if (!time) {return '-';}
   return time.length === 5 ? time : time.slice(0, 5);
 }
 
 export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighlighted, onEdit }) => {
   // 顧客ごとの背景色
   const getCustomerColor = (customerName?: string) => {
-    if (!customerName) return 'bg-gray-50 border-gray-200';
+    if (!customerName) {return 'bg-gray-50 border-gray-200';}
     const colors = [
       'bg-red-50 border-red-200',
       'bg-blue-50 border-blue-200',
@@ -184,7 +184,7 @@ export const CaseDetail: React.FC<CaseDetailProps> = ({ schedule, truck, isHighl
           <div className="bg-blue-50 border border-blue-200 rounded p-2">
             <div className="font-bold text-blue-800 mb-2">担当従業員</div>
             <div className="space-y-1">
-              {schedule.assignedEmployees.map((employee, idx) => (
+              {schedule.assignedEmployees.map((employee, _idx) => (
                 <div key={employee.id} className="flex items-center gap-2 text-sm">
                   <span className="text-blue-600">👤</span>
                   <span className="font-medium">{employee.name}</span>

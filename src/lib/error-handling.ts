@@ -178,23 +178,23 @@ export class ErrorClassifier {
   /**
    * エラーの重要度を判定
    */
-  static classifySeverity(type: ErrorType, context?: Record<string, unknown>): ErrorSeverity {
+  static classifySeverity(type: ErrorType, _context?: Record<string, unknown>): ErrorSeverity {
     switch (type) {
       case ErrorType.AUTHENTICATION:
       case ErrorType.AUTHORIZATION:
         return ErrorSeverity.HIGH;
-      
+
       case ErrorType.SERVER_ERROR:
         return ErrorSeverity.CRITICAL;
-      
+
       case ErrorType.NETWORK:
       case ErrorType.EXTERNAL_SERVICE:
         return ErrorSeverity.MEDIUM;
-      
+
       case ErrorType.VALIDATION:
       case ErrorType.NOT_FOUND:
         return ErrorSeverity.LOW;
-      
+
       default:
         return ErrorSeverity.MEDIUM;
     }
@@ -255,14 +255,14 @@ export class ErrorMessageGenerator {
   static generateUserMessage(
     type: ErrorType,
     code?: string,
-    details?: Record<string, unknown>
+    _details?: Record<string, unknown>
   ): string {
     const messages = this.USER_MESSAGES[type];
-    
+
     if (code && messages[code]) {
       return messages[code];
     }
-    
+
     return messages.default;
   }
 }
@@ -276,10 +276,10 @@ export class RecoveryActionGenerator {
    */
   static generateActions(
     type: ErrorType,
-    context?: Record<string, unknown>
+    _context?: Record<string, unknown>
   ): RecoveryAction[] {
     const actions: RecoveryAction[] = [];
-    
+
     switch (type) {
       case ErrorType.NETWORK:
         actions.push({
@@ -426,7 +426,7 @@ export class ErrorHandler {
    * グローバルエラーハンドラーの設定
    */
   private setupGlobalHandlers(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     // 未キャッチエラーのハンドリング
     window.addEventListener('error', (event) => {

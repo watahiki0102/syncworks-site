@@ -5,13 +5,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { ReferrerType } from '@/types/referral';
 
 export default function ReferrerRegisterPage() {
   const router = useRouter();
-  const [referrerType, setReferrerType] = useState<ReferrerType>('company');
-  const [isLoading, setIsLoading] = useState(false);
+  const [_referrerType, _setReferrerType] = useState<ReferrerType>('company');
+  const [_isLoading, _setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-6 px-4">

@@ -2,12 +2,6 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// 祝日データの型定義
-interface Holiday {
-  date: string;
-  name: string;
-}
-
 /**
  * 祝日データ取得APIエンドポイント
  * GET /api/holidays

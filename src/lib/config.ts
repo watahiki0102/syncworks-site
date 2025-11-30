@@ -186,7 +186,7 @@ export function validateConfig(): void {
 if (config.env.isDevelopment) {
   try {
     validateConfig();
-  } catch (error) {
+  } catch {
     // Configuration validation warning
   }
 }

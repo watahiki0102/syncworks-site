@@ -16,8 +16,8 @@ export const mathUtils = {
    * @returns 税込み価格
    */
   calculateTaxIncluded: (basePrice: number, taxRate: number): number => {
-    if (basePrice < 0) throw new Error('基本価格は0以上である必要があります');
-    if (taxRate < 0 || taxRate > 1) throw new Error('税率は0から1の間である必要があります');
+    if (basePrice < 0) {throw new Error('基本価格は0以上である必要があります');}
+    if (taxRate < 0 || taxRate > 1) {throw new Error('税率は0から1の間である必要があります');}
     
     return Math.floor(basePrice * (1 + taxRate));
   },
@@ -29,8 +29,8 @@ export const mathUtils = {
    * @returns 割引後価格
    */
   calculateDiscountPrice: (originalPrice: number, discountRate: number): number => {
-    if (originalPrice < 0) throw new Error('元の価格は0以上である必要があります');
-    if (discountRate < 0 || discountRate > 1) throw new Error('割引率は0から1の間である必要があります');
+    if (originalPrice < 0) {throw new Error('元の価格は0以上である必要があります');}
+    if (discountRate < 0 || discountRate > 1) {throw new Error('割引率は0から1の間である必要があります');}
     
     return Math.floor(originalPrice * (1 - discountRate));
   },
@@ -42,8 +42,8 @@ export const mathUtils = {
    * @returns パーセンテージ（0-100）
    */
   calculatePercentage: (value: number, total: number): number => {
-    if (total === 0) return 0;
-    if (value < 0 || total < 0) throw new Error('値と合計は0以上である必要があります');
+    if (total === 0) {return 0;}
+    if (value < 0 || total < 0) {throw new Error('値と合計は0以上である必要があります');}
     
     return Math.round((value / total) * 100);
   },
@@ -123,8 +123,8 @@ export const stringUtils = {
    * @returns 切り詰められたテキスト
    */
   truncateText: (text: string, maxLength: number, suffix = '...'): string => {
-    if (maxLength <= 0) throw new Error('最大長は正の数である必要があります');
-    if (text.length <= maxLength) return text;
+    if (maxLength <= 0) {throw new Error('最大長は正の数である必要があります');}
+    if (text.length <= maxLength) {return text;}
     
     return text.slice(0, maxLength - suffix.length) + suffix;
   },
@@ -141,7 +141,7 @@ export const arrayUtils = {
    * @returns 分割された配列
    */
   chunk: <T>(array: T[], chunkSize: number): T[][] => {
-    if (chunkSize <= 0) throw new Error('チャンクサイズは正の数である必要があります');
+    if (chunkSize <= 0) {throw new Error('チャンクサイズは正の数である必要があります');}
     
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += chunkSize) {
@@ -164,7 +164,7 @@ export const arrayUtils = {
     const seen = new Set();
     return array.filter(item => {
       const key = keySelector(item);
-      if (seen.has(key)) return false;
+      if (seen.has(key)) {return false;}
       seen.add(key);
       return true;
     });
@@ -225,7 +225,7 @@ export const dateUtils = {
    * @returns 指定営業日後の日付
    */
   addBusinessDays: (startDate: Date, businessDays: number): Date => {
-    if (businessDays < 0) throw new Error('営業日数は0以上である必要があります');
+    if (businessDays < 0) {throw new Error('営業日数は0以上である必要があります');}
     
     const result = new Date(startDate);
     let remainingDays = businessDays;
@@ -311,20 +311,20 @@ export const validationUtils = {
     const feedback: string[] = [];
     let score = 0;
 
-    if (password.length >= 8) score += 1;
-    else feedback.push('8文字以上入力してください');
+    if (password.length >= 8) {score += 1;}
+    else {feedback.push('8文字以上入力してください');}
 
-    if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('小文字を含めてください');
+    if (/[a-z]/.test(password)) {score += 1;}
+    else {feedback.push('小文字を含めてください');}
 
-    if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('大文字を含めてください');
+    if (/[A-Z]/.test(password)) {score += 1;}
+    else {feedback.push('大文字を含めてください');}
 
-    if (/\d/.test(password)) score += 1;
-    else feedback.push('数字を含めてください');
+    if (/\d/.test(password)) {score += 1;}
+    else {feedback.push('数字を含めてください');}
 
-    if (/[!@#$%^&*]/.test(password)) score += 1;
-    else feedback.push('特殊文字を含めてください');
+    if (/[!@#$%^&*]/.test(password)) {score += 1;}
+    else {feedback.push('特殊文字を含めてください');}
 
     return {
       isValid: score >= 4,
@@ -367,8 +367,8 @@ export const pricingCalculations = {
    * @returns 基本運賃
    */
   calculateBaseFare: (distance: number, baseRate: number): number => {
-    if (distance < 0) throw new Error('距離は0以上である必要があります');
-    if (baseRate <= 0) throw new Error('基本料金率は正の数である必要があります');
+    if (distance < 0) {throw new Error('距離は0以上である必要があります');}
+    if (baseRate <= 0) {throw new Error('基本料金率は正の数である必要があります');}
     
     return Math.floor(distance * baseRate);
   },
@@ -380,7 +380,7 @@ export const pricingCalculations = {
    * @returns 割増後料金
    */
   calculateTimeSurcharge: (baseFare: number, timeSlot: string): number => {
-    if (baseFare < 0) throw new Error('基本料金は0以上である必要があります');
+    if (baseFare < 0) {throw new Error('基本料金は0以上である必要があります');}
     
     const surchargeRates: Record<string, number> = {
       'early_morning': 1.2, // 早朝 20%割増

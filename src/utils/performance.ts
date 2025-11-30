@@ -2,7 +2,7 @@
  * パフォーマンス最適化ユーティリティ
  * メモ化、デバウンス、スロットリングなどの機能を提供
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * デバウンス処理用カスタムフック
@@ -106,10 +106,10 @@ export const useDeepMemo = <T>(
   const ref = useRef<{ deps: React.DependencyList; value: T } | undefined>(undefined);
 
   const isEqual = (a: React.DependencyList, b: React.DependencyList): boolean => {
-    if (a.length !== b.length) return false;
+    if (a.length !== b.length) {return false;}
     
     for (let i = 0; i < a.length; i++) {
-      if (!deepEqual(a[i], b[i])) return false;
+      if (!deepEqual(a[i], b[i])) {return false;}
     }
     
     return true;
@@ -129,16 +129,16 @@ export const useDeepMemo = <T>(
  * 深い等価性比較関数
  */
 const deepEqual = (a: unknown, b: unknown): boolean => {
-  if (a === b) return true;
+  if (a === b) {return true;}
   
   if (a && b && typeof a === 'object' && typeof b === 'object') {
-    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a) !== Array.isArray(b)) {return false;}
     
     const keys = Object.keys(a);
-    if (keys.length !== Object.keys(b).length) return false;
+    if (keys.length !== Object.keys(b).length) {return false;}
     
     for (const key of keys) {
-      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
+      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {return false;}
     }
     
     return true;
@@ -252,7 +252,7 @@ export const useIntersectionObserver = (
 
   useEffect(() => {
     const element = ref.current;
-    if (!element) return;
+    if (!element) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -282,16 +282,16 @@ export const useKeyboardShortcut = (
   const { preventDefault = true, enabled = true } = options;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {return;}
 
     const handleKeydown = (event: KeyboardEvent) => {
       const keys = shortcut.toLowerCase().split('+');
       const pressedKeys: string[] = [];
 
-      if (event.ctrlKey) pressedKeys.push('ctrl');
-      if (event.altKey) pressedKeys.push('alt');
-      if (event.shiftKey) pressedKeys.push('shift');
-      if (event.metaKey) pressedKeys.push('meta');
+      if (event.ctrlKey) {pressedKeys.push('ctrl');}
+      if (event.altKey) {pressedKeys.push('alt');}
+      if (event.shiftKey) {pressedKeys.push('shift');}
+      if (event.metaKey) {pressedKeys.push('meta');}
       
       // メタキー以外のキーを追加
       if (!['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) {
@@ -360,7 +360,7 @@ export const useInterval = (callback: () => void, delay: number | null) => {
   }, [callback]);
 
   useEffect(() => {
-    if (delay === null) return;
+    if (delay === null) {return;}
 
     const tick = () => savedCallback.current();
     const id = setInterval(tick, delay);

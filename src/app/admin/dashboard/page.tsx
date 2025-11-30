@@ -8,7 +8,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { AdminLayout, AdminCard, AdminBadge } from '@/components/admin';
@@ -179,10 +178,7 @@ function NewsPanel() {
 }
 
 export default function AdminDashboard() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [adminEmail, setAdminEmail] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const router = useRouter();
+  const [_adminEmail, setAdminEmail] = useState('');
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');

@@ -103,7 +103,7 @@ export default function EmployeeManagement({
         `退職日: ${normalizedFormData.retireDate || '未設定'}\n\n` +
         'よろしいですか？'
       );
-      if (!ok) return;
+      if (!ok) {return;}
     }
 
     if (selectedEmployee) {

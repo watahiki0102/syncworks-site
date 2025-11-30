@@ -24,7 +24,7 @@ const ReferralDetailPanel: React.FC<ReferralDetailPanelProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!referral || !isOpen) return null;
+  if (!referral || !isOpen) {return null;}
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

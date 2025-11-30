@@ -66,7 +66,7 @@ export default function AccountsPage() {
 
   const handleRoleChange = async (id: string, newRole: AccountRow['role']) => {
     const account = data.find(row => row.id === id);
-    if (!account) return;
+    if (!account) {return;}
 
     // superadminの自己降格を防ぐ
     if (account.email === currentUserEmail && account.role === 'superadmin' && newRole !== 'superadmin') {
@@ -81,7 +81,7 @@ export default function AccountsPage() {
 
   const handlePermissionChange = async (id: string, permission: keyof AccountRow['permissions'], value: boolean) => {
     const account = data.find(row => row.id === id);
-    if (!account) return;
+    if (!account) {return;}
 
     // superadminの自己権限変更を防ぐ
     if (account.email === currentUserEmail && account.role === 'superadmin') {
@@ -99,7 +99,7 @@ export default function AccountsPage() {
 
   const handleActiveChange = async (id: string, newActive: boolean) => {
     const account = data.find(row => row.id === id);
-    if (!account) return;
+    if (!account) {return;}
 
     // superadminの自己無効化を防ぐ
     if (account.email === currentUserEmail && account.role === 'superadmin' && !newActive) {

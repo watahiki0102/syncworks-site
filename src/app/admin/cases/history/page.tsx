@@ -59,7 +59,7 @@ export default function QuoteHistoryPage() {
 
     const normalizedQuotes = demoQuotes.map(quote => ({
       ...quote,
-      sourceType: normalizeSourceType(quote.sourceType as any)
+      sourceType: normalizeSourceType(quote.sourceType)
     }));
 
     const today = new Date();
@@ -84,7 +84,7 @@ export default function QuoteHistoryPage() {
       }
       
       if (searchTerm) {
-        const managementNumber = getManagementNumber(quote.sourceType as any, quote.id);
+        const managementNumber = getManagementNumber(quote.sourceType, quote.id);
         const matchesCustomerName = (quote.customer?.customerName || '').includes(searchTerm);
         const matchesManagementNumber = managementNumber.includes(searchTerm);
         
@@ -111,7 +111,7 @@ export default function QuoteHistoryPage() {
     try {
       const existingResponses = JSON.parse(localStorage.getItem('quoteResponses') || '[]');
       // 実際の実装では、quoteIdに基づいてAPIから取得
-      return existingResponses.find((response: any) => response.caseId === quoteId) || null;
+      return existingResponses.find((response: Record<string, unknown>) => response.caseId === quoteId) || null;
     } catch {
       return null;
     }
@@ -189,18 +189,18 @@ export default function QuoteHistoryPage() {
               {filteredQuotes.map((quote) => (
                 <tr key={quote.id} className="hover:bg-gray-50">
                   <td className="px-3 py-4 whitespace-nowrap text-xs font-medium text-gray-900">
-                    {getManagementNumber(quote.sourceType as any, quote.id)}
+                    {getManagementNumber(quote.sourceType, quote.id)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span 
+                    <span
                       className="inline-block w-24 px-2 py-1 text-center text-gray-900"
                       style={{
-                        fontSize: quote.sourceType === '外部' 
-                          ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(quote.sourceType as any).length, 1)}rem, 0.75rem)`
+                        fontSize: quote.sourceType === '外部'
+                          ? `clamp(0.5rem, ${24 / Math.max(getSourceTypeLabel(quote.sourceType).length, 1)}rem, 0.75rem)`
                           : '0.75rem'
                       }}
                     >
-                      {getSourceTypeLabel(quote.sourceType as any)}
+                      {getSourceTypeLabel(quote.sourceType)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
@@ -286,7 +286,7 @@ export default function QuoteHistoryPage() {
                     >
                       詳細
                     </button>
-                    {isSourceTypeEditable(quote.sourceType as any) && (
+                    {isSourceTypeEditable(quote.sourceType) && (
                       <button
                         onClick={() => window.location.href = `/admin/cases/edit/${quote.id}`}
                         className="text-blue-600 hover:text-blue-900"
@@ -325,7 +325,7 @@ export default function QuoteHistoryPage() {
                     <div><span className="font-medium">回答日:</span> {viewingQuote.responseDate}</div>
                     <div><span className="font-medium">引越し日:</span> {viewingQuote.move?.moveDate}</div>
                     <div><span className="font-medium">ステータス:</span> {viewingQuote.status}</div>
-                    <div><span className="font-medium">依頼元:</span> {getSourceTypeLabel(viewingQuote.sourceType as any)}</div>
+                    <div><span className="font-medium">依頼元:</span> {getSourceTypeLabel(viewingQuote.sourceType)}</div>
                     {viewingQuote.isReQuote && (
                       <div><span className="font-medium text-purple-600">再見積</span></div>
                     )}

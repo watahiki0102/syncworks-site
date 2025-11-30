@@ -14,7 +14,7 @@ export const useOutsideClick = <T extends HTMLElement>(
   const ref = useRef<T | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {return;}
 
     const handleClickOutside = (event: MouseEvent) => {
       // ref.currentが存在し、クリックされた要素がref内に含まれていない場合
@@ -51,7 +51,7 @@ export const useMultipleOutsideClick = <T extends HTMLElement>(
   }
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {return;}
 
     const handleClickOutside = (event: MouseEvent) => {
       // すべてのrefの外側をクリックした場合のみコールバックを実行
@@ -87,7 +87,7 @@ export const useConditionalOutsideClick = <T extends HTMLElement>(
   const ref = useRef<T | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {return;}
 
     const handleClickOutside = (event: MouseEvent) => {
       // 条件を満たし、かつ外部クリックの場合にコールバックを実行

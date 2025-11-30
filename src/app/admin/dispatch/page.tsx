@@ -1,15 +1,13 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import AdminAuthGuard from '@/components/AdminAuthGuard';
 import UnifiedCalendarLayout from '@/components/layout/UnifiedCalendarLayout';
-import AdminButton from '@/components/admin/AdminButton';
 import TruckRegistration from '@/components/TruckRegistration';
 import DispatchCalendar from '@/components/DispatchCalendar';
 import UnavailablePeriodModal from './components/UnavailablePeriodModal';
 import TruckAssignmentModal from './components/TruckAssignmentModal';
-import StatusFilter from '@/components/dispatch/StatusFilter';
 import { TruckManagement } from '@/components/dispatch/TruckManagement';
 
 import { toLocalDateString } from '@/utils/dateTimeUtils';
@@ -65,9 +63,7 @@ function DispatchManagementContent() {
   const [unavailablePeriod, setUnavailablePeriod] = useState({ startDate: '', endDate: '', reason: '' });
 
   // 案件の展開状態を管理
-  const [expandedSubmissions, setExpandedSubmissions] = useState<Set<string>>(new Set());
-
-  const router = useRouter();
+  const [_expandedSubmissions, _setExpandedSubmissions] = useState<Set<string>>(new Set());
 
 
 
@@ -480,12 +476,7 @@ function DispatchManagementContent() {
           customerEmail: 'suzuki@example.com',
           customerPhone: '090-1111-2222',
           moveDate: new Date().toISOString().split('T')[0], // 今日
-          preferredDate1: new Date().toISOString().split('T')[0],
-          preferredDate2: new Date(Date.now() + 86400000).toISOString().split('T')[0], // 明日
-          preferredDate3: new Date(Date.now() + 172800000).toISOString().split('T')[0], // 明後日
           moveTime1: '午前中',
-          moveTime2: '13:00～15:00',
-          moveTime3: '午後',
           originAddress: '東京都港区六本木7-7-7',
           destinationAddress: '東京都品川区品川8-8-8',
           totalPoints: 80,
@@ -499,10 +490,6 @@ function DispatchManagementContent() {
           truckAssignments: [],
           createdAt: new Date().toISOString(),
           contractStatus: 'estimate',
-          notes: 'エレベーターなし。3階の部屋です。',
-          paymentMethod: '銀行振込',
-          paymentStatus: '未請求',
-          priceTaxIncluded: 27500,
         },
         {
           id: '5',
@@ -510,10 +497,7 @@ function DispatchManagementContent() {
           customerEmail: 'takahashi@example.com',
           customerPhone: '080-3333-4444',
           moveDate: new Date().toISOString().split('T')[0], // 今日
-          preferredDate1: new Date().toISOString().split('T')[0],
-          preferredDate2: new Date(Date.now() + 259200000).toISOString().split('T')[0], // 3日後
           moveTime1: '10:00～12:00',
-          moveTime2: '午後',
           originAddress: '東京都文京区本郷9-9-9',
           destinationAddress: '東京都台東区上野10-10-10',
           totalPoints: 120,
@@ -527,10 +511,6 @@ function DispatchManagementContent() {
           truckAssignments: [],
           createdAt: new Date().toISOString(),
           contractStatus: 'estimate',
-          notes: 'ソファが大きいため、分解が必要かもしれません。',
-          paymentMethod: '現金',
-          paymentStatus: '未請求',
-          priceTaxIncluded: 38500,
         },
         {
           id: '6',
@@ -538,7 +518,6 @@ function DispatchManagementContent() {
           customerEmail: 'ito@example.com',
           customerPhone: '070-5555-7777',
           moveDate: new Date().toISOString().split('T')[0], // 今日
-          preferredDate1: new Date().toISOString().split('T')[0],
           moveTime1: '午前中',
           originAddress: '東京都練馬区練馬11-11-11',
           destinationAddress: '東京都板橋区板橋12-12-12',
@@ -554,10 +533,6 @@ function DispatchManagementContent() {
           createdAt: new Date().toISOString(),
           contractStatus: 'confirmed',
           contractDate: new Date().toISOString(),
-          notes: '大きなワードローブがあります。慎重な取り扱いをお願いします。',
-          paymentMethod: 'クレジットカード',
-          paymentStatus: '入金済',
-          priceTaxIncluded: 52800,
         },
       ];
       setFormSubmissions(testSubmissions);
@@ -622,9 +597,9 @@ function DispatchManagementContent() {
   useEffect(() => {
     if (selectedCaseId && registrationMode === 'registration') {
       // 配車登録モードで遷移した場合
-      
+
       // 該当案件を自動的に展開状態にする
-      setExpandedSubmissions(prev => new Set([...prev, selectedCaseId]));
+      _setExpandedSubmissions(prev => new Set([...prev, selectedCaseId]));
       
       // 成功メッセージを表示
       setTimeout(() => {
@@ -681,32 +656,32 @@ function DispatchManagementContent() {
   // バリデーション関数
   const validateTruckAssignment = (submissionId: string, truckAssignment: TruckAssignment): { isValid: boolean; error?: string; warning?: string } => {
     const submission = formSubmissions.find(s => s.id === submissionId);
-    const truck = trucks.find(t => t.id === truckAssignment.truckId);
+    const _truck = trucks.find(t => t.id === truckAssignment.truckId);
     
-    if (!submission || !truck) {
+    if (!submission || !_truck) {
       return { isValid: false, error: '案件またはトラックが見つかりません' };
     }
 
     // トラックステータスチェック
-    if (truck.status !== 'available') {
-      return { 
-        isValid: false, 
-        error: `このトラックは現在${truck.status === 'maintenance' ? '整備中' : '停止中'}のため割り当てできません`
+    if (_truck.status !== 'available') {
+      return {
+        isValid: false,
+        error: `このトラックは現在${_truck.status === 'maintenance' ? '整備中' : '停止中'}のため割り当てできません`
       };
     }
 
     // 容量チェック
-    if (truckAssignment.capacity > truck.capacityKg) {
-      return { 
-        isValid: false, 
-        error: `容量超過: ${truckAssignment.capacity.toLocaleString()}kg > ${truck.capacityKg.toLocaleString()}kg`
+    if (truckAssignment.capacity > _truck.capacityKg) {
+      return {
+        isValid: false,
+        error: `容量超過: ${truckAssignment.capacity.toLocaleString()}kg > ${_truck.capacityKg.toLocaleString()}kg`
       };
     }
 
     // 時間重複チェック（確定案件のみ）
-    const conflictingSchedules = truck.schedules.filter(schedule => {
-      if (schedule.date !== submission.moveDate) return false;
-      if (schedule.contractStatus !== 'confirmed') return false; // 確定案件のみチェック
+    const conflictingSchedules = _truck.schedules.filter(schedule => {
+      if (schedule.date !== submission.moveDate) {return false;}
+      if (schedule.contractStatus !== 'confirmed') {return false;} // 確定案件のみチェック
       
       const scheduleStart = parseInt(schedule.startTime.replace(':', ''));
       const scheduleEnd = parseInt(schedule.endTime.replace(':', ''));
@@ -724,9 +699,9 @@ function DispatchManagementContent() {
     }
 
     // 仮案件重複の警告
-    const tentativeConflicts = truck.schedules.filter(schedule => {
-      if (schedule.date !== submission.moveDate) return false;
-      if (schedule.contractStatus === 'confirmed') return false; // 仮案件のみチェック
+    const tentativeConflicts = _truck.schedules.filter(schedule => {
+      if (schedule.date !== submission.moveDate) {return false;}
+      if (schedule.contractStatus === 'confirmed') {return false;} // 仮案件のみチェック
       
       const scheduleStart = parseInt(schedule.startTime.replace(':', ''));
       const scheduleEnd = parseInt(schedule.endTime.replace(':', ''));
@@ -749,7 +724,7 @@ function DispatchManagementContent() {
   const assignTruckToSubmission = (submissionId: string, truckAssignment: TruckAssignment) => {
     // バリデーション実行
     const validation = validateTruckAssignment(submissionId, truckAssignment);
-    
+
     if (!validation.isValid) {
       alert(`❌ 割り当てエラー\n\n${validation.error}`);
       return;
@@ -762,7 +737,9 @@ function DispatchManagementContent() {
     }
 
     const submission = formSubmissions.find(s => s.id === submissionId);
-    if (!submission) return;
+    if (!submission) {
+      return;
+    }
 
     // トラックのスケジュールを更新
     const truck = trucks.find(t => t.id === truckAssignment.truckId);
@@ -884,8 +861,8 @@ function DispatchManagementContent() {
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           formSubmissions={formSubmissions}
-          onAssignTruck={(submission, truck) => {
-            setSelectedSubmission(submission);
+          onAssignTruck={(submission, _truck) => {
+            setSelectedSubmission(submission as any);
             setShowTruckModal(true);
           }}
         />
@@ -936,7 +913,9 @@ function DispatchManagementContent() {
             setUnavailablePeriod({ startDate: '', endDate: '', reason: '' });
           }}
           onSave={(period) => {
-            if (!selectedTruckForUnavailable) return;
+            if (!selectedTruckForUnavailable) {
+              return;
+            }
             
             // 指定期間に使用不能スケジュールを作成
             const startDate = new Date(period.startDate);

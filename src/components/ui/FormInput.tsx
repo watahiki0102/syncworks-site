@@ -382,7 +382,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
  * ラジオボタン
  */
 export const Radio: React.FC<RadioProps> = ({
-  value,
+  value: _value,
   selectedValue,
   onChange,
   options,

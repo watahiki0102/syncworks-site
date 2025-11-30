@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import type { SeasonRule } from '@/types/pricing';
-import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from '../UnifiedMonthCalendar';
+import UnifiedMonthCalendar, { CalendarEvent } from '../UnifiedMonthCalendar';
 import { fetchHolidays, type Holiday } from '@/utils/holidayUtils';
 
 type SeasonRuleInput = Omit<SeasonRule, 'id'>;
@@ -23,20 +23,6 @@ interface SeasonCalendarProps {
 }
 
 type ViewMode = 'month' | 'list';
-
-const getRuleBackgroundClass = (rule: SeasonRule) => {
-  if (rule.priceType === 'percentage') {
-    if (rule.price > 0) {
-      return 'bg-rose-100';
-    }
-    if (rule.price < 0) {
-      return 'bg-emerald-100';
-    }
-    return 'bg-amber-100';
-  }
-
-  return 'bg-blue-100';
-};
 
 const getRuleBorderClass = (rule: SeasonRule) => {
   if (rule.priceType === 'percentage') {
@@ -69,59 +55,10 @@ export default function SeasonCalendar({
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
 
   // 祝日データを取得
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [_holidays, setHolidays] = useState<Holiday[]>([]);
   useEffect(() => {
     fetchHolidays().then(setHolidays);
   }, []);
-
-  // 月の日付を生成
-  const getMonthDays = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    const daysInMonth = lastDayOfMonth.getDate();
-    const startingDayOfWeek = firstDayOfMonth.getDay();
-
-    const days = [];
-
-    // 前月の日付を追加
-    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      const prevDate = new Date(year, month, -i);
-      days.push({
-        date: prevDate.toISOString().split('T')[0],
-        day: prevDate.getDate(),
-        isCurrentMonth: false,
-        isToday: false,
-      });
-    }
-
-    // 当月の日付を追加
-    for (let day = 1; day <= daysInMonth; day++) {
-      const currentDate = new Date(year, month, day);
-      const dateString = currentDate.toISOString().split('T')[0];
-      days.push({
-        date: dateString,
-        day: day,
-        isCurrentMonth: true,
-        isToday: dateString === new Date().toISOString().split('T')[0],
-      });
-    }
-
-    // 次月の日付を追加（6週分になるように）
-    const remainingDays = 42 - days.length;
-    for (let day = 1; day <= remainingDays; day++) {
-      const nextDate = new Date(year, month + 1, day);
-      days.push({
-        date: nextDate.toISOString().split('T')[0],
-        day: nextDate.getDate(),
-        isCurrentMonth: false,
-        isToday: false,
-      });
-    }
-
-    return days;
-  };
 
   // 特定の日付に適用されるルールを取得
   const getRulesForDate = (date: string): SeasonRule[] => {
@@ -134,20 +71,8 @@ export default function SeasonCalendar({
     });
   };
 
-  // 日付セルのスタイルを取得
-  const getDateCellStyle = (date: string, isCurrentMonth: boolean) => {
-    const rules = getRulesForDate(date);
-    if (rules.length === 0) {
-      return isCurrentMonth ? 'bg-white hover:bg-blue-100 hover:border-blue-300 transition-all duration-150' : 'bg-gray-50 hover:bg-blue-100 hover:border-blue-300 transition-all duration-150';
-    }
-
-    // 複数ルールがある場合は最初のルールの色を使用
-    const primaryRule = rules[0];
-    return `${getRuleBackgroundClass(primaryRule)} hover:opacity-80 transition-all duration-150`;
-  };
-
   // 日付クリック処理
-  const handleDateClick = (date: string, event: React.MouseEvent) => {
+  const handleDateClick = (date: string, _event: React.MouseEvent) => {
     if (isSelecting) {
       setSelectedDates(prev => {
         if (prev.includes(date)) {
@@ -178,7 +103,7 @@ export default function SeasonCalendar({
 
   // 選択した期間からシーズンを作成
   const createSeasonFromSelection = () => {
-    if (selectedDates.length === 0) return;
+    if (selectedDates.length === 0) {return;}
 
     const sortedDates = selectedDates.sort();
     const startDate = sortedDates[0];
@@ -217,11 +142,11 @@ export default function SeasonCalendar({
 
   // ルール保存
   const saveRule = () => {
-    if (!editingRule) return;
+    if (!editingRule) {return;}
 
     if (editingRule.id.startsWith('temp-')) {
       // 新規作成
-      const { id, ...ruleData } = editingRule;
+      const { id: _id, ...ruleData } = editingRule;
       onAddRule(ruleData);
     } else {
       // 更新
@@ -258,13 +183,12 @@ export default function SeasonCalendar({
     // 日付ごとのイベントを取得
     const getEventsForDate = (date: string): CalendarEvent[] => {
       const rules = getRulesForDate(date);
-      
-      return rules.map((rule, index) => ({
+
+      return rules.map((rule, _index) => ({
         id: `${rule.id}-${date}`,
         title: rule.name,
         description: `${rule.priceType === 'percentage' ? `${rule.price}%` : `¥${rule.price.toLocaleString()}`}`,
-        status: 'confirmed',
-        backgroundColor: rule.priceType === 'percentage' 
+        backgroundColor: rule.priceType === 'percentage'
           ? (rule.price > 0 ? '#fca5a5' : '#86efac')
           : '#93c5fd',
         color: '#374151',
@@ -274,8 +198,8 @@ export default function SeasonCalendar({
     };
 
     // カスタムイベントレンダリング
-    const renderEvent = (event: CalendarEvent, index: number) => {
-      const { rule } = event.metadata;
+    const renderEvent = (event: CalendarEvent, _index: number) => {
+      const { rule: _rule } = event.metadata;
       
       return (
         <div
@@ -356,7 +280,7 @@ export default function SeasonCalendar({
         <UnifiedMonthCalendar
           currentDate={currentDate}
           onDateChange={setCurrentDate}
-          onDateClick={(date, day) => handleDateClick(date, {} as React.MouseEvent)}
+          onDateClick={(date, _day) => handleDateClick(date, {} as React.MouseEvent)}
           getEventsForDate={getEventsForDate}
           renderEvent={renderEvent}
           showNavigation={true}

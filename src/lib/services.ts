@@ -172,7 +172,7 @@ export class EstimateService {
   /**
    * メールコンテンツ生成（純粋関数）
    */
-  private generateEstimateEmailContent(estimate: unknown, estimateId: string): string {
+  private generateEstimateEmailContent(_estimate: unknown, estimateId: string): string {
     // この関数は純粋関数として実装し、テストしやすくする
     return `
 見積もりID: ${estimateId}

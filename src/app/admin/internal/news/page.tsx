@@ -51,7 +51,7 @@ export default function NewsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
+    if (!dateString) {return '-';}
     return new Date(dateString).toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: '2-digit',

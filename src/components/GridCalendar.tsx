@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate, toLocalDateString } from '@/utils/dateTimeUtils';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
 import { WEEKDAYS_JA } from '@/constants/calendar';
 import { fetchHolidays, isHoliday, getHolidayName, isSaturday, isSunday, type Holiday } from '@/utils/holidayUtils';
 
@@ -43,7 +43,7 @@ export default function GridCalendar({
   selectedDate,
   getEventsForDate,
   showModal = false,
-  modalTitle = '',
+  modalTitle: _modalTitle = '',
   modalContent,
   onCloseModal
 }: GridCalendarProps) {

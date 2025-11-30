@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
             } else {
                 setError('メールアドレスまたはパスワードが正しくありません');
             }
-        } catch (err) {
+        } catch {
             setError('ログインに失敗しました');
         } finally {
             setIsLoading(false);

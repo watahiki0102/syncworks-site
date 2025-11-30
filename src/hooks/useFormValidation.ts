@@ -167,7 +167,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(
   // 特定フィールドのバリデーションを実行
   const validateFieldFn = useCallback((field: keyof T): boolean => {
     const rules = validationSchema[field];
-    if (!rules) return true;
+    if (!rules) {return true;}
 
     const result = validateField(formState[field].value, rules);
     

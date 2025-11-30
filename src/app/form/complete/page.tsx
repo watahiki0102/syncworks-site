@@ -47,7 +47,7 @@ function FormCompleteContent() {
 
   // 連絡手段選択の処理
   const handleContactPreference = async (preference: 'line' | 'email') => {
-    if (!completeData) return;
+    if (!completeData) {return;}
     
     setIsSubmitting(true);
     try {

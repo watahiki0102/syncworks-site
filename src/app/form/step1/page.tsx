@@ -15,7 +15,7 @@ import ProgressBar from '@/components/ProgressBar';
 
 import { Step1FormData } from '@/types/common';
 import { searchAddressForAutoComplete } from '@/utils/postalCodeSearch';
-import { TimeSlotSelect, TIME_SLOTS } from '@/components/ui/TimeSlotSelect';
+import { TIME_SLOTS } from '@/components/ui/TimeSlotSelect';
 
 /**
  * よく使用されるメールドメイン
@@ -54,10 +54,10 @@ const STYLES = {
  * @returns 保存されたフォームデータ
  */
 const loadSavedData = (): Partial<Step1FormData> => {
-  if (typeof window === 'undefined') return {};
+  if (typeof window === 'undefined') {return {};}
 
   const saved = localStorage.getItem('formStep1');
-  if (!saved) return {};
+  if (!saved) {return {};}
 
   return JSON.parse(saved);
 };
@@ -107,8 +107,8 @@ const DateTimeSection = ({
             required: isRequired ? `※ 第${index}希望日は必須です` : false,
             validate: (value: string | null | undefined) => {
               // 非必須の場合は空の場合はtrueを返す
-              if (!isRequired && !value) return true;
-              if (!value) return true;
+              if (!isRequired && !value) {return true;}
+              if (!value) {return true;}
               const selected = new Date(value);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -144,7 +144,7 @@ const DateTimeSection = ({
 
               // 任意枠の場合
               // 両方空ならOK
-              if (!selectedDate && (!value || value === 'none')) return true;
+              if (!selectedDate && (!value || value === 'none')) {return true;}
 
               // 日付が選択されていない場合かつ時間帯が選択されている場合はエラーメッセージを返す
               if (!selectedDate && value && value !== 'none') {
@@ -186,7 +186,7 @@ const AddressSection = ({
   register,
   watch,
   errors,
-  setValue
+  setValue: _setValue
 }: {
   label: string;
   prefix: 'from' | 'to';
@@ -222,7 +222,7 @@ const AddressSection = ({
               message: "※ 郵便番号は7桁の数字で入力してください"
             },
             validate: (value: string) => {
-              if (!value) return true;
+              if (!value) {return true;}
               return value.length === 7 || "※ 郵便番号は7桁ちょうどで入力してください";
             }
           })}
@@ -319,7 +319,7 @@ function Step1FormContent() {
     handleSubmit,
     formState: { errors },
     watch,
-    setValue
+    setValue: _setValue
   } = useForm<Step1FormData>({
     mode: 'onChange',
     reValidateMode: 'onChange'
@@ -331,14 +331,14 @@ function Step1FormContent() {
     const savedData = loadSavedData();
     if (Object.keys(savedData).length > 0) {
       Object.entries(savedData).forEach(([key, value]) => {
-        setValue(key as keyof Step1FormData, value as any);
+        _setValue(key as keyof Step1FormData, value as any);
       });
     }
     // 紹介IDをフォームデータに設定
     if (referralId) {
-      setValue('referralId', referralId);
+      _setValue('referralId', referralId);
     }
-  }, [setValue, referralId]);
+  }, [_setValue, referralId]);
 
   // メールアドレスのサジェスチョンを処理する関数
   const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -374,7 +374,7 @@ function Step1FormContent() {
 
   // 5秒ごとに自動保存
   useEffect(() => {
-    if (typeof window === 'undefined' || !isClient) return;
+    if (typeof window === 'undefined' || !isClient) {return;}
 
     const id = setInterval(() => {
       try {
@@ -389,7 +389,7 @@ function Step1FormContent() {
 
   // 郵便番号から住所を自動補完
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient) {return;}
 
     const subscription = watch((value, { name }) => {
       if (name === 'fromPostalCode' || name === 'toPostalCode') {
@@ -403,7 +403,7 @@ function Step1FormContent() {
           searchAddressForAutoComplete(zipcode)
             .then((address) => {
               if (address) {
-                setValue(addressField, address);
+                _setValue(addressField, address);
               }
             })
             .catch((e) => {
@@ -414,7 +414,7 @@ function Step1FormContent() {
     });
 
     return () => subscription.unsubscribe();
-  }, [watch, setValue, isClient]);
+  }, [watch, _setValue, isClient]);
 
   // クライアントサイドでない場合はローディング表示
   if (!isClient) {
@@ -587,7 +587,7 @@ function Step1FormContent() {
                       key={s}
                       className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
                       onMouseDown={() => {
-                        setValue('email', s, { shouldValidate: true });
+                        _setValue('email', s, { shouldValidate: true });
                         setShowEmailSuggestions(false);
                       }}
                     >
@@ -633,7 +633,7 @@ function Step1FormContent() {
             register={register}
             watch={watch}
             errors={errors}
-            setValue={setValue}
+            setValue={_setValue}
           />
           <AddressSection
             label="引越し先（新住所）"
@@ -641,7 +641,7 @@ function Step1FormContent() {
             register={register}
             watch={watch}
             errors={errors}
-            setValue={setValue}
+            setValue={_setValue}
           />
         </section>
 

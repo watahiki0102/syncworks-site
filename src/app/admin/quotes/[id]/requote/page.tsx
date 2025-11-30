@@ -82,7 +82,7 @@ export default function ReQuotePage() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reQuoteData) return;
+    if (!reQuoteData) {return;}
 
     setIsSubmitting(true);
 

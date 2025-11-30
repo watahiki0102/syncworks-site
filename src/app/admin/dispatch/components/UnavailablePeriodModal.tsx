@@ -16,7 +16,7 @@ const UnavailablePeriodModal = ({
   initialPeriod,
   onPeriodChange,
 }: UnavailablePeriodModalProps) => {
-  if (!truck) return null;
+  if (!truck) {return null;}
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

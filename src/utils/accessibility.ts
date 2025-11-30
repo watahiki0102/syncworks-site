@@ -43,7 +43,7 @@ export function createFocusTrap(container: HTMLElement): () => void {
   const lastElement = focusableElements[focusableElements.length - 1];
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'Tab') return;
+    if (event.key !== 'Tab') {return;}
 
     if (event.shiftKey) {
       // Shift + Tab
@@ -136,19 +136,19 @@ export function generateAccessibilityProps(options: {
 }) {
   const props: Record<string, string | boolean> = {};
 
-  if (options.label) props['aria-label'] = options.label;
-  if (options.labelledBy) props['aria-labelledby'] = options.labelledBy;
-  if (options.describedBy) props['aria-describedby'] = options.describedBy;
-  if (options.expanded !== undefined) props['aria-expanded'] = options.expanded;
-  if (options.hidden !== undefined) props['aria-hidden'] = options.hidden;
-  if (options.pressed !== undefined) props['aria-pressed'] = options.pressed;
-  if (options.selected !== undefined) props['aria-selected'] = options.selected;
-  if (options.disabled !== undefined) props['aria-disabled'] = options.disabled;
-  if (options.required !== undefined) props['aria-required'] = options.required;
-  if (options.invalid !== undefined) props['aria-invalid'] = options.invalid;
-  if (options.live) props['aria-live'] = options.live;
-  if (options.atomic !== undefined) props['aria-atomic'] = options.atomic;
-  if (options.role) props.role = options.role;
+  if (options.label) {props['aria-label'] = options.label;}
+  if (options.labelledBy) {props['aria-labelledby'] = options.labelledBy;}
+  if (options.describedBy) {props['aria-describedby'] = options.describedBy;}
+  if (options.expanded !== undefined) {props['aria-expanded'] = options.expanded;}
+  if (options.hidden !== undefined) {props['aria-hidden'] = options.hidden;}
+  if (options.pressed !== undefined) {props['aria-pressed'] = options.pressed;}
+  if (options.selected !== undefined) {props['aria-selected'] = options.selected;}
+  if (options.disabled !== undefined) {props['aria-disabled'] = options.disabled;}
+  if (options.required !== undefined) {props['aria-required'] = options.required;}
+  if (options.invalid !== undefined) {props['aria-invalid'] = options.invalid;}
+  if (options.live) {props['aria-live'] = options.live;}
+  if (options.atomic !== undefined) {props['aria-atomic'] = options.atomic;}
+  if (options.role) {props.role = options.role;}
 
   return props;
 }

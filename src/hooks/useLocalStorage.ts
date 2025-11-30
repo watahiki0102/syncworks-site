@@ -29,7 +29,7 @@ export function useLocalStorage<T>(
     try {
       const item = window.localStorage.getItem(key);
       return item ? deserialize(item) : initialValue;
-    } catch (error) {
+    } catch {
       return initialValue;
     }
   });
@@ -40,11 +40,11 @@ export function useLocalStorage<T>(
       // 関数の場合は現在の値を渡して実行
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      
+
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, serialize(valueToStore));
       }
-    } catch (error) {
+    } catch {
       // Error setting localStorage
     }
   }, [key, serialize, storedValue]);
@@ -56,21 +56,21 @@ export function useLocalStorage<T>(
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(key);
       }
-    } catch (error) {
+    } catch {
       // Error removing localStorage
     }
   }, [key, initialValue]);
 
   // window.storageイベントを監視して他のタブでの変更を検知
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key !== key || e.storageArea !== localStorage) return;
-      
+      if (e.key !== key || e.storageArea !== localStorage) {return;}
+
       try {
         setStoredValue(e.newValue ? deserialize(e.newValue) : initialValue);
-      } catch (error) {
+      } catch {
         // Error parsing localStorage change
       }
     };
@@ -107,7 +107,7 @@ export function useSessionStorage<T>(
     try {
       const item = window.sessionStorage.getItem(key);
       return item ? deserialize(item) : initialValue;
-    } catch (error) {
+    } catch {
       return initialValue;
     }
   });
@@ -120,7 +120,7 @@ export function useSessionStorage<T>(
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(key, serialize(valueToStore));
       }
-    } catch (error) {
+    } catch {
       // Error setting sessionStorage
     }
   }, [key, serialize, storedValue]);
@@ -131,7 +131,7 @@ export function useSessionStorage<T>(
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(key);
       }
-    } catch (error) {
+    } catch {
       // Error removing sessionStorage
     }
   }, [key, initialValue]);
@@ -150,11 +150,11 @@ export function useSaveToLocalStorage() {
         localStorage.setItem(key, JSON.stringify(value));
       }
       return { success: true };
-    } catch (error) {
-      console.error(`LocalStorageへの保存に失敗しました (key: ${key}):`, error);
+    } catch (_error) {
+      console.error(`LocalStorageへの保存に失敗しました (key: ${key}):`, _error);
 
       // 容量オーバーの場合
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      if (_error instanceof DOMException && _error.name === 'QuotaExceededError') {
         return {
           success: false,
           error: 'ローカルストレージの容量が不足しています。\nブラウザのデータを削除するか、古いシフトデータを整理してください。'

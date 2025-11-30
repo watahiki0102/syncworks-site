@@ -62,7 +62,7 @@ function CaseEditPage() {
   }, [caseId]);
 
   const handleSave = async () => {
-    if (!caseData) return;
+    if (!caseData) { return; }
 
     setIsSaving(true);
     try {
@@ -90,7 +90,7 @@ function CaseEditPage() {
   };
 
   const handleInputChange = (field: keyof CaseData, value: any) => {
-    if (!caseData) return;
+    if (!caseData) { return; }
     setCaseData({
       ...caseData,
       [field]: value,

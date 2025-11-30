@@ -6,7 +6,7 @@
  * - リセット機能
  */
 import React, { memo, useCallback, useMemo } from 'react';
-import { Search, X, Filter, SortAsc, SortDesc } from 'lucide-react';
+import { Search, X, Filter } from 'lucide-react';
 import { Input } from './Input';
 import { Button } from './Button';
 
@@ -94,7 +94,7 @@ export const SearchFilter = memo<SearchFilterProps>(({
 }) => {
   // フィルタの選択状態を切り替え
   const handleFilterToggle = useCallback((filterValue: string) => {
-    if (!onFilterChange) return;
+    if (!onFilterChange) {return;}
     
     const newFilters = selectedFilters.includes(filterValue)
       ? selectedFilters.filter(f => f !== filterValue)

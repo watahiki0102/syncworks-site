@@ -9,7 +9,7 @@
 import { useState, useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { PricingRule, OptionItem, ItemPoint } from '@/types/pricing';
-import { SimulationToggle, SimulationPanel, ItemCard } from '@/components/pricing';
+import { SimulationPanel } from '@/components/pricing';
 import { ITEM_CATEGORIES } from '@/constants/items';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
@@ -214,7 +214,7 @@ export default function PricingRatesPage() {
    */
   const [newTruckType, setNewTruckType] = useState<string>('');
   const [pricingErrors, setPricingErrors] = useState<string[]>([]);
-  const [rowErrorIds, setRowErrorIds] = useState<Set<string>>(new Set());
+  const [_setRowErrorIds] = useState<Set<string>>(new Set());
 
   /**
    * 車種係数設定用state
@@ -541,12 +541,12 @@ export default function PricingRatesPage() {
    */
   const addPricingRule = () => {
     const errors: string[] = [];
-    if (!newTruckType) errors.push('トラック種別を選択してください');
-    if (newPricingMaxPoint === undefined) errors.push('ポイント最大値は必須です');
-    if (newPricingPrice === undefined) errors.push('料金は必須です');
+    if (!newTruckType) {errors.push('トラック種別を選択してください');}
+    if (newPricingMaxPoint === undefined) {errors.push('ポイント最大値は必須です');}
+    if (newPricingPrice === undefined) {errors.push('料金は必須です');}
     const lastRule = pricingRules[pricingRules.length - 1];
     const newMinPoint = lastRule && lastRule.maxPoint !== undefined ? lastRule.maxPoint + 1 : 1;
-    if (newPricingMaxPoint !== undefined && newPricingMaxPoint <= newMinPoint) errors.push('最大値は前の行の最大値より大きい値を選択してください');
+    if (newPricingMaxPoint !== undefined && newPricingMaxPoint <= newMinPoint) {errors.push('最大値は前の行の最大値より大きい値を選択してください');}
     if (errors.length > 0) {
       setPricingErrors(errors);
       return;
@@ -599,7 +599,7 @@ export default function PricingRatesPage() {
    */
   const updateMaxPoint = (id: string, newMaxPoint: number) => {
     const ruleIndex = pricingRules.findIndex(rule => rule.id === id);
-    if (ruleIndex === -1) return;
+    if (ruleIndex === -1) {return;}
 
     const rule = pricingRules[ruleIndex];
     const prevRule = ruleIndex > 0 ? pricingRules[ruleIndex - 1] : null;
@@ -672,7 +672,7 @@ export default function PricingRatesPage() {
   // 車種削除
   const removeTruckType = (id: string) => {
     const truckToRemove = truckCoefficients.find(coef => coef.id === id);
-    if (!truckToRemove) return;
+    if (!truckToRemove) {return;}
 
     // 料金設定で使用されているかチェック
     const isUsedInPricing = pricingRules.some(rule => rule.truckType === truckToRemove.truckType);
@@ -728,45 +728,6 @@ export default function PricingRatesPage() {
     return { isValid: errors.length === 0, errors };
   };
 
-  const validatePricing = (): { isValid: boolean; errors: string[]; errorIds: Set<string> } => {
-    const errors: string[] = [];
-    const errorIds = new Set<string>();
-    if (pricingRules.length === 0) {
-      errors.push('最低1つの料金設定が必要です');
-      return { isValid: false, errors, errorIds };
-    }
-    const combinations = new Set();
-    for (let i = 0; i < pricingRules.length; i++) {
-      const rule = pricingRules[i];
-      const key = `${rule.truckType}-${rule.minPoint}-${rule.maxPoint}`;
-      if (combinations.has(key)) {
-        errors.push(`重複: ${rule.truckType} × ${rule.minPoint} - ${rule.maxPoint}の設定が重複しています`);
-        errorIds.add(rule.id);
-      } else {
-        combinations.add(key);
-      }
-      if (!rule.truckType) {
-        errors.push(`行${i + 1}: トラック種別を選択してください`);
-        errorIds.add(rule.id);
-      }
-      if (rule.price === undefined || rule.price < 0) {
-        errors.push(`行${i + 1}: 料金は0円以上で入力してください`);
-        errorIds.add(rule.id);
-      }
-    }
-    for (let i = 0; i < pricingRules.length - 1; i++) {
-      const currentRule = pricingRules[i];
-      const nextRule = pricingRules[i + 1];
-      if (currentRule.maxPoint !== undefined && nextRule.minPoint !== undefined) {
-        if (currentRule.maxPoint + 1 !== nextRule.minPoint) {
-          errors.push(`ポイント範囲の連続性エラー: ${currentRule.truckType}(${currentRule.minPoint}-${currentRule.maxPoint}) と ${nextRule.truckType}(${nextRule.minPoint}-${nextRule.maxPoint}) の間が連続していません`);
-          errorIds.add(currentRule.id);
-          errorIds.add(nextRule.id);
-        }
-      }
-    }
-    return { isValid: errors.length === 0, errors, errorIds };
-  };
 
 
 
@@ -833,9 +794,9 @@ export default function PricingRatesPage() {
       const bValue = b[sortField];
 
       // undefinedの場合は最後に配置
-      if (aValue === undefined && bValue === undefined) return 0;
-      if (aValue === undefined) return 1;
-      if (bValue === undefined) return -1;
+      if (aValue === undefined && bValue === undefined) {return 0;}
+      if (aValue === undefined) {return 1;}
+      if (bValue === undefined) {return -1;}
 
       // 数値の場合は数値として比較
       if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -863,7 +824,7 @@ export default function PricingRatesPage() {
   };
 
   const getSortIcon = (field: 'truckType' | 'minPoint' | 'maxPoint' | 'price') => {
-    if (sortField !== field) return '↕️';
+    if (sortField !== field) {return '↕️';}
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
@@ -877,14 +838,6 @@ export default function PricingRatesPage() {
     alert('荷物ポイント設定を保存しました！');
   };
 
-  // handleNextでバリデーションエラーを画面上部に表示
-  const handleNext = () => {
-    const validation = validatePricing();
-    setPricingErrors(validation.errors);
-    setRowErrorIds(validation.errorIds);
-    if (!validation.isValid) return;
-    router.push('/pricing/season');
-  };
 
 
   // 配車管理画面へ遷移
@@ -1075,7 +1028,7 @@ export default function PricingRatesPage() {
                       <div className="space-y-4">
                         {ITEM_CATEGORIES.map(category => {
                           const categoryItems = filteredItems.filter(item => item.category === category.category);
-                          if (categoryItems.length === 0) return null;
+                          if (categoryItems.length === 0) {return null;}
 
                           return (
                             <div key={category.category} className="border border-gray-200 rounded-lg p-4">
@@ -1259,8 +1212,8 @@ export default function PricingRatesPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {sortPricingRules(pricingRules).map((rule, index) => (
-                              <tr key={rule.id} className={`hover:bg-gray-50 ${rowErrorIds.has(rule.id) ? 'border-2 border-red-500' : ''}`}>
+                            {sortPricingRules(pricingRules).map((rule, _index) => (
+                              <tr key={rule.id} className="hover:bg-gray-50">
                                 <td className="border border-gray-200 px-4 py-2">
                                   <select
                                     value={rule.truckType}
@@ -1527,7 +1480,7 @@ export default function PricingRatesPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {options.map((opt, idx) => (
+                        {options.map((opt, _idx) => (
                           <tr key={opt.id} className="hover:bg-gray-50">
                             <td className="border border-gray-200 px-4 py-2">
                               {opt.isDefault ? (

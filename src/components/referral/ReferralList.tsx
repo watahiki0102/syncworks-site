@@ -5,20 +5,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { DataTable, TableColumn, TableSort } from '@/components/ui/DataTable';
-import { Button } from '@/components/ui/Button';
+import { DataTable, TableSort } from '@/components/ui/DataTable';
 import { SearchFilter } from '@/components/ui/SearchFilter';
 import { Card } from '@/components/ui/Card';
-import { Heading } from '@/components/ui/Typography';
 import { StatusBadge, StatusVariant } from '@/components/ui/StatusBadge';
 import ReferralDetailPanel from './ReferralDetailPanel';
-import { 
-  ReferralCase, 
-  ReferralStatus, 
-  ReferrerType, 
+import {
+  ReferralCase,
+  ReferralStatus,
+  ReferrerType,
   ReferralFilter,
-  ReferralSort,
-  ReferralSearchParams
+  ReferralSort
 } from '@/types/referral';
 import { 
   Building2,
@@ -36,7 +33,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
   const [selectedReferral, setSelectedReferral] = useState<ReferralCase | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<ReferralFilter>({});
+  const [filters, _setFilters] = useState<ReferralFilter>({});
   const [sort, setSort] = useState<ReferralSort>({ key: 'updatedAt', direction: 'desc' });
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,7 +102,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
 
   // フィルタリングとソート
   const filteredAndSortedReferrals = useMemo(() => {
-    let filtered = referrals.filter(referral => {
+    const filtered = referrals.filter(referral => {
       // 検索クエリによるフィルタリング
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -115,17 +112,17 @@ const ReferralList: React.FC<ReferralListProps> = ({
           referral.customer.area.toLowerCase().includes(query) ||
           referral.customer.anonymousId.toLowerCase().includes(query);
         
-        if (!matchesSearch) return false;
+        if (!matchesSearch) {return false;}
       }
 
       // ステータスフィルター
       if (filters.status && filters.status.length > 0) {
-        if (!filters.status.includes(referral.status)) return false;
+        if (!filters.status.includes(referral.status)) {return false;}
       }
 
       // 紹介者種別フィルター
       if (filters.referrerType && filters.referrerType.length > 0) {
-        if (!filters.referrerType.includes(referral.referrerType)) return false;
+        if (!filters.referrerType.includes(referral.referrerType)) {return false;}
       }
 
       // 日付範囲フィルター
@@ -134,7 +131,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
         const startDate = new Date(filters.dateRange.start);
         const endDate = new Date(filters.dateRange.end);
         
-        if (applicationDate < startDate || applicationDate > endDate) return false;
+        if (applicationDate < startDate || applicationDate > endDate) {return false;}
       }
 
       // 紹介者名フィルター
@@ -151,13 +148,16 @@ const ReferralList: React.FC<ReferralListProps> = ({
     filtered.sort((a, b) => {
       const aValue = a[sort.key];
       const bValue = b[sort.key];
-      
-      if (aValue == null && bValue == null) return 0;
-      if (aValue == null) return sort.direction === 'asc' ? 1 : -1;
-      if (bValue == null) return sort.direction === 'asc' ? -1 : 1;
-      
-      if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1;
+
+      const aIsEmpty = aValue === null || aValue === undefined;
+      const bIsEmpty = bValue === null || bValue === undefined;
+
+      if (aIsEmpty && bIsEmpty) {return 0;}
+      if (aIsEmpty) {return sort.direction === 'asc' ? 1 : -1;}
+      if (bIsEmpty) {return sort.direction === 'asc' ? -1 : 1;}
+
+      if (aValue < bValue) {return sort.direction === 'asc' ? -1 : 1;}
+      if (aValue > bValue) {return sort.direction === 'asc' ? 1 : -1;}
       return 0;
     });
 
@@ -291,7 +291,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
   ];
 
   // イベントハンドラー
-  const handleRowClick = (item: any, index: number) => {
+  const handleRowClick = (item: any, _index: number) => {
     setSelectedReferral(item as ReferralCase);
     setIsDetailPanelOpen(true);
   };

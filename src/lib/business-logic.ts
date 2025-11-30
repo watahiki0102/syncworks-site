@@ -27,7 +27,7 @@ export const movingEstimateLogic = {
     const { distance, items, timeSlot, selectedOptions, moveDate, taxRate } = params;
 
     // バリデーション
-    if (distance <= 0) throw new Error('移動距離は0より大きい必要があります');
+    if (distance <= 0) {throw new Error('移動距離は0より大きい必要があります');}
     
     // 日付バリデーション：テスト環境では日付制限を緩和
     if (process.env.NODE_ENV !== 'test') {
@@ -159,10 +159,10 @@ export const customerManagementLogic = {
 
     // 必須フィールドチェック
     const requiredError = validationUtils.validateRequired(customerData.lastName, '姓');
-    if (requiredError) errors.push(requiredError);
+    if (requiredError) {errors.push(requiredError);}
 
     const firstNameError = validationUtils.validateRequired(customerData.firstName, '名');
-    if (firstNameError) errors.push(firstNameError);
+    if (firstNameError) {errors.push(firstNameError);}
 
     // メールアドレス検証
     if (customerData.email && !validationUtils.isValidEmail(customerData.email)) {
@@ -244,9 +244,9 @@ export const customerManagementLogic = {
 
     // リスクレベル判定
     let riskLevel: 'low' | 'medium' | 'high';
-    if (riskScore <= 1) riskLevel = 'low';
-    else if (riskScore <= 3) riskLevel = 'medium';
-    else riskLevel = 'high';
+    if (riskScore <= 1) {riskLevel = 'low';}
+    else if (riskScore <= 3) {riskLevel = 'medium';}
+    else {riskLevel = 'high';}
 
     return {
       riskScore,
@@ -329,9 +329,9 @@ export const fleetManagementLogic = {
  */
 function calculateBaseRateFromPoints(points: number): number {
   // ポイント数に応じた基本料金率の計算ロジック
-  if (points <= 50) return 800;
-  if (points <= 100) return 1000;
-  if (points <= 200) return 1200;
+  if (points <= 50) {return 800;}
+  if (points <= 100) {return 1000;}
+  if (points <= 200) {return 1200;}
   return 1500;
 }
 

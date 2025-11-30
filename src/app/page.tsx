@@ -6,23 +6,20 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { 
-  Handshake, 
-  Calculator, 
-  Settings, 
-  ArrowRight, 
-  Star, 
-  CheckCircle, 
-  Truck,
+import {
+  Handshake,
+  Calculator,
+  Settings,
+  ArrowRight,
+  Star,
   Shield,
-  Clock,
   Zap
 } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { AnimatedText, AnimatedCard, ParticleBackground } from '@/components/animations';
-import { TEST_STATS, TEST_FEATURES } from '@/constants/testData';
+import { TEST_FEATURES } from '@/constants/testData';
 
 export default function Home() {
   const { scrollY } = useScroll();

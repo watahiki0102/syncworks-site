@@ -177,17 +177,17 @@ export default function QuoteRequestsPage() {
       if (statusFilter !== 'all' && request.status !== statusFilter) {
         return false;
       }
-      
+
       if (searchTerm) {
         const managementNumber = getManagementNumber(request.sourceType, request.id);
         const matchesCustomerName = request.customer.customerName.includes(searchTerm);
         const matchesManagementNumber = managementNumber.includes(searchTerm);
-        
+
         if (!matchesCustomerName && !matchesManagementNumber) {
           return false;
         }
       }
-      
+
       return true;
     });
 
@@ -199,10 +199,16 @@ export default function QuoteRequestsPage() {
     const deadlineDate = new Date(deadline);
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) return 'border-red-500'; // 期限当日・超過
-    if (diffDays === 1) return 'border-red-500'; // 期限前日
-    if (diffDays === 2) return 'border-yellow-500'; // 期限前々日
+
+    if (diffDays <= 0) {
+      return 'border-red-500'; // 期限当日・超過
+    }
+    if (diffDays === 1) {
+      return 'border-red-500'; // 期限前日
+    }
+    if (diffDays === 2) {
+      return 'border-yellow-500'; // 期限前々日
+    }
     return 'border-gray-300'; // 通常
   };
 
@@ -211,10 +217,16 @@ export default function QuoteRequestsPage() {
     const deadlineDate = new Date(deadline);
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) return `期限超過 ${Math.abs(diffDays)}日`;
-    if (diffDays === 1) return '期限前日';
-    if (diffDays === 2) return '期限前々日';
+
+    if (diffDays <= 0) {
+      return `期限超過 ${Math.abs(diffDays)}日`;
+    }
+    if (diffDays === 1) {
+      return '期限前日';
+    }
+    if (diffDays === 2) {
+      return '期限前々日';
+    }
     return `残り${diffDays}日`;
   };
 
@@ -266,7 +278,9 @@ export default function QuoteRequestsPage() {
   };
 
   const submitResponse = () => {
-    if (!selectedRequest) return;
+    if (!selectedRequest) {
+      return;
+    }
     
     // 回答完了処理
     setRequests(requests.map(r => 
@@ -286,7 +300,7 @@ export default function QuoteRequestsPage() {
 
 
   // トラック割り当てモーダル用の関数
-  const assignTruckToSubmission = (submissionId: string, truckAssignment: any) => {
+  const assignTruckToSubmission = (_submissionId: string, _truckAssignment: any) => {
     setShowTruckAssignmentModal(false);
   };
 

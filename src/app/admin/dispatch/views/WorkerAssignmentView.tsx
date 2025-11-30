@@ -3,9 +3,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDrop } from 'react-dnd';
 import { formatDate } from '@/utils/dateTimeUtils';
-import { Truck, Schedule, WorkerRef, WorkerAssignment, ScheduleId } from '@/types/dispatch';
+import { Truck, WorkerRef, WorkerAssignment, ScheduleId } from '@/types/dispatch';
 import TruckColumn from '../components/worker-assignment/TruckColumn';
 import AssignDrawer from '../components/worker-assignment/AssignDrawer';
 import WorkerPool from '../components/worker-assignment/WorkerPool';
@@ -55,13 +54,13 @@ export default function WorkerAssignmentView({
 
   // フィルタリングされたトラック
   const filteredTrucks = useMemo(() => {
-    if (truckFilter === 'all') return dateSchedules;
+    if (truckFilter === 'all') {return dateSchedules;}
     return dateSchedules.filter(truck => truck.truckType === truckFilter);
   }, [dateSchedules, truckFilter]);
 
   // フィルタリングされた作業者
   const filteredWorkers = useMemo(() => {
-    if (workerFilter === 'all') return mockWorkers;
+    if (workerFilter === 'all') {return mockWorkers;}
     return mockWorkers.filter(worker => worker.role === workerFilter);
   }, [workerFilter]);
 
@@ -95,12 +94,11 @@ export default function WorkerAssignmentView({
       if (truck) {
         const updatedTruck = {
           ...truck,
-          schedules: truck.schedules.map(schedule => 
+          schedules: truck.schedules.map(schedule =>
             schedule.id === payload.scheduleId
               ? {
                   ...schedule,
                   workerAssignments: payload.employeeIds.map(empId => {
-                    const worker = mockWorkers.find(w => w.id === empId);
                     return {
                       scheduleId: payload.scheduleId,
                       employeeId: empId,
@@ -112,7 +110,7 @@ export default function WorkerAssignmentView({
               : schedule
           )
         };
-        
+
         onUpdateTruck(updatedTruck);
       }
       

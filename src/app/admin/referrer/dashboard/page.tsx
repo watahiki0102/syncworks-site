@@ -12,7 +12,7 @@ import AdminAuthGuard from '@/components/AdminAuthGuard';
 import { AdminLayout, AdminCard, AdminBadge } from '@/components/admin';
 
 export default function ReferrerDashboardPage() {
-  const [adminEmail, setAdminEmail] = useState('');
+  const [_adminEmail, setAdminEmail] = useState('');
   const router = useRouter();
 
   useEffect(() => {

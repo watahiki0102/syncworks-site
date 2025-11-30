@@ -12,7 +12,7 @@ export default function EstimatePDFButton({ caseId, draftPayload, disabled = fal
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGeneratePDF = async () => {
-    if (disabled) return;
+    if (disabled) {return;}
     
     setIsGenerating(true);
     try {

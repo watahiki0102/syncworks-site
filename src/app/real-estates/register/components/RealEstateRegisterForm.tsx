@@ -80,7 +80,7 @@ export function RealEstateRegisterForm({ mode, referrer }: RealEstateRegisterFor
       }));
     } else if (mode === 'self' && formData.referral) {
       setFormData(prev => {
-        const { referral, ...rest } = prev;
+        const { referral: _referral, ...rest } = prev;
         return rest;
       });
     }
@@ -225,7 +225,7 @@ export function RealEstateRegisterForm({ mode, referrer }: RealEstateRegisterFor
         const errorData = await response.json();
         setErrors({ submit: errorData.message || '送信に失敗しました。再度お試しください。' });
       }
-    } catch (error) {
+    } catch {
       setErrors({ submit: '送信に失敗しました。再度お試しください。' });
     } finally {
       setIsLoading(false);

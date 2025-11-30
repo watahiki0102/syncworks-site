@@ -8,7 +8,6 @@
 
 import { useState, useEffect } from 'react';
 import { formatTime } from '@/utils/dateTimeUtils';
-import { TRUCK_STATUS_LABELS, TRUCK_STATUS_COLORS } from '../constants/truckStatus';
 import { Truck, Schedule } from '../types/dispatch';
 
 interface TruckRegistrationProps {
@@ -30,7 +29,7 @@ export default function TruckRegistration({
   onDeleteTruck,
   onSelectTruck,
   availableTruckTypes,
-  pricingRules = []
+  pricingRules: _pricingRules = []
 }: TruckRegistrationProps) {
   const [formData, setFormData] = useState({
     name: '',

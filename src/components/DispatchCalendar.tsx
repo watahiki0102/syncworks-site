@@ -9,41 +9,19 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate, formatTime, toLocalDateString } from '@/utils/dateTimeUtils';
-import { WEEKDAYS_JA } from '@/constants/calendar';
-import CaseDetail from './CaseDetail';
 import DayViewComponent from './dispatch/DayView';
 import StatusFilter from './dispatch/StatusFilter';
 import GridCalendar from './GridCalendar';
 import { CaseDetail as CaseDetailType } from '../types/case';
 import { Truck, Schedule } from '../types/dispatch';
-import UnifiedMonthCalendar, { CalendarDay, CalendarEvent } from './UnifiedMonthCalendar';
-import { fetchHolidays, isHoliday as checkIsHoliday, type Holiday } from '@/utils/holidayUtils';
-
-interface Option {
-  name: string;
-  price?: number;
-}
-
-interface TimeBlock {
-  time: string;
-  hour: number;
-  minute: number;
-}
-
-interface TimeSlot {
-  time: string;
-  label: string;
-  start: string;
-  end: string;
-}
 
 type ViewMode = 'month' | 'day';
 
 interface FormSubmission {
   id: string;
   customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  customerEmail?: string;
+  customerPhone?: string;
   moveDate: string;
   preferredDate1?: string; // 第一希望日
   preferredDate2?: string; // 第二希望日
@@ -57,7 +35,12 @@ interface FormSubmission {
   totalCapacity?: number; // 総容量（kg）
   distance?: number; // 距離（km）
   itemList?: string[]; // 荷物リスト
-  truckAssignments: any[];
+  truckAssignments: Array<{
+    truckId: string;
+    scheduleId?: string;
+    startTime?: string;
+    endTime?: string;
+  }>;
   contractStatus: 'estimate' | 'confirmed';
   estimatedPrice?: number;
   recommendedTruckTypes?: string[];
@@ -89,22 +72,16 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showScheduleDetail, setShowScheduleDetail] = useState(false);
+  const [_showScheduleDetail, _setShowScheduleDetail] = useState(false);
 
   const [highlightedScheduleId, setHighlightedScheduleId] = useState<string | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [isExpandedView, setIsExpandedView] = useState(false);
   const [monthViewFilterType, setMonthViewFilterType] = useState<'all' | 'confirmed' | 'unconfirmed' | 'unassigned'>('all');
-  const [prefillTime, setPrefillTime] = useState<{start?: string; end?: string}>({});
+  const [prefillTime, _setPrefillTime] = useState<{start?: string; end?: string}>({});
 
   // 日ビュー用のステータスフィルタ状態管理
   const [dayViewStatusFilter, setDayViewStatusFilter] = useState<'all' | 'confirmed' | 'estimate'>('all');
-
-  // 祝日データを取得
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  useEffect(() => {
-    fetchHolidays().then(setHolidays);
-  }, []);
 
   // URLクエリパラメータとの同期
   useEffect(() => {
@@ -171,11 +148,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     };
   }, [isExpandedView, expandedDate]);
 
-  // 案件ハイライト機能
-  const handleScheduleClick = (scheduleId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setHighlightedScheduleId(scheduleId);
-  };
 
   // selectedDateの変更を監視
   useEffect(() => {
@@ -200,145 +172,23 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
         setHighlightedScheduleId(null);
       }, 3000); // 3秒後にハイライトを消す
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     }
+    return undefined;
   }, [highlightedScheduleId]);
 
-  /**
-   * 1時間単位の時間ブロック配列を生成
-   * @returns TimeBlock[]
-   */
-  const generateTimeBlocks = () => {
-    const blocks: TimeBlock[] = [];
-            for (let hour = 9; hour < 19; hour++) {
-      const time = `${hour.toString().padStart(2, '0')}:00`;
-      blocks.push({ time, hour, minute: 0 });
-    }
-    return blocks;
-  };
 
 
-  const timeBlocks = generateTimeBlocks();
 
 
-  /**
-   * 指定月のカレンダー表示用日付配列を返す
-   * @param date - 基準日
-   * @returns カレンダー表示用日付配列
-   */
-  const getMonthDays = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-
-    // 前月の日付を追加
-    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      const prevMonthLastDay = new Date(year, month, 0).getDate();
-      const prevDate = new Date(year, month - 1, prevMonthLastDay - i);
-      days.push({
-        date: toLocalDateString(prevDate),
-        day: prevDate.getDate(),
-        dayOfWeek: WEEKDAYS_JA[prevDate.getDay()],
-        dayOfWeekNumber: prevDate.getDay(),
-        isCurrentMonth: false,
-        isToday: prevDate.toDateString() === new Date().toDateString(),
-        isHoliday: isHoliday(prevDate),
-      });
-    }
-
-    // 当月の日付を追加
-    for (let day = 1; day <= daysInMonth; day++) {
-      const currentDate = new Date(year, month, day);
-      days.push({
-        date: toLocalDateString(currentDate),
-        day: day,
-        dayOfWeek: WEEKDAYS_JA[currentDate.getDay()],
-        dayOfWeekNumber: currentDate.getDay(),
-        isCurrentMonth: true,
-        isToday: currentDate.toDateString() === new Date().toDateString(),
-        isHoliday: isHoliday(currentDate),
-      });
-    }
-
-    // 翌月の日付を追加（6週分になるように）
-    const remainingDays = 42 - days.length;
-    for (let day = 1; day <= remainingDays; day++) {
-      const nextDate = new Date(year, month + 1, day);
-      days.push({
-        date: toLocalDateString(nextDate),
-        day: nextDate.getDate(),
-        dayOfWeek: WEEKDAYS_JA[nextDate.getDay()],
-        dayOfWeekNumber: nextDate.getDay(),
-        isCurrentMonth: false,
-        isToday: nextDate.toDateString() === new Date().toDateString(),
-        isHoliday: isHoliday(nextDate),
-      });
-    }
-
-    return days;
-  };
-
-  /**
-   * 日ビュー用の日付情報を返す
-   * @param date - 基準日
-   * @returns 日付情報
-   */
-  /**
- * 祝日かどうかを判定する関数（API経由で動的に取得）
- * @param date - 判定する日付
- * @returns 祝日かどうか
- */
-  const isHoliday = (date: Date) => {
-    return checkIsHoliday(date, holidays);
-  };
-
-  const getDayInfo = (date: Date) => {
-    return {
-      date: toLocalDateString(date),
-      day: date.getDate(),
-              dayOfWeek: WEEKDAYS_JA[date.getDay()],
-      dayOfWeekNumber: date.getDay(),
-      isToday: date.toDateString() === new Date().toDateString(),
-      isHoliday: isHoliday(date),
-    };
-  };
-
-  const monthDays = getMonthDays(currentDate);
-  const dayInfo = getDayInfo(currentDate);
-  
   // トラックデータの監視
   useEffect(() => {
     // Trucks data updated
   }, [trucks]);
 
 
-  /**
-   * 指定された日付と時間のスケジュールを取得
-   * @param date - 日付文字列
-   * @param time - 時間文字列
-   * @returns 該当するスケジュール配列
-   */
-  const getSchedulesForDateTime = (date: string, time: string) => {
-    return trucks.flatMap(truck =>
-      truck.schedules
-        .filter(schedule => schedule.date === date)
-        .filter(schedule => {
-          const scheduleStart = schedule.startTime;
-          const scheduleEnd = schedule.endTime;
-          return time >= scheduleStart && time < scheduleEnd;
-        })
-        .map(schedule => ({
-          ...schedule,
-          truckName: truck.name,
-          truckId: truck.id,
-        }))
-    );
-  };
 
   /**
    * 時間ブロックの背景色を決定
@@ -424,7 +274,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!selectedTruck) return;
+      if (!selectedTruck) {
+        return;
+      }
 
       const newSchedule: Schedule = {
         ...formData,
@@ -466,7 +318,9 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       }));
     };
 
-    if (!showScheduleModal) return null;
+    if (!showScheduleModal) {
+      return null;
+    }
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -539,7 +393,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'available' | 'maintenance' }))}
                   className="w-full p-2 border rounded"
                 >
                   <option value="available">稼働中</option>
@@ -550,7 +404,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 <label className="block text-sm font-medium text-gray-700 mb-1">契約ステータス</label>
                 <select
                   value={formData.contractStatus}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contractStatus: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contractStatus: e.target.value as 'estimate' | 'confirmed' }))}
                   className="w-full p-2 border rounded"
                 >
                   <option value="estimate">未確定</option>
@@ -575,7 +429,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 <label className="block text-sm font-medium text-gray-700 mb-1">作業タイプ</label>
                 <select
                   value={formData.workType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, workType: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, workType: e.target.value as 'loading' | 'moving' | 'unloading' | 'maintenance' }))}
                   className="w-full p-2 border rounded"
                 >
                   <option value="loading">積込</option>
@@ -668,7 +522,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 <label className="block text-sm font-medium text-gray-700 mb-1">支払方法</label>
                 <select
                   value={formData.paymentMethod}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value as 'cash' | 'card' | 'transfer' | 'invoice' }))}
                   className="w-full p-2 border rounded"
                 >
                   <option value="cash">現金</option>
@@ -681,7 +535,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 <label className="block text-sm font-medium text-gray-700 mb-1">支払状況</label>
                 <select
                   value={formData.paymentStatus}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentStatus: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, paymentStatus: e.target.value as 'pending' | 'partial' | 'paid' }))}
                   className="w-full p-2 border rounded"
                 >
                   <option value="pending">未払い</option>
@@ -790,12 +644,6 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
   // 月ビュー
   const MonthView = () => {
-    const handleAddSchedule = (truck: Truck, date: string) => {
-      setSelectedTruck(truck);
-      setSelectedDate(date);
-      setSelectedSchedule(null);
-      setShowScheduleModal(true);
-    };
 
     const getSchedulesForDate = (date: string) => {
       return trucks.flatMap(truck =>
@@ -875,11 +723,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
     // 月ビュー用スケジュール一覧モーダル
     const MonthScheduleModal = ({ date, schedules, onClose }: {
       date: string;
-      schedules: any[];
+      schedules: Array<Record<string, unknown>>;
       onClose: () => void;
     }) => {
       const formatPrefMunicipality = (addr?: string) => {
-        if (!addr) return '-';
+        if (!addr) {
+          return '-';
+        }
         const prefMatch = addr.match(/^(.*?[都道府県])/);
         const afterPref = addr.replace(/^(.*?[都道府県])/, '');
         const muniMatch = afterPref.match(/^(.*?[市区町村])/);
@@ -914,6 +764,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
       // scheduleには時間情報があるが、未割当案件にはないので区別するため
       interface DisplayItem {
         type: 'schedule' | 'unassigned';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: any;
         contractStatus: 'confirmed' | 'estimate';
         isUnassigned: boolean;
@@ -970,13 +821,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
         title = `${formatDate(date)} の未割当案件 (${displayItems.length}件)`;
       } else {
         // 全て：配車割当済み + 未割当
-        const scheduleItems = schedules.map(s => ({
+        const scheduleItems: DisplayItem[] = schedules.map(s => ({
           type: 'schedule' as const,
           data: s,
-          contractStatus: s.contractStatus,
+          contractStatus: (s.contractStatus || 'estimate') as 'confirmed' | 'estimate',
           isUnassigned: false
         }));
-        const unassignedItems = unassignedCases.map(s => ({
+        const unassignedItems: DisplayItem[] = unassignedCases.map(s => ({
           type: 'unassigned' as const,
           data: s,
           contractStatus: s.contractStatus,
@@ -1078,7 +929,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                             <span className="text-xs text-gray-700 font-medium">
                               🚚 {assignedTruckName}
                             </span>
-                            {onAssignTruck && (
+                            {onAssignTruck && trucks.length > 0 && submission && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1256,7 +1107,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
     // 案件詳細モーダルの状態
     const [showCaseDetailModal, setShowCaseDetailModal] = useState(false);
-    const [selectedCaseDetail, setSelectedCaseDetail] = useState<FormSubmission | null>(null);
+    const [_selectedCaseDetail, _setSelectedCaseDetail] = useState<FormSubmission | null>(null);
 
     return (
       <div>
@@ -1293,7 +1144,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
         </div>
 
         {/* 案件詳細モーダル */}
-        {showCaseDetailModal && selectedCaseDetail && (
+        {showCaseDetailModal && _selectedCaseDetail && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={() => setShowCaseDetailModal(false)}
@@ -1311,13 +1162,13 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
                       <span className={`text-sm px-3 py-1 rounded ${
-                        selectedCaseDetail.contractStatus === 'confirmed'
+                        _selectedCaseDetail.contractStatus === 'confirmed'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {selectedCaseDetail.contractStatus === 'confirmed' ? '確定' : '未確定'}
+                        {_selectedCaseDetail.contractStatus === 'confirmed' ? '確定' : '未確定'}
                       </span>
-                      {(!selectedCaseDetail.truckAssignments || selectedCaseDetail.truckAssignments.length === 0) && (
+                      {(!_selectedCaseDetail.truckAssignments || _selectedCaseDetail.truckAssignments.length === 0) && (
                         <span className="text-sm px-3 py-1 rounded bg-yellow-100 text-yellow-800">
                           未割当
                         </span>
@@ -1338,18 +1189,18 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex">
                       <span className="w-32 text-sm text-gray-600">氏名:</span>
-                      <span className="text-sm font-medium text-gray-900">{selectedCaseDetail.customerName}</span>
+                      <span className="text-sm font-medium text-gray-900">{_selectedCaseDetail.customerName}</span>
                     </div>
-                    {selectedCaseDetail.customerPhone && (
+                    {_selectedCaseDetail.customerPhone && (
                       <div className="flex">
                         <span className="w-32 text-sm text-gray-600">電話番号:</span>
-                        <span className="text-sm text-gray-900">{selectedCaseDetail.customerPhone}</span>
+                        <span className="text-sm text-gray-900">{_selectedCaseDetail.customerPhone}</span>
                       </div>
                     )}
-                    {selectedCaseDetail.customerEmail && (
+                    {_selectedCaseDetail.customerEmail && (
                       <div className="flex">
                         <span className="w-32 text-sm text-gray-600">メール:</span>
-                        <span className="text-sm text-gray-900">{selectedCaseDetail.customerEmail}</span>
+                        <span className="text-sm text-gray-900">{_selectedCaseDetail.customerEmail}</span>
                       </div>
                     )}
                   </div>
@@ -1361,35 +1212,35 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                   <div className="bg-blue-50 rounded-lg p-4 space-y-2">
                     <div className="flex">
                       <span className="w-32 text-sm text-gray-600">予定日:</span>
-                      <span className="text-sm font-medium text-blue-900">{selectedCaseDetail.moveDate}</span>
+                      <span className="text-sm font-medium text-blue-900">{_selectedCaseDetail.moveDate}</span>
                     </div>
-                    {(selectedCaseDetail.preferredDate1 || selectedCaseDetail.preferredDate2 || selectedCaseDetail.preferredDate3) && (
+                    {(_selectedCaseDetail.preferredDate1 || _selectedCaseDetail.preferredDate2 || _selectedCaseDetail.preferredDate3) && (
                       <div className="mt-3 pt-3 border-t border-blue-200">
                         <div className="text-sm font-medium text-blue-800 mb-2">希望日</div>
-                        {selectedCaseDetail.preferredDate1 && (
+                        {_selectedCaseDetail.preferredDate1 && (
                           <div className="flex ml-4 mb-1">
                             <span className="w-28 text-sm text-blue-600">第一希望:</span>
                             <span className="text-sm text-gray-900">
-                              {selectedCaseDetail.preferredDate1}
-                              {selectedCaseDetail.moveTime1 && ` (${selectedCaseDetail.moveTime1})`}
+                              {_selectedCaseDetail.preferredDate1}
+                              {_selectedCaseDetail.moveTime1 && ` (${_selectedCaseDetail.moveTime1})`}
                             </span>
                           </div>
                         )}
-                        {selectedCaseDetail.preferredDate2 && (
+                        {_selectedCaseDetail.preferredDate2 && (
                           <div className="flex ml-4 mb-1">
                             <span className="w-28 text-sm text-blue-600">第二希望:</span>
                             <span className="text-sm text-gray-900">
-                              {selectedCaseDetail.preferredDate2}
-                              {selectedCaseDetail.moveTime2 && ` (${selectedCaseDetail.moveTime2})`}
+                              {_selectedCaseDetail.preferredDate2}
+                              {_selectedCaseDetail.moveTime2 && ` (${_selectedCaseDetail.moveTime2})`}
                             </span>
                           </div>
                         )}
-                        {selectedCaseDetail.preferredDate3 && (
+                        {_selectedCaseDetail.preferredDate3 && (
                           <div className="flex ml-4">
                             <span className="w-28 text-sm text-blue-600">第三希望:</span>
                             <span className="text-sm text-gray-900">
-                              {selectedCaseDetail.preferredDate3}
-                              {selectedCaseDetail.moveTime3 && ` (${selectedCaseDetail.moveTime3})`}
+                              {_selectedCaseDetail.preferredDate3}
+                              {_selectedCaseDetail.moveTime3 && ` (${_selectedCaseDetail.moveTime3})`}
                             </span>
                           </div>
                         )}
@@ -1404,11 +1255,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                   <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                     <div>
                       <span className="text-sm font-medium text-blue-600">発地:</span>
-                      <p className="text-sm text-gray-900 mt-1 ml-4">{selectedCaseDetail.originAddress}</p>
+                      <p className="text-sm text-gray-900 mt-1 ml-4">{_selectedCaseDetail.originAddress}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-red-600">着地:</span>
-                      <p className="text-sm text-gray-900 mt-1 ml-4">{selectedCaseDetail.destinationAddress}</p>
+                      <p className="text-sm text-gray-900 mt-1 ml-4">{_selectedCaseDetail.destinationAddress}</p>
                     </div>
                   </div>
                 </div>
@@ -1419,86 +1270,86 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                   <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                     <div className="flex">
                       <span className="w-32 text-sm text-gray-600">荷物ポイント:</span>
-                      <span className="text-sm font-medium text-gray-900">{selectedCaseDetail.totalPoints} pt</span>
+                      <span className="text-sm font-medium text-gray-900">{_selectedCaseDetail.totalPoints} pt</span>
                     </div>
-                    {selectedCaseDetail.totalCapacity && (
+                    {_selectedCaseDetail.totalCapacity && (
                       <div className="flex">
                         <span className="w-32 text-sm text-gray-600">総容量:</span>
-                        <span className="text-sm text-gray-900">{selectedCaseDetail.totalCapacity} kg</span>
+                        <span className="text-sm text-gray-900">{_selectedCaseDetail.totalCapacity} kg</span>
                       </div>
                     )}
-                    {selectedCaseDetail.distance && (
+                    {_selectedCaseDetail.distance && (
                       <div className="flex">
                         <span className="w-32 text-sm text-gray-600">移動距離:</span>
-                        <span className="text-sm text-gray-900">{selectedCaseDetail.distance} km</span>
+                        <span className="text-sm text-gray-900">{_selectedCaseDetail.distance} km</span>
                       </div>
                     )}
-                    {selectedCaseDetail.recommendedTruckTypes && selectedCaseDetail.recommendedTruckTypes.length > 0 && (
+                    {_selectedCaseDetail.recommendedTruckTypes && _selectedCaseDetail.recommendedTruckTypes.length > 0 && (
                       <div className="flex">
                         <span className="w-32 text-sm text-gray-600">推奨トラック:</span>
-                        <span className="text-sm text-blue-600">{selectedCaseDetail.recommendedTruckTypes.join(', ')}</span>
+                        <span className="text-sm text-blue-600">{_selectedCaseDetail.recommendedTruckTypes.join(', ')}</span>
                       </div>
                     )}
-                    {selectedCaseDetail.itemList && selectedCaseDetail.itemList.length > 0 && (
+                    {_selectedCaseDetail.itemList && _selectedCaseDetail.itemList.length > 0 && (
                       <div>
                         <span className="text-sm text-gray-600 font-medium block mb-2">荷物リスト:</span>
                         <div className="ml-4 grid grid-cols-2 gap-x-4 gap-y-1">
-                          {selectedCaseDetail.itemList.map((item, index) => (
+                          {_selectedCaseDetail.itemList.map((item, index) => (
                             <div key={index} className="text-sm text-gray-700">• {item}</div>
                           ))}
                         </div>
                       </div>
                     )}
-                    {selectedCaseDetail.additionalServices && selectedCaseDetail.additionalServices.length > 0 && (
+                    {_selectedCaseDetail.additionalServices && _selectedCaseDetail.additionalServices.length > 0 && (
                       <div>
                         <span className="text-sm text-gray-600 font-medium block mb-2">追加サービス:</span>
                         <div className="ml-4 space-y-1">
-                          {selectedCaseDetail.additionalServices.map((service, index) => (
+                          {_selectedCaseDetail.additionalServices.map((service, index) => (
                             <div key={index} className="text-sm text-gray-700">• {service}</div>
                           ))}
                         </div>
                       </div>
                     )}
-                    {selectedCaseDetail.customAdditionalServices && (
+                    {_selectedCaseDetail.customAdditionalServices && (
                       <div>
                         <span className="text-sm text-gray-600 font-medium block mb-2">カスタムサービス:</span>
-                        <div className="ml-4 text-sm text-gray-700">{selectedCaseDetail.customAdditionalServices}</div>
+                        <div className="ml-4 text-sm text-gray-700">{_selectedCaseDetail.customAdditionalServices}</div>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* 料金情報 */}
-                {(selectedCaseDetail.estimatedPrice || selectedCaseDetail.priceTaxIncluded) && (
+                {(_selectedCaseDetail.estimatedPrice || _selectedCaseDetail.priceTaxIncluded) && (
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">💰 料金情報</h4>
                     <div className="bg-green-50 rounded-lg p-4 space-y-2">
-                      {selectedCaseDetail.estimatedPrice && (
+                      {_selectedCaseDetail.estimatedPrice && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">見積金額:</span>
                           <span className="text-sm font-medium text-gray-900">
-                            ¥{selectedCaseDetail.estimatedPrice.toLocaleString()}
+                            ¥{_selectedCaseDetail.estimatedPrice.toLocaleString()}
                           </span>
                         </div>
                       )}
-                      {selectedCaseDetail.priceTaxIncluded && (
+                      {_selectedCaseDetail.priceTaxIncluded && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">税込金額:</span>
                           <span className="text-sm font-bold text-green-900">
-                            ¥{selectedCaseDetail.priceTaxIncluded.toLocaleString()}
+                            ¥{_selectedCaseDetail.priceTaxIncluded.toLocaleString()}
                           </span>
                         </div>
                       )}
-                      {selectedCaseDetail.paymentMethod && (
+                      {_selectedCaseDetail.paymentMethod && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">支払方法:</span>
-                          <span className="text-sm text-gray-900">{selectedCaseDetail.paymentMethod}</span>
+                          <span className="text-sm text-gray-900">{_selectedCaseDetail.paymentMethod}</span>
                         </div>
                       )}
-                      {selectedCaseDetail.paymentStatus && (
+                      {_selectedCaseDetail.paymentStatus && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">支払状況:</span>
-                          <span className="text-sm text-gray-900">{selectedCaseDetail.paymentStatus}</span>
+                          <span className="text-sm text-gray-900">{_selectedCaseDetail.paymentStatus}</span>
                         </div>
                       )}
                     </div>
@@ -1506,31 +1357,31 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                 )}
 
                 {/* 備考 */}
-                {selectedCaseDetail.notes && (
+                {_selectedCaseDetail.notes && (
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">📝 備考</h4>
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCaseDetail.notes}</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{_selectedCaseDetail.notes}</p>
                     </div>
                   </div>
                 )}
 
                 {/* その他の情報 */}
-                {(selectedCaseDetail.sourceType || selectedCaseDetail.createdAt) && (
+                {(_selectedCaseDetail.sourceType || _selectedCaseDetail.createdAt) && (
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">ℹ️ その他の情報</h4>
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                      {selectedCaseDetail.sourceType && (
+                      {_selectedCaseDetail.sourceType && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">依頼元:</span>
-                          <span className="text-sm text-gray-900">{selectedCaseDetail.sourceType}</span>
+                          <span className="text-sm text-gray-900">{_selectedCaseDetail.sourceType}</span>
                         </div>
                       )}
-                      {selectedCaseDetail.createdAt && (
+                      {_selectedCaseDetail.createdAt && (
                         <div className="flex">
                           <span className="w-32 text-sm text-gray-600">登録日時:</span>
                           <span className="text-sm text-gray-900">
-                            {new Date(selectedCaseDetail.createdAt).toLocaleString('ja-JP', {
+                            {new Date(_selectedCaseDetail.createdAt).toLocaleString('ja-JP', {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',
@@ -1546,11 +1397,11 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
 
                 {/* アクションボタン */}
                 <div className="flex gap-3 pt-4 border-t">
-                  {(!selectedCaseDetail.truckAssignments || selectedCaseDetail.truckAssignments.length === 0) && onAssignTruck && (
+                  {(!_selectedCaseDetail.truckAssignments || _selectedCaseDetail.truckAssignments.length === 0) && onAssignTruck && (
                     <button
                       onClick={() => {
                         setShowCaseDetailModal(false);
-                        onAssignTruck(selectedCaseDetail, trucks[0]);
+                        onAssignTruck(_selectedCaseDetail, trucks[0]);
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
                     >
@@ -1617,7 +1468,7 @@ export default function DispatchCalendar({ trucks, onUpdateTruck, statusFilter =
                    onEditCase={handleEditCase}
                    statusFilter={dayViewStatusFilter}
                    formSubmissions={formSubmissions}
-                   onAssignTruck={onAssignTruck}
+                   onAssignTruck={onAssignTruck as ((submission: FormSubmission, truck: Truck) => void) | undefined}
                  />
                </div>
              );

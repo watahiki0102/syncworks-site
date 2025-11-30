@@ -309,11 +309,11 @@ export function generateUnifiedTestData(): UnifiedCase[] {
           totalPoints: (itemSet.totalPoints || 0) + (i % 10)
         },
         type: 'request',
-        status: i < 10 ? '見積依頼' : requestStatuses[i % Math.max(requestStatuses.length, 1)] as any,
+        status: (i < 10 ? '見積依頼' : requestStatuses[i % Math.max(requestStatuses.length, 1)]) as UnifiedCaseStatus,
         requestDate,
         deadline,
-        priority: ['high', 'medium', 'low'][i % 3] as any,
-        sourceType: sourceType as any,
+        priority: ['high', 'medium', 'low'][i % 3] as 'high' | 'medium' | 'low',
+        sourceType: sourceType,
         packingDelivery: i % 3 !== 0, // 3件に1件は配送無し
         ...(i % 3 !== 0
           ? {
@@ -356,7 +356,7 @@ export function generateUnifiedTestData(): UnifiedCase[] {
           totalPoints: (itemSet.totalPoints || 0) + (i % 10)
         },
         type: 'history',
-        status: historyStatuses[i % Math.max(historyStatuses.length, 1)] as any,
+        status: historyStatuses[i % Math.max(historyStatuses.length, 1)] as UnifiedCaseStatus,
         responseDate,
         amountWithTax: amount,
         isReQuote: i % 7 === 0,
@@ -416,7 +416,7 @@ export function filterUnifiedCases(
     // 検索キーワードフィルター
     if (filter.searchTerm) {
       const searchTerm = filter.searchTerm.toLowerCase();
-      const managementNumber = getManagementNumber(caseItem.sourceType as any, caseItem.id);
+      const managementNumber = getManagementNumber(caseItem.sourceType, caseItem.id);
       
       const matchesCustomerName = caseItem.customer?.customerName?.toLowerCase().includes(searchTerm);
       const matchesManagementNumber = managementNumber.toLowerCase().includes(searchTerm);
@@ -438,15 +438,15 @@ export function filterUnifiedCases(
 export function sortUnifiedCases(cases: UnifiedCase[]): UnifiedCase[] {
   return cases.sort((a, b) => {
     // 1. 未回答を最優先
-    if (a.status === '見積依頼' && b.status !== '見積依頼') return -1;
-    if (a.status !== '見積依頼' && b.status === '見積依頼') return 1;
+    if (a.status === '見積依頼' && b.status !== '見積依頼') {return -1;}
+    if (a.status !== '見積依頼' && b.status === '見積依頼') {return 1;}
 
     // 2. 優先度順 (依頼データのみ)
     if (a.type === 'request' && b.type === 'request') {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       const aPriority = priorityOrder[a.priority || 'low'];
       const bPriority = priorityOrder[b.priority || 'low'];
-      if (aPriority !== bPriority) return bPriority - aPriority;
+      if (aPriority !== bPriority) {return bPriority - aPriority;}
     }
 
     // 3. 期限・日付順

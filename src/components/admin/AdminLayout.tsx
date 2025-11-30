@@ -55,7 +55,7 @@ export default function AdminLayout({
   const [adminEmail, setAdminEmail] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [pathname, setPathname] = useState('');
-  const [isClient, setIsClient] = useState(false);
+  const [_isClient, setIsClient] = useState(false);
   const router = useRouter();
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +95,7 @@ export default function AdminLayout({
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-      if (!window.confirm('本当にログアウトしますか？')) return;
+      if (!window.confirm('本当にログアウトしますか？')) {return;}
       localStorage.removeItem('adminLoggedIn');
       localStorage.removeItem('adminEmail');
       localStorage.removeItem('adminAutoLoginExpiry');
@@ -115,9 +115,9 @@ export default function AdminLayout({
    * ブレッドクラムを自動生成
    */
   const generateBreadcrumbs = () => {
-    if (breadcrumbs) return breadcrumbs;
+    if (breadcrumbs) {return breadcrumbs;}
 
-    if (!pathname) return [];
+    if (!pathname) {return [];}
 
     const pathSegments = pathname.split('/').filter(Boolean);
 

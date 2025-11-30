@@ -19,10 +19,10 @@ export const validators = {
   /**
    * 必須入力チェック
    */
-  required: (message: string = '必須項目です'): ValidationRule<string> => 
+  required: (message: string = '必須項目です'): ValidationRule<string> =>
     (value: string) => ({
-      isValid: value != null && value.trim() !== '',
-      message: value != null && value.trim() !== '' ? undefined : message
+      isValid: value !== null && value !== undefined && value.trim() !== '',
+      message: value !== null && value !== undefined && value.trim() !== '' ? undefined : message
     }),
 
   /**

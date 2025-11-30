@@ -103,12 +103,6 @@ export default function SimulationPanel({
     return 10; // デフォルトポイント
   };
 
-  const handleAddToSimulation = (itemId: string, itemName: string, points: number) => {
-    if (onAddItem) {
-      onAddItem(itemId, itemName, points);
-    }
-  };
-
   const toggleCategory = (category: string) => {
     setOpenCategories(prev => ({
       ...prev,
