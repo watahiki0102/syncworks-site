@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FormModal } from '@/components/ui/SimpleModal';
 import { Input } from '@/components/ui/Input';
@@ -11,7 +11,6 @@ interface TruckManagementProps {
   onTrucksChange: (trucks: Truck[]) => void;
 }
 
-const truckTypes = ['2t', '4t', '8t', '10t', '20t', '25t'];
 const truckStatuses = [
   { value: 'available', label: '利用可' },
   { value: 'maintenance', label: '整備中' },
@@ -110,6 +109,23 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps) {
   const [formState, dispatch] = useReducer(formReducer, initialFormState);
+  const [truckTypes, setTruckTypes] = useState<string[]>([]);
+
+  // 車種をAPIから取得（Supabase DB）
+  useEffect(() => {
+    const fetchTruckTypes = async () => {
+      try {
+        const response = await fetch('/api/truck-types');
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          setTruckTypes(result.data.map((t: { name: string }) => t.name));
+        }
+      } catch (error) {
+        console.error('車種取得エラー:', error);
+      }
+    };
+    fetchTruckTypes();
+  }, []);
 
 
   const validateForm = () => {
