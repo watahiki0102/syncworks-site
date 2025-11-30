@@ -11,8 +11,6 @@ interface TruckManagementProps {
   onTrucksChange: (trucks: Truck[]) => void;
 }
 
-// デフォルトの車種（APIから取得できない場合のフォールバック）
-const defaultTruckTypes = ['2t', '4t', '8t', '10t', '20t', '25t'];
 const truckStatuses = [
   { value: 'available', label: '利用可' },
   { value: 'maintenance', label: '整備中' },
@@ -111,7 +109,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps) {
   const [formState, dispatch] = useReducer(formReducer, initialFormState);
-  const [truckTypes, setTruckTypes] = useState<string[]>(defaultTruckTypes);
+  const [truckTypes, setTruckTypes] = useState<string[]>([]);
 
   // 車種をAPIから取得（Supabase DB）
   useEffect(() => {

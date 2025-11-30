@@ -93,6 +93,40 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * トラック種別削除
+ * DELETE /api/truck-types?id=xxx
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'IDが必要です' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.truck_types.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('トラック種別削除エラー:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'トラック種別の削除に失敗しました',
+        details: error instanceof Error ? error.message : '不明なエラー',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * トラック種別一括更新
  * PUT /api/truck-types
  */
