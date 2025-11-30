@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FormModal } from '@/components/ui/SimpleModal';
 import { Input } from '@/components/ui/Input';
@@ -11,7 +11,8 @@ interface TruckManagementProps {
   onTrucksChange: (trucks: Truck[]) => void;
 }
 
-const truckTypes = ['2t', '4t', '8t', '10t', '20t', '25t'];
+// デフォルトの車種（APIから取得できない場合のフォールバック）
+const defaultTruckTypes = ['2t', '4t', '8t', '10t', '20t', '25t'];
 const truckStatuses = [
   { value: 'available', label: '利用可' },
   { value: 'maintenance', label: '整備中' },
@@ -110,6 +111,47 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 export function TruckManagement({ trucks, onTrucksChange }: TruckManagementProps) {
   const [formState, dispatch] = useReducer(formReducer, initialFormState);
+  const [truckTypes, setTruckTypes] = useState<string[]>(defaultTruckTypes);
+
+  // 車種をAPIまたはlocalStorageから取得
+  useEffect(() => {
+    const fetchTruckTypes = async () => {
+      // まずAPIから取得を試みる
+      try {
+        const response = await fetch('/api/truck-types');
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          setTruckTypes(result.data.map((t: { name: string }) => t.name));
+          return;
+        }
+      } catch {
+        console.log('APIからの取得に失敗');
+      }
+
+      // APIから取得できない場合、localStorageから料金設定の車種を取得
+      try {
+        const savedCoefficients = localStorage.getItem('truckCoefficients');
+        if (savedCoefficients) {
+          const coefficients = JSON.parse(savedCoefficients);
+          if (Array.isArray(coefficients) && coefficients.length > 0) {
+            const types = coefficients
+              .map((c: { truckType: string }) => c.truckType)
+              .filter((t: string) => t && t.trim() !== '');
+            if (types.length > 0) {
+              setTruckTypes(types);
+              return;
+            }
+          }
+        }
+      } catch {
+        console.log('localStorageからの取得に失敗');
+      }
+
+      // どちらからも取得できない場合はデフォルト値を使用
+      console.log('デフォルト車種を使用');
+    };
+    fetchTruckTypes();
+  }, []);
 
 
   const validateForm = () => {

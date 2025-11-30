@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 料金基準設定ページコンポーネント
  * - 荷物ポイント設定と料金設定の統合画面
  * - トグル形式で機能を切り替え
@@ -6,25 +6,15 @@
  */
 'use client';
 
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useReducer, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PricingRule, OptionItem, ItemPoint } from '@/types/pricing';
 import { SimulationPanel } from '@/components/pricing';
 import { ITEM_CATEGORIES } from '@/constants/items';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
-/**
- * トラック種別の定義
- */
-const TRUCK_TYPES = [
-  "軽トラ",
-  "2tショート",
-  "2tロング",
-  "3t",
-  "4t",
-  "4t複数",
-  "特別対応"
-];
+// トラック種別は料金設定から動的に取得されるため、定数としての定義は不要
+// 料金設定テーブルで入力されたトラック種別がuniqueTruckTypesとして使用される
 
 /**
  * ポイント範囲の定義（1～9999、1刻みで詳細設定可能）
@@ -146,6 +136,7 @@ export default function PricingRatesPage() {
     newOptionType: OptionType;
     newOptionPrice: number;
     newOptionUnit: string;
+    newOptionRemarks: string;
     newOptionMinPoint: number;
     newOptionMaxPoint: number;
     optionErrors: { [optionId: string]: string };
@@ -157,6 +148,7 @@ export default function PricingRatesPage() {
     | { type: 'SET_NEW_OPTION_TYPE'; payload: OptionType }
     | { type: 'SET_NEW_OPTION_PRICE'; payload: number }
     | { type: 'SET_NEW_OPTION_UNIT'; payload: string }
+    | { type: 'SET_NEW_OPTION_REMARKS'; payload: string }
     | { type: 'SET_NEW_OPTION_MIN_POINT'; payload: number }
     | { type: 'SET_NEW_OPTION_MAX_POINT'; payload: number }
     | { type: 'SET_ERRORS'; payload: { [optionId: string]: string } }
@@ -168,6 +160,7 @@ export default function PricingRatesPage() {
     newOptionType: 'free',
     newOptionPrice: 0,
     newOptionUnit: '',
+    newOptionRemarks: '',
     newOptionMinPoint: 1,
     newOptionMaxPoint: 100,
     optionErrors: {},
@@ -184,6 +177,8 @@ export default function PricingRatesPage() {
         return { ...state, newOptionPrice: action.payload };
       case 'SET_NEW_OPTION_UNIT':
         return { ...state, newOptionUnit: action.payload };
+      case 'SET_NEW_OPTION_REMARKS':
+        return { ...state, newOptionRemarks: action.payload };
       case 'SET_NEW_OPTION_MIN_POINT':
         return { ...state, newOptionMinPoint: action.payload };
       case 'SET_NEW_OPTION_MAX_POINT':
@@ -455,18 +450,38 @@ export default function PricingRatesPage() {
       setPricingRules(defaultPricing);
     }
 
-    // 車種係数の読み込み
-    const savedCoefficients = typeof window !== 'undefined' ? localStorage.getItem('truckCoefficients') : null;
-    if (savedCoefficients) {
-      setTruckCoefficients(JSON.parse(savedCoefficients));
-    } else {
-      const defaultCoefficients = DEFAULT_TRUCK_COEFFICIENTS.map((coef, index) => ({
-        id: `coef-${index}`,
-        truckType: coef.truckType,
-        coefficient: coef.coefficient
-      }));
-      setTruckCoefficients(defaultCoefficients);
-    }
+    // 車種係数の読み込み（APIから取得、失敗時はlocalStorageを使用）
+    const loadTruckTypes = async () => {
+      try {
+        const response = await fetch('/api/truck-types');
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          const dbCoefficients = result.data.map((t: { id: string; name: string; coefficient: number }) => ({
+            id: t.id,
+            truckType: t.name,
+            coefficient: t.coefficient
+          }));
+          setTruckCoefficients(dbCoefficients);
+          return;
+        }
+      } catch {
+        console.log('APIからの取得に失敗、localStorageを使用');
+      }
+
+      // APIから取得できなかった場合はlocalStorageを使用
+      const savedCoefficients = typeof window !== 'undefined' ? localStorage.getItem('truckCoefficients') : null;
+      if (savedCoefficients) {
+        setTruckCoefficients(JSON.parse(savedCoefficients));
+      } else {
+        const defaultCoefficients = DEFAULT_TRUCK_COEFFICIENTS.map((coef, index) => ({
+          id: `coef-${index}`,
+          truckType: coef.truckType,
+          coefficient: coef.coefficient
+        }));
+        setTruckCoefficients(defaultCoefficients);
+      }
+    };
+    loadTruckTypes();
 
     // 距離料金の読み込み
     const savedDistance = typeof window !== 'undefined' ? localStorage.getItem('distanceRanges') : null;
@@ -509,11 +524,32 @@ export default function PricingRatesPage() {
   }, [pricingRules, isLoading]);
 
   /**
-   * 車種係数の自動保存
+   * 車種係数の自動保存（localStorage + API）
    */
   useEffect(() => {
     if (!isLoading && typeof window !== 'undefined') {
       localStorage.setItem('truckCoefficients', JSON.stringify(truckCoefficients));
+
+      // APIにも保存（バックグラウンドで実行）
+      const saveTruckTypesToAPI = async () => {
+        try {
+          await fetch('/api/truck-types', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              truckTypes: truckCoefficients.map((coef, index) => ({
+                id: coef.id.startsWith('coef-') ? undefined : coef.id,
+                name: coef.truckType,
+                coefficient: coef.coefficient,
+                sortOrder: (index + 1) * 10
+              }))
+            })
+          });
+        } catch {
+          console.log('APIへの保存に失敗、localStorageのみ使用');
+        }
+      };
+      saveTruckTypesToAPI();
     }
   }, [truckCoefficients, isLoading]);
 
@@ -639,51 +675,28 @@ export default function PricingRatesPage() {
     ));
   };
 
-  // 新しい車種追加用state
-  const [newTruckTypeForCoefficient, setNewTruckTypeForCoefficient] = useState<string>('');
-  const [newTruckCoefficient, setNewTruckCoefficient] = useState<number>(1.0);
-  const [truckTypeError, setTruckTypeError] = useState<string>('');
+  // 料金設定から一意のトラック種別リストを生成
+  const uniqueTruckTypes = useMemo(() => {
+    const types = pricingRules
+      .map(rule => rule.truckType)
+      .filter((type): type is string => !!type && type.trim() !== '');
+    return [...new Set(types)];
+  }, [pricingRules]);
 
-  // 車種追加
-  const addTruckType = () => {
-    if (!newTruckTypeForCoefficient.trim()) {
-      setTruckTypeError('車種名は必須です');
-      return;
-    }
+  // トラック種別が追加されたら係数も自動追加
+  useEffect(() => {
+    uniqueTruckTypes.forEach(type => {
+      if (!truckCoefficients.some(coef => coef.truckType === type)) {
+        setTruckCoefficients(prev => [
+          ...prev,
+          { id: `coef-${Date.now()}-${type}`, truckType: type, coefficient: 1.0 }
+        ]);
+      }
+    });
+  }, [uniqueTruckTypes, truckCoefficients]);
 
-    // 重複チェック
-    if (truckCoefficients.some(coef => coef.truckType === newTruckTypeForCoefficient.trim())) {
-      setTruckTypeError('この車種は既に登録されています');
-      return;
-    }
-
-    const newTruck: TruckCoefficient = {
-      id: `coef-${Date.now()}`,
-      truckType: newTruckTypeForCoefficient.trim(),
-      coefficient: newTruckCoefficient
-    };
-
-    setTruckCoefficients(prev => [...prev, newTruck]);
-    setNewTruckTypeForCoefficient('');
-    setNewTruckCoefficient(1.0);
-    setTruckTypeError('');
-  };
-
-  // 車種削除
-  const removeTruckType = (id: string) => {
-    const truckToRemove = truckCoefficients.find(coef => coef.id === id);
-    if (!truckToRemove) {return;}
-
-    // 料金設定で使用されているかチェック
-    const isUsedInPricing = pricingRules.some(rule => rule.truckType === truckToRemove.truckType);
-    if (isUsedInPricing) {
-      setTruckTypeError(`「${truckToRemove.truckType}」は料金設定で使用されているため削除できません`);
-      return;
-    }
-
-    setTruckCoefficients(prev => prev.filter(coef => coef.id !== id));
-    setTruckTypeError('');
-  };
+  // 車種は料金設定テーブルから自動的に追加されるため、
+  // 手動追加/削除の機能は不要になりました
 
   // 距離料金更新
   const updateDistanceRange = (id: string, field: keyof DistanceRange, value: DistanceRange[keyof DistanceRange]) => {
@@ -750,6 +763,7 @@ export default function PricingRatesPage() {
         price: optionFormState.newOptionType === 'paid' ? optionFormState.newOptionPrice : undefined,
         isDefault: false,
         unit: optionFormState.newOptionUnit,
+        remarks: optionFormState.newOptionRemarks,
       }
     ]);
     optionFormDispatch({ type: 'RESET_FORM' });
@@ -1122,48 +1136,6 @@ export default function PricingRatesPage() {
                     </p>
                   </div>
 
-                  <div className="bg-white shadow-md rounded-lg p-3">
-                    <div className="mb-3">
-                      <h3 className="text-base font-semibold text-gray-800">💰 料金設定</h3>
-                    </div>
-
-                    {/* 車種追加フォーム */}
-                    {truckTypeError && (
-                      <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4">
-                        {truckTypeError}
-                      </div>
-                    )}
-                    <div className="mb-4 flex flex-wrap gap-2 items-end bg-blue-50 p-3 rounded">
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">車種名</label>
-                        <input
-                          type="text"
-                          value={newTruckTypeForCoefficient}
-                          onChange={e => setNewTruckTypeForCoefficient(e.target.value)}
-                          className="border border-gray-300 rounded px-3 py-1 text-sm min-w-[120px]"
-                          placeholder="新しい車種名"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">係数</label>
-                        <input
-                          type="number"
-                          min="0.1"
-                          step="0.1"
-                          value={newTruckCoefficient}
-                          onChange={e => setNewTruckCoefficient(parseFloat(e.target.value) || 1.0)}
-                          className="border border-gray-300 rounded px-2 py-1 text-sm w-20"
-                          placeholder="1.0"
-                        />
-                      </div>
-                      <button
-                        onClick={addTruckType}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition"
-                      >
-                        ＋ 車種追加
-                      </button>
-                    </div>
-
                     {pricingErrors.length > 0 && (
                       <div className="bg-red-50 border border-red-300 text-red-700 rounded p-2 mb-4">
                         <ul className="list-disc pl-5">
@@ -1178,68 +1150,59 @@ export default function PricingRatesPage() {
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                        <table className="w-full border-collapse min-w-[500px]">
                           <thead>
                             <tr className="bg-gray-50">
                               <th
-                                className="border border-gray-200 px-4 py-2 text-left cursor-pointer hover:bg-gray-100"
+                                className="border border-gray-200 px-2 md:px-4 py-2 text-center cursor-pointer hover:bg-gray-100"
                                 onClick={() => handleSort('truckType')}
                               >
-                                <div className="flex items-center justify-between">
-                                  トラック種別
+                                <div className="flex items-center justify-center gap-1">
+                                  <span className="text-xs md:text-sm">トラック種別</span>
                                   <span className="text-xs">{getSortIcon('truckType')}</span>
                                 </div>
                               </th>
                               <th
-                                className="border border-gray-200 px-4 py-2 text-left cursor-pointer hover:bg-gray-100"
+                                className="border border-gray-200 px-2 md:px-4 py-2 text-center cursor-pointer hover:bg-gray-100"
                                 onClick={() => handleSort('minPoint')}
                               >
-                                <div className="flex items-center justify-between">
-                                  ポイント範囲
+                                <div className="flex items-center justify-center gap-1">
+                                  <span className="text-xs md:text-sm">ポイント範囲</span>
                                   <span className="text-xs">{getSortIcon('minPoint')}</span>
                                 </div>
                               </th>
                               <th
-                                className="border border-gray-200 px-4 py-2 text-left cursor-pointer hover:bg-gray-100"
+                                className="border border-gray-200 px-2 md:px-4 py-2 text-center cursor-pointer hover:bg-gray-100"
                                 onClick={() => handleSort('price')}
                               >
-                                <div className="flex items-center justify-between">
-                                  料金
+                                <div className="flex items-center justify-center gap-1">
+                                  <span className="text-xs md:text-sm">料金（円）</span>
                                   <span className="text-xs">{getSortIcon('price')}</span>
                                 </div>
                               </th>
-                              <th className="border border-gray-200 px-4 py-2 text-left">追加・削除</th>
+                              <th className="border border-gray-200 px-2 md:px-4 py-2 text-center text-xs md:text-sm">削除</th>
                             </tr>
                           </thead>
                           <tbody>
                             {sortPricingRules(pricingRules).map((rule, _index) => (
                               <tr key={rule.id} className="hover:bg-gray-50">
-                                <td className="border border-gray-200 px-4 py-2">
-                                  <select
+                                <td className="border border-gray-200 px-2 md:px-4 py-2 text-center">
+                                  <input
+                                    type="text"
                                     value={rule.truckType}
                                     onChange={e => updatePricingRule(rule.id, 'truckType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                                  >
-                                    <option value="">トラック種別を選択</option>
-                                    {TRUCK_TYPES.map(type => (
-                                      <option key={type} value={type}>{type}</option>
-                                    ))}
-                                    {truckCoefficients
-                                      .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
-                                      .map(coef => (
-                                        <option key={coef.truckType} value={coef.truckType}>{coef.truckType}</option>
-                                      ))
-                                    }
-                                  </select>
+                                    className="w-full px-1 md:px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
+                                    placeholder="トラック種別"
+                                  />
                                 </td>
-                                <td className="border border-gray-200 px-4 py-2">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">{rule.minPoint}</span>
-                                    <span className="text-gray-500">～</span>
+                                <td className="border border-gray-200 px-2 md:px-4 py-2 text-center">
+                                  <div className="flex items-center justify-center space-x-1 md:space-x-2">
+                                    <span className="text-gray-600 text-xs md:text-sm bg-gray-100 px-1 md:px-2 py-1 rounded">{rule.minPoint}</span>
+                                    <span className="text-gray-500 text-xs md:text-sm">～</span>
                                     <select
                                       value={rule.maxPoint ?? ''}
                                       onChange={e => updateMaxPoint(rule.id, e.target.value ? parseInt(e.target.value) : 0)}
-                                      className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                      className="w-full px-1 md:px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
                                     >
                                       <option value="">最大値</option>
                                       {POINT_RANGE.filter(point => point > rule.minPoint).map(point => (
@@ -1248,21 +1211,21 @@ export default function PricingRatesPage() {
                                     </select>
                                   </div>
                                 </td>
-                                <td className="border border-gray-200 px-4 py-2">
+                                <td className="border border-gray-200 px-2 md:px-4 py-2 text-center">
                                   <input
                                     type="number"
                                     min="0"
                                     value={rule.price ?? ''}
                                     onChange={e => updatePricingRule(rule.id, 'price', e.target.value ? parseInt(e.target.value) : undefined)}
-                                    className="w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
+                                    className="w-full min-w-[50px] md:min-w-[60px] max-w-[80px] md:max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs md:text-sm"
                                     placeholder="料金"
                                   />
                                 </td>
-                                <td className="border border-gray-200 px-4 py-2">
+                                <td className="border border-gray-200 px-2 md:px-4 py-2 text-center">
                                   <button
                                     onClick={() => removePricingRule(rule.id)}
-                                    className="text-red-600 hover:text-red-800 text-sm"
-                                  >🗑️ 削除</button>
+                                    className="text-red-600 hover:text-red-800 text-xs md:text-sm"
+                                  >🗑️</button>
                                 </td>
                               </tr>
                             ))}
@@ -1273,22 +1236,13 @@ export default function PricingRatesPage() {
 
                     {/* 料金設定追加フォーム */}
                     <div className="flex flex-wrap gap-2 mt-4 items-end bg-blue-50 p-4 rounded">
-                      <select
+                      <input
+                        type="text"
                         value={newTruckType}
                         onChange={e => setNewTruckType(e.target.value)}
                         className="border rounded px-2 py-1 min-w-[120px]"
-                      >
-                        <option value="">トラック種別を選択</option>
-                        {TRUCK_TYPES.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                        {truckCoefficients
-                          .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
-                          .map(coef => (
-                            <option key={coef.truckType} value={coef.truckType}>{coef.truckType}</option>
-                          ))
-                        }
-                      </select>
+                        placeholder="トラック種別"
+                      />
                       <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded">{pricingRules.length > 0 ? (pricingRules[pricingRules.length - 1].maxPoint! + 1) : 1}</span>
                       <span className="text-gray-500">～</span>
                       <select
@@ -1315,7 +1269,6 @@ export default function PricingRatesPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition"
                       >追加</button>
                     </div>
-                  </div>
               </div>
 
               {/* 距離・車種別料金設定 */}
@@ -1336,63 +1289,33 @@ export default function PricingRatesPage() {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="border-collapse" style={{ minWidth: '100%' }}>
+                    <table className="w-full border-collapse min-w-[700px]">
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '120px' }}>距離範囲（km）</th>
-                          {TRUCK_TYPES.map(type => {
+                          <th className="border border-gray-200 px-1 md:px-2 py-1 text-center text-[10px] md:text-xs">距離範囲（km）</th>
+                          {uniqueTruckTypes.map(type => {
                             const coef = truckCoefficients.find(c => c.truckType === type);
                             return (
-                              <th key={type} className="border border-gray-200 px-2 py-1 text-left" style={{ minWidth: '100px' }}>
-                                <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                                  <span className="text-xs font-semibold">{type}</span>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-gray-500">係数:</span>
+                              <th key={type} className="border border-gray-200 px-1 md:px-2 py-1 text-center">
+                                <div className="flex flex-col gap-0.5 whitespace-nowrap items-center">
+                                  <span className="text-[10px] md:text-xs font-semibold">{type}</span>
+                                  <div className="flex items-center gap-0.5 md:gap-1">
+                                    <span className="text-[8px] md:text-[10px] text-gray-500">係数:</span>
                                     <input
                                       type="number"
                                       min="0.1"
                                       step="0.1"
                                       value={coef?.coefficient || 1.0}
                                       onChange={e => coef && updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
-                                      className="w-12 px-1 py-0.5 border border-gray-300 rounded text-[10px] text-right focus:ring-blue-500 focus:border-blue-500"
+                                      className="w-10 md:w-12 px-0.5 md:px-1 py-0.5 border border-gray-300 rounded text-[8px] md:text-[10px] text-right focus:ring-blue-500 focus:border-blue-500"
                                     />
                                   </div>
                                 </div>
                               </th>
                             );
                           })}
-                          {truckCoefficients
-                            .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
-                            .map(coef => (
-                              <th key={coef.truckType} className="border border-gray-200 px-2 py-1 text-left" style={{ minWidth: '100px' }}>
-                                <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs font-semibold">{coef.truckType}</span>
-                                    <button
-                                      onClick={() => removeTruckType(coef.id)}
-                                      className="text-red-600 hover:text-red-800 text-[10px]"
-                                      title="削除"
-                                    >
-                                      🗑️
-                                    </button>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-gray-500">係数:</span>
-                                    <input
-                                      type="number"
-                                      min="0.1"
-                                      step="0.1"
-                                      value={coef.coefficient}
-                                      onChange={e => updateTruckCoefficient(coef.id, parseFloat(e.target.value) || 1.0)}
-                                      className="w-12 px-1 py-0.5 border border-gray-300 rounded text-[10px] text-right focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                  </div>
-                                </div>
-                              </th>
-                            ))
-                          }
-                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '100px' }}>基本加算額</th>
-                          <th className="border border-gray-200 px-2 py-1 text-left whitespace-nowrap text-xs" style={{ minWidth: '60px' }}>操作</th>
+                          <th className="border border-gray-200 px-1 md:px-2 py-1 text-center text-[10px] md:text-xs">基本加算額（円）</th>
+                          <th className="border border-gray-200 px-1 md:px-2 py-1 text-center text-[10px] md:text-xs">削除</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1402,47 +1325,42 @@ export default function PricingRatesPage() {
 
                           return (
                             <tr key={range.id} className="hover:bg-gray-50">
-                              <td className="border border-gray-200 px-2 py-1">
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-gray-600 text-xs">{distanceRangeText}</span>
+                              <td className="border border-gray-200 px-1 md:px-2 py-1 text-right">
+                                <div className="flex items-center justify-end space-x-0.5 md:space-x-1">
+                                  <span className="text-gray-600 text-[10px] md:text-xs">{distanceRangeText}</span>
                                   <input
                                     type="number"
                                     min="1"
                                     value={range.maxDistance}
                                     onChange={e => updateDistanceRange(range.id, 'maxDistance', parseInt(e.target.value) || 0)}
-                                    className="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs"
+                                    className="w-12 md:w-16 px-0.5 md:px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-[10px] md:text-xs"
                                   />
-                                  <span className="text-gray-500 text-xs">km</span>
+                                  <span className="text-gray-500 text-[10px] md:text-xs">km</span>
                                 </div>
                               </td>
-                              {TRUCK_TYPES.map(type => (
-                                <td key={type} className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600">
-                                  ¥{Math.round((truckCoefficients.find(c => c.truckType === type)?.coefficient || 1.0) * range.basePrice).toLocaleString()}
-                                </td>
-                              ))}
-                              {truckCoefficients
-                                .filter(coef => !TRUCK_TYPES.includes(coef.truckType))
-                                .map(coef => (
-                                  <td key={coef.truckType} className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600">
-                                    ¥{Math.round(coef.coefficient * range.basePrice).toLocaleString()}
+                              {uniqueTruckTypes.map(type => {
+                                const coef = truckCoefficients.find(c => c.truckType === type);
+                                return (
+                                  <td key={type} className="border border-gray-200 px-1 md:px-2 py-1 text-center text-[10px] md:text-xs text-gray-600">
+                                    {Math.round((coef?.coefficient || 1.0) * range.basePrice).toLocaleString()}円
                                   </td>
-                                ))
-                              }
-                              <td className="border border-gray-200 px-2 py-1">
+                                );
+                              })}
+                              <td className="border border-gray-200 px-1 md:px-2 py-1 text-center">
                                 <input
                                   type="number"
                                   min="0"
                                   value={range.basePrice}
                                   onChange={e => updateDistanceRange(range.id, 'basePrice', parseInt(e.target.value) || 0)}
-                                  className="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs"
+                                  className="w-12 md:w-16 px-0.5 md:px-1 py-0.5 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-[10px] md:text-xs"
                                   placeholder="基本額"
                                 />
                               </td>
-                              <td className="border border-gray-200 px-2 py-1">
+                              <td className="border border-gray-200 px-1 md:px-2 py-1 text-center">
                                 <button
                                   onClick={() => removeDistanceRange(range.id)}
-                                  className="text-red-600 hover:text-red-800 text-xs"
-                                >🗑️ 削除</button>
+                                  className="text-red-600 hover:text-red-800 text-[10px] md:text-xs"
+                                >🗑️</button>
                               </td>
                             </tr>
                           );
@@ -1469,37 +1387,38 @@ export default function PricingRatesPage() {
                   オプション料金設定
                 </h2>
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
+                    <table className="w-full border-collapse min-w-[600px]">
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="border border-gray-200 px-4 py-2 text-left">オプション名</th>
-                          <th className="border border-gray-200 px-6 py-2 text-left">種別</th>
-                          <th className="border border-gray-200 px-2 py-2 text-left">金額（円）</th>
-                          <th className="border border-gray-200 px-2 py-2 text-left">単位数量</th>
-                          <th className="border border-gray-200 px-4 py-2 text-left">備考</th>
+                          <th className="border border-gray-200 px-2 md:px-4 py-2 text-left text-xs md:text-sm">オプション名</th>
+                          <th className="border border-gray-200 px-2 md:px-6 py-2 text-left text-xs md:text-sm">種別</th>
+                          <th className="border border-gray-200 px-1 md:px-2 py-2 text-left text-xs md:text-sm">金額（円）</th>
+                          <th className="border border-gray-200 px-1 md:px-2 py-2 text-left text-xs md:text-sm">単位数量</th>
+                          <th className="border border-gray-200 px-2 md:px-4 py-2 text-left text-xs md:text-sm">備考</th>
+                          <th className="border border-gray-200 px-1 md:px-2 py-2 text-center text-xs md:text-sm">削除</th>
                         </tr>
                       </thead>
                       <tbody>
                         {options.map((opt, _idx) => (
                           <tr key={opt.id} className="hover:bg-gray-50">
-                            <td className="border border-gray-200 px-4 py-2">
+                            <td className="border border-gray-200 px-2 md:px-4 py-2">
                               {opt.isDefault ? (
-                                <span className="text-gray-800">{opt.label}</span>
+                                <span className="text-gray-800 text-xs md:text-sm">{opt.label}</span>
                               ) : (
                                 <input
                                   type="text"
                                   value={opt.label}
                                   onChange={e => handleOptionLabelChange(opt.id, e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                  className="w-full px-1 md:px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
                                   required
                                 />
                               )}
                             </td>
-                            <td className="border border-gray-200 px-6 py-2">
+                            <td className="border border-gray-200 px-2 md:px-6 py-2">
                               <select
                                 value={opt.type}
                                 onChange={e => handleOptionTypeChange(opt.id, e.target.value as OptionType)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-1 md:px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
                                 style={{ whiteSpace: 'nowrap' }}
                                 required
                               >
@@ -1508,7 +1427,7 @@ export default function PricingRatesPage() {
                                 ))}
                               </select>
                             </td>
-                            <td className="border border-gray-200 px-2 py-2">
+                            <td className="border border-gray-200 px-1 md:px-2 py-2">
                               <input
                                 type="text"
                                 value={opt.type === 'individual' || opt.type === 'free' ? '' : (opt.price ?? 0).toLocaleString()}
@@ -1523,25 +1442,25 @@ export default function PricingRatesPage() {
                                     handleOptionPriceChange(opt.id, parseInt(num) || 0);
                                   }
                                 }}
-                                className={`w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right ${opt.type === 'individual' || opt.type === 'free' ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                className={`w-full min-w-[50px] md:min-w-[60px] max-w-[80px] md:max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs md:text-sm ${opt.type === 'individual' || opt.type === 'free' ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                                 disabled={opt.type === 'individual' || opt.type === 'free'}
                                 placeholder="金額"
                                 required={opt.type === 'paid'}
                               />
                               {optionFormState.optionErrors[opt.id] && (
-                                <div className="text-red-600 text-xs mt-1">{optionFormState.optionErrors[opt.id]}</div>
+                                <div className="text-red-600 text-[10px] md:text-xs mt-1">{optionFormState.optionErrors[opt.id]}</div>
                               )}
                             </td>
-                            <td className="border border-gray-200 px-2 py-2">
-                              {opt.type === 'individual' || opt.type === 'free' || opt.label === '🏠 建物養生（壁や床の保護）' ? (
-                                <select disabled className="w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded bg-gray-200 cursor-not-allowed text-right">
+                            <td className="border border-gray-200 px-1 md:px-2 py-2">
+                              {opt.type === 'individual' || opt.type === 'free' ? (
+                                <select disabled className="w-full min-w-[50px] md:min-w-[60px] max-w-[80px] md:max-w-[100px] px-1 py-1 border border-gray-300 rounded bg-gray-200 cursor-not-allowed text-right text-xs md:text-sm">
                                   <option value=""></option>
                                 </select>
                               ) : (
                                 <select
                                   value={opt.unit ?? ''}
                                   onChange={e => handleOptionUnitChange(opt.id, e.target.value)}
-                                  className="w-full min-w-[60px] max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right"
+                                  className="w-full min-w-[50px] md:min-w-[60px] max-w-[80px] md:max-w-[100px] px-1 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-right text-xs md:text-sm"
                                   required
                                 >
                                   <option value=""></option>
@@ -1551,18 +1470,22 @@ export default function PricingRatesPage() {
                                 </select>
                               )}
                             </td>
-                            <td className="border border-gray-200 px-4 py-2">
+                            <td className="border border-gray-200 px-2 md:px-4 py-2">
                               <input
                                 type="text"
                                 value={opt.remarks ?? ''}
                                 onChange={e => handleOptionRemarksChange(opt.id, e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-1 md:px-2 py-1 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
                               />
-                              {!opt.isDefault && (
+                            </td>
+                            <td className="border border-gray-200 px-1 md:px-2 py-2 text-center">
+                              {opt.isDefault ? (
+                                <span className="text-gray-400 text-xs md:text-sm">－</span>
+                              ) : (
                                 <button
                                   onClick={() => handleDeleteOption(opt.id)}
-                                  className="text-red-600 hover:text-red-800 text-sm"
-                                >🗑️ 削除</button>
+                                  className="text-red-600 hover:text-red-800 text-xs md:text-sm"
+                                >🗑️</button>
                               )}
                             </td>
                           </tr>
@@ -1614,6 +1537,13 @@ export default function PricingRatesPage() {
                       onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_UNIT', payload: e.target.value })}
                       className="border rounded px-2 py-1 min-w-[80px]"
                       placeholder="単位数量"
+                    />
+                    <input
+                      type="text"
+                      value={optionFormState.newOptionRemarks}
+                      onChange={e => optionFormDispatch({ type: 'SET_NEW_OPTION_REMARKS', payload: e.target.value })}
+                      className="border rounded px-2 py-1 min-w-[120px]"
+                      placeholder="備考"
                     />
                     <button
                       type="button"
