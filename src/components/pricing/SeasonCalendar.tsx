@@ -66,12 +66,31 @@ export default function SeasonCalendar({
 
         // 月単位の繰り返し
         if (rule.recurringType === 'monthly') {
-          const ruleStartDate = new Date(rule.startDate);
           if (rule.recurringPattern?.monthlyPattern === 'date') {
-            // 同じ日付
+            // 選択された日付リストで判定（存在しない日は自動スキップ）
+            const monthlyDates = rule.recurringPattern?.monthlyDates;
+            if (monthlyDates && monthlyDates.length > 0) {
+              return monthlyDates.includes(targetDate.getDate());
+            }
+            // 互換性のため：monthlyDatesがない場合は開始日の日付を使用
+            const ruleStartDate = new Date(rule.startDate);
             return targetDate.getDate() === ruleStartDate.getDate();
-          } else {
-            // 同じ曜日（第N週）
+          } else if (rule.recurringPattern?.monthlyPattern === 'weekday') {
+            // 新形式：複数の週と曜日の組み合わせ（存在しない週は自動スキップ）
+            const monthlyWeeks = rule.recurringPattern?.monthlyWeeks;
+            const monthlyWeekdays = rule.recurringPattern?.monthlyWeekdays;
+            if (monthlyWeeks && monthlyWeeks.length > 0 && monthlyWeekdays && monthlyWeekdays.length > 0) {
+              const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
+              return monthlyWeeks.includes(targetWeekOfMonth) && monthlyWeekdays.includes(targetDayOfWeek);
+            }
+            // 旧形式との互換性：monthlyWeekday
+            const monthlyWeekday = rule.recurringPattern?.monthlyWeekday;
+            if (monthlyWeekday) {
+              const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
+              return monthlyWeekday.week === targetWeekOfMonth && monthlyWeekday.dayOfWeek === targetDayOfWeek;
+            }
+            // 互換性のため：どちらもない場合は開始日のパターンを使用
+            const ruleStartDate = new Date(rule.startDate);
             const ruleWeekOfMonth = Math.ceil(ruleStartDate.getDate() / 7);
             const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
             return ruleStartDate.getDay() === targetDayOfWeek && ruleWeekOfMonth === targetWeekOfMonth;
@@ -172,29 +191,6 @@ export default function SeasonCalendar({
     setEditingRule(null);
   };
 
-  // 日付重複チェック
-  const checkDateOverlap = (startDate: string, endDate: string, excludeId?: string): { hasOverlap: boolean; overlappingRules: string[] } => {
-    const newStart = new Date(startDate);
-    const newEnd = new Date(endDate);
-    const overlappingRules: string[] = [];
-
-    for (const rule of seasonRules) {
-      if (excludeId && rule.id === excludeId) continue;
-
-      // 繰り返し設定がない通常の期間ルールの場合のみチェック
-      if (!rule.isRecurring || rule.recurringType === 'none') {
-        const ruleStart = new Date(rule.startDate);
-        const ruleEnd = new Date(rule.endDate);
-
-        if (newStart <= ruleEnd && newEnd >= ruleStart) {
-          overlappingRules.push(rule.name || '（名称未設定）');
-        }
-      }
-    }
-
-    return { hasOverlap: overlappingRules.length > 0, overlappingRules };
-  };
-
   // ルール保存
   const saveRule = () => {
     if (!editingRule) {return;}
@@ -211,20 +207,6 @@ export default function SeasonCalendar({
     if (new Date(editingRule.startDate) > new Date(editingRule.endDate)) {
       alert('終了日は開始日より後にしてください');
       return;
-    }
-
-    // 繰り返し設定がない場合のみ重複チェック
-    if (!editingRule.isRecurring || editingRule.recurringType === 'none') {
-      const excludeId = editingRule.id.startsWith('temp-') ? undefined : editingRule.id;
-      const { hasOverlap, overlappingRules } = checkDateOverlap(
-        editingRule.startDate,
-        editingRule.endDate,
-        excludeId
-      );
-      if (hasOverlap) {
-        alert(`日付が以下のシーズンと重複しています:\n${overlappingRules.join('\n')}`);
-        return;
-      }
     }
 
     if (editingRule.id.startsWith('temp-')) {
@@ -414,6 +396,21 @@ export default function SeasonCalendar({
                             {rule.recurringPattern.weekdays.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join('・')}
                           </span>
                         )}
+                        {rule.recurringType === 'monthly' && rule.recurringPattern?.monthlyPattern === 'date' && rule.recurringPattern?.monthlyDates && (
+                          <span className="text-xs text-gray-500">
+                            毎月{rule.recurringPattern.monthlyDates.join(', ')}日
+                          </span>
+                        )}
+                        {rule.recurringType === 'monthly' && rule.recurringPattern?.monthlyPattern === 'weekday' && (rule.recurringPattern?.monthlyWeeks || rule.recurringPattern?.monthlyWeekday) && (
+                          <span className="text-xs text-gray-500">
+                            {rule.recurringPattern.monthlyWeeks
+                              ? `${rule.recurringPattern.monthlyWeeks.map(w => `第${w}`).join('・')} ${rule.recurringPattern.monthlyWeekdays?.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join('・') || ''}`
+                              : rule.recurringPattern.monthlyWeekday
+                                ? `第${rule.recurringPattern.monthlyWeekday.week}${['日', '月', '火', '水', '木', '金', '土'][rule.recurringPattern.monthlyWeekday.dayOfWeek]}`
+                                : ''
+                            }
+                          </span>
+                        )}
                         {rule.recurringType === 'specific' && rule.recurringPattern?.specificDates && (
                           <span className="text-xs text-gray-500">
                             {rule.recurringPattern.specificDates.length}日選択
@@ -568,141 +565,81 @@ export default function SeasonCalendar({
 
       {/* 編集モーダル */}
       {showEditModal && editingRule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-semibold mb-3">
               {editingRule.id.startsWith('temp-') ? 'シーズン新規作成' : 'シーズン編集'}
             </h3>
-            
-            <div className="space-y-4">
+
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">シーズン名</label>
+                <label className="block text-xs font-medium mb-1">シーズン名</label>
                 <input
                   type="text"
                   value={editingRule.name}
                   onChange={(e) => setEditingRule(prev => prev ? { ...prev, name: e.target.value } : null)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-1.5 text-sm border rounded"
                   placeholder="シーズン名を入力"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">開始日</label>
+                  <label className="block text-xs font-medium mb-1">開始日</label>
                   <input
                     type="date"
                     value={editingRule.startDate}
                     onChange={(e) => setEditingRule(prev => prev ? { ...prev, startDate: e.target.value } : null)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-1.5 text-sm border rounded"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">終了日</label>
+                  <label className="block text-xs font-medium mb-1">終了日</label>
                   <input
                     type="date"
                     value={editingRule.endDate}
                     onChange={(e) => setEditingRule(prev => prev ? { ...prev, endDate: e.target.value } : null)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-1.5 text-sm border rounded"
                   />
                 </div>
               </div>
 
-              {/* 料金タイプ（ラジオボタン） */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">料金調整タイプ</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* 割増率オプション */}
-                  <label
-                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition ${
-                      editingRule.priceType === 'percentage'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+              {/* 料金タイプと金額 */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">タイプ</label>
+                  <select
+                    value={editingRule.priceType}
+                    onChange={(e) => setEditingRule(prev => prev ? { ...prev, priceType: e.target.value as 'percentage' | 'fixed' } : null)}
+                    className="w-full p-1.5 text-sm border rounded"
                   >
-                    <input
-                      type="radio"
-                      name="priceType"
-                      value="percentage"
-                      checked={editingRule.priceType === 'percentage'}
-                      onChange={() => setEditingRule(prev => prev ? { ...prev, priceType: 'percentage' } : null)}
-                      className="sr-only"
-                    />
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        editingRule.priceType === 'percentage' ? 'border-blue-500' : 'border-gray-300'
-                      }`}>
-                        {editingRule.priceType === 'percentage' && (
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">割増率 (%)</div>
-                        <div className="text-xs text-gray-500">基本料金に対する割合</div>
-                      </div>
-                    </div>
-                  </label>
-
-                  {/* 固定金額オプション */}
-                  <label
-                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition ${
-                      editingRule.priceType === 'fixed'
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="priceType"
-                      value="fixed"
-                      checked={editingRule.priceType === 'fixed'}
-                      onChange={() => setEditingRule(prev => prev ? { ...prev, priceType: 'fixed' } : null)}
-                      className="sr-only"
-                    />
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        editingRule.priceType === 'fixed' ? 'border-blue-500' : 'border-gray-300'
-                      }`}>
-                        {editingRule.priceType === 'fixed' && (
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">固定金額 (円)</div>
-                        <div className="text-xs text-gray-500">一律で加算する金額</div>
-                      </div>
-                    </div>
-                  </label>
+                    <option value="percentage">割増率 (%)</option>
+                    <option value="fixed">固定金額 (円)</option>
+                  </select>
                 </div>
-              </div>
-
-              {/* 金額入力 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {editingRule.priceType === 'percentage' ? '割増率' : '加算金額'}
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={editingRule.price}
-                    onChange={(e) => setEditingRule(prev => prev ? { ...prev, price: parseFloat(e.target.value) || 0 } : null)}
-                    className="w-full p-2 pr-12 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={editingRule.priceType === 'percentage' ? '10' : '1000'}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                    {editingRule.priceType === 'percentage' ? '%' : '円'}
-                  </span>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {editingRule.priceType === 'percentage' ? '割増率' : '金額'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={editingRule.price}
+                      onChange={(e) => setEditingRule(prev => prev ? { ...prev, price: parseFloat(e.target.value) || 0 } : null)}
+                      className="w-full p-1.5 pr-8 text-sm border rounded"
+                      placeholder={editingRule.priceType === 'percentage' ? '10' : '1000'}
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+                      {editingRule.priceType === 'percentage' ? '%' : '円'}
+                    </span>
+                  </div>
                 </div>
-                {editingRule.priceType === 'percentage' && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    マイナス値で割引、プラス値で割増になります（例: -10 = 10%OFF, +20 = 20%割増）
-                  </p>
-                )}
               </div>
 
               {/* 繰り返し設定 */}
-              <div className="border-t pt-4 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-700">繰り返し設定</label>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-gray-700">繰り返し設定</label>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -715,153 +652,256 @@ export default function SeasonCalendar({
                       } : null)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 {editingRule.isRecurring && (
-                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                  <div className="space-y-2 bg-gray-50 p-2 rounded-lg text-xs">
                     {/* 繰り返しタイプ */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">繰り返しタイプ</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { value: 'weekly', label: '毎週', icon: '📅', desc: '曜日を指定' },
-                          { value: 'monthly', label: '毎月', icon: '🗓️', desc: '日付/曜日' },
-                          { value: 'yearly', label: '毎年', icon: '📆', desc: '同じ期間' },
-                          { value: 'specific', label: '特定日付', icon: '📌', desc: '複数日選択' }
-                        ].map(option => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setEditingRule(prev => prev ? {
-                              ...prev,
-                              recurringType: option.value as 'weekly' | 'monthly' | 'yearly' | 'specific',
-                              recurringPattern: option.value === 'weekly' ? { weekdays: prev.recurringPattern?.weekdays || [] } :
-                                option.value === 'monthly' ? { monthlyPattern: 'date' } :
-                                option.value === 'specific' ? { specificDates: prev.recurringPattern?.specificDates || [] } : undefined
-                            } : null)}
-                            className={`p-2 rounded-lg border-2 text-sm font-medium transition text-left ${
-                              editingRule.recurringType === option.value
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1">
-                              <span>{option.icon}</span>
-                              <span>{option.label}</span>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-0.5">{option.desc}</div>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="grid grid-cols-5 gap-1">
+                      {[
+                        { value: 'weekly', label: '毎週' },
+                        { value: 'monthly', label: '毎月' },
+                        { value: 'yearly', label: '毎年' },
+                        { value: 'specific', label: '特定日' },
+                        { value: 'period', label: '特定期間' }
+                      ].map(option => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setEditingRule(prev => prev ? {
+                            ...prev,
+                            recurringType: option.value as 'weekly' | 'monthly' | 'yearly' | 'specific' | 'period',
+                            recurringPattern: option.value === 'weekly' ? { weekdays: prev.recurringPattern?.weekdays || [] } :
+                              option.value === 'monthly' ? { monthlyPattern: 'date' } :
+                              option.value === 'specific' ? { specificDates: prev.recurringPattern?.specificDates || [] } :
+                              option.value === 'period' ? { specificPeriods: prev.recurringPattern?.specificPeriods || [] } : undefined
+                          } : null)}
+                          className={`p-1.5 rounded border text-xs font-medium transition ${
+                            editingRule.recurringType === option.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
 
                     {/* 曜日選択（週単位の場合） */}
                     {editingRule.recurringType === 'weekly' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">適用する曜日</label>
-                        <div className="flex gap-1">
-                          {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => {
-                            const isSelected = editingRule.recurringPattern?.weekdays?.includes(index);
-                            return (
-                              <button
-                                key={day}
-                                type="button"
-                                onClick={() => {
-                                  const currentWeekdays = editingRule.recurringPattern?.weekdays || [];
-                                  const newWeekdays = isSelected
-                                    ? currentWeekdays.filter(d => d !== index)
-                                    : [...currentWeekdays, index].sort();
-                                  setEditingRule(prev => prev ? {
-                                    ...prev,
-                                    recurringPattern: { ...prev.recurringPattern, weekdays: newWeekdays }
-                                  } : null);
-                                }}
-                                className={`w-10 h-10 rounded-full text-sm font-medium transition ${
-                                  isSelected
-                                    ? index === 0 ? 'bg-red-500 text-white' : index === 6 ? 'bg-blue-500 text-white' : 'bg-gray-700 text-white'
-                                    : index === 0 ? 'bg-red-50 text-red-600 border border-red-200' : index === 6 ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-600 border border-gray-200'
-                                } hover:opacity-80`}
-                              >
-                                {day}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          選択した曜日に毎週料金が適用されます
-                        </p>
+                      <div className="flex gap-0.5 justify-center">
+                        {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => {
+                          const isSelected = editingRule.recurringPattern?.weekdays?.includes(index);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                const currentWeekdays = editingRule.recurringPattern?.weekdays || [];
+                                const newWeekdays = isSelected
+                                  ? currentWeekdays.filter(d => d !== index)
+                                  : [...currentWeekdays, index].sort();
+                                setEditingRule(prev => prev ? {
+                                  ...prev,
+                                  recurringPattern: { ...prev.recurringPattern, weekdays: newWeekdays }
+                                } : null);
+                              }}
+                              className={`w-7 h-7 rounded-full text-xs font-medium transition ${
+                                isSelected
+                                  ? index === 0 ? 'bg-red-500 text-white' : index === 6 ? 'bg-blue-500 text-white' : 'bg-gray-700 text-white'
+                                  : index === 0 ? 'bg-red-50 text-red-600 border border-red-200' : index === 6 ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-600 border border-gray-200'
+                              } hover:opacity-80`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 
                     {/* 月単位のパターン */}
                     {editingRule.recurringType === 'monthly' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">繰り返しパターン</label>
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        {/* パターン選択 */}
+                        <div className="grid grid-cols-2 gap-1">
                           <button
                             type="button"
                             onClick={() => setEditingRule(prev => prev ? {
                               ...prev,
-                              recurringPattern: { monthlyPattern: 'date' }
+                              recurringPattern: { monthlyPattern: 'date', monthlyDates: prev.recurringPattern?.monthlyDates || [] }
                             } : null)}
-                            className={`p-3 rounded-lg border-2 text-sm transition ${
+                            className={`p-1.5 rounded border text-xs transition ${
                               editingRule.recurringPattern?.monthlyPattern === 'date'
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="font-medium">同じ日付</div>
-                            <div className="text-xs text-gray-500">毎月{new Date(editingRule.startDate).getDate()}日</div>
+                            日付で指定
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingRule(prev => prev ? {
                               ...prev,
-                              recurringPattern: { monthlyPattern: 'weekday' }
+                              recurringPattern: { monthlyPattern: 'weekday', monthlyWeekday: prev.recurringPattern?.monthlyWeekday }
                             } : null)}
-                            className={`p-3 rounded-lg border-2 text-sm transition ${
+                            className={`p-1.5 rounded border text-xs transition ${
                               editingRule.recurringPattern?.monthlyPattern === 'weekday'
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="font-medium">同じ曜日</div>
-                            <div className="text-xs text-gray-500">
-                              毎月第{Math.ceil(new Date(editingRule.startDate).getDate() / 7)}
-                              {['日', '月', '火', '水', '木', '金', '土'][new Date(editingRule.startDate).getDay()]}曜日
-                            </div>
+                            曜日で指定
                           </button>
                         </div>
+
+                        {/* 日付選択グリッド（1〜31日、存在しない日はスキップ） */}
+                        {editingRule.recurringPattern?.monthlyPattern === 'date' && (
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">繰り返す日付を選択（存在しない日は自動スキップ）</div>
+                            <div className="grid grid-cols-7 gap-0.5">
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => {
+                                const isSelected = editingRule.recurringPattern?.monthlyDates?.includes(day);
+                                const isRareDay = day >= 29; // 29-31日は一部の月にしか存在しない
+                                return (
+                                  <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => {
+                                      const currentDates = editingRule.recurringPattern?.monthlyDates || [];
+                                      const newDates = isSelected
+                                        ? currentDates.filter(d => d !== day)
+                                        : [...currentDates, day].sort((a, b) => a - b);
+                                      setEditingRule(prev => prev ? {
+                                        ...prev,
+                                        recurringPattern: { ...prev.recurringPattern, monthlyPattern: 'date', monthlyDates: newDates }
+                                      } : null);
+                                    }}
+                                    className={`w-7 h-7 rounded text-xs font-medium transition ${
+                                      isSelected
+                                        ? 'bg-blue-500 text-white'
+                                        : isRareDay
+                                          ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:border-amber-300'
+                                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
+                                    }`}
+                                    title={isRareDay ? '一部の月にのみ存在' : undefined}
+                                  >
+                                    {day}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {editingRule.recurringPattern?.monthlyDates && editingRule.recurringPattern.monthlyDates.length > 0 && (
+                              <div className="mt-1 text-xs text-blue-600">
+                                選択中: {editingRule.recurringPattern.monthlyDates.join(', ')}日
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 曜日選択（複数の週と曜日を選択可能） */}
+                        {editingRule.recurringPattern?.monthlyPattern === 'weekday' && (
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-500 mb-1">繰り返す週と曜日を選択（複数選択可、存在しない週は自動スキップ）</div>
+                            {/* 週の選択（複数選択可） */}
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map(week => {
+                                const isSelected = editingRule.recurringPattern?.monthlyWeeks?.includes(week);
+                                const isRareWeek = week === 5; // 第5週は一部の月にしか存在しない
+                                return (
+                                  <button
+                                    key={week}
+                                    type="button"
+                                    onClick={() => {
+                                      const currentWeeks = editingRule.recurringPattern?.monthlyWeeks || [];
+                                      const newWeeks = isSelected
+                                        ? currentWeeks.filter(w => w !== week)
+                                        : [...currentWeeks, week].sort((a, b) => a - b);
+                                      setEditingRule(prev => prev ? {
+                                        ...prev,
+                                        recurringPattern: {
+                                          ...prev.recurringPattern,
+                                          monthlyPattern: 'weekday',
+                                          monthlyWeeks: newWeeks
+                                        }
+                                      } : null);
+                                    }}
+                                    className={`flex-1 p-1.5 rounded text-xs font-medium transition ${
+                                      isSelected
+                                        ? 'bg-blue-500 text-white'
+                                        : isRareWeek
+                                          ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:border-amber-300'
+                                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
+                                    }`}
+                                    title={isRareWeek ? '一部の月にのみ存在' : undefined}
+                                  >
+                                    第{week}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {/* 曜日の選択（複数選択可） */}
+                            <div className="flex gap-0.5 justify-center">
+                              {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => {
+                                const isSelected = editingRule.recurringPattern?.monthlyWeekdays?.includes(index);
+                                return (
+                                  <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => {
+                                      const currentWeekdays = editingRule.recurringPattern?.monthlyWeekdays || [];
+                                      const newWeekdays = isSelected
+                                        ? currentWeekdays.filter(d => d !== index)
+                                        : [...currentWeekdays, index].sort((a, b) => a - b);
+                                      setEditingRule(prev => prev ? {
+                                        ...prev,
+                                        recurringPattern: {
+                                          ...prev.recurringPattern,
+                                          monthlyPattern: 'weekday',
+                                          monthlyWeekdays: newWeekdays
+                                        }
+                                      } : null);
+                                    }}
+                                    className={`w-7 h-7 rounded-full text-xs font-medium transition ${
+                                      isSelected
+                                        ? index === 0 ? 'bg-red-500 text-white' : index === 6 ? 'bg-blue-500 text-white' : 'bg-gray-700 text-white'
+                                        : index === 0 ? 'bg-red-50 text-red-600 border border-red-200' : index === 6 ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-600 border border-gray-200'
+                                    } hover:opacity-80`}
+                                  >
+                                    {day}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {((editingRule.recurringPattern?.monthlyWeeks?.length ?? 0) > 0 || (editingRule.recurringPattern?.monthlyWeekdays?.length ?? 0) > 0) && (
+                              <div className="text-xs text-blue-600">
+                                毎月
+                                {editingRule.recurringPattern?.monthlyWeeks?.map(w => `第${w}`).join('・') || ''}
+                                {editingRule.recurringPattern?.monthlyWeeks?.length && editingRule.recurringPattern?.monthlyWeekdays?.length ? ' ' : ''}
+                                {editingRule.recurringPattern?.monthlyWeekdays?.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join('・') || ''}曜日
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* 年単位の説明 */}
                     {editingRule.recurringType === 'yearly' && (
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-700">
-                          毎年同じ期間（{editingRule.startDate.slice(5)} 〜 {editingRule.endDate.slice(5)}）に適用されます
-                        </p>
-                      </div>
+                      <p className="text-xs text-blue-600 bg-blue-50 p-1.5 rounded">
+                        毎年 {editingRule.startDate.slice(5)} 〜 {editingRule.endDate.slice(5)} に適用
+                      </p>
                     )}
 
                     {/* 特定日付選択（specific の場合） */}
                     {editingRule.recurringType === 'specific' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          適用する日付を選択
-                          <span className="ml-2 text-xs font-normal text-gray-500">
-                            ({editingRule.recurringPattern?.specificDates?.length || 0}日選択中)
-                          </span>
-                        </label>
-
-                        {/* 日付追加入力 */}
-                        <div className="flex gap-2 mb-3">
+                        <div className="flex gap-1 mb-1">
                           <input
                             type="date"
                             id="specific-date-input"
-                            className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 p-1 text-xs border rounded"
                           />
                           <button
                             type="button"
@@ -881,96 +921,121 @@ export default function SeasonCalendar({
                                 input.value = '';
                               }
                             }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+                            className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
                           >
                             追加
                           </button>
                         </div>
-
-                        {/* 選択された日付一覧 */}
-                        <div className="max-h-40 overflow-y-auto border rounded-lg bg-white">
+                        <div className="max-h-20 overflow-y-auto border rounded bg-white text-xs">
                           {editingRule.recurringPattern?.specificDates && editingRule.recurringPattern.specificDates.length > 0 ? (
                             <div className="divide-y">
-                              {editingRule.recurringPattern.specificDates.map(date => {
-                                const d = new Date(date);
-                                const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-                                return (
-                                  <div key={date} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50">
-                                    <span className="text-sm">
-                                      {date}
-                                      <span className={`ml-2 text-xs ${
-                                        d.getDay() === 0 ? 'text-red-500' :
-                                        d.getDay() === 6 ? 'text-blue-500' : 'text-gray-500'
-                                      }`}>
-                                        ({dayOfWeek})
-                                      </span>
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingRule(prev => prev ? {
-                                          ...prev,
-                                          recurringPattern: {
-                                            ...prev.recurringPattern,
-                                            specificDates: prev.recurringPattern?.specificDates?.filter(d => d !== date) || []
-                                          }
-                                        } : null);
-                                      }}
-                                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
-                                    >
-                                      削除
-                                    </button>
-                                  </div>
-                                );
-                              })}
+                              {editingRule.recurringPattern.specificDates.map(date => (
+                                <div key={date} className="flex items-center justify-between px-2 py-1">
+                                  <span>{date}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingRule(prev => prev ? {
+                                        ...prev,
+                                        recurringPattern: {
+                                          ...prev.recurringPattern,
+                                          specificDates: prev.recurringPattern?.specificDates?.filter(d => d !== date) || []
+                                        }
+                                      } : null);
+                                    }}
+                                    className="text-red-500 text-xs"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           ) : (
-                            <div className="p-4 text-center text-gray-400 text-sm">
-                              日付が選択されていません
-                            </div>
+                            <div className="p-2 text-center text-gray-400">未選択</div>
                           )}
                         </div>
-
-                        {/* 一括削除ボタン */}
-                        {editingRule.recurringPattern?.specificDates && editingRule.recurringPattern.specificDates.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingRule(prev => prev ? {
-                                ...prev,
-                                recurringPattern: { ...prev.recurringPattern, specificDates: [] }
-                              } : null);
-                            }}
-                            className="mt-2 text-xs text-red-500 hover:text-red-700"
-                          >
-                            すべてクリア
-                          </button>
-                        )}
-
-                        <p className="text-xs text-gray-500 mt-2">
-                          規則性のない任意の日付を複数選択できます
-                        </p>
                       </div>
                     )}
 
-                    {/* 繰り返し終了年 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">繰り返し終了年（任意）</label>
-                      <input
-                        type="number"
-                        value={editingRule.recurringEndYear || ''}
-                        onChange={(e) => setEditingRule(prev => prev ? {
-                          ...prev,
-                          recurringEndYear: e.target.value ? parseInt(e.target.value) : undefined
-                        } : null)}
-                        min={new Date().getFullYear() + 1}
-                        placeholder="例: 2030"
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        未設定の場合は無期限に繰り返します
-                      </p>
-                    </div>
+                    {/* 特定期間選択（period の場合） */}
+                    {editingRule.recurringType === 'period' && (
+                      <div>
+                        <div className="flex gap-1 mb-1 items-center">
+                          <input
+                            type="date"
+                            id="period-start-input"
+                            className="flex-1 p-1 text-xs border rounded"
+                          />
+                          <span className="text-xs text-gray-500">〜</span>
+                          <input
+                            type="date"
+                            id="period-end-input"
+                            className="flex-1 p-1 text-xs border rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const startInput = document.getElementById('period-start-input') as HTMLInputElement;
+                              const endInput = document.getElementById('period-end-input') as HTMLInputElement;
+                              if (startInput?.value && endInput?.value) {
+                                if (new Date(startInput.value) > new Date(endInput.value)) {
+                                  alert('終了日は開始日より後にしてください');
+                                  return;
+                                }
+                                const currentPeriods = editingRule.recurringPattern?.specificPeriods || [];
+                                const newPeriod = { startDate: startInput.value, endDate: endInput.value };
+                                // 重複チェック
+                                const isDuplicate = currentPeriods.some(
+                                  p => p.startDate === newPeriod.startDate && p.endDate === newPeriod.endDate
+                                );
+                                if (!isDuplicate) {
+                                  setEditingRule(prev => prev ? {
+                                    ...prev,
+                                    recurringPattern: {
+                                      ...prev.recurringPattern,
+                                      specificPeriods: [...currentPeriods, newPeriod].sort((a, b) => a.startDate.localeCompare(b.startDate))
+                                    }
+                                  } : null);
+                                }
+                                startInput.value = '';
+                                endInput.value = '';
+                              }
+                            }}
+                            className="px-2 py-1 bg-blue-600 text-white rounded text-xs whitespace-nowrap"
+                          >
+                            追加
+                          </button>
+                        </div>
+                        <div className="max-h-24 overflow-y-auto border rounded bg-white text-xs">
+                          {editingRule.recurringPattern?.specificPeriods && editingRule.recurringPattern.specificPeriods.length > 0 ? (
+                            <div className="divide-y">
+                              {editingRule.recurringPattern.specificPeriods.map((period, index) => (
+                                <div key={index} className="flex items-center justify-between px-2 py-1">
+                                  <span>{period.startDate} 〜 {period.endDate}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingRule(prev => prev ? {
+                                        ...prev,
+                                        recurringPattern: {
+                                          ...prev.recurringPattern,
+                                          specificPeriods: prev.recurringPattern?.specificPeriods?.filter((_, i) => i !== index) || []
+                                        }
+                                      } : null);
+                                    }}
+                                    className="text-red-500 text-xs"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-2 text-center text-gray-400">未選択</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

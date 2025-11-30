@@ -52,10 +52,31 @@ export function getSeasonRulesForDate(date: string): SeasonRule[] {
 
       // 月単位の繰り返し
       if (rule.recurringType === 'monthly') {
-        const ruleStartDate = new Date(rule.startDate);
         if (rule.recurringPattern?.monthlyPattern === 'date') {
+          // 選択された日付リストで判定（存在しない日は自動スキップ）
+          const monthlyDates = rule.recurringPattern?.monthlyDates;
+          if (monthlyDates && monthlyDates.length > 0) {
+            return monthlyDates.includes(targetDate.getDate());
+          }
+          // 互換性のため：monthlyDatesがない場合は開始日の日付を使用
+          const ruleStartDate = new Date(rule.startDate);
           return targetDate.getDate() === ruleStartDate.getDate();
-        } else {
+        } else if (rule.recurringPattern?.monthlyPattern === 'weekday') {
+          // 新形式：複数の週と曜日の組み合わせ（存在しない週は自動スキップ）
+          const monthlyWeeks = rule.recurringPattern?.monthlyWeeks;
+          const monthlyWeekdays = rule.recurringPattern?.monthlyWeekdays;
+          if (monthlyWeeks && monthlyWeeks.length > 0 && monthlyWeekdays && monthlyWeekdays.length > 0) {
+            const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
+            return monthlyWeeks.includes(targetWeekOfMonth) && monthlyWeekdays.includes(targetDayOfWeek);
+          }
+          // 旧形式との互換性：monthlyWeekday
+          const monthlyWeekday = rule.recurringPattern?.monthlyWeekday;
+          if (monthlyWeekday) {
+            const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
+            return monthlyWeekday.week === targetWeekOfMonth && monthlyWeekday.dayOfWeek === targetDayOfWeek;
+          }
+          // 互換性のため：どちらもない場合は開始日のパターンを使用
+          const ruleStartDate = new Date(rule.startDate);
           const ruleWeekOfMonth = Math.ceil(ruleStartDate.getDate() / 7);
           const targetWeekOfMonth = Math.ceil(targetDate.getDate() / 7);
           return ruleStartDate.getDay() === targetDayOfWeek && ruleWeekOfMonth === targetWeekOfMonth;

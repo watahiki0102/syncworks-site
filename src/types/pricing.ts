@@ -11,18 +11,38 @@ export type SeasonPriceType = 'percentage' | 'fixed';
 /**
  * シーズン加算設定の繰り返しタイプ
  */
-export type SeasonRecurringType = 'yearly' | 'monthly' | 'weekly' | 'specific' | 'none';
+export type SeasonRecurringType = 'yearly' | 'monthly' | 'weekly' | 'specific' | 'period' | 'none';
+
+/**
+ * 月単位の曜日指定パターン
+ */
+export interface MonthlyWeekdayPattern {
+  /** 第何週 (1-5) */
+  week: number;
+  /** 曜日 (0=日, 1=月, ... 6=土) */
+  dayOfWeek: number;
+}
 
 /**
  * シーズン加算設定の繰り返しパターン
  */
 export interface SeasonRecurringPattern {
-  /** 指定する曜日 (0=日, 1=月, ... 6=土) */
+  /** 指定する曜日 (0=日, 1=月, ... 6=土) - 週単位の繰り返し用 */
   weekdays?: number[];
   /** 月単位の繰り返し方法（日付固定 or 曜日固定） */
   monthlyPattern?: 'date' | 'weekday';
+  /** 月単位の日付指定 (1-31の日付リスト、存在しない日は自動スキップ) */
+  monthlyDates?: number[];
+  /** 月単位の曜日指定（第N週の曜日）- 旧形式、互換性のため保持 */
+  monthlyWeekday?: MonthlyWeekdayPattern;
+  /** 月単位の週指定 (1-5の週リスト、存在しない週は自動スキップ) */
+  monthlyWeeks?: number[];
+  /** 月単位の曜日指定 (0-6の曜日リスト、複数選択可) */
+  monthlyWeekdays?: number[];
   /** 特定の日付リスト (ISO形式の日付文字列配列) */
   specificDates?: string[];
+  /** 特定期間リスト (開始日〜終了日の配列) */
+  specificPeriods?: { startDate: string; endDate: string }[];
 }
 
 /**

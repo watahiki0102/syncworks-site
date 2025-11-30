@@ -43,54 +43,6 @@ export async function GET() {
 }
 
 /**
- * 日付範囲の重複をチェック
- */
-async function checkDateOverlap(
-  startDate: string,
-  endDate: string,
-  excludeId?: string
-): Promise<{ hasOverlap: boolean; overlappingRules: string[] }> {
-  const existingRules = await prisma.season_rules.findMany({
-    where: {
-      is_active: true,
-      ...(excludeId ? { NOT: { id: excludeId } } : {}),
-    },
-    select: {
-      id: true,
-      name: true,
-      start_date: true,
-      end_date: true,
-      is_recurring: true,
-      recurring_type: true,
-      recurring_pattern: true,
-    },
-  });
-
-  const newStart = new Date(startDate);
-  const newEnd = new Date(endDate);
-  const overlappingRules: string[] = [];
-
-  for (const rule of existingRules) {
-    // 繰り返し設定がない通常の期間ルールの場合
-    if (!rule.is_recurring || rule.recurring_type === 'none') {
-      const ruleStart = rule.start_date;
-      const ruleEnd = rule.end_date;
-
-      // 期間が重複しているかチェック
-      if (newStart <= ruleEnd && newEnd >= ruleStart) {
-        overlappingRules.push(rule.name);
-      }
-    }
-    // 繰り返しルールの重複チェックは複雑なため、ここでは基本的な期間チェックのみ
-  }
-
-  return {
-    hasOverlap: overlappingRules.length > 0,
-    overlappingRules,
-  };
-}
-
-/**
  * シーズンルール登録
  * POST /api/season-rules
  */
@@ -115,20 +67,6 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'シーズン名、開始日、終了日は必須です' },
         { status: 400 }
       );
-    }
-
-    // 日付の重複チェック（繰り返しでない場合）
-    if (!isRecurring || recurringType === 'none') {
-      const { hasOverlap, overlappingRules } = await checkDateOverlap(startDate, endDate);
-      if (hasOverlap) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `日付が重複しています: ${overlappingRules.join(', ')}`,
-          },
-          { status: 400 }
-        );
-      }
     }
 
     const seasonRule = await prisma.season_rules.create({
