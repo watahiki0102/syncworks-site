@@ -1,9 +1,13 @@
 /**
  * 価格計算ユーティリティ
  * 見積もり・料金計算に関する共通ロジックを提供
+ *
+ * NOTE: トラック種別の基本料金はDBから取得
+ * @see src/hooks/useTruckTypes.ts
  */
 
-import { UNIFIED_PRICING_CONFIG, UNIFIED_TRUCK_BASE_PRICES } from '@/config/pricing';
+import { UNIFIED_PRICING_CONFIG } from '@/config/pricing';
+import { getBasePriceFromCache, getRecommendedTruckTypesFromCache } from '@/hooks/useTruckTypes';
 
 /**
  * 荷物アイテムの型定義
@@ -82,12 +86,7 @@ export interface EstimateResult {
 }
 
 /**
- * 統一設定を使用（重複定数を削除）
- * 価格設定は /src/config/pricing.ts で統一管理
- */
-
-/**
- * 基本料金を取得
+ * 基本料金を取得（DBキャッシュから）
  * @param truckType トラック種別（null/undefinedの場合は0を返す）
  * @returns 基本料金（円）
  */
@@ -97,13 +96,7 @@ export const getBasePrice = (truckType: string | null | undefined): number => {
   }
 
   const normalizedType = truckType.trim();
-  const basePrice = UNIFIED_TRUCK_BASE_PRICES[normalizedType as keyof typeof UNIFIED_TRUCK_BASE_PRICES];
-
-  if (basePrice === undefined) {
-    return 0;
-  }
-
-  return basePrice;
+  return getBasePriceFromCache(normalizedType);
 };
 
 /**
@@ -156,7 +149,7 @@ export const calculateTimeSurcharge = (
   surcharges: TimeBandSurcharge[]
 ): number => {
   let total = 0;
-  
+
   surcharges.forEach(surcharge => {
     if (surcharge.kind === 'rate') {
       // 倍率の場合（例：1.5倍）
@@ -166,7 +159,7 @@ export const calculateTimeSurcharge = (
       total += surcharge.value;
     }
   });
-  
+
   return Math.round(total);
 };
 
@@ -202,19 +195,19 @@ export const calculateEstimate = (params: {
   const cargoPrice = calculateCargoPrice(items);
   const optionPrice = calculateOptionPrice(options);
   const distancePrice = calculateDistancePrice(distance);
-  
+
   // 小計（時間帯追加料金適用前）
   const subtotalBeforeSurcharge = basePrice + cargoPrice + optionPrice + distancePrice;
-  
+
   // 時間帯追加料金を計算
   const timeSurcharge = calculateTimeSurcharge(subtotalBeforeSurcharge, timeSurcharges);
-  
+
   // 小計（税抜き）
   const subtotal = subtotalBeforeSurcharge + timeSurcharge;
-  
+
   // 消費税を計算
   const tax = calculateTax(subtotal, taxRate);
-  
+
   // 合計（税込み）
   const total = subtotal + tax;
 
@@ -265,44 +258,10 @@ export const calculateDiscountAmount = (originalPrice: number, discountRate: num
 
 /**
  * 推奨トラック種別を判定
+ * DBのmaxPointsに基づいて判定
  */
-export const getRecommendedTruckTypes = (totalPoints: number, totalWeight: number): string[] => {
-  const recommendations: string[] = [];
-  
-  // ポイント数基準
-  if (totalPoints <= 50) {
-    recommendations.push('軽トラック', '2tショート');
-  } else if (totalPoints <= 100) {
-    recommendations.push('2tショート', '2t');
-  } else if (totalPoints <= 200) {
-    recommendations.push('2t', '3t');
-  } else if (totalPoints <= 350) {
-    recommendations.push('3t', '4t');
-  } else {
-    recommendations.push('4t');
-  }
-  
-  // 重量基準でフィルタリング
-  const weightBasedRecommendations: string[] = [];
-  if (totalWeight <= 350) {
-    weightBasedRecommendations.push('軽トラック');
-  }
-  if (totalWeight <= 2000) {
-    weightBasedRecommendations.push('2tショート', '2t');
-  }
-  if (totalWeight <= 3000) {
-    weightBasedRecommendations.push('3t');
-  }
-  if (totalWeight <= 4000) {
-    weightBasedRecommendations.push('4t');
-  }
-  
-  // ポイント基準と重量基準の交集合を取る
-  const finalRecommendations = recommendations.filter(truck => 
-    weightBasedRecommendations.includes(truck)
-  );
-  
-  return finalRecommendations.length > 0 ? finalRecommendations : recommendations;
+export const getRecommendedTruckTypes = (totalPoints: number, _totalWeight: number): string[] => {
+  return getRecommendedTruckTypesFromCache(totalPoints);
 };
 
 /**
@@ -316,10 +275,10 @@ export const compareEstimates = (estimates: EstimateResult[]): {
   if (estimates.length === 0) {
     throw new Error('見積もりデータが空です');
   }
-  
+
   const sortedEstimates = [...estimates].sort((a, b) => a.total - b.total);
   const totalSum = estimates.reduce((sum, estimate) => sum + estimate.total, 0);
-  
+
   return {
     cheapest: sortedEstimates[0],
     mostExpensive: sortedEstimates[sortedEstimates.length - 1],

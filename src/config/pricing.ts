@@ -1,6 +1,9 @@
 /**
  * 価格計算統一設定
  * pricing.ts、pure-functions.ts、business-logic.tsの価格計算ロジックを統一
+ *
+ * NOTE: トラック種別の基本料金・推奨ルールはDBから取得
+ * @see src/hooks/useTruckTypes.ts
  */
 
 import { TAX_RATES } from '@/constants';
@@ -12,50 +15,32 @@ import type { UnifiedPricingConfig } from '@/types/unified';
 export const UNIFIED_PRICING_CONFIG: UnifiedPricingConfig = {
   /** ポイント単価（円） - pricing.tsから統一 */
   POINT_UNIT_PRICE: 500,
-  
+
   /** 消費税率 - constants.tsから取得 */
   TAX_RATE: TAX_RATES.CONSUMPTION_TAX,
-  
+
   /** 距離料金（1kmあたり） - pricing.tsから統一 */
   DISTANCE_PRICE_PER_KM: 50,
-  
+
   /** 基本距離（km） - この距離までは追加料金なし */
   BASE_DISTANCE: 10,
 };
 
 /**
- * トラック種別別基本料金 - pricing.tsから統一
+ * @deprecated DBから取得するようになりました
+ * 後方互換性のため空オブジェクトをエクスポート
+ * 代わりに src/hooks/useTruckTypes.ts の getBasePrice を使用してください
  */
-export const UNIFIED_TRUCK_BASE_PRICES = {
-  '軽トラック': 15000,
-  '2tショート': 25000,
-  '2t': 30000,
-  '3t': 40000,
-  '4t': 50000,
-  '4t複数': 80000,
-  '特別対応': 100000,
-} as const;
+export const UNIFIED_TRUCK_BASE_PRICES: Record<string, number> = {};
 
 /**
- * ポイント基準トラック推奨ルール
+ * @deprecated DBから取得するようになりました
+ * 代わりに src/hooks/useTruckTypes.ts を使用してください
  */
 export const TRUCK_RECOMMENDATION_RULES = {
-  pointRanges: [
-    { min: 0, max: 50, trucks: ['軽トラック', '2tショート'] },
-    { min: 51, max: 100, trucks: ['2tショート', '2t'] },
-    { min: 101, max: 200, trucks: ['2t', '3t'] },
-    { min: 201, max: 350, trucks: ['3t', '4t'] },
-    { min: 351, max: Infinity, trucks: ['4t', '4t複数'] },
-  ],
-  weightLimits: {
-    '軽トラック': 350,
-    '2tショート': 2000,
-    '2t': 2000,
-    '3t': 3000,
-    '4t': 4000,
-    '4t複数': 8000,
-  }
-} as const;
+  pointRanges: [] as { min: number; max: number; trucks: string[] }[],
+  weightLimits: {} as Record<string, number>
+};
 
 /**
  * バリデーション用定数
@@ -93,20 +78,12 @@ export const validatePricingConfig = (): boolean => {
       console.error('Invalid POINT_UNIT_PRICE');
       return false;
     }
-    
+
     if (UNIFIED_PRICING_CONFIG.TAX_RATE < 0 || UNIFIED_PRICING_CONFIG.TAX_RATE > 1) {
       console.error('Invalid TAX_RATE');
       return false;
     }
-    
-    // トラック価格の検証
-    for (const [type, price] of Object.entries(UNIFIED_TRUCK_BASE_PRICES)) {
-      if (price <= 0) {
-        console.error(`Invalid base price for truck type: ${type}`);
-        return false;
-      }
-    }
-    
+
     return true;
   } catch (error) {
     console.error('Error validating pricing config:', error);

@@ -1,9 +1,13 @@
 /**
  * トラック推奨・見積もり計算の統一ユーティリティ
  * 複数のファイルで重複していたロジックを統合
+ *
+ * NOTE: トラック種別の基本料金はDBから取得
+ * @see src/hooks/useTruckTypes.ts
  */
 
 import { Truck } from '@/types/shared';
+import { getBasePriceFromCache, getRecommendedTruckTypeFromCache } from '@/hooks/useTruckTypes';
 
 export interface EstimateParams {
   points: number;
@@ -36,13 +40,14 @@ export const calculateEstimatedPrice = (params: EstimateParams): number => {
 
   const pointPrice = points * basePointPrice;
   const distancePrice = distance * baseDistancePrice;
-  
+
   return Math.round(pointPrice + distancePrice);
 };
 
 /**
  * 統一されたトラック推奨ロジック
  * ポイント数と重量に基づいて最適なトラックを推奨
+ * 実際の推奨はDBから取得したmaxPointsを使用
  */
 export const calculateRecommendedTrucks = (params: TruckRecommendationParams): Truck[] => {
   const { points, weight = 0, trucks } = params;
@@ -53,78 +58,41 @@ export const calculateRecommendedTrucks = (params: TruckRecommendationParams): T
 
   // 利用可能なトラックのみフィルタ
   const availableTrucks = trucks.filter(truck => truck.status === 'available');
-  
+
   if (availableTrucks.length === 0) {
     return [];
   }
 
-  // ポイント数に基づく推奨ロジック
-  let recommendedTypes: string[] = [];
-  
-  if (points <= 50) {
-    recommendedTypes = ['軽トラ', '2tショート', '2t'];
-  } else if (points <= 100) {
-    recommendedTypes = ['2tショート', '2t', '3t'];
-  } else if (points <= 200) {
-    recommendedTypes = ['2t', '3t', '4t'];
-  } else if (points <= 350) {
-    recommendedTypes = ['3t', '4t', '8t'];
-  } else {
-    recommendedTypes = ['4t', '8t', '10t'];
-  }
+  // 容量に基づいてソート（小さい順）
+  const sortedTrucks = [...availableTrucks].sort((a, b) => a.capacityKg - b.capacityKg);
 
-  // 推奨タイプに該当するトラックを抽出
-  const recommendedTrucks = availableTrucks.filter(truck => 
-    recommendedTypes.includes(truck.truckType)
-  );
-
-  // 重量チェック（指定されている場合）
-  const weightFilteredTrucks = weight > 0 
-    ? recommendedTrucks.filter(truck => truck.capacityKg >= weight)
-    : recommendedTrucks;
+  // 重量要件を満たすトラックをフィルタ
+  const weightFilteredTrucks = weight > 0
+    ? sortedTrucks.filter(truck => truck.capacityKg >= weight)
+    : sortedTrucks;
 
   // 結果が空の場合は、容量の大きい順に返す
   if (weightFilteredTrucks.length === 0) {
-    return availableTrucks
-      .sort((a, b) => a.capacityKg - b.capacityKg)
-      .slice(0, 3);
+    return sortedTrucks.slice(0, 3);
   }
 
-  // 容量の小さい順（効率的な順）にソートして返す
-  return weightFilteredTrucks
-    .sort((a, b) => a.capacityKg - b.capacityKg)
-    .slice(0, 5);
+  // 容量の小さい順（効率的な順）で上位5件を返す
+  return weightFilteredTrucks.slice(0, 5);
 };
 
 /**
- * トラックタイプから基本料金を取得
+ * トラックタイプから基本料金を取得（DBキャッシュから）
  */
 export const getTruckBasePrice = (truckType: string): number => {
-  const basePrices: Record<string, number> = {
-    '軽トラ': 15000,
-    '2tショート': 25000,
-    '2t': 30000,
-    '2tロング': 35000,
-    '3t': 45000,
-    '4t': 60000,
-    '8t': 80000,
-    '10t': 100000,
-    '20t': 150000,
-    '25t': 180000,
-  };
-
-  return basePrices[truckType] || 0;
+  return getBasePriceFromCache(truckType);
 };
 
 /**
  * ポイント数から推奨トラックタイプを取得
+ * DBのmaxPointsに基づいて判定
  */
 export const getRecommendedTruckType = (points: number): string => {
-  if (points <= 50) {return '軽トラ';}
-  if (points <= 100) {return '2t';}
-  if (points <= 200) {return '3t';}
-  if (points <= 350) {return '4t';}
-  return '8t';
+  return getRecommendedTruckTypeFromCache(points);
 };
 
 /**
@@ -149,21 +117,21 @@ export const calculateOptimalPlan = (
   efficiency: number;
 } => {
   const totalPoints = pointsList.reduce((sum, points) => sum + points, 0);
-  
+
   // 各ポイント数に対する推奨トラックを取得
-  const allRecommendations = pointsList.map(points => 
+  const allRecommendations = pointsList.map(points =>
     calculateRecommendedTrucks({ points, trucks: availableTrucks })
   );
 
   // 最も効率的な組み合わせを選択（簡単な例）
   const recommendedTrucks = allRecommendations[0] || [];
-  
+
   const totalCost = calculateEstimatedPrice({
     points: totalPoints,
     distance
   });
 
-  const efficiency = recommendedTrucks.length > 0 
+  const efficiency = recommendedTrucks.length > 0
     ? totalPoints / recommendedTrucks.reduce((sum, truck) => sum + truck.capacityKg, 0)
     : 0;
 

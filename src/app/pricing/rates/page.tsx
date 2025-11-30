@@ -15,37 +15,12 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 // トラック種別は料金設定から動的に取得されるため、定数としての定義は不要
 // 料金設定テーブルで入力されたトラック種別がuniqueTruckTypesとして使用される
+// デフォルト値はAPIから取得したデータを使用
 
 /**
  * ポイント範囲の定義（1～9999、1刻みで詳細設定可能）
  */
 const POINT_RANGE = Array.from({ length: 9999 }, (_, i) => i + 1);
-
-/**
- * デフォルト料金設定（より実用的な価格設定）
- */
-const DEFAULT_PRICING = [
-  { truckType: "軽トラ", minPoint: 1, maxPoint: 50, price: 12000 },
-  { truckType: "2tショート", minPoint: 51, maxPoint: 150, price: 20000 },
-  { truckType: "2tロング", minPoint: 151, maxPoint: 250, price: 28000 },
-  { truckType: "3t", minPoint: 251, maxPoint: 400, price: 38000 },
-  { truckType: "4t", minPoint: 401, maxPoint: 600, price: 50000 },
-  { truckType: "4t複数", minPoint: 601, maxPoint: 800, price: 65000 },
-  { truckType: "特別対応", minPoint: 801, maxPoint: 1000, price: 80000 },
-];
-
-/**
- * デフォルト車種係数（より実用的な係数設定）
- */
-const DEFAULT_TRUCK_COEFFICIENTS = [
-  { truckType: "軽トラ", coefficient: 1.0 },
-  { truckType: "2tショート", coefficient: 1.3 },
-  { truckType: "2tロング", coefficient: 1.5 },
-  { truckType: "3t", coefficient: 1.7 },
-  { truckType: "4t", coefficient: 1.9 },
-  { truckType: "4t複数", coefficient: 2.2 },
-  { truckType: "特別対応", coefficient: 2.8 },
-];
 
 /**
  * デフォルト距離料金（より実用的な距離料金設定）
@@ -434,54 +409,59 @@ export default function PricingRatesPage() {
       setItemPoints(defaultPoints);
     }
 
-    // 料金設定の読み込み
-    const savedPricing = typeof window !== 'undefined' ? localStorage.getItem('truckPricingRules') : null;
-    if (savedPricing) {
-      setPricingRules(JSON.parse(savedPricing));
-    } else {
-      // デフォルト料金を設定
-      const defaultPricing = DEFAULT_PRICING.map((rule, index) => ({
-        id: `pricing-${index}`,
-        truckType: rule.truckType,
-        minPoint: rule.minPoint,
-        maxPoint: rule.maxPoint,
-        price: rule.price
-      }));
-      setPricingRules(defaultPricing);
-    }
-
-    // 車種係数の読み込み（APIから取得、失敗時はlocalStorageを使用）
-    const loadTruckTypes = async () => {
+    // 料金設定の読み込み（APIから取得したトラック種別を使用）
+    const loadPricingAndTruckTypes = async () => {
       try {
         const response = await fetch('/api/truck-types');
         const result = await response.json();
         if (result.success && result.data.length > 0) {
+          // トラック係数を設定
           const dbCoefficients = result.data.map((t: { id: string; name: string; coefficient: number }) => ({
             id: t.id,
             truckType: t.name,
             coefficient: t.coefficient
           }));
           setTruckCoefficients(dbCoefficients);
+
+          // 料金設定を読み込み（localStorageを優先）
+          const savedPricing = typeof window !== 'undefined' ? localStorage.getItem('truckPricingRules') : null;
+          if (savedPricing) {
+            setPricingRules(JSON.parse(savedPricing));
+          } else {
+            // APIから取得したデータでデフォルト料金を設定
+            let cumulativePoint = 0;
+            const defaultPricing = result.data.map((t: { id: string; name: string; basePrice: number; maxPoints: number }, index: number) => {
+              const minPoint = cumulativePoint + 1;
+              const maxPoint = t.maxPoints || (minPoint + 49);
+              cumulativePoint = maxPoint;
+              return {
+                id: `pricing-${index}`,
+                truckType: t.name,
+                minPoint,
+                maxPoint,
+                price: t.basePrice || 15000
+              };
+            });
+            setPricingRules(defaultPricing);
+          }
           return;
         }
       } catch {
-        console.log('APIからの取得に失敗、localStorageを使用');
+        console.warn('APIからの取得に失敗、localStorageを使用');
       }
 
       // APIから取得できなかった場合はlocalStorageを使用
+      const savedPricing = typeof window !== 'undefined' ? localStorage.getItem('truckPricingRules') : null;
+      if (savedPricing) {
+        setPricingRules(JSON.parse(savedPricing));
+      }
+
       const savedCoefficients = typeof window !== 'undefined' ? localStorage.getItem('truckCoefficients') : null;
       if (savedCoefficients) {
         setTruckCoefficients(JSON.parse(savedCoefficients));
-      } else {
-        const defaultCoefficients = DEFAULT_TRUCK_COEFFICIENTS.map((coef, index) => ({
-          id: `coef-${index}`,
-          truckType: coef.truckType,
-          coefficient: coef.coefficient
-        }));
-        setTruckCoefficients(defaultCoefficients);
       }
     };
-    loadTruckTypes();
+    loadPricingAndTruckTypes();
 
     // 距離料金の読み込み
     const savedDistance = typeof window !== 'undefined' ? localStorage.getItem('distanceRanges') : null;

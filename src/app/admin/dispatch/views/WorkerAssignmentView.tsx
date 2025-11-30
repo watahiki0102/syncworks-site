@@ -9,6 +9,7 @@ import TruckColumn from '../components/worker-assignment/TruckColumn';
 import AssignDrawer from '../components/worker-assignment/AssignDrawer';
 import WorkerPool from '../components/worker-assignment/WorkerPool';
 import DayViewToggle from '../components/worker-assignment/DayViewToggle';
+import { useTruckTypes } from '@/hooks/useTruckTypes';
 
 interface WorkerAssignmentViewProps {
   trucks: Truck[];
@@ -26,10 +27,10 @@ const mockWorkers: WorkerRef[] = [
   { id: 'emp-6', name: '渡辺 五郎', role: 'driver', active: false }, // 休職中
 ];
 
-export default function WorkerAssignmentView({ 
-  trucks, 
-  selectedDate, 
-  onUpdateTruck 
+export default function WorkerAssignmentView({
+  trucks,
+  selectedDate,
+  onUpdateTruck
 }: WorkerAssignmentViewProps) {
   const [selectedSchedule, setSelectedSchedule] = useState<{
     scheduleId: ScheduleId;
@@ -43,6 +44,9 @@ export default function WorkerAssignmentView({
   const [workerFilter, setWorkerFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'schedule' | 'day'>('schedule');
   const [draggedWorker, setDraggedWorker] = useState<WorkerRef | null>(null);
+
+  // DBからトラック種別を取得
+  const { truckTypes } = useTruckTypes();
 
   // 選択された日付のスケジュールを取得
   const dateSchedules = useMemo(() => {
@@ -192,12 +196,9 @@ export default function WorkerAssignmentView({
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm"
               >
                 <option value="all">すべて</option>
-                <option value="軽トラ">軽トラ</option>
-                <option value="2tショート">2tショート</option>
-                <option value="2tロング">2tロング</option>
-                <option value="3t">3t</option>
-                <option value="4t">4t</option>
-                <option value="4t複数">4t複数</option>
+                {truckTypes.map(t => (
+                  <option key={t.id} value={t.name}>{t.name}</option>
+                ))}
               </select>
             </div>
             

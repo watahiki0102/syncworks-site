@@ -14,6 +14,7 @@ import {
   type WorkOption,
   type EstimateResult
 } from '@/utils/pricing';
+import { getDefaultTruckTypeFromCache } from '@/hooks/useTruckTypes';
 import { ItemPoint, PricingRule, OptionItem } from '@/types/pricing';
 
 interface PriceCalculationResult {
@@ -121,7 +122,11 @@ export default function PriceCalculator({
 
     // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
-    return recommendations.length > 0 ? recommendations[0] : '軽トラック';
+    if (recommendations.length > 0) {
+      return recommendations[0];
+    }
+    // DBから取得したデフォルトのトラック種別を使用
+    return getDefaultTruckTypeFromCache() || '';
   }, [savedPricingRules]);
 
   // 料金計算
@@ -277,7 +282,11 @@ export function usePriceCalculator(
 
     // フォールバック：デフォルトロジックを使用
     const recommendations = getRecommendedTruckTypes(totalPoints, 0);
-    return recommendations.length > 0 ? recommendations[0] : '軽トラック';
+    if (recommendations.length > 0) {
+      return recommendations[0];
+    }
+    // DBから取得したデフォルトのトラック種別を使用
+    return getDefaultTruckTypeFromCache() || '';
   }, [savedPricingRules]);
 
   // 料金計算

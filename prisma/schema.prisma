@@ -561,13 +561,17 @@ model shifts {
 
 /// トラック種別マスタ（料金計算用）
 model truck_types {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique @db.VarChar(100)
-  coefficient Decimal  @default(1.0) @db.Decimal(4, 2)
-  sort_order  Int      @default(100)
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @unique @db.VarChar(100)
+  display_name String?  @db.VarChar(100)
+  base_price   Int      @default(0)
+  capacity_kg  Int      @default(0)
+  max_points   Int      @default(0)
+  coefficient  Decimal  @default(1.0) @db.Decimal(4, 2)
+  sort_order   Int      @default(100)
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+  updated_at   DateTime @default(now()) @db.Timestamp(6)
 
   @@index([sort_order], map: "idx_truck_types_sort_order")
 }

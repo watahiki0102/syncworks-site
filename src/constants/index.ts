@@ -10,7 +10,7 @@ export * from './items';
 export * from './scheduleStatus';
 export * from './testData';
 export * from './truckStatus';
-export * from './truckTypes';
+// truckTypes は DB から取得 - src/hooks/useTruckTypes.ts を使用
 export * from './workTypes';
 
 /**

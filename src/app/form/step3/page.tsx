@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ProgressBar from '@/components/ProgressBar';
+import { getRecommendedTruckTypeFromCache, getBasePriceFromCache } from '@/hooks/useTruckTypes';
 
 /**
  * 自動保存の間隔（ミリ秒）
@@ -163,33 +164,27 @@ const getDanballPoints = (danballOption: string): number => {
 
 /**
  * 推奨トラック種別を取得
+ * DBのmaxPointsに基づいて判定
  * @param totalPoints - 総ポイント
  * @returns トラック種別
  */
 const getRecommendedTruckType = (totalPoints: number): string => {
-  if (totalPoints <= 50) {return '2tショート';}
-  if (totalPoints <= 75) {return '2tロング';}
-  if (totalPoints <= 100) {return '4t';}
-  if (totalPoints <= 150) {return '6t';}
-  return '10t';
+  // DBから取得したキャッシュを使用
+  const result = getRecommendedTruckTypeFromCache(totalPoints);
+  return result || ''; // フォールバック（DBデータなし）
 };
 
 /**
  * 基本料金を取得
+ * DBから取得したキャッシュを使用
  * @param truckType - トラック種別
- * @param totalPoints - 総ポイント
+ * @param _totalPoints - 総ポイント（未使用）
  * @returns 基本料金
  */
 const getBasePrice = (truckType: string, _totalPoints: number): number => {
-  const basePrices: Record<string, number> = {
-    '2tショート': 25000,
-    '2tロング': 35000,
-    '4t': 45000,
-    '6t': 60000,
-    '10t': 80000,
-  };
-
-  return basePrices[truckType] || 45000;
+  // DBから取得したキャッシュを使用
+  const price = getBasePriceFromCache(truckType);
+  return price || 0;
 };
 
 /**
