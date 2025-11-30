@@ -6,13 +6,14 @@
 -- ========================================
 
 -- users → moving_companies, employees, real_estate_agents
+-- ON DELETE SET NULL: 関連先が削除されてもユーザーアカウントは保持
 ALTER TABLE users
   ADD CONSTRAINT fk_users_moving_company
-    FOREIGN KEY (moving_company_id) REFERENCES moving_companies(id),
+    FOREIGN KEY (moving_company_id) REFERENCES moving_companies(id) ON DELETE SET NULL,
   ADD CONSTRAINT fk_users_employee
-    FOREIGN KEY (employee_id) REFERENCES employees(id),
+    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
   ADD CONSTRAINT fk_users_real_estate_agent
-    FOREIGN KEY (real_estate_agent_id) REFERENCES real_estate_agents(id);
+    FOREIGN KEY (real_estate_agent_id) REFERENCES real_estate_agents(id) ON DELETE SET NULL;
 
 -- shifts → jobs
 ALTER TABLE shifts

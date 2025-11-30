@@ -35,9 +35,14 @@ CREATE TABLE shifts (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  -- 日マタギ対応の検証
+  -- 日マタギ対応の検証（同一時刻禁止）
   CONSTRAINT check_time_valid
-    CHECK (start_time < end_time OR (start_time > end_time AND time_slot IS NOT NULL))
+    CHECK (
+      start_time <> end_time AND (
+        start_time < end_time OR
+        (start_time > end_time AND time_slot IS NOT NULL)
+      )
+    )
 );
 
 -- インデックス
@@ -46,6 +51,7 @@ CREATE INDEX idx_shifts_date ON shifts(date);
 CREATE INDEX idx_shifts_job ON shifts(job_id);
 CREATE INDEX idx_shifts_truck ON shifts(truck_id);
 CREATE INDEX idx_shifts_status ON shifts(status);
+CREATE INDEX idx_shifts_employee_date_time ON shifts(employee_id, date, start_time);
 
 -- コメント
 COMMENT ON TABLE shifts IS '従業員のシフト情報';

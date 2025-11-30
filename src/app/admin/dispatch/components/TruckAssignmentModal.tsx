@@ -78,11 +78,19 @@ export default function TruckAssignmentModal({
   const [manualSelectionReason, setManualSelectionReason] = useState('');
 
   useEffect(() => {
-    // ローカルストレージから従業員データを読み込み
-    const savedEmployees = localStorage.getItem('employees');
-    if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
-    }
+    // APIから従業員データを読み込み
+    const loadEmployees = async () => {
+      try {
+        const { fetchEmployees } = await import('@/lib/api/employees');
+        const employeesFromAPI = await fetchEmployees();
+        setEmployees(employeesFromAPI);
+      } catch (error) {
+        console.error('従業員データの読み込みに失敗しました:', error);
+        // エラー時は空配列をセット
+        setEmployees([]);
+      }
+    };
+    loadEmployees();
   }, []);
 
   useEffect(() => {

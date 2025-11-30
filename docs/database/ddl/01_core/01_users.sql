@@ -33,7 +33,15 @@ CREATE TABLE users (
 
   -- タイムスタンプ
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  -- role/ID整合性チェック
+  CONSTRAINT check_role_id_consistency CHECK (
+    (role = 'employee' AND employee_id IS NOT NULL) OR
+    (role = 'business_owner' AND moving_company_id IS NOT NULL) OR
+    (role = 'agent' AND real_estate_agent_id IS NOT NULL) OR
+    (role IN ('customer', 'admin'))
+  )
 );
 
 -- インデックス
@@ -41,6 +49,8 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_active ON users(is_active) WHERE is_active = true;
 CREATE INDEX idx_users_company ON users(moving_company_id);
+CREATE INDEX idx_users_employee ON users(employee_id);
+CREATE INDEX idx_users_real_estate_agent ON users(real_estate_agent_id);
 
 -- コメント
 COMMENT ON TABLE users IS 'システム全体のユーザー認証基盤';

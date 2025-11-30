@@ -1811,7 +1811,7 @@ export default function ShiftCalendar({
       const end = new Date(data.endDate);
       
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        dates.push(d.toISOString().split('T')[0]);
+        dates.push(toLocalDateString(d));
       }
     } else if (data.startDate) {
       // 編集・作成の場合：単一日付
@@ -1862,7 +1862,7 @@ export default function ShiftCalendar({
         const newEndDate = new Date(data.endDate);
         const newDates: string[] = [];
         for (let d = new Date(newStartDate); d <= newEndDate; d.setDate(d.getDate() + 1)) {
-          newDates.push(d.toISOString().split('T')[0]);
+          newDates.push(toLocalDateString(d));
         }
         const firstDate = newDates[0];
         const lastDate = newDates[newDates.length - 1];
@@ -3752,7 +3752,7 @@ export default function ShiftCalendar({
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
       for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day).toISOString().split('T')[0];
+        const date = toLocalDateString(new Date(year, month, day));
         
         filteredEmployees.forEach(employee => {
           const shifts = getShiftsForDate(employee.id, date);

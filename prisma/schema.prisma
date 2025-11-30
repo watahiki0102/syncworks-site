@@ -19,6 +19,7 @@ model employees {
   first_name              String            @db.VarChar(100)
   last_name_kana          String?           @db.VarChar(100)
   first_name_kana         String?           @db.VarChar(100)
+  email                   String?           @db.VarChar(255)
   role                    String            @default("worker") @db.VarChar(50)
   employment_type         String            @default("full_time") @db.VarChar(20)
   qualifications          String[]

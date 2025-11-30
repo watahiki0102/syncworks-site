@@ -13,36 +13,21 @@ import TimeRangeSelector, { TimeRangeType } from '@/components/TimeRangeSelector
 import TimeRangeDisplaySelector from '@/components/TimeRangeDisplaySelector';
 import { UnifiedCase } from '@/types/common';
 import { generateUnifiedTestData } from '@/app/admin/cases/lib/unifiedData';
-
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  position: string;
-  status: 'active' | 'inactive';
-  hireDate: string;
-  shifts: EmployeeShift[];
-  employmentType?: string; // 雇用形態
-  qualifications?: string; // 保有資格
-  birthDate?: string; // 生年月日
-  address?: string; // 住所
-  emergencyContact?: string; // 緊急連絡先
-  emergencyContactRelation?: string; // 緊急連絡先との関係
-  retireDate?: string; // 退職日
-}
-
-interface EmployeeShift {
-  id: string;
-  employeeId: string;
-  date: string;
-  timeSlot: string;
-  status: 'working' | 'unavailable';
-  customerName?: string;
-  notes?: string;
-  startTime?: string;
-  endTime?: string;
-}
+import { Employee, EmployeeShift } from '@/types/employee';
+import {
+  fetchEmployees,
+  createEmployee,
+  updateEmployee as apiUpdateEmployee
+} from '@/lib/api/employees';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
+import {
+  fetchShifts,
+  createShift as apiCreateShift,
+  updateShift as apiUpdateShift,
+  deleteShift as apiDeleteShift,
+  mapShiftFromAPI,
+  mapShiftToAPI,
+} from '@/lib/api/shifts';
 
 // 従業員の月間集計データの型定義
 interface EmployeeMonthlySummary {
@@ -64,7 +49,7 @@ function calculateEmployeeMonthlyStats(employee: Employee, year: number, month: 
 
   // 月の各日をチェック
   for (let day = 1; day <= lastDay.getDate(); day++) {
-    const date = new Date(year, month, day).toISOString().split('T')[0];
+    const date = toLocalDateString(new Date(year, month, day));
     const dayShifts = employee.shifts.filter(shift => shift.date === date);
     const workingShifts = dayShifts.filter(shift => shift.status === 'working');
 
@@ -232,8 +217,16 @@ export default function ShiftManagement() {
   // サイドパネル内のアクティブなタブ
   const [activeSidePanelTab, setActiveSidePanelTab] = useState<'employeeSummary' | 'clipboard' | null>(null);
 
-  // 未保存のシフトIDを管理
+  // 未保存のシフト変更を管理
   const [unsavedShiftIds, setUnsavedShiftIds] = useState<Set<string>>(new Set());
+  // 新規作成されたシフト（まだDBに存在しない）
+  const [pendingNewShifts, setPendingNewShifts] = useState<EmployeeShift[]>([]);
+  // 更新されたシフト（DBに存在するが変更あり）
+  const [pendingUpdateShifts, setPendingUpdateShifts] = useState<EmployeeShift[]>([]);
+  // 削除予定のシフトID（DBに存在するシフト）
+  const [pendingDeleteShiftIds, setPendingDeleteShiftIds] = useState<Set<string>>(new Set());
+  // DBから読み込んだシフトのIDセット（新規作成か更新かの判定用）
+  const [dbShiftIds, setDbShiftIds] = useState<Set<string>>(new Set());
 
   // 表示中のカレンダーの月を管理（従業員集計に使用）
   const [displayMonth, setDisplayMonth] = useState<{ year: number; month: number }>(() => {
@@ -545,7 +538,7 @@ export default function ShiftManagement() {
         for (let dayOffset = 0; dayOffset < dayCount; dayOffset++) {
           const targetDate = new Date(startDate);
           targetDate.setDate(targetDate.getDate() + dayOffset);
-          const targetDateStr = targetDate.toISOString().split('T')[0];
+          const targetDateStr = toLocalDateString(targetDate);
 
           const originalShift = groupShifts[dayOffset];
           const key = `${originalShift.employeeId}|||${targetDateStr}`;
@@ -633,28 +626,29 @@ export default function ShiftManagement() {
       return;
     }
 
-    // 重複がない場合のみ貼り付けを実行
+    // 重複がない場合のみ貼り付けを実行（ローカル更新＋未保存追跡）
     const newShiftsByEmployee: { [employeeId: string]: EmployeeShift[] } = {};
-    const newShiftIds: string[] = [];
-    
+    const newShifts: EmployeeShift[] = [];
+
     Object.keys(pendingShiftsByEmployeeAndDate).forEach(key => {
       const group = pendingShiftsByEmployeeAndDate[key];
       group.shifts.forEach(pending => {
         const newShift: EmployeeShift = {
           ...pending.shift,
-          id: generateShiftId(), // 【コード重複削減】共通関数を使用
+          id: generateShiftId(),
+          employeeId: group.employeeId,
           date: group.date,
         };
-        
+
         if (!newShiftsByEmployee[group.employeeId]) {
           newShiftsByEmployee[group.employeeId] = [];
         }
         newShiftsByEmployee[group.employeeId].push(newShift);
-        newShiftIds.push(newShift.id); // 新しいシフトIDを記録
+        newShifts.push(newShift);
       });
     });
-    
-    // 一度にすべての従業員のシフトを更新
+
+    // ローカルの状態を更新
     const updatedEmployees = employees.map(employee => {
       if (newShiftsByEmployee[employee.id]) {
         return {
@@ -664,16 +658,18 @@ export default function ShiftManagement() {
       }
       return employee;
     });
-    
+
     updateEmployeesState(updatedEmployees);
-    
-    // 貼り付けたシフトを未保存として記録
+
+    // 未保存として記録
     setUnsavedShiftIds(prev => {
       const newSet = new Set(prev);
-      newShiftIds.forEach(id => newSet.add(id));
+      newShifts.forEach(s => newSet.add(s.id));
       return newSet;
     });
-    
+    // 新規作成リストに追加
+    setPendingNewShifts(prev => [...prev, ...newShifts]);
+
     setPendingPasteDates([]);
     setClipboardMode('none');
   };
@@ -700,352 +696,46 @@ export default function ShiftManagement() {
     const unifiedData = generateUnifiedTestData();
     setCases(unifiedData);
 
-    // ローカルストレージから従業員データを読み込み【エラーハンドリング強化】
-    try {
-      const savedEmployees = localStorage.getItem('employees');
-      if (savedEmployees) {
-        setEmployees(JSON.parse(savedEmployees));
-      } else {
-        // 保存データがない場合はテストデータで初期化
-        initializeTestData();
-      }
-    } catch (error) {
-      console.error('従業員データの読み込みに失敗しました:', error);
-      // データが破損している場合もテストデータで初期化
-      initializeTestData();
-    }
-
-    // 初期データ読み込み後、未保存状態をクリア
-    setUnsavedShiftIds(new Set());
-  }, []);
-
-  // テストデータ初期化関数【コード整理】
-  const initializeTestData = () => {
-      // テストデータを初期化（現実的な引越し作業スケジュール）
-      const testEmployees: Employee[] = [
-        {
-          id: 'emp-1',
-          name: '田中 一郎',
-          email: 'tanaka@syncmoving.com',
-          phone: '090-1234-5678',
-          position: 'ドライバー',
-          status: 'active',
-          hireDate: '2023-01-15',
-          employmentType: '正社員',
-          qualifications: '準中型免許',
-          birthDate: '1990-05-15',
-          address: '東京都新宿区西新宿1-1-1',
-          emergencyContact: '090-9999-0001',
-          shifts: [
-            {
-              id: 'shift-1',
-              employeeId: 'emp-1',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '08:00',
-              status: 'working',
-              startTime: '08:00',
-              endTime: '17:00',
-              notes: '新宿区→渋谷区（引越し作業・2DK・終日）',
-            },
-          ],
-        },
-        {
-          id: 'emp-2',
-          name: '佐藤 花子',
-          email: 'sato@syncmoving.com',
-          phone: '080-9876-5432',
-          position: '作業員',
-          status: 'active',
-          hireDate: '2023-03-20',
-          employmentType: 'アルバイト',
-          qualifications: '普通免許',
-          birthDate: '1995-08-22',
-          address: '東京都渋谷区道玄坂2-2-2',
-          emergencyContact: '080-8888-0002',
-          shifts: [
-            {
-              id: 'shift-3',
-              employeeId: 'emp-2',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '08:00',
-              status: 'working',
-              startTime: '08:00',
-              endTime: '17:00',
-              notes: '田中さんと同行（引越し作業・終日）',
-            },
-          ],
-        },
-        {
-          id: 'emp-3',
-          name: '山田 三郎',
-          email: 'yamada@syncmoving.com',
-          phone: '070-5555-6666',
-          position: 'リーダー',
-          status: 'active',
-          hireDate: '2022-11-10',
-          employmentType: '正社員',
-          qualifications: '普通免許',
-          birthDate: '1988-12-03',
-          address: '東京都目黒区自由が丘3-3-3',
-          emergencyContact: '070-7777-0003',
-          shifts: [
-            {
-              id: 'shift-6',
-              employeeId: 'emp-3',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '13:00',
-              status: 'working',
-              startTime: '13:00',
-              endTime: '18:00',
-              notes: '目黒区→世田谷区（引越し作業・1LDK）',
-            },
-          ],
-        },
-        {
-          id: 'emp-4',
-          name: '鈴木 四郎',
-          email: 'suzuki@syncmoving.com',
-          phone: '090-1111-2222',
-          position: 'ドライバー',
-          status: 'active',
-          hireDate: '2023-06-05',
-          employmentType: '正社員',
-          qualifications: '大型免許',
-          birthDate: '1985-03-18',
-          address: '東京都中野区中野4-4-4',
-          emergencyContact: '090-1111-0004',
-          shifts: [
-            {
-              id: 'shift-7',
-              employeeId: 'emp-4',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '09:00',
-              status: 'working',
-              startTime: '09:00',
-              endTime: '18:00',
-              notes: '中野区→杉並区（引越し作業・4LDK・終日作業）',
-            },
-          ],
-        },
-        {
-          id: 'emp-5',
-          name: '高橋 五郎',
-          email: 'takahashi@syncmoving.com',
-          phone: '080-3333-4444',
-          position: '作業員',
-          status: 'active',
-          hireDate: '2023-02-28',
-          employmentType: 'パート',
-          qualifications: '普通免許',
-          birthDate: '1998-07-09',
-          address: '東京都杉並区高円寺5-5-5',
-          emergencyContact: '080-3333-0005',
-          shifts: [
-            {
-              id: 'shift-8',
-              employeeId: 'emp-5',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '09:00',
-              status: 'working',
-              startTime: '09:00',
-              endTime: '18:00',
-              notes: '鈴木さんと同行（引越し作業・終日作業）',
-            },
-          ],
-        },
-        {
-          id: 'emp-6',
-          name: '渡辺 六郎',
-          email: 'watanabe@syncmoving.com',
-          phone: '070-7777-8888',
-          position: 'ドライバー',
-          status: 'active',
-          hireDate: '2023-05-10',
-          employmentType: '契約社員',
-          qualifications: '準中型免許',
-          birthDate: '1992-11-25',
-          address: '東京都足立区西新井6-6-6',
-          emergencyContact: '070-7777-0006',
-          shifts: [
-            {
-              id: 'shift-9',
-              employeeId: 'emp-6',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '10:00',
-              status: 'working',
-              startTime: '10:00',
-              endTime: '19:00',
-              notes: '足立区→葛飾区→北区（引越し作業・2件・終日）',
-            },
-          ],
-        },
-        {
-          id: 'emp-7',
-          name: '伊藤 七郎',
-          email: 'ito@syncmoving.com',
-          phone: '090-9999-0000',
-          position: '作業員',
-          status: 'active',
-          hireDate: '2023-07-15',
-          employmentType: 'アルバイト',
-          qualifications: '普通免許',
-          birthDate: '2000-01-30',
-          address: '東京都葛飾区亀有7-7-7',
-          emergencyContact: '090-9999-0007',
-          shifts: [
-            {
-              id: 'shift-11',
-              employeeId: 'emp-7',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '10:00',
-              status: 'working',
-              startTime: '10:00',
-              endTime: '19:00',
-              notes: '渡辺さんと同行（引越し作業・終日）',
-            },
-          ],
-        },
-        {
-          id: 'emp-8',
-          name: '中村 八郎',
-          email: 'nakamura@syncmoving.com',
-          phone: '080-1111-3333',
-          position: 'リーダー',
-          status: 'active',
-          hireDate: '2022-12-01',
-          employmentType: '正社員',
-          qualifications: '普通免許、フォークリフト',
-          birthDate: '1987-06-14',
-          address: '東京都中央区銀座8-8-8',
-          emergencyContact: '080-1111-0008',
-          shifts: [
-            {
-              id: 'shift-13',
-              employeeId: 'emp-8',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '08:30',
-              status: 'working',
-              startTime: '08:30',
-              endTime: '18:00',
-              notes: '中央区→港区→千代田区（引越し作業・2件・終日）',
-            },
-          ],
-        },
-        {
-          id: 'emp-9',
-          name: '小林 九郎',
-          email: 'kobayashi@syncmoving.com',
-          phone: '070-2222-4444',
-          position: 'ドライバー',
-          status: 'active',
-          hireDate: '2023-04-20',
-          employmentType: '契約社員',
-          qualifications: '準中型免許',
-          birthDate: '1993-09-05',
-          address: '東京都豊島区池袋9-9-9',
-          emergencyContact: '070-2222-0009',
-          shifts: [
-            {
-              id: 'shift-15',
-              employeeId: 'emp-9',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '11:00',
-              status: 'working',
-              startTime: '11:00',
-              endTime: '16:00',
-              notes: '豊島区→北区（引越し作業・2DK）',
-            },
-          ],
-        },
-        {
-          id: 'emp-10',
-          name: '加藤 十郎',
-          email: 'kato@syncmoving.com',
-          phone: '090-5555-7777',
-          position: '作業員',
-          status: 'active',
-          hireDate: '2023-08-05',
-          employmentType: 'パート',
-          qualifications: '普通免許',
-          birthDate: '1999-02-28',
-          address: '東京都北区赤羽10-10-10',
-          emergencyContact: '090-5555-0010',
-          shifts: [
-            {
-              id: 'shift-16',
-              employeeId: 'emp-10',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '11:00',
-              status: 'working',
-              startTime: '11:00',
-              endTime: '16:00',
-              notes: '小林さんと同行（引越し作業）',
-            },
-          ],
-        },
-        {
-          id: 'emp-11',
-          name: '森 十一郎',
-          email: 'mori@syncmoving.com',
-          phone: '080-6666-8888',
-          position: 'ドライバー',
-          status: 'active',
-          hireDate: '2023-09-10',
-          employmentType: '派遣',
-          qualifications: '大型免許',
-          birthDate: '1991-04-12',
-          address: '東京都品川区五反田11-11-11',
-          emergencyContact: '080-6666-0011',
-          shifts: [
-            {
-              id: 'shift-17',
-              employeeId: 'emp-11',
-              date: new Date().toISOString().split('T')[0],
-              timeSlot: '16:00',
-              status: 'working',
-              startTime: '16:00',
-              endTime: '20:00',
-              notes: '品川区→大田区（引越し作業・1LDK）',
-            },
-          ],
-        },
-        {
-          id: 'emp-12',
-          name: '清水 十二郎',
-          email: 'shimizu@syncmoving.com',
-          phone: '070-8888-9999',
-          position: '作業員',
-          status: 'active',
-          hireDate: '2023-10-01',
-          employmentType: 'アルバイト',
-          qualifications: '普通免許',
-          birthDate: '2001-10-20',
-          address: '東京都大田区蒲田12-12-12',
-          emergencyContact: '070-8888-0012',
-          shifts: [
-            {
-              id: 'shift-18',
-              employeeId: 'emp-12',
-              date: '2025-01-15',
-              timeSlot: '16:00',
-              status: 'working',
-              startTime: '16:00',
-              endTime: '20:00',
-              notes: '森さんと同行（引越し作業）',
-            },
-          ],
-        },
-      ];
-      setEmployees(testEmployees);
-
-      // テストデータもLocalStorageに保存【エラーハンドリング追加】
+    // APIから従業員データとシフトデータを読み込み
+    const loadData = async () => {
       try {
-        localStorage.setItem('employees', JSON.stringify(testEmployees));
+        // 従業員とシフトを並行して取得
+        const [employeesFromAPI, shiftsFromAPI] = await Promise.all([
+          fetchEmployees(),
+          fetchShifts(),
+        ]);
+
+        // シフトデータをフロントエンド形式に変換
+        const convertedShifts = shiftsFromAPI.map(mapShiftFromAPI);
+
+        // DBから読み込んだシフトIDをセット
+        setDbShiftIds(new Set(convertedShifts.map(s => s.id)));
+
+        // 従業員にシフトを紐付け
+        const employeesWithShifts = employeesFromAPI.map(emp => ({
+          ...emp,
+          shifts: convertedShifts.filter(shift => shift.employeeId === emp.id),
+        }));
+
+        setEmployees(employeesWithShifts);
+
+        // 未保存状態をクリア
+        setUnsavedShiftIds(new Set());
+        setPendingNewShifts([]);
+        setPendingUpdateShifts([]);
+        setPendingDeleteShiftIds(new Set());
       } catch (error) {
-        console.error('テストデータの保存に失敗しました:', error);
-        // 初期データなので保存に失敗しても続行
+        console.error('データの読み込みに失敗しました:', error);
+        // API失敗時は空配列をセット
+        setEmployees([]);
+        // ユーザーにエラーを通知
+        alert('従業員データの読み込みに失敗しました。ページを再読み込みしてください。');
       }
     };
+
+    loadData();
+  }, []);
+
 
   /**
    * 従業員データの状態更新（メモリ内のみ）
@@ -1060,61 +750,106 @@ export default function ShiftManagement() {
   };
 
   /**
-   * 明示的な保存処理（保存ボタン用）
-   * 【重要】これが唯一の保存ポイント（初期化を除く）
-   * - addShift, updateShift, deleteShift は自動保存しない
-   * - ユーザーが保存ボタンを押した時のみ実行
-   * - これにより複数操作の競合を防ぐ
-   * 【エラーハンドリング追加】保存失敗時にユーザーに通知
+   * 一括保存処理（保存ボタン用）
+   * 新規作成・更新・削除をまとめてAPIに送信
+   * 接続プールのタイムアウトを防ぐため、バッチ処理で順次実行
    */
-  const handleSaveToStorage = () => {
+  const handleSaveToStorage = async () => {
+    // 未保存の変更がない場合
+    if (pendingNewShifts.length === 0 && pendingUpdateShifts.length === 0 && pendingDeleteShiftIds.size === 0) {
+      alert('保存する変更はありません。');
+      return;
+    }
+
     try {
-      localStorage.setItem('employees', JSON.stringify(employees));
-      setUnsavedShiftIds(new Set()); // 未保存IDをクリア
-      alert('シフトを保存しました');
+      // バッチサイズ（同時実行数を制限してDB接続プールの枯渇を防ぐ）
+      const BATCH_SIZE = 5;
+
+      // 操作を配列にまとめる
+      const operations: Array<() => Promise<unknown>> = [];
+
+      // 新規シフトの作成
+      for (const shift of pendingNewShifts) {
+        const apiInput = mapShiftToAPI(shift);
+        operations.push(() => apiCreateShift(apiInput));
+      }
+
+      // 既存シフトの更新
+      for (const shift of pendingUpdateShifts) {
+        operations.push(() => apiUpdateShift(shift.id, {
+          shift_date: shift.date,
+          start_time: shift.startTime || shift.timeSlot || '09:00',
+          end_time: shift.endTime || '18:00',
+          status: shift.status === 'working' ? 'scheduled' : 'unavailable',
+          notes: shift.notes || undefined,
+        }));
+      }
+
+      // シフトの削除
+      for (const shiftId of pendingDeleteShiftIds) {
+        operations.push(() => apiDeleteShift(shiftId));
+      }
+
+      // バッチ処理で順次実行（接続プールの枯渇を防ぐ）
+      for (let i = 0; i < operations.length; i += BATCH_SIZE) {
+        const batch = operations.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(op => op()));
+      }
+
+      // 保存成功後、状態をリセット
+      // 新規作成されたシフトのIDをDBシフトIDに追加
+      setDbShiftIds(prev => {
+        const newSet = new Set(prev);
+        pendingNewShifts.forEach(s => newSet.add(s.id));
+        pendingDeleteShiftIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+
+      // 未保存状態をクリア
+      setUnsavedShiftIds(new Set());
+      setPendingNewShifts([]);
+      setPendingUpdateShifts([]);
+      setPendingDeleteShiftIds(new Set());
+
+      const savedCount = pendingNewShifts.length + pendingUpdateShifts.length + pendingDeleteShiftIds.size;
+      alert(`シフトを保存しました（${savedCount}件の変更）`);
     } catch (error) {
       console.error('シフトの保存に失敗しました:', error);
-
-      // 容量オーバーの場合
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        alert(
-          'ローカルストレージの容量が不足しています。\n' +
-          'ブラウザのデータを削除するか、古いシフトデータを整理してください。'
-        );
-      } else {
-        alert('シフトの保存に失敗しました。再度お試しください。');
-      }
+      alert('シフトの保存に失敗しました。再度お試しください。');
     }
   };
 
-  const addEmployee = (employee: Omit<Employee, 'id'>) => {
-    const newEmployee: Employee = {
-      ...employee,
-      id: `emp-${Date.now()}`,
-    };
-    const updatedEmployees = [...employees, newEmployee];
-    updateEmployeesState(updatedEmployees);
-  };
-
-  const updateEmployee = (updatedEmployee: Employee) => {
-    const updatedEmployees = employees.map(employee => 
-      employee.id === updatedEmployee.id ? updatedEmployee : employee
-    );
-    updateEmployeesState(updatedEmployees);
-    setSelectedEmployee(null);
-  };
-
-  const deleteEmployee = (employeeId: string) => {
-    if (window.confirm('この従業員を削除しますか？')) {
-      const updatedEmployees = employees.filter(employee => employee.id !== employeeId);
+  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
+    try {
+      const newEmployee = await createEmployee(employee);
+      const updatedEmployees = [...employees, newEmployee];
       updateEmployeesState(updatedEmployees);
-      if (selectedEmployee?.id === employeeId) {
-        setSelectedEmployee(null);
-      }
+    } catch (error) {
+      console.error('従業員の追加に失敗しました:', error);
+      alert('従業員の追加に失敗しました。再度お試しください。');
     }
   };
 
+  const updateEmployee = async (updatedEmployee: Employee) => {
+    try {
+      const result = await apiUpdateEmployee(updatedEmployee);
+      const updatedEmployees = employees.map(employee =>
+        employee.id === result.id ? result : employee
+      );
+      updateEmployeesState(updatedEmployees);
+      setSelectedEmployee(null);
+    } catch (error) {
+      console.error('従業員の更新に失敗しました:', error);
+      alert('従業員の更新に失敗しました。再度お試しください。');
+    }
+  };
+
+  /**
+   * シフト更新処理（ローカル更新＋未保存追跡）
+   * 実際のAPI保存は handleSaveToStorage で一括実行
+   */
   const updateShift = (employeeId: string, shift: EmployeeShift) => {
+    // ローカルの状態を更新
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
         const updatedShifts = employee.shifts.map(s =>
@@ -1126,89 +861,129 @@ export default function ShiftManagement() {
     });
 
     updateEmployeesState(updatedEmployees);
-    
-    // 未保存シフトとして記録
+
+    // 未保存として記録
     setUnsavedShiftIds(prev => new Set(prev).add(shift.id));
-    
+
+    // DBに存在するシフトの場合は更新リストに追加
+    if (dbShiftIds.has(shift.id)) {
+      setPendingUpdateShifts(prev => {
+        const filtered = prev.filter(s => s.id !== shift.id);
+        return [...filtered, shift];
+      });
+    } else {
+      // 新規シフトの場合はpendingNewShiftsを更新
+      setPendingNewShifts(prev => {
+        const filtered = prev.filter(s => s.id !== shift.id);
+        return [...filtered, shift];
+      });
+    }
   };
 
   /**
-   * シフト追加処理
-   * 【修正済み】自動保存を削除し、競合を防止
-   * - 以前：追加時に即座にLocalStorageに保存していた
-   * - 現在：メモリ内のstateのみ更新
-   * - 保存は handleSaveToStorage() で明示的に実行
+   * シフト追加処理（ローカル更新＋未保存追跡）
+   * 実際のAPI保存は handleSaveToStorage で一括実行
    */
   const addShift = (employeeId: string, shift: Omit<EmployeeShift, 'id'>) => {
-    // ID重複を防ぐため一意のIDを生成【コード重複削減】共通関数を使用
+    // 一意のIDを生成
     const newShift: EmployeeShift = {
       ...shift,
       id: generateShiftId(),
     };
 
-    // setEmployeesを使用して、前の状態を基に更新（状態更新の競合を回避）
+    // ローカルの状態を更新
     setEmployees(prevEmployees => {
-      const updatedEmployees = prevEmployees.map(employee => {
+      return prevEmployees.map(employee => {
         if (employee.id === employeeId) {
-          const updatedEmployee = { ...employee, shifts: [...employee.shifts, newShift] };
-          return updatedEmployee;
+          return { ...employee, shifts: [...employee.shifts, newShift] };
         }
         return employee;
       });
-
-      return updatedEmployees;
     });
 
-    // 未保存シフトとして記録（保存は明示的な保存ボタンで実行）
+    // 未保存として記録
     setUnsavedShiftIds(prev => new Set(prev).add(newShift.id));
+    // 新規作成リストに追加
+    setPendingNewShifts(prev => [...prev, newShift]);
   };
 
+  /**
+   * シフト削除処理（ローカル更新＋未保存追跡）
+   * 実際のAPI削除は handleSaveToStorage で一括実行
+   */
   const deleteShift = (employeeId: string, shiftId: string) => {
+    // ローカルの状態を更新
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
-        return { 
-          ...employee, 
-          shifts: employee.shifts.filter(s => s.id !== shiftId) 
+        return {
+          ...employee,
+          shifts: employee.shifts.filter(s => s.id !== shiftId)
         };
       }
       return employee;
     });
-    
+
     updateEmployeesState(updatedEmployees);
-    // 削除したシフトを未保存リストから削除
+
+    // 未保存リストから削除
     setUnsavedShiftIds(prev => {
       const newSet = new Set(prev);
       newSet.delete(shiftId);
       return newSet;
     });
+
+    // DBに存在するシフトの場合は削除予定リストに追加
+    if (dbShiftIds.has(shiftId)) {
+      setPendingDeleteShiftIds(prev => new Set(prev).add(shiftId));
+      // 更新リストから削除
+      setPendingUpdateShifts(prev => prev.filter(s => s.id !== shiftId));
+    } else {
+      // 新規シフトの場合は作成リストから削除
+      setPendingNewShifts(prev => prev.filter(s => s.id !== shiftId));
+    }
   };
 
   /**
-   * 複数のシフトを一度に削除する関数
+   * 複数のシフトを一度に削除する関数（ローカル更新＋未保存追跡）
    * 【日マタギシフト対応】グループ全体を一度に削除するために使用
    * @param employeeId - 従業員ID
    * @param shiftIds - 削除するシフトIDの配列
    */
   const deleteMultipleShifts = (employeeId: string, shiftIds: string[]) => {
     if (shiftIds.length === 0) return;
-    
+
     const shiftIdSet = new Set(shiftIds);
+
+    // ローカルの状態を更新
     const updatedEmployees = employees.map(employee => {
       if (employee.id === employeeId) {
-        return { 
-          ...employee, 
-          shifts: employee.shifts.filter(s => !shiftIdSet.has(s.id)) 
+        return {
+          ...employee,
+          shifts: employee.shifts.filter(s => !shiftIdSet.has(s.id))
         };
       }
       return employee;
     });
-    
+
     updateEmployeesState(updatedEmployees);
-    // 削除したシフトを未保存リストから削除
+
+    // 未保存リストから削除
     setUnsavedShiftIds(prev => {
       const newSet = new Set(prev);
       shiftIds.forEach(id => newSet.delete(id));
       return newSet;
+    });
+
+    // 各シフトを適切なリストに振り分け
+    shiftIds.forEach(shiftId => {
+      if (dbShiftIds.has(shiftId)) {
+        // DBに存在するシフトの場合は削除予定リストに追加
+        setPendingDeleteShiftIds(prev => new Set(prev).add(shiftId));
+        setPendingUpdateShifts(prev => prev.filter(s => s.id !== shiftId));
+      } else {
+        // 新規シフトの場合は作成リストから削除
+        setPendingNewShifts(prev => prev.filter(s => s.id !== shiftId));
+      }
     });
   };
 
@@ -1302,7 +1077,6 @@ export default function ShiftManagement() {
                 selectedEmployee={selectedEmployee}
                 onAddEmployee={addEmployee}
                 onUpdateEmployee={updateEmployee}
-                onDeleteEmployee={deleteEmployee}
                 onSelectEmployee={setSelectedEmployee}
                 onShowEmployeeModal={setShowEmployeeModal}
                 showEmployeeModal={showEmployeeModal}

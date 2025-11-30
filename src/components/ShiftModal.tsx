@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './ui/Modal';
 import EmployeeSearchSelect from './EmployeeSearchSelect';
 import MultiSelectCalendar from './MultiSelectCalendar';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
 
 interface Employee {
   id: string;
@@ -121,7 +122,7 @@ export default function ShiftModal({
       } else {
         // bulk または range モード
         setSelectedEmployeeIds([]);
-        const today = new Date().toISOString().split('T')[0];
+        const today = toLocalDateString(new Date());
         setStartDate(today);
         setEndDate(today);
         setSelectedDates([]); // 複数日付をリセット

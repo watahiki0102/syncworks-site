@@ -25,7 +25,11 @@ CREATE TABLE job_assignments (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT check_assignment_has_resource
-    CHECK (employee_id IS NOT NULL OR truck_id IS NOT NULL)
+    CHECK (employee_id IS NOT NULL OR truck_id IS NOT NULL),
+
+  -- 時間整合性チェック
+  CONSTRAINT check_assignment_time_valid
+    CHECK (assigned_start_time < assigned_end_time)
 );
 
 -- インデックス

@@ -57,7 +57,19 @@ CREATE TABLE jobs (
 
   -- タイムスタンプ
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  -- 時間整合性チェック
+  CONSTRAINT check_scheduled_time_valid CHECK (
+    scheduled_start_time IS NULL OR
+    scheduled_end_time IS NULL OR
+    scheduled_start_time < scheduled_end_time
+  ),
+  CONSTRAINT check_actual_time_valid CHECK (
+    actual_start_time IS NULL OR
+    actual_end_time IS NULL OR
+    actual_start_time < actual_end_time
+  )
 );
 
 -- インデックス
@@ -67,6 +79,7 @@ CREATE INDEX idx_jobs_company ON jobs(moving_company_id);
 CREATE INDEX idx_jobs_scheduled_date ON jobs(scheduled_date);
 CREATE INDEX idx_jobs_status ON jobs(status);
 CREATE INDEX idx_jobs_referrer ON jobs(referrer_agent_id);
+CREATE INDEX idx_jobs_company_date_status ON jobs(moving_company_id, scheduled_date, status);
 
 -- コメント
 COMMENT ON TABLE jobs IS '受注確定した引越し案件';

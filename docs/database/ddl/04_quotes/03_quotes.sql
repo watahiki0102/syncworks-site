@@ -63,6 +63,7 @@ CREATE INDEX idx_quotes_request ON quotes(quote_request_id);
 CREATE INDEX idx_quotes_company ON quotes(moving_company_id);
 CREATE INDEX idx_quotes_status ON quotes(status);
 CREATE INDEX idx_quotes_created_at ON quotes(created_at DESC);
+CREATE INDEX idx_quotes_company_status_created ON quotes(moving_company_id, status, created_at DESC);
 
 -- コメント
 COMMENT ON TABLE quotes IS '引越し業者が提供する見積';

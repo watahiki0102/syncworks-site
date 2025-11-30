@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toLocalDateString } from '@/utils/dateTimeUtils';
 
 interface MultiSelectCalendarProps {
   selectedDates: string[];
@@ -44,7 +45,7 @@ export default function MultiSelectCalendar({
 
   // 日付の選択/解除
   const handleDateClick = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = toLocalDateString(date);
     const isSelected = selectedDates.includes(dateString);
     
     if (isSelected) {
@@ -67,7 +68,7 @@ export default function MultiSelectCalendar({
 
   // 日付が選択されているかチェック
   const isDateSelected = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = toLocalDateString(date);
     return selectedDates.includes(dateString);
   };
 

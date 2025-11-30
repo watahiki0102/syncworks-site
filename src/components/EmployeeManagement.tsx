@@ -26,7 +26,6 @@ interface EmployeeManagementProps {
   selectedEmployee: Employee | null;
   onAddEmployee: (employee: Omit<Employee, 'id'>) => void;
   onUpdateEmployee: (employee: Employee) => void;
-  onDeleteEmployee: (employeeId: string) => void;
   onSelectEmployee: (employee: Employee | null) => void;
   onShowEmployeeModal: (show: boolean) => void;
   showEmployeeModal: boolean;
@@ -37,7 +36,6 @@ export default function EmployeeManagement({
   selectedEmployee,
   onAddEmployee,
   onUpdateEmployee,
-  onDeleteEmployee,
   onSelectEmployee,
   onShowEmployeeModal,
   showEmployeeModal,
@@ -160,12 +158,6 @@ export default function EmployeeManagement({
     });
     onSelectEmployee(employee);
     onShowEmployeeModal(true);
-  };
-
-  const handleDelete = (employeeId: string) => {
-    if (window.confirm('この従業員を削除しますか？')) {
-      onDeleteEmployee(employeeId);
-    }
   };
 
   const getStatusColor = (status: string) => {
