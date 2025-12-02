@@ -45,6 +45,19 @@ export function getSeasonRulesForDate(date: string): SeasonRule[] {
         return rule.recurringPattern?.specificDates?.includes(date) || false;
       }
 
+      // 特定期間パターン
+      if (rule.recurringType === 'period') {
+        const periods = rule.recurringPattern?.specificPeriods;
+        if (periods && periods.length > 0) {
+          return periods.some(period => {
+            const periodStart = new Date(period.startDate);
+            const periodEnd = new Date(period.endDate);
+            return targetDate >= periodStart && targetDate <= periodEnd;
+          });
+        }
+        return false;
+      }
+
       // 週単位の繰り返し
       if (rule.recurringType === 'weekly') {
         return rule.recurringPattern?.weekdays?.includes(targetDayOfWeek) || false;

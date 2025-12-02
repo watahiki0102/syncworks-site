@@ -59,6 +59,19 @@ export default function SeasonCalendar({
           return rule.recurringPattern?.specificDates?.includes(date) || false;
         }
 
+        // 特定期間パターン
+        if (rule.recurringType === 'period') {
+          const periods = rule.recurringPattern?.specificPeriods;
+          if (periods && periods.length > 0) {
+            return periods.some(period => {
+              const periodStart = new Date(period.startDate);
+              const periodEnd = new Date(period.endDate);
+              return targetDate >= periodStart && targetDate <= periodEnd;
+            });
+          }
+          return false;
+        }
+
         // 週単位の繰り返し
         if (rule.recurringType === 'weekly') {
           return rule.recurringPattern?.weekdays?.includes(targetDayOfWeek) || false;
@@ -384,12 +397,14 @@ export default function SeasonCalendar({
                           rule.recurringType === 'monthly' ? 'bg-indigo-100 text-indigo-800' :
                           rule.recurringType === 'yearly' ? 'bg-teal-100 text-teal-800' :
                           rule.recurringType === 'specific' ? 'bg-orange-100 text-orange-800' :
+                          rule.recurringType === 'period' ? 'bg-pink-100 text-pink-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {rule.recurringType === 'weekly' && '毎週'}
                           {rule.recurringType === 'monthly' && '毎月'}
                           {rule.recurringType === 'yearly' && '毎年'}
                           {rule.recurringType === 'specific' && '特定日付'}
+                          {rule.recurringType === 'period' && '特定期間'}
                         </span>
                         {rule.recurringType === 'weekly' && rule.recurringPattern?.weekdays && (
                           <span className="text-xs text-gray-500">
@@ -414,6 +429,11 @@ export default function SeasonCalendar({
                         {rule.recurringType === 'specific' && rule.recurringPattern?.specificDates && (
                           <span className="text-xs text-gray-500">
                             {rule.recurringPattern.specificDates.length}日選択
+                          </span>
+                        )}
+                        {rule.recurringType === 'period' && rule.recurringPattern?.specificPeriods && (
+                          <span className="text-xs text-gray-500">
+                            {rule.recurringPattern.specificPeriods.length}期間
                           </span>
                         )}
                       </div>
